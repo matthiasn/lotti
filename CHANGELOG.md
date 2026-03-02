@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Voice transcription in evolution chat: mic button with batch and realtime
   recording modes, matching the existing AI chat transcription flow.
   Transcript populates the text field for editing before sending.
+- Vector search testing UI: toggle between full-text (FTS5) and vector
+  (Ollama embedding) search on the tasks page. Shows timing and result
+  count for evaluating search quality. Controlled by a new feature flag
+  in Settings > Flags.
 
 ## [0.9.892] - 2026-03-02
 ### Added

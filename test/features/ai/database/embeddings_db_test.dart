@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:sqlite3/sqlite3.dart' as raw;
 
 import 'load_sqlite_vec.dart';
 
@@ -485,6 +487,121 @@ void main() {
           greaterThanOrEqualTo(taskResults[i - 1].distance),
         );
       }
+    });
+  });
+
+  group('dimension mismatch migration', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('embeddings_test_');
+    });
+
+    tearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('recreates tables when existing table has wrong dimensions', () {
+      final dbPath = '${tempDir.path}/embeddings.sqlite';
+
+      // Create a DB with 2048-dimension vec_embeddings table.
+      final rawDb = raw.sqlite3.open(dbPath)
+
+        ..execute('''
+          CREATE TABLE IF NOT EXISTS embedding_metadata (
+            entity_id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            model_id TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+          )
+        ''')
+        ..execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
+            USING vec0(
+              entity_id TEXT PRIMARY KEY,
+              embedding float[2048]
+            )
+        ''')
+        ..execute('''
+          INSERT INTO embedding_metadata
+            (entity_id, entity_type, model_id, content_hash, created_at)
+          VALUES ('old-entity', 'task', 'model', 'hash', '2024-01-01')
+        ''');
+      // Insert a vector with 2048 dimensions.
+      final oldVec = Float32List(2048);
+      final oldBlob = oldVec.buffer.asUint8List();
+      rawDb
+        ..execute(
+          'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
+          ['old-entity', oldBlob],
+        )
+        ..dispose();
+
+      // Now open via EmbeddingsDb — should detect mismatch and recreate.
+      final embeddingsDb = EmbeddingsDb(path: dbPath)..open();
+
+      // Old data should be gone.
+      expect(embeddingsDb.count, 0);
+      expect(embeddingsDb.hasEmbedding('old-entity'), isFalse);
+
+      // Should be able to insert with correct dimensions now.
+      embeddingsDb.upsertEmbedding(
+        entityId: 'new-entity',
+        entityType: 'task',
+        modelId: 'test-model',
+        embedding: _makeVector(kEmbeddingDimensions, value: 1),
+        contentHash: 'hash-new',
+      );
+
+      expect(embeddingsDb.count, 1);
+
+      // Search should work with correct dimensions.
+      final results = embeddingsDb.search(
+        queryVector: _makeVector(kEmbeddingDimensions, value: 1),
+      );
+      expect(results, hasLength(1));
+      expect(results[0].entityId, 'new-entity');
+
+      embeddingsDb.close();
+    });
+
+    test('does not recreate tables when dimensions match', () {
+      final dbPath = '${tempDir.path}/embeddings_match.sqlite';
+
+      // Create a DB with correct dimensions and some data.
+
+      // Open via EmbeddingsDb — should NOT recreate.
+      final embeddingsDb = EmbeddingsDb(path: dbPath)..open();
+
+      // Data should still be there.
+      expect(embeddingsDb.hasEmbedding('existing'), isTrue);
+      expect(embeddingsDb.getContentHash('existing'), 'hash');
+
+      embeddingsDb.close();
+    });
+
+    test('handles brand new database without existing tables', () {
+      final dbPath = '${tempDir.path}/fresh.sqlite';
+
+      // Open a completely fresh DB — no tables exist yet.
+      final embeddingsDb = EmbeddingsDb(path: dbPath)..open();
+
+      expect(embeddingsDb.count, 0);
+
+      // Should work normally.
+      embeddingsDb.upsertEmbedding(
+        entityId: 'entity-1',
+        entityType: 'task',
+        modelId: 'test-model',
+        embedding: _makeVector(kEmbeddingDimensions, value: 1),
+        contentHash: 'hash-1',
+      );
+
+      expect(embeddingsDb.count, 1);
+      embeddingsDb.close();
     });
   });
 }

@@ -71,6 +71,15 @@ class EmbeddingsDb {
   }
 
   void _createSchema() {
+    // Check if the vec_embeddings table already exists with wrong dimensions.
+    // This can happen when the embedding model changes. Since embeddings are
+    // derived data that can be regenerated, we drop and recreate both tables.
+    if (_hasDimensionMismatch()) {
+      db
+        ..execute('DROP TABLE IF EXISTS vec_embeddings')
+        ..execute('DROP TABLE IF EXISTS embedding_metadata');
+    }
+
     db
       ..execute('''
         CREATE TABLE IF NOT EXISTS embedding_metadata (
@@ -92,6 +101,26 @@ class EmbeddingsDb {
             embedding float[$kEmbeddingDimensions]
           );
       ''');
+  }
+
+  /// Checks whether the existing vec_embeddings table has a different
+  /// dimension than [kEmbeddingDimensions].
+  ///
+  /// Returns `false` if the table doesn't exist yet (nothing to migrate).
+  bool _hasDimensionMismatch() {
+    // Virtual tables are stored with type='table' in sqlite_master.
+    final schema = db.select(
+      "SELECT sql FROM sqlite_master WHERE name='vec_embeddings'",
+    );
+    if (schema.isEmpty) return false;
+
+    final sql = schema.first['sql'] as String? ?? '';
+    // The CREATE VIRTUAL TABLE statement contains "float[N]".
+    final match = RegExp(r'float\[(\d+)\]').firstMatch(sql);
+    if (match == null) return false;
+
+    final existingDims = int.tryParse(match.group(1)!);
+    return existingDims != null && existingDims != kEmbeddingDimensions;
   }
 
   /// Closes the database. Safe to call multiple times.

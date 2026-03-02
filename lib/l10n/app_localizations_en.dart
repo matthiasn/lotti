@@ -470,11 +470,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'No neutral feedback signals in this tab';
 
   @override
-  String get agentRitualReviewNoPositiveSignals =>
-      'No positive feedback signals in this tab';
+  String get agentRitualReviewNoProposal => 'No active proposal';
 
   @override
-  String get agentRitualReviewNoProposal => 'No active proposal';
+  String get agentRitualReviewNoPositiveSignals =>
+      'No positive feedback signals in this tab';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positive';
@@ -1821,6 +1821,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show helpful tooltips throughout the app to guide you through features.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Vector Search';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Show a vector search toggle on the tasks page. Requires embeddings to be enabled and Ollama running.';
+
+  @override
   String get configFlagPrivate => 'Show private entries?';
 
   @override
@@ -2801,11 +2808,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logsSearchHint => 'Search all logs...';
 
   @override
-  String get maintenanceDeleteAgentDb => 'Delete Agents Database';
+  String get maintenanceBackfillEmbeddings => 'Backfill Embeddings';
 
   @override
-  String get maintenanceDeleteAgentDbDescription =>
-      'Delete agents database and restart app';
+  String get maintenanceBackfillEmbeddingsConfirm => 'YES, START BACKFILL';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Generate embeddings for all entries in a category';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Select a category to generate embeddings for all its entries.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    return '$processed / $total entries ($embedded embedded)';
+  }
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
@@ -3351,6 +3371,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchHint => 'Search...';
+
+  @override
+  String get searchModeFullText => 'Full Text';
+
+  @override
+  String get searchModeVector => 'Vector';
 
   @override
   String get searchTasksHint => 'Search tasks...';
@@ -4605,13 +4631,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thinkingDisclosureHide => 'Hide reasoning';
 
   @override
-  String get thinkingDisclosureShow => 'Show reasoning';
-
-  @override
   String get thinkingDisclosureStateCollapsed => 'collapsed';
 
   @override
   String get thinkingDisclosureStateExpanded => 'expanded';
+
+  @override
+  String get thinkingDisclosureShow => 'Show reasoning';
 
   @override
   String get timeByCategoryChartTitle => 'Time by Category';
@@ -4627,6 +4653,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Unlink Task';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    return '${elapsed}ms, $count results';
+  }
 
   @override
   String get viewMenuTitle => 'View';

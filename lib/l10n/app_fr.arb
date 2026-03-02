@@ -805,6 +805,8 @@
   "configFlagEnableSessionRatingsDescription": "Proposer une évaluation rapide de session à l'arrêt d'un minuteur.",
   "configFlagEnableTooltip": "Activer les info-bulles",
   "configFlagEnableTooltipDescription": "Afficher des info-bulles utiles dans toute l'application pour te guider à travers les fonctionnalités.",
+  "configFlagEnableVectorSearch": "Recherche vectorielle",
+  "configFlagEnableVectorSearchDescription": "Affiche un bouton de recherche vectorielle sur la page des tâches. Nécessite les embeddings activés et Ollama en cours d'exécution.",
   "configFlagPrivate": "Afficher les entrées privées ?",
   "configFlagPrivateDescription": "Active cette option pour rendre tes entrées privées par défaut. Les entrées privées ne sont visibles que par toi.",
   "configFlagRecordLocation": "Enregistrer la localisation",
@@ -1217,6 +1219,24 @@
   "loggingFailedToLoadMore": "Échec du chargement de résultats supplémentaires. Réessaie s'il te plaît.",
   "loggingSearchFailed": "Échec de la recherche. Réessaie s'il te plaît.",
   "logsSearchHint": "Rechercher tous les logs...",
+  "maintenanceBackfillEmbeddings": "Remplir les embeddings",
+  "maintenanceBackfillEmbeddingsConfirm": "OUI, DÉMARRER",
+  "maintenanceBackfillEmbeddingsDescription": "Générer les embeddings pour toutes les entrées d'une catégorie",
+  "maintenanceBackfillEmbeddingsMessage": "Sélectionne une catégorie pour générer les embeddings de toutes ses entrées.",
+  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} entrées ({embedded} intégrées)",
+  "@maintenanceBackfillEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Supprimer la base de données des agents",
   "maintenanceDeleteAgentDbDescription": "Supprimer la base de données des agents et redémarrer l'app",
   "maintenanceDeleteDatabaseConfirm": "OUI, SUPPRIMER LA BASE DE DONNÉES",
@@ -1427,6 +1447,8 @@
   "saveLabel": "Enregistrer",
   "saveSuccessful": "Enregistré avec succès",
   "searchHint": "Rechercher...",
+  "searchModeFullText": "Texte intégral",
+  "searchModeVector": "Vecteur",
   "searchTasksHint": "Rechercher des tâches...",
   "selectAllowedPrompts": "Sélectionner les prompts autorisés pour cette catégorie",
   "selectButton": "Sélectionner",
@@ -1900,6 +1922,17 @@
   "unlinkButton": "Délier",
   "unlinkTaskConfirm": "Es-tu sûr de vouloir délier cette tâche ?",
   "unlinkTaskTitle": "Délier la tâche",
+  "vectorSearchTiming": "{elapsed}ms, {count} résultats",
+  "@vectorSearchTiming": {
+    "placeholders": {
+      "elapsed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewMenuTitle": "Affichage",
   "whatsNewDoneButton": "Terminé",
   "whatsNewSkipButton": "Ignorer"

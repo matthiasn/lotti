@@ -805,6 +805,8 @@
   "configFlagEnableSessionRatingsDescription": "Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.",
   "configFlagEnableTooltip": "Activează sfaturile",
   "configFlagEnableTooltipDescription": "Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.",
+  "configFlagEnableVectorSearch": "Căutare vectorială",
+  "configFlagEnableVectorSearchDescription": "Afișează un comutator de căutare vectorială pe pagina de sarcini. Necesită încorporări activate și Ollama în execuție.",
   "configFlagPrivate": "Arată articolele private?",
   "configFlagPrivateDescription": "Activați această opțiune pentru a face intrările dvs. private în mod implicit. Intrările private sunt vizibile numai pentru dvs.",
   "configFlagRecordLocation": "Înregistrează locația",
@@ -1217,6 +1219,24 @@
   "loggingFailedToLoadMore": "Eșec la încărcarea mai multor rezultate. Vă rugăm să încercați din nou.",
   "loggingSearchFailed": "Căutarea a eșuat. Vă rugăm să încercați din nou.",
   "logsSearchHint": "Caută în toate jurnalele...",
+  "maintenanceBackfillEmbeddings": "Completare embeddings",
+  "maintenanceBackfillEmbeddingsConfirm": "DA, ÎNCEPE",
+  "maintenanceBackfillEmbeddingsDescription": "Generați embeddings pentru toate intrările dintr-o categorie",
+  "maintenanceBackfillEmbeddingsMessage": "Selectați o categorie pentru a genera embeddings pentru toate intrările sale.",
+  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} intrări ({embedded} încorporate)",
+  "@maintenanceBackfillEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Șterge baza de date a agenților",
   "maintenanceDeleteAgentDbDescription": "Șterge baza de date a agenților și repornește aplicația",
   "maintenanceDeleteDatabaseConfirm": "DA, ȘTERGE BAZA DE DATE",
@@ -1427,6 +1447,8 @@
   "saveLabel": "Salvați",
   "saveSuccessful": "Salvat cu succes",
   "searchHint": "Căutare...",
+  "searchModeFullText": "Text integral",
+  "searchModeVector": "Vector",
   "searchTasksHint": "Caută sarcini...",
   "selectAllowedPrompts": "Selectați ce prompturi sunt permise pentru această categorie",
   "selectButton": "Selectează",
@@ -1900,6 +1922,17 @@
   "unlinkButton": "Dezleagă",
   "unlinkTaskConfirm": "Ești sigur că vrei să dezlegi această sarcină?",
   "unlinkTaskTitle": "Dezleagă sarcina",
+  "vectorSearchTiming": "{elapsed}ms, {count} rezultate",
+  "@vectorSearchTiming": {
+    "placeholders": {
+      "elapsed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewMenuTitle": "Vizualizare",
   "whatsNewDoneButton": "Gata",
   "whatsNewSkipButton": "Omite"

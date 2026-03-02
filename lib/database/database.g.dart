@@ -6505,6 +6505,17 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).map((QueryRow row) => row.read<String>('id'));
   }
 
+  Selectable<String> journalEntityIdsByCategory(String categoryId) {
+    return customSelect(
+        'SELECT id FROM journal WHERE deleted = FALSE AND category = ?1 ORDER BY date_from DESC',
+        variables: [
+          Variable<String>(categoryId)
+        ],
+        readsFrom: {
+          journal,
+        }).map((QueryRow row) => row.read<String>('id'));
+  }
+
   Selectable<LinkedDbEntry> linksForIds(List<String> toIds) {
     var $arrayStartIndex = 1;
     final expandedtoIds = $expandVar($arrayStartIndex, toIds.length);

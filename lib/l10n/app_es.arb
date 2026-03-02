@@ -805,6 +805,8 @@
   "configFlagEnableSessionRatingsDescription": "Solicitar una calificación rápida de sesión al detener un temporizador.",
   "configFlagEnableTooltip": "Habilitar información sobre herramientas",
   "configFlagEnableTooltipDescription": "Mostrar información sobre herramientas útil en toda la aplicación para guiarte a través de las funciones.",
+  "configFlagEnableVectorSearch": "Búsqueda vectorial",
+  "configFlagEnableVectorSearchDescription": "Muestra un botón de búsqueda vectorial en la página de tareas. Requiere incrustaciones activadas y Ollama en ejecución.",
   "configFlagPrivate": "¿Mostrar entradas privadas?",
   "configFlagPrivateDescription": "Habilita esto para que tus entradas sean privadas de forma predeterminada. Las entradas privadas solo son visibles para ti.",
   "configFlagRecordLocation": "Registrar ubicación",
@@ -1217,6 +1219,24 @@
   "loggingFailedToLoadMore": "Error al cargar más resultados. Por favor, inténtalo de nuevo.",
   "loggingSearchFailed": "Error en la búsqueda. Por favor, inténtalo de nuevo.",
   "logsSearchHint": "Buscar todos los logs...",
+  "maintenanceBackfillEmbeddings": "Rellenar embeddings",
+  "maintenanceBackfillEmbeddingsConfirm": "SÍ, INICIAR",
+  "maintenanceBackfillEmbeddingsDescription": "Generar embeddings para todas las entradas de una categoría",
+  "maintenanceBackfillEmbeddingsMessage": "Selecciona una categoría para generar embeddings de todas sus entradas.",
+  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} entradas ({embedded} incrustadas)",
+  "@maintenanceBackfillEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Eliminar la base de datos de agentes",
   "maintenanceDeleteAgentDbDescription": "Eliminar la base de datos de agentes y reiniciar la app",
   "maintenanceDeleteDatabaseConfirm": "SÍ, ELIMINAR BASE DE DATOS",
@@ -1427,6 +1447,8 @@
   "saveLabel": "Guardar",
   "saveSuccessful": "Guardado correctamente",
   "searchHint": "Buscar...",
+  "searchModeFullText": "Texto completo",
+  "searchModeVector": "Vector",
   "searchTasksHint": "Buscar tareas...",
   "selectAllowedPrompts": "Seleccionar qué prompts están permitidos para esta categoría",
   "selectButton": "Seleccionar",
@@ -1900,6 +1922,17 @@
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "¿Estás seguro de que quieres desvincular esta tarea?",
   "unlinkTaskTitle": "Desvincular tarea",
+  "vectorSearchTiming": "{elapsed}ms, {count} resultados",
+  "@vectorSearchTiming": {
+    "placeholders": {
+      "elapsed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewMenuTitle": "Vista",
   "whatsNewDoneButton": "Listo",
   "whatsNewSkipButton": "Omitir"

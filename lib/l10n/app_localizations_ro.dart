@@ -478,11 +478,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun semnal de feedback neutru în această filă';
 
   @override
-  String get agentRitualReviewNoPositiveSignals =>
-      'Niciun semnal de feedback pozitiv în această filă';
+  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
 
   @override
-  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
+  String get agentRitualReviewNoPositiveSignals =>
+      'Niciun semnal de feedback pozitiv în această filă';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitiv';
@@ -1853,6 +1853,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Căutare vectorială';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Afișează un comutator de căutare vectorială pe pagina de sarcini. Necesită încorporări activate și Ollama în execuție.';
+
+  @override
   String get configFlagPrivate => 'Arată articolele private?';
 
   @override
@@ -2846,11 +2853,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get logsSearchHint => 'Caută în toate jurnalele...';
 
   @override
-  String get maintenanceDeleteAgentDb => 'Șterge baza de date a agenților';
+  String get maintenanceBackfillEmbeddings => 'Completare embeddings';
 
   @override
-  String get maintenanceDeleteAgentDbDescription =>
-      'Șterge baza de date a agenților și repornește aplicația';
+  String get maintenanceBackfillEmbeddingsConfirm => 'DA, ÎNCEPE';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Generați embeddings pentru toate intrările dintr-o categorie';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Selectați o categorie pentru a genera embeddings pentru toate intrările sale.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    return '$processed / $total intrări ($embedded încorporate)';
+  }
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'DA, ȘTERGE BAZA DE DATE';
@@ -3408,6 +3428,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get searchHint => 'Căutare...';
+
+  @override
+  String get searchModeFullText => 'Text integral';
+
+  @override
+  String get searchModeVector => 'Vector';
 
   @override
   String get searchTasksHint => 'Caută sarcini...';
@@ -4678,13 +4704,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get thinkingDisclosureHide => 'Ascunde raționamentul';
 
   @override
-  String get thinkingDisclosureShow => 'Afișează raționamentul';
-
-  @override
   String get thinkingDisclosureStateCollapsed => 'restrâns';
 
   @override
   String get thinkingDisclosureStateExpanded => 'extins';
+
+  @override
+  String get thinkingDisclosureShow => 'Afișează raționamentul';
 
   @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';
@@ -4701,6 +4727,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Dezleagă sarcina';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    return '${elapsed}ms, $count rezultate';
+  }
 
   @override
   String get viewMenuTitle => 'Vizualizare';

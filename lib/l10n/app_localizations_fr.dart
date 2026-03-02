@@ -478,11 +478,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun signal de retour neutre dans cet onglet';
 
   @override
-  String get agentRitualReviewNoPositiveSignals =>
-      'Aucun signal de retour positif dans cet onglet';
+  String get agentRitualReviewNoProposal => 'Pas de proposition active';
 
   @override
-  String get agentRitualReviewNoProposal => 'Pas de proposition active';
+  String get agentRitualReviewNoPositiveSignals =>
+      'Aucun signal de retour positif dans cet onglet';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positif';
@@ -1880,6 +1880,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher des info-bulles utiles dans toute l\'application pour te guider à travers les fonctionnalités.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Recherche vectorielle';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Affiche un bouton de recherche vectorielle sur la page des tâches. Nécessite les embeddings activés et Ollama en cours d\'exécution.';
+
+  @override
   String get configFlagPrivate => 'Afficher les entrées privées ?';
 
   @override
@@ -2883,12 +2890,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get logsSearchHint => 'Rechercher tous les logs...';
 
   @override
-  String get maintenanceDeleteAgentDb =>
-      'Supprimer la base de données des agents';
+  String get maintenanceBackfillEmbeddings => 'Remplir les embeddings';
 
   @override
-  String get maintenanceDeleteAgentDbDescription =>
-      'Supprimer la base de données des agents et redémarrer l\'app';
+  String get maintenanceBackfillEmbeddingsConfirm => 'OUI, DÉMARRER';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Générer les embeddings pour toutes les entrées d\'une catégorie';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Sélectionne une catégorie pour générer les embeddings de toutes ses entrées.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    return '$processed / $total entrées ($embedded intégrées)';
+  }
 
   @override
   String get maintenanceDeleteDatabaseConfirm =>
@@ -3462,6 +3481,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get searchHint => 'Rechercher...';
+
+  @override
+  String get searchModeFullText => 'Texte intégral';
+
+  @override
+  String get searchModeVector => 'Vecteur';
 
   @override
   String get searchTasksHint => 'Rechercher des tâches...';
@@ -4744,13 +4769,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get thinkingDisclosureHide => 'Masquer le raisonnement';
 
   @override
-  String get thinkingDisclosureShow => 'Afficher le raisonnement';
-
-  @override
   String get thinkingDisclosureStateCollapsed => 'replié';
 
   @override
   String get thinkingDisclosureStateExpanded => 'déplié';
+
+  @override
+  String get thinkingDisclosureShow => 'Afficher le raisonnement';
 
   @override
   String get timeByCategoryChartTitle => 'Temps par catégorie';
@@ -4766,6 +4791,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Délier la tâche';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    return '${elapsed}ms, $count résultats';
+  }
 
   @override
   String get viewMenuTitle => 'Affichage';

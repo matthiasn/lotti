@@ -32,6 +32,11 @@ mixin _$JournalPageState {
   bool get showCreationDate;
   bool get showDueDate;
   bool get showCoverArt;
+  SearchMode get searchMode;
+  bool get enableVectorSearch;
+  bool get vectorSearchInFlight;
+  Duration? get vectorSearchElapsed;
+  int get vectorSearchResultCount;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -76,33 +81,50 @@ mixin _$JournalPageState {
             (identical(other.showDueDate, showDueDate) ||
                 other.showDueDate == showDueDate) &&
             (identical(other.showCoverArt, showCoverArt) ||
-                other.showCoverArt == showCoverArt));
+                other.showCoverArt == showCoverArt) &&
+            (identical(other.searchMode, searchMode) ||
+                other.searchMode == searchMode) &&
+            (identical(other.enableVectorSearch, enableVectorSearch) ||
+                other.enableVectorSearch == enableVectorSearch) &&
+            (identical(other.vectorSearchInFlight, vectorSearchInFlight) ||
+                other.vectorSearchInFlight == vectorSearchInFlight) &&
+            (identical(other.vectorSearchElapsed, vectorSearchElapsed) ||
+                other.vectorSearchElapsed == vectorSearchElapsed) &&
+            (identical(
+                    other.vectorSearchResultCount, vectorSearchResultCount) ||
+                other.vectorSearchResultCount == vectorSearchResultCount));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      match,
-      const DeepCollectionEquality().hash(tagIds),
-      const DeepCollectionEquality().hash(filters),
-      showPrivateEntries,
-      showTasks,
-      const DeepCollectionEquality().hash(selectedEntryTypes),
-      const DeepCollectionEquality().hash(fullTextMatches),
-      pagingController,
-      const DeepCollectionEquality().hash(taskStatuses),
-      const DeepCollectionEquality().hash(selectedTaskStatuses),
-      const DeepCollectionEquality().hash(selectedCategoryIds),
-      const DeepCollectionEquality().hash(selectedLabelIds),
-      const DeepCollectionEquality().hash(selectedPriorities),
-      sortOption,
-      showCreationDate,
-      showDueDate,
-      showCoverArt);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        match,
+        const DeepCollectionEquality().hash(tagIds),
+        const DeepCollectionEquality().hash(filters),
+        showPrivateEntries,
+        showTasks,
+        const DeepCollectionEquality().hash(selectedEntryTypes),
+        const DeepCollectionEquality().hash(fullTextMatches),
+        pagingController,
+        const DeepCollectionEquality().hash(taskStatuses),
+        const DeepCollectionEquality().hash(selectedTaskStatuses),
+        const DeepCollectionEquality().hash(selectedCategoryIds),
+        const DeepCollectionEquality().hash(selectedLabelIds),
+        const DeepCollectionEquality().hash(selectedPriorities),
+        sortOption,
+        showCreationDate,
+        showDueDate,
+        showCoverArt,
+        searchMode,
+        enableVectorSearch,
+        vectorSearchInFlight,
+        vectorSearchElapsed,
+        vectorSearchResultCount
+      ]);
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt, searchMode: $searchMode, enableVectorSearch: $enableVectorSearch, vectorSearchInFlight: $vectorSearchInFlight, vectorSearchElapsed: $vectorSearchElapsed, vectorSearchResultCount: $vectorSearchResultCount)';
   }
 }
 
@@ -130,7 +152,12 @@ abstract mixin class $JournalPageStateCopyWith<$Res> {
       TaskSortOption sortOption,
       bool showCreationDate,
       bool showDueDate,
-      bool showCoverArt});
+      bool showCoverArt,
+      SearchMode searchMode,
+      bool enableVectorSearch,
+      bool vectorSearchInFlight,
+      Duration? vectorSearchElapsed,
+      int vectorSearchResultCount});
 }
 
 /// @nodoc
@@ -163,6 +190,11 @@ class _$JournalPageStateCopyWithImpl<$Res>
     Object? showCreationDate = null,
     Object? showDueDate = null,
     Object? showCoverArt = null,
+    Object? searchMode = null,
+    Object? enableVectorSearch = null,
+    Object? vectorSearchInFlight = null,
+    Object? vectorSearchElapsed = freezed,
+    Object? vectorSearchResultCount = null,
   }) {
     return _then(_self.copyWith(
       match: null == match
@@ -233,6 +265,26 @@ class _$JournalPageStateCopyWithImpl<$Res>
           ? _self.showCoverArt
           : showCoverArt // ignore: cast_nullable_to_non_nullable
               as bool,
+      searchMode: null == searchMode
+          ? _self.searchMode
+          : searchMode // ignore: cast_nullable_to_non_nullable
+              as SearchMode,
+      enableVectorSearch: null == enableVectorSearch
+          ? _self.enableVectorSearch
+          : enableVectorSearch // ignore: cast_nullable_to_non_nullable
+              as bool,
+      vectorSearchInFlight: null == vectorSearchInFlight
+          ? _self.vectorSearchInFlight
+          : vectorSearchInFlight // ignore: cast_nullable_to_non_nullable
+              as bool,
+      vectorSearchElapsed: freezed == vectorSearchElapsed
+          ? _self.vectorSearchElapsed
+          : vectorSearchElapsed // ignore: cast_nullable_to_non_nullable
+              as Duration?,
+      vectorSearchResultCount: null == vectorSearchResultCount
+          ? _self.vectorSearchResultCount
+          : vectorSearchResultCount // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -348,7 +400,12 @@ extension JournalPageStatePatterns on JournalPageState {
             TaskSortOption sortOption,
             bool showCreationDate,
             bool showDueDate,
-            bool showCoverArt)?
+            bool showCoverArt,
+            SearchMode searchMode,
+            bool enableVectorSearch,
+            bool vectorSearchInFlight,
+            Duration? vectorSearchElapsed,
+            int vectorSearchResultCount)?
         $default, {
     required TResult orElse(),
   }) {
@@ -372,7 +429,12 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.sortOption,
             _that.showCreationDate,
             _that.showDueDate,
-            _that.showCoverArt);
+            _that.showCoverArt,
+            _that.searchMode,
+            _that.enableVectorSearch,
+            _that.vectorSearchInFlight,
+            _that.vectorSearchElapsed,
+            _that.vectorSearchResultCount);
       case _:
         return orElse();
     }
@@ -411,7 +473,12 @@ extension JournalPageStatePatterns on JournalPageState {
             TaskSortOption sortOption,
             bool showCreationDate,
             bool showDueDate,
-            bool showCoverArt)
+            bool showCoverArt,
+            SearchMode searchMode,
+            bool enableVectorSearch,
+            bool vectorSearchInFlight,
+            Duration? vectorSearchElapsed,
+            int vectorSearchResultCount)
         $default,
   ) {
     final _that = this;
@@ -434,7 +501,12 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.sortOption,
             _that.showCreationDate,
             _that.showDueDate,
-            _that.showCoverArt);
+            _that.showCoverArt,
+            _that.searchMode,
+            _that.enableVectorSearch,
+            _that.vectorSearchInFlight,
+            _that.vectorSearchElapsed,
+            _that.vectorSearchResultCount);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -472,7 +544,12 @@ extension JournalPageStatePatterns on JournalPageState {
             TaskSortOption sortOption,
             bool showCreationDate,
             bool showDueDate,
-            bool showCoverArt)?
+            bool showCoverArt,
+            SearchMode searchMode,
+            bool enableVectorSearch,
+            bool vectorSearchInFlight,
+            Duration? vectorSearchElapsed,
+            int vectorSearchResultCount)?
         $default,
   ) {
     final _that = this;
@@ -495,7 +572,12 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.sortOption,
             _that.showCreationDate,
             _that.showDueDate,
-            _that.showCoverArt);
+            _that.showCoverArt,
+            _that.searchMode,
+            _that.enableVectorSearch,
+            _that.vectorSearchInFlight,
+            _that.vectorSearchElapsed,
+            _that.vectorSearchResultCount);
       case _:
         return null;
     }
@@ -523,7 +605,12 @@ class _JournalPageState implements JournalPageState {
       this.sortOption = TaskSortOption.byPriority,
       this.showCreationDate = false,
       this.showDueDate = true,
-      this.showCoverArt = true})
+      this.showCoverArt = true,
+      this.searchMode = SearchMode.fullText,
+      this.enableVectorSearch = false,
+      this.vectorSearchInFlight = false,
+      this.vectorSearchElapsed,
+      this.vectorSearchResultCount = 0})
       : _tagIds = tagIds,
         _filters = filters,
         _selectedEntryTypes = selectedEntryTypes,
@@ -643,6 +730,20 @@ class _JournalPageState implements JournalPageState {
   @override
   @JsonKey()
   final bool showCoverArt;
+  @override
+  @JsonKey()
+  final SearchMode searchMode;
+  @override
+  @JsonKey()
+  final bool enableVectorSearch;
+  @override
+  @JsonKey()
+  final bool vectorSearchInFlight;
+  @override
+  final Duration? vectorSearchElapsed;
+  @override
+  @JsonKey()
+  final int vectorSearchResultCount;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -687,33 +788,50 @@ class _JournalPageState implements JournalPageState {
             (identical(other.showDueDate, showDueDate) ||
                 other.showDueDate == showDueDate) &&
             (identical(other.showCoverArt, showCoverArt) ||
-                other.showCoverArt == showCoverArt));
+                other.showCoverArt == showCoverArt) &&
+            (identical(other.searchMode, searchMode) ||
+                other.searchMode == searchMode) &&
+            (identical(other.enableVectorSearch, enableVectorSearch) ||
+                other.enableVectorSearch == enableVectorSearch) &&
+            (identical(other.vectorSearchInFlight, vectorSearchInFlight) ||
+                other.vectorSearchInFlight == vectorSearchInFlight) &&
+            (identical(other.vectorSearchElapsed, vectorSearchElapsed) ||
+                other.vectorSearchElapsed == vectorSearchElapsed) &&
+            (identical(
+                    other.vectorSearchResultCount, vectorSearchResultCount) ||
+                other.vectorSearchResultCount == vectorSearchResultCount));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      match,
-      const DeepCollectionEquality().hash(_tagIds),
-      const DeepCollectionEquality().hash(_filters),
-      showPrivateEntries,
-      showTasks,
-      const DeepCollectionEquality().hash(_selectedEntryTypes),
-      const DeepCollectionEquality().hash(_fullTextMatches),
-      pagingController,
-      const DeepCollectionEquality().hash(_taskStatuses),
-      const DeepCollectionEquality().hash(_selectedTaskStatuses),
-      const DeepCollectionEquality().hash(_selectedCategoryIds),
-      const DeepCollectionEquality().hash(_selectedLabelIds),
-      const DeepCollectionEquality().hash(_selectedPriorities),
-      sortOption,
-      showCreationDate,
-      showDueDate,
-      showCoverArt);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        match,
+        const DeepCollectionEquality().hash(_tagIds),
+        const DeepCollectionEquality().hash(_filters),
+        showPrivateEntries,
+        showTasks,
+        const DeepCollectionEquality().hash(_selectedEntryTypes),
+        const DeepCollectionEquality().hash(_fullTextMatches),
+        pagingController,
+        const DeepCollectionEquality().hash(_taskStatuses),
+        const DeepCollectionEquality().hash(_selectedTaskStatuses),
+        const DeepCollectionEquality().hash(_selectedCategoryIds),
+        const DeepCollectionEquality().hash(_selectedLabelIds),
+        const DeepCollectionEquality().hash(_selectedPriorities),
+        sortOption,
+        showCreationDate,
+        showDueDate,
+        showCoverArt,
+        searchMode,
+        enableVectorSearch,
+        vectorSearchInFlight,
+        vectorSearchElapsed,
+        vectorSearchResultCount
+      ]);
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt, searchMode: $searchMode, enableVectorSearch: $enableVectorSearch, vectorSearchInFlight: $vectorSearchInFlight, vectorSearchElapsed: $vectorSearchElapsed, vectorSearchResultCount: $vectorSearchResultCount)';
   }
 }
 
@@ -743,7 +861,12 @@ abstract mixin class _$JournalPageStateCopyWith<$Res>
       TaskSortOption sortOption,
       bool showCreationDate,
       bool showDueDate,
-      bool showCoverArt});
+      bool showCoverArt,
+      SearchMode searchMode,
+      bool enableVectorSearch,
+      bool vectorSearchInFlight,
+      Duration? vectorSearchElapsed,
+      int vectorSearchResultCount});
 }
 
 /// @nodoc
@@ -776,6 +899,11 @@ class __$JournalPageStateCopyWithImpl<$Res>
     Object? showCreationDate = null,
     Object? showDueDate = null,
     Object? showCoverArt = null,
+    Object? searchMode = null,
+    Object? enableVectorSearch = null,
+    Object? vectorSearchInFlight = null,
+    Object? vectorSearchElapsed = freezed,
+    Object? vectorSearchResultCount = null,
   }) {
     return _then(_JournalPageState(
       match: null == match
@@ -846,6 +974,26 @@ class __$JournalPageStateCopyWithImpl<$Res>
           ? _self.showCoverArt
           : showCoverArt // ignore: cast_nullable_to_non_nullable
               as bool,
+      searchMode: null == searchMode
+          ? _self.searchMode
+          : searchMode // ignore: cast_nullable_to_non_nullable
+              as SearchMode,
+      enableVectorSearch: null == enableVectorSearch
+          ? _self.enableVectorSearch
+          : enableVectorSearch // ignore: cast_nullable_to_non_nullable
+              as bool,
+      vectorSearchInFlight: null == vectorSearchInFlight
+          ? _self.vectorSearchInFlight
+          : vectorSearchInFlight // ignore: cast_nullable_to_non_nullable
+              as bool,
+      vectorSearchElapsed: freezed == vectorSearchElapsed
+          ? _self.vectorSearchElapsed
+          : vectorSearchElapsed // ignore: cast_nullable_to_non_nullable
+              as Duration?,
+      vectorSearchResultCount: null == vectorSearchResultCount
+          ? _self.vectorSearchResultCount
+          : vectorSearchResultCount // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }

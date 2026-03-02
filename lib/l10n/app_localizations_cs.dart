@@ -470,11 +470,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'V této záložce nejsou žádné neutrální signály zpětné vazby';
 
   @override
-  String get agentRitualReviewNoPositiveSignals =>
-      'V této záložce nejsou žádné pozitivní signály zpětné vazby';
+  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
 
   @override
-  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
+  String get agentRitualReviewNoPositiveSignals =>
+      'V této záložce nejsou žádné pozitivní signály zpětné vazby';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitivní';
@@ -1835,6 +1835,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Vektorové vyhledávání';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Zobrazí přepínač vektorového vyhledávání na stránce úkolů. Vyžaduje povolené vektory a běžící Ollama.';
+
+  @override
   String get configFlagPrivate => 'Zobrazit soukromé záznamy?';
 
   @override
@@ -2817,11 +2824,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get logsSearchHint => 'Prohledat všechny logy...';
 
   @override
-  String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
+  String get maintenanceBackfillEmbeddings => 'Doplnit embeddings';
 
   @override
-  String get maintenanceDeleteAgentDbDescription =>
-      'Smazat databázi agentů a restartovat aplikaci';
+  String get maintenanceBackfillEmbeddingsConfirm => 'ANO, SPUSTIT';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Vygenerovat embeddings pro všechny záznamy v kategorii';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Vyberte kategorii pro vygenerování embeddings všech jejích záznamů.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    return '$processed / $total záznamů ($embedded vloženo)';
+  }
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'ANO, SMAZAT DATABÁZI';
@@ -3377,6 +3397,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get searchHint => 'Hledat...';
+
+  @override
+  String get searchModeFullText => 'Plný text';
+
+  @override
+  String get searchModeVector => 'Vektor';
 
   @override
   String get searchTasksHint => 'Hledat úkoly...';
@@ -4641,13 +4667,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get thinkingDisclosureHide => 'Skrýt úvahu';
 
   @override
-  String get thinkingDisclosureShow => 'Zobrazit úvahu';
-
-  @override
   String get thinkingDisclosureStateCollapsed => 'sbaleno';
 
   @override
   String get thinkingDisclosureStateExpanded => 'rozbaleno';
+
+  @override
+  String get thinkingDisclosureShow => 'Zobrazit úvahu';
 
   @override
   String get timeByCategoryChartTitle => 'Čas podle kategorie';
@@ -4664,6 +4690,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Zrušit propojení úkolu';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    return '${elapsed}ms, $count výsledků';
+  }
 
   @override
   String get viewMenuTitle => 'Zobrazit';

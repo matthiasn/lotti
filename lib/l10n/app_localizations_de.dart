@@ -476,11 +476,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine neutralen Feedback-Signale in diesem Tab';
 
   @override
-  String get agentRitualReviewNoPositiveSignals =>
-      'Keine positiven Feedback-Signale in diesem Tab';
+  String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
 
   @override
-  String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
+  String get agentRitualReviewNoPositiveSignals =>
+      'Keine positiven Feedback-Signale in diesem Tab';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positiv';
@@ -1852,6 +1852,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt hilfreiche Tooltips in der gesamten App an, um dich durch die Funktionen zu führen.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Vektorsuche';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Zeigt einen Vektorsuche-Umschalter auf der Aufgabenseite. Erfordert aktivierte Einbettungen und laufendes Ollama.';
+
+  @override
   String get configFlagPrivate => 'Private Einträge anzeigen?';
 
   @override
@@ -2849,11 +2856,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get logsSearchHint => 'Alle Logs durchsuchen...';
 
   @override
-  String get maintenanceDeleteAgentDb => 'Agenten-Datenbank löschen';
+  String get maintenanceBackfillEmbeddings => 'Embeddings nachgenerieren';
 
   @override
-  String get maintenanceDeleteAgentDbDescription =>
-      'Agenten-Datenbank löschen und App neu starten';
+  String get maintenanceBackfillEmbeddingsConfirm => 'JA, STARTEN';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Embeddings für alle Einträge einer Kategorie generieren';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Wähle eine Kategorie, um Embeddings für alle enthaltenen Einträge zu generieren.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    return '$processed / $total Einträge ($embedded eingebettet)';
+  }
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'JA, DATENBANK LÖSCHEN';
@@ -3412,6 +3432,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get searchHint => 'Suchen...';
+
+  @override
+  String get searchModeFullText => 'Volltext';
+
+  @override
+  String get searchModeVector => 'Vektor';
 
   @override
   String get searchTasksHint => 'Aufgaben suchen...';
@@ -4681,13 +4707,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get thinkingDisclosureHide => 'Begründung ausblenden';
 
   @override
-  String get thinkingDisclosureShow => 'Begründung anzeigen';
-
-  @override
   String get thinkingDisclosureStateCollapsed => 'eingeklappt';
 
   @override
   String get thinkingDisclosureStateExpanded => 'ausgeklappt';
+
+  @override
+  String get thinkingDisclosureShow => 'Begründung anzeigen';
 
   @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';
@@ -4704,6 +4730,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Verknüpfung aufheben';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    return '${elapsed}ms, $count Ergebnisse';
+  }
 
   @override
   String get viewMenuTitle => 'Ansicht';

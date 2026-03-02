@@ -28,6 +28,7 @@ class FakeJournalPageController extends JournalPageController {
   final List<bool> showCreationDateCalls = [];
   final List<Set<DisplayFilter>> filtersCalls = [];
   final List<String> searchStringCalls = [];
+  final List<SearchMode> searchModeCalls = [];
 
   int selectAllCategoriesCalled = 0;
   int clearSelectedLabelIdsCalled = 0;
@@ -136,6 +137,11 @@ class FakeJournalPageController extends JournalPageController {
 
   // Search methods
   @override
+  void setSearchMode(SearchMode mode) {
+    searchModeCalls.add(mode);
+  }
+
+  @override
   Future<void> setSearchString(String query) async {
     searchStringCalls.add(query);
   }
@@ -157,6 +163,7 @@ class FakeJournalPageController extends JournalPageController {
     showCreationDateCalls.clear();
     filtersCalls.clear();
     searchStringCalls.clear();
+    searchModeCalls.clear();
     selectAllCategoriesCalled = 0;
     clearSelectedLabelIdsCalled = 0;
     clearSelectedTaskStatusesCalled = 0;

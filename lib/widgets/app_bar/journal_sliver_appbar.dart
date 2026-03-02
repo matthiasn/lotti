@@ -45,9 +45,11 @@ class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
     final controller =
         ref.read(journalPageControllerProvider(showTasks).notifier);
 
+    final showVectorToggle = state.showTasks && state.enableVectorSearch;
+
     return SliverAppBar(
       pinned: true,
-      toolbarHeight: 100,
+      toolbarHeight: showVectorToggle ? 140 : 100,
       title: Column(
         children: [
           const SizedBox(height: 10),
@@ -74,10 +76,74 @@ class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
                 const JournalFilterIcon(),
             ],
           ),
-          // Moved TaskLabelQuickFilter out of the AppBar into its own sliver
-          // below the header to avoid clipping when chips wrap.
+          if (showVectorToggle) _SearchModeRow(state: state),
         ],
       ),
+    );
+  }
+}
+
+class _SearchModeRow extends ConsumerWidget {
+  const _SearchModeRow({required this.state});
+
+  final JournalPageState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final controller =
+        ref.read(journalPageControllerProvider(showTasks).notifier);
+
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingSmall,
+          ),
+          child: SegmentedButton<SearchMode>(
+            selected: {state.searchMode},
+            showSelectedIcon: false,
+            onSelectionChanged: (selected) {
+              controller.setSearchMode(selected.first);
+            },
+            segments: [
+              ButtonSegment<SearchMode>(
+                value: SearchMode.fullText,
+                label: Text(
+                  context.messages.searchModeFullText,
+                  style: context.textTheme.bodySmall,
+                ),
+                icon: const Icon(Icons.text_fields, size: 16),
+              ),
+              ButtonSegment<SearchMode>(
+                value: SearchMode.vector,
+                label: Text(
+                  context.messages.searchModeVector,
+                  style: context.textTheme.bodySmall,
+                ),
+                icon: const Icon(Icons.hub_outlined, size: 16),
+              ),
+            ],
+          ),
+        ),
+        if (state.vectorSearchInFlight)
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else if (state.searchMode == SearchMode.vector &&
+            state.vectorSearchElapsed != null)
+          Text(
+            context.messages.vectorSearchTiming(
+              state.vectorSearchElapsed!.inMilliseconds,
+              state.vectorSearchResultCount,
+            ),
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+            ),
+          ),
+      ],
     );
   }
 }
