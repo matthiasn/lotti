@@ -10,11 +10,13 @@ import 'package:openai_dart/openai_dart.dart';
 /// Holds a pending directive proposal from the evolution agent.
 class PendingProposal {
   const PendingProposal({
-    required this.directives,
+    required this.generalDirective,
+    required this.reportDirective,
     required this.rationale,
   });
 
-  final String directives;
+  final String generalDirective;
+  final String reportDirective;
   final String rationale;
 }
 
@@ -38,10 +40,19 @@ class PendingNote {
 /// After each LLM turn, the strategy returns [ConversationAction.wait] to
 /// hand control back to the user for the next message.
 class EvolutionStrategy extends ConversationStrategy {
-  EvolutionStrategy({this.genUiBridge});
+  EvolutionStrategy({
+    this.genUiBridge,
+    this.currentGeneralDirective = '',
+    this.currentReportDirective = '',
+  });
 
   /// Optional GenUI bridge for handling `render_surface` tool calls.
   final GenUiBridge? genUiBridge;
+
+  /// Current directive values from the active template version, used to
+  /// show a before/after comparison in the proposal card.
+  final String currentGeneralDirective;
+  final String currentReportDirective;
 
   final List<PendingNote> _pendingNotes = [];
   PendingProposal? _latestProposal;
@@ -125,19 +136,21 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final directives = _readStringArg(args, 'directives');
+    final generalDirective = _readStringArg(args, 'general_directive');
+    final reportDirective = _readStringArg(args, 'report_directive');
     final rationale = _readStringArg(args, 'rationale');
 
-    if (directives.trim().isEmpty) {
+    if (generalDirective.trim().isEmpty && reportDirective.trim().isEmpty) {
       manager.addToolResponse(
         toolCallId: callId,
-        response: 'Error: directives cannot be empty.',
+        response: 'Error: at least one directive must be non-empty.',
       );
       return;
     }
 
     _latestProposal = PendingProposal(
-      directives: directives,
+      generalDirective: generalDirective,
+      reportDirective: reportDirective,
       rationale: rationale,
     );
 
@@ -150,8 +163,11 @@ class EvolutionStrategy extends ConversationStrategy {
           'surfaceId': 'proposal-${callId.hashCode.toRadixString(16)}',
           'rootType': 'EvolutionProposal',
           'data': {
-            'directives': directives,
+            'generalDirective': generalDirective,
+            'reportDirective': reportDirective,
             'rationale': rationale,
+            'currentGeneralDirective': currentGeneralDirective,
+            'currentReportDirective': currentReportDirective,
           },
         });
       } catch (_) {

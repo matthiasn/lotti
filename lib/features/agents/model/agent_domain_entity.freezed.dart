@@ -429,6 +429,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             VectorClock? vectorClock,
             String content,
+            String? tldr,
             double? confidence,
             Map<String, Object?> provenance,
             DateTime? deletedAt,
@@ -459,6 +460,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String authoredBy,
             DateTime createdAt,
             VectorClock? vectorClock,
+            String generalDirective,
+            String reportDirective,
             String? modelId,
             String? profileId,
             DateTime? deletedAt)?
@@ -609,6 +612,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.content,
+            _that.tldr,
             _that.confidence,
             _that.provenance,
             _that.deletedAt,
@@ -645,6 +649,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.authoredBy,
             _that.createdAt,
             _that.vectorClock,
+            _that.generalDirective,
+            _that.reportDirective,
             _that.modelId,
             _that.profileId,
             _that.deletedAt);
@@ -809,6 +815,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             VectorClock? vectorClock,
             String content,
+            String? tldr,
             double? confidence,
             Map<String, Object?> provenance,
             DateTime? deletedAt,
@@ -845,6 +852,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String authoredBy,
             DateTime createdAt,
             VectorClock? vectorClock,
+            String generalDirective,
+            String reportDirective,
             String? modelId,
             String? profileId,
             DateTime? deletedAt)
@@ -994,6 +1003,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.content,
+            _that.tldr,
             _that.confidence,
             _that.provenance,
             _that.deletedAt,
@@ -1030,6 +1040,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.authoredBy,
             _that.createdAt,
             _that.vectorClock,
+            _that.generalDirective,
+            _that.reportDirective,
             _that.modelId,
             _that.profileId,
             _that.deletedAt);
@@ -1193,6 +1205,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             VectorClock? vectorClock,
             String content,
+            String? tldr,
             double? confidence,
             Map<String, Object?> provenance,
             DateTime? deletedAt,
@@ -1223,6 +1236,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String authoredBy,
             DateTime createdAt,
             VectorClock? vectorClock,
+            String generalDirective,
+            String reportDirective,
             String? modelId,
             String? profileId,
             DateTime? deletedAt)?
@@ -1372,6 +1387,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.content,
+            _that.tldr,
             _that.confidence,
             _that.provenance,
             _that.deletedAt,
@@ -1408,6 +1424,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.authoredBy,
             _that.createdAt,
             _that.vectorClock,
+            _that.generalDirective,
+            _that.reportDirective,
             _that.modelId,
             _that.profileId,
             _that.deletedAt);
@@ -2446,6 +2464,7 @@ class AgentReportEntity implements AgentDomainEntity {
       required this.createdAt,
       required this.vectorClock,
       this.content = '',
+      this.tldr,
       this.confidence,
       final Map<String, Object?> provenance = const {},
       this.deletedAt,
@@ -2466,6 +2485,10 @@ class AgentReportEntity implements AgentDomainEntity {
   final VectorClock? vectorClock;
   @JsonKey()
   final String content;
+
+  /// Short summary, populated by `update_report(tldr:, content:)`.
+  /// Null for reports created before this field was added.
+  final String? tldr;
   final double? confidence;
   final Map<String, Object?> _provenance;
   @JsonKey()
@@ -2510,6 +2533,7 @@ class AgentReportEntity implements AgentDomainEntity {
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
             (identical(other.content, content) || other.content == content) &&
+            (identical(other.tldr, tldr) || other.tldr == tldr) &&
             (identical(other.confidence, confidence) ||
                 other.confidence == confidence) &&
             const DeepCollectionEquality()
@@ -2530,6 +2554,7 @@ class AgentReportEntity implements AgentDomainEntity {
       createdAt,
       vectorClock,
       content,
+      tldr,
       confidence,
       const DeepCollectionEquality().hash(_provenance),
       deletedAt,
@@ -2537,7 +2562,7 @@ class AgentReportEntity implements AgentDomainEntity {
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentReport(id: $id, agentId: $agentId, scope: $scope, createdAt: $createdAt, vectorClock: $vectorClock, content: $content, confidence: $confidence, provenance: $provenance, deletedAt: $deletedAt, threadId: $threadId)';
+    return 'AgentDomainEntity.agentReport(id: $id, agentId: $agentId, scope: $scope, createdAt: $createdAt, vectorClock: $vectorClock, content: $content, tldr: $tldr, confidence: $confidence, provenance: $provenance, deletedAt: $deletedAt, threadId: $threadId)';
   }
 }
 
@@ -2556,6 +2581,7 @@ abstract mixin class $AgentReportEntityCopyWith<$Res>
       DateTime createdAt,
       VectorClock? vectorClock,
       String content,
+      String? tldr,
       double? confidence,
       Map<String, Object?> provenance,
       DateTime? deletedAt,
@@ -2581,6 +2607,7 @@ class _$AgentReportEntityCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? vectorClock = freezed,
     Object? content = null,
+    Object? tldr = freezed,
     Object? confidence = freezed,
     Object? provenance = null,
     Object? deletedAt = freezed,
@@ -2611,6 +2638,10 @@ class _$AgentReportEntityCopyWithImpl<$Res>
           ? _self.content
           : content // ignore: cast_nullable_to_non_nullable
               as String,
+      tldr: freezed == tldr
+          ? _self.tldr
+          : tldr // ignore: cast_nullable_to_non_nullable
+              as String?,
       confidence: freezed == confidence
           ? _self.confidence
           : confidence // ignore: cast_nullable_to_non_nullable
@@ -2995,6 +3026,8 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
       required this.authoredBy,
       required this.createdAt,
       required this.vectorClock,
+      this.generalDirective = '',
+      this.reportDirective = '',
       this.modelId,
       this.profileId,
       this.deletedAt,
@@ -3014,6 +3047,14 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
   final DateTime createdAt;
   @override
   final VectorClock? vectorClock;
+
+  /// The agent's mission: persona, available tools, and overall objective.
+  @JsonKey()
+  final String generalDirective;
+
+  /// How the agent should structure its output report.
+  @JsonKey()
+  final String reportDirective;
 
   /// The model ID configured on the template when this version was created.
   final String? modelId;
@@ -3060,6 +3101,10 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
                 other.createdAt == createdAt) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
+            (identical(other.generalDirective, generalDirective) ||
+                other.generalDirective == generalDirective) &&
+            (identical(other.reportDirective, reportDirective) ||
+                other.reportDirective == reportDirective) &&
             (identical(other.modelId, modelId) || other.modelId == modelId) &&
             (identical(other.profileId, profileId) ||
                 other.profileId == profileId) &&
@@ -3079,13 +3124,15 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
       authoredBy,
       createdAt,
       vectorClock,
+      generalDirective,
+      reportDirective,
       modelId,
       profileId,
       deletedAt);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, modelId: $modelId, profileId: $profileId, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, generalDirective: $generalDirective, reportDirective: $reportDirective, modelId: $modelId, profileId: $profileId, deletedAt: $deletedAt)';
   }
 }
 
@@ -3106,6 +3153,8 @@ abstract mixin class $AgentTemplateVersionEntityCopyWith<$Res>
       String authoredBy,
       DateTime createdAt,
       VectorClock? vectorClock,
+      String generalDirective,
+      String reportDirective,
       String? modelId,
       String? profileId,
       DateTime? deletedAt});
@@ -3132,6 +3181,8 @@ class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
     Object? authoredBy = null,
     Object? createdAt = null,
     Object? vectorClock = freezed,
+    Object? generalDirective = null,
+    Object? reportDirective = null,
     Object? modelId = freezed,
     Object? profileId = freezed,
     Object? deletedAt = freezed,
@@ -3169,6 +3220,14 @@ class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
           ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
+      generalDirective: null == generalDirective
+          ? _self.generalDirective
+          : generalDirective // ignore: cast_nullable_to_non_nullable
+              as String,
+      reportDirective: null == reportDirective
+          ? _self.reportDirective
+          : reportDirective // ignore: cast_nullable_to_non_nullable
+              as String,
       modelId: freezed == modelId
           ? _self.modelId
           : modelId // ignore: cast_nullable_to_non_nullable

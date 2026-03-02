@@ -569,6 +569,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directive';
 
   @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Definiți personalitatea, instrumentele, obiectivele și stilul de interacțiune al agentului...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Directivă generală';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Definiți structura raportului, secțiunile necesare și regulile de formatare...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Directivă de raport';
+
+  @override
   String get agentTemplateDisplayNameLabel => 'Nume';
 
   @override

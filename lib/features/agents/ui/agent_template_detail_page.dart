@@ -48,7 +48,8 @@ class _AgentTemplateDetailPageState
     extends ConsumerState<AgentTemplateDetailPage>
     with TickerProviderStateMixin {
   late TextEditingController _nameController;
-  late TextEditingController _directivesController;
+  late TextEditingController _generalDirectiveController;
+  late TextEditingController _reportDirectiveController;
   String? _selectedModelId;
   String? _selectedProfileId;
   bool _didSeedControllers = false;
@@ -64,7 +65,8 @@ class _AgentTemplateDetailPageState
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _directivesController = TextEditingController();
+    _generalDirectiveController = TextEditingController();
+    _reportDirectiveController = TextEditingController();
     if (widget.isCreateMode) {
       _selectedModelId = 'models/gemini-3-flash-preview';
     } else {
@@ -83,7 +85,8 @@ class _AgentTemplateDetailPageState
   void dispose() {
     _tabController?.removeListener(_onTabChanged);
     _nameController.dispose();
-    _directivesController.dispose();
+    _generalDirectiveController.dispose();
+    _reportDirectiveController.dispose();
     _tabController?.dispose();
     super.dispose();
   }
@@ -142,12 +145,20 @@ class _AgentTemplateDetailPageState
       _selectedModelId = template.modelId;
       _selectedProfileId = template.profileId;
       if (activeVersion != null) {
-        _directivesController.text = activeVersion.directives;
+        _generalDirectiveController.text =
+            activeVersion.generalDirective.isNotEmpty
+                ? activeVersion.generalDirective
+                : activeVersion.directives;
+        _reportDirectiveController.text = activeVersion.reportDirective;
         _seededVersionId = activeVersion.id;
       }
       _didSeedControllers = true;
     } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
-      _directivesController.text = activeVersion.directives;
+      _generalDirectiveController.text =
+          activeVersion.generalDirective.isNotEmpty
+              ? activeVersion.generalDirective
+              : activeVersion.directives;
+      _reportDirectiveController.text = activeVersion.reportDirective;
       _seededVersionId = activeVersion.id;
     }
 
@@ -298,9 +309,17 @@ class _AgentTemplateDetailPageState
         ),
         const SizedBox(height: 16),
         LottiTextArea(
-          controller: _directivesController,
-          labelText: context.messages.agentTemplateDirectivesLabel,
-          hintText: context.messages.agentTemplateDirectivesHint,
+          controller: _generalDirectiveController,
+          labelText: context.messages.agentTemplateGeneralDirectiveLabel,
+          hintText: context.messages.agentTemplateGeneralDirectiveHint,
+          minLines: 4,
+          maxLines: 12,
+        ),
+        const SizedBox(height: 16),
+        LottiTextArea(
+          controller: _reportDirectiveController,
+          labelText: context.messages.agentTemplateReportDirectiveLabel,
+          hintText: context.messages.agentTemplateReportDirectiveHint,
           minLines: 4,
           maxLines: 12,
         ),
@@ -315,15 +334,18 @@ class _AgentTemplateDetailPageState
       final templateService = ref.read(agentTemplateServiceProvider);
       final name = _nameController.text.trim();
       final modelId = _selectedModelId ?? '';
-      final directives = _directivesController.text.trim();
+      final generalDirective = _generalDirectiveController.text.trim();
+      final reportDirective = _reportDirectiveController.text.trim();
 
       if (widget.isCreateMode) {
         await templateService.createTemplate(
           displayName: name,
           kind: AgentTemplateKind.taskAgent,
           modelId: modelId,
+          directives: '$generalDirective\n\n$reportDirective'.trim(),
           profileId: _selectedProfileId,
-          directives: directives,
+          generalDirective: generalDirective,
+          reportDirective: reportDirective,
           authoredBy: 'user',
         );
         if (!context.mounted) return;
@@ -347,7 +369,9 @@ class _AgentTemplateDetailPageState
         // Create a new directive version.
         await templateService.createVersion(
           templateId: widget.templateId!,
-          directives: directives,
+          directives: '$generalDirective\n\n$reportDirective'.trim(),
+          generalDirective: generalDirective,
+          reportDirective: reportDirective,
           authoredBy: 'user',
         );
         if (!context.mounted) return;
@@ -720,7 +744,10 @@ class _ReportsTabContent extends ConsumerWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: AgentReportSection(content: report.content),
+                  child: AgentReportSection(
+                    content: report.content,
+                    tldr: report.tldr,
+                  ),
                 ),
               ],
             );

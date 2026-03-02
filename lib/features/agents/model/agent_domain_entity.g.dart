@@ -220,6 +220,7 @@ AgentReportEntity _$AgentReportEntityFromJson(Map<String, dynamic> json) =>
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       content: json['content'] as String? ?? '',
+      tldr: json['tldr'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
       provenance: json['provenance'] as Map<String, dynamic>? ?? const {},
       deletedAt: json['deletedAt'] == null
@@ -237,6 +238,7 @@ Map<String, dynamic> _$AgentReportEntityToJson(AgentReportEntity instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
       'content': instance.content,
+      'tldr': instance.tldr,
       'confidence': instance.confidence,
       'provenance': instance.provenance,
       'deletedAt': instance.deletedAt?.toIso8601String(),
@@ -331,6 +333,8 @@ AgentTemplateVersionEntity _$AgentTemplateVersionEntityFromJson(
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      generalDirective: json['generalDirective'] as String? ?? '',
+      reportDirective: json['reportDirective'] as String? ?? '',
       modelId: json['modelId'] as String?,
       profileId: json['profileId'] as String?,
       deletedAt: json['deletedAt'] == null
@@ -350,6 +354,8 @@ Map<String, dynamic> _$AgentTemplateVersionEntityToJson(
       'authoredBy': instance.authoredBy,
       'createdAt': instance.createdAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
+      'generalDirective': instance.generalDirective,
+      'reportDirective': instance.reportDirective,
       'modelId': instance.modelId,
       'profileId': instance.profileId,
       'deletedAt': instance.deletedAt?.toIso8601String(),

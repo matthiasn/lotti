@@ -78,6 +78,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   }) = AgentMessagePayloadEntity;
 
   /// Immutable report snapshot.
+  ///
+  /// The [content] field holds the full markdown report body. The [tldr]
+  /// field is a short summary populated by newer agent versions via the
+  /// `update_report` tool. For older reports where [tldr] is null, the UI
+  /// extracts a synthetic TLDR from the first paragraph of [content].
   const factory AgentDomainEntity.agentReport({
     required String id,
     required String agentId,
@@ -85,6 +90,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime createdAt,
     required VectorClock? vectorClock,
     @Default('') String content,
+
+    /// Short summary, populated by `update_report(tldr:, content:)`.
+    /// Null for reports created before this field was added.
+    String? tldr,
     double? confidence,
     @Default({}) Map<String, Object?> provenance,
     DateTime? deletedAt,
@@ -127,6 +136,12 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// The [agentId] field stores the owning template's ID, grouping all
   /// versions under the same template. It does **not** reference an agent
   /// instance.
+  ///
+  /// The [directives] field is the legacy single-field directive text, kept
+  /// for backwards compatibility. New versions should populate
+  /// [generalDirective] (persona, tools, objectives) and [reportDirective]
+  /// (report structure, formatting) instead. The system prompt is built from
+  /// the new fields when they are non-empty, falling back to [directives].
   const factory AgentDomainEntity.agentTemplateVersion({
     required String id,
     required String agentId,
@@ -136,6 +151,12 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required String authoredBy,
     required DateTime createdAt,
     required VectorClock? vectorClock,
+
+    /// The agent's mission: persona, available tools, and overall objective.
+    @Default('') String generalDirective,
+
+    /// How the agent should structure its output report.
+    @Default('') String reportDirective,
 
     /// The model ID configured on the template when this version was created.
     String? modelId,

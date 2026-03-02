@@ -57,45 +57,142 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
-            'directives': 'Be concise and helpful.',
+            'generalDirective': 'Be concise and helpful.',
+            'reportDirective': 'Use bullet points.',
             'rationale': 'Users prefer brevity.',
           }),
         ),
       );
 
       expect(find.text('Be concise and helpful.'), findsOneWidget);
+      expect(find.text('Use bullet points.'), findsOneWidget);
       expect(find.text('Users prefer brevity.'), findsOneWidget);
     });
 
-    testWidgets('renders current directives when provided', (tester) async {
+    testWidgets('renders only general directive when report is empty',
+        (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
-            'directives': 'New directives',
+            'generalDirective': 'New general directive',
+            'reportDirective': '',
             'rationale': 'Better performance',
-            'currentDirectives': 'Old directives',
           }),
         ),
       );
 
-      expect(find.text('New directives'), findsOneWidget);
-      expect(find.text('Old directives'), findsOneWidget);
+      expect(find.text('New general directive'), findsOneWidget);
+      expect(find.text('Better performance'), findsOneWidget);
+      // Report directive section should be absent when empty.
+      expect(
+        find.textContaining('Report Directive'),
+        findsNothing,
+      );
     });
 
-    testWidgets('hides current directives section when empty', (tester) async {
+    testWidgets('hides directive sections when empty', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
-            'directives': 'New directives',
+            'generalDirective': '',
+            'reportDirective': '',
             'rationale': 'Rationale text',
           }),
         ),
       );
 
-      expect(find.text('New directives'), findsOneWidget);
       expect(find.text('Rationale text'), findsOneWidget);
-      // Current directives section label should be absent.
-      expect(find.text('Current Directives'), findsNothing);
+      // Both directive sections should be absent when empty.
+      expect(
+        find.textContaining('General Directive'),
+        findsNothing,
+      );
+      expect(
+        find.textContaining('Report Directive'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('renders current general and report directives when provided',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionProposalItem, {
+            'generalDirective': 'New general approach.',
+            'reportDirective': 'New report format.',
+            'rationale': 'Improvement rationale.',
+            'currentGeneralDirective': 'Old general approach.',
+            'currentReportDirective': 'Old report format.',
+          }),
+        ),
+      );
+
+      // Current directive sections should be present.
+      expect(
+        find.textContaining('Current Directives'),
+        findsNWidgets(2),
+      );
+      expect(
+        find.textContaining('General Directive'),
+        findsNWidgets(2),
+      );
+      expect(
+        find.textContaining('Report Directive'),
+        findsNWidgets(2),
+      );
+      expect(find.text('Old general approach.'), findsOneWidget);
+      expect(find.text('Old report format.'), findsOneWidget);
+      // Proposed directives should also be present.
+      expect(find.text('New general approach.'), findsOneWidget);
+      expect(find.text('New report format.'), findsOneWidget);
+    });
+
+    testWidgets('renders only current report directive when general is empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionProposalItem, {
+            'generalDirective': 'New general.',
+            'reportDirective': '',
+            'rationale': 'Rationale.',
+            'currentGeneralDirective': '',
+            'currentReportDirective': 'Old report only.',
+          }),
+        ),
+      );
+
+      // Only the report current directive should appear.
+      expect(find.text('Old report only.'), findsOneWidget);
+      expect(
+        find.textContaining('Current Directives'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders only report proposed directive when general is empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionProposalItem, {
+            'generalDirective': '',
+            'reportDirective': 'New report directive only.',
+            'rationale': 'Report-focused rationale.',
+          }),
+        ),
+      );
+
+      expect(find.text('New report directive only.'), findsOneWidget);
+      expect(find.text('Report-focused rationale.'), findsOneWidget);
+      // General directive section should be absent.
+      expect(
+        find.textContaining('General Directive'),
+        findsNothing,
+      );
+      // Proposed Report Directive section should be present.
+      expect(
+        find.textContaining('Proposed Directives'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('dispatches proposal_approved on approve tap', (tester) async {
@@ -107,7 +204,8 @@ void main() {
             builder: (context) {
               final itemContext = CatalogItemContext(
                 data: <String, Object?>{
-                  'directives': 'Test directives',
+                  'generalDirective': 'Test general directive',
+                  'reportDirective': 'Test report directive',
                   'rationale': 'Test rationale',
                 },
                 id: 'test-component',
@@ -147,7 +245,8 @@ void main() {
             builder: (context) {
               final itemContext = CatalogItemContext(
                 data: <String, Object?>{
-                  'directives': 'Test directives',
+                  'generalDirective': 'Test general directive',
+                  'reportDirective': 'Test report directive',
                   'rationale': 'Test rationale',
                 },
                 id: 'test-component',

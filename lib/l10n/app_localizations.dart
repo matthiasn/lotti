@@ -1110,6 +1110,30 @@ abstract class AppLocalizations {
   /// **'Directives'**
   String get agentTemplateDirectivesLabel;
 
+  /// Placeholder hint for the general directive text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the agent\'s personality, tools, objectives, and interaction style...'**
+  String get agentTemplateGeneralDirectiveHint;
+
+  /// Label for the general directive text field (persona, tools, objectives).
+  ///
+  /// In en, this message translates to:
+  /// **'General Directive'**
+  String get agentTemplateGeneralDirectiveLabel;
+
+  /// Placeholder hint for the report directive text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the report structure, required sections, and formatting rules...'**
+  String get agentTemplateReportDirectiveHint;
+
+  /// Label for the report directive text field (report formatting).
+  ///
+  /// In en, this message translates to:
+  /// **'Report Directive'**
+  String get agentTemplateReportDirectiveLabel;
+
   /// Label for the template display name input field.
   ///
   /// In en, this message translates to:

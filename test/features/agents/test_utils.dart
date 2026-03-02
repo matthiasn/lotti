@@ -146,6 +146,7 @@ AgentReportEntity makeTestReport({
   DateTime? createdAt,
   VectorClock? vectorClock,
   String content = '# Test Report\n\nEverything is fine.',
+  String? tldr,
   double? confidence,
 }) {
   return AgentDomainEntity.agentReport(
@@ -155,6 +156,7 @@ AgentReportEntity makeTestReport({
     createdAt: createdAt ?? kAgentTestDate,
     vectorClock: vectorClock,
     content: content,
+    tldr: tldr,
     confidence: confidence,
   ) as AgentReportEntity;
 }
@@ -211,6 +213,8 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
   int version = 1,
   AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
   String directives = 'You are a helpful agent.',
+  String generalDirective = '',
+  String reportDirective = '',
   String authoredBy = 'user',
   String? modelId,
   String? profileId,
@@ -223,6 +227,8 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
     version: version,
     status: status,
     directives: directives,
+    generalDirective: generalDirective,
+    reportDirective: reportDirective,
     authoredBy: authoredBy,
     modelId: modelId,
     profileId: profileId,

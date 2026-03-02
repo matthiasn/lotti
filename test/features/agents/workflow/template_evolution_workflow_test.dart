@@ -421,7 +421,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"New approach","rationale":"Data-driven"}',
+          arguments:
+              '{"general_directive":"New approach","report_directive":"","rationale":"Data-driven"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -443,7 +444,7 @@ void main() {
 
       final proposal = workflow.getCurrentProposal(sessionId: 'session-1');
       expect(proposal, isNotNull);
-      expect(proposal!.directives, 'New approach');
+      expect(proposal!.generalDirective, 'New approach');
       expect(proposal.rationale, 'Data-driven');
     });
 
@@ -486,7 +487,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"Proposal A","rationale":"Reason A"}',
+          arguments:
+              '{"general_directive":"Proposal A","report_directive":"","rationale":"Reason A"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [call1]);
@@ -516,7 +518,7 @@ void main() {
         modelId: 'model',
       );
 
-      expect(workflow.getCurrentProposal(sessionId: 's1')?.directives,
+      expect(workflow.getCurrentProposal(sessionId: 's1')?.generalDirective,
           'Proposal A');
       expect(workflow.getCurrentProposal(sessionId: 's2'), isNull);
     });
@@ -548,6 +550,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -569,7 +573,7 @@ void main() {
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
           arguments:
-              '{"directives":"Improved directives","rationale":"Based on data"}',
+              '{"general_directive":"Improved directives","report_directive":"","rationale":"Based on data"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -623,6 +627,9 @@ void main() {
         () => mockTemplateService.createVersion(
           templateId: kTestTemplateId,
           directives: 'Improved directives',
+          generalDirective: 'Improved directives',
+          // ignore: avoid_redundant_argument_values
+          reportDirective: '',
           authoredBy: 'evolution_agent',
         ),
       ).called(1);
@@ -696,6 +703,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenThrow(StateError('Template not found'));
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -708,7 +717,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"New text","rationale":"R"}',
+          arguments:
+              '{"general_directive":"New text","report_directive":"","rationale":"R"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -747,6 +757,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -761,7 +773,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"Updated directives","rationale":"R"}',
+          arguments:
+              '{"general_directive":"Updated directives","report_directive":"","rationale":"R"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -805,7 +818,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"New text","rationale":"Reason"}',
+          arguments:
+              '{"general_directive":"New text","report_directive":"","rationale":"Reason"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -1172,6 +1186,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => newVersion);
 
@@ -1203,7 +1219,7 @@ void main() {
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
           arguments:
-              '{"directives":"Better directives","rationale":"Evidence"}',
+              '{"general_directive":"Better directives","report_directive":"","rationale":"Evidence"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [proposalCall]);
@@ -1264,6 +1280,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).called(1);
 
@@ -1305,6 +1323,8 @@ void main() {
             templateId: any(named: 'templateId'),
             directives: any(named: 'directives'),
             authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
           ),
         ).thenAnswer((_) async {
           createCallCount++;
@@ -1335,7 +1355,7 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'propose_directives',
             arguments:
-                '{"directives":"Old proposal","rationale":"First attempt"}',
+                '{"general_directive":"Old proposal","report_directive":"","rationale":"First attempt"}',
           ),
         );
         manager.addAssistantMessage(toolCalls: [firstProposal]);
@@ -1375,7 +1395,7 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'propose_directives',
             arguments:
-                '{"directives":"New proposal","rationale":"Revised attempt"}',
+                '{"general_directive":"New proposal","report_directive":"","rationale":"Revised attempt"}',
           ),
         );
         manager.addAssistantMessage(toolCalls: [secondProposal]);
@@ -1414,6 +1434,8 @@ void main() {
             templateId: any(named: 'templateId'),
             directives: any(named: 'directives'),
             authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
           ),
         ).thenAnswer((_) async => newVersion);
         when(() => mockRepository.getEntity(any()))
@@ -1430,7 +1452,7 @@ void main() {
           function: ChatCompletionMessageFunctionCall(
             name: 'propose_directives',
             arguments:
-                '{"directives":"Good directives","rationale":"Evidence"}',
+                '{"general_directive":"Good directives","report_directive":"","rationale":"Evidence"}',
           ),
         );
         manager.addAssistantMessage(toolCalls: [proposalCall]);
@@ -1534,6 +1556,8 @@ void main() {
             templateId: any(named: 'templateId'),
             directives: any(named: 'directives'),
             authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
           ),
         ).thenAnswer((_) async => newVersion);
         when(() => mockRepository.getEntity(any()))
@@ -1549,7 +1573,8 @@ void main() {
           type: ChatCompletionMessageToolCallType.function,
           function: ChatCompletionMessageFunctionCall(
             name: 'propose_directives',
-            arguments: '{"directives":"Some directives","rationale":"Reason"}',
+            arguments:
+                '{"general_directive":"Some directives","report_directive":"","rationale":"Reason"}',
           ),
         );
         manager.addAssistantMessage(toolCalls: [proposalCall]);
@@ -1630,6 +1655,8 @@ void main() {
             templateId: any(named: 'templateId'),
             directives: any(named: 'directives'),
             authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
           ),
         ).called(1);
 
@@ -1853,6 +1880,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => newVersion);
       when(() => mockRepository.getEntity(any()))
@@ -1867,7 +1896,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"Improved","rationale":"Better"}',
+          arguments:
+              '{"general_directive":"Improved","report_directive":"","rationale":"Better"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [proposalCall]);
@@ -2131,6 +2161,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -2149,7 +2181,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"New directives","rationale":"R"}',
+          arguments:
+              '{"general_directive":"New directives","report_directive":"","rationale":"R"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -2188,6 +2221,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenThrow(StateError('DB error'));
 
@@ -2201,7 +2236,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"X","rationale":"R"}',
+          arguments:
+              '{"general_directive":"X","report_directive":"","rationale":"R"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -2245,6 +2281,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -2260,7 +2298,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'propose_directives',
-          arguments: '{"directives":"New directives","rationale":"R"}',
+          arguments:
+              '{"general_directive":"New directives","report_directive":"","rationale":"R"}',
         ),
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);

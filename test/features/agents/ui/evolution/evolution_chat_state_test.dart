@@ -443,7 +443,8 @@ void main() {
         final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
         const testProposal = PendingProposal(
-          directives: 'new directives',
+          generalDirective: 'new directives',
+          reportDirective: '',
           rationale: 'better performance',
         );
 
@@ -499,7 +500,8 @@ void main() {
         final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
         const testProposal = PendingProposal(
-          directives: 'new directives',
+          generalDirective: 'new directives',
+          reportDirective: '',
           rationale: 'better performance',
         );
         final approvedVersion = makeTestTemplateVersion(version: 2);
@@ -743,7 +745,8 @@ void main() {
         when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
             .thenReturn(
           const PendingProposal(
-            directives: 'new',
+            generalDirective: 'new',
+            reportDirective: '',
             rationale: 'better',
           ),
         );
@@ -788,7 +791,8 @@ void main() {
         when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
             .thenReturn(
           const PendingProposal(
-            directives: 'new',
+            generalDirective: 'new',
+            reportDirective: '',
             rationale: 'better',
           ),
         );

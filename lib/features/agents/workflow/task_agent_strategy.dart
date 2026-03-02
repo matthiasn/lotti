@@ -108,7 +108,8 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// the value it already has).
   final ResolveTaskMetadata? resolveTaskMetadata;
 
-  String? _reportMarkdown;
+  String? _reportContent;
+  String? _reportTldr;
   String? _finalResponse;
   final _observations = <String>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
@@ -221,7 +222,7 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   @override
   String? getContinuationPrompt(ConversationManager manager) {
-    if (_reportMarkdown != null) {
+    if (_reportContent != null) {
       // Report already submitted — no further turns needed.
       return null;
     }
@@ -247,7 +248,12 @@ class TaskAgentStrategy extends ConversationStrategy {
   ///
   /// Returns the markdown string, or empty string if the LLM never called
   /// `update_report`.
-  String extractReportContent() => _reportMarkdown ?? '';
+  String extractReportContent() => _reportContent ?? '';
+
+  /// Extracts the TLDR published via the `update_report` tool call.
+  ///
+  /// Returns `null` if the LLM did not provide a TLDR.
+  String? extractReportTldr() => _reportTldr;
 
   /// Returns observations accumulated from `record_observations` tool calls.
   ///
@@ -258,9 +264,11 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   // ── Internal handlers ──────────────────────────────────────────────────
 
-  /// Handles the `update_report` tool call by capturing the markdown content
-  /// and sending an acknowledgement back to the conversation.
-  /// Handles the `update_report` tool call.
+  /// Handles the `update_report` tool call by capturing the TLDR and content.
+  ///
+  /// Accepts both the new parameter names (`tldr`, `content`) and the legacy
+  /// `markdown` parameter for backwards compatibility. If both `content` and
+  /// `markdown` are provided, `content` takes precedence.
   ///
   /// If the LLM calls this more than once per wake, the last call wins — the
   /// previous content is silently replaced. This is by design: the agent
@@ -271,12 +279,23 @@ class TaskAgentStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    final markdown = args['markdown'];
-    if (markdown is String && markdown.trim().isNotEmpty) {
-      _reportMarkdown = markdown.trim();
+    // Accept `content` first, fall back to legacy `markdown`.
+    final contentArg = args['content'];
+    final markdownArg = args['markdown'];
+    final rawContent = (contentArg is String && contentArg.trim().isNotEmpty)
+        ? contentArg
+        : markdownArg;
+    final rawTldr = args['tldr'];
+
+    if (rawContent is String && rawContent.trim().isNotEmpty) {
+      _reportContent = rawContent.trim();
+      _reportTldr = (rawTldr is String && rawTldr.trim().isNotEmpty)
+          ? rawTldr.trim()
+          : null;
 
       developer.log(
-        'Report updated (${_reportMarkdown!.length} chars)',
+        'Report updated (${_reportContent!.length} chars, '
+        'tldr=${_reportTldr != null ? "${_reportTldr!.length} chars" : "none"})',
         name: 'TaskAgentStrategy',
       );
 
@@ -287,7 +306,8 @@ class TaskAgentStrategy extends ConversationStrategy {
 
       await _recordToolResultMessage(toolName: reportToolName);
     } else {
-      const errorMsg = 'Error: "markdown" must be a non-empty string.';
+      const errorMsg =
+          'Error: "content" (or "markdown") must be a non-empty string.';
       manager.addToolResponse(
         toolCallId: callId,
         response: errorMsg,

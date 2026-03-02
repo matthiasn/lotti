@@ -705,7 +705,8 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-report',
-            response: 'Error: "markdown" must be a non-empty string.',
+            response:
+                'Error: "content" (or "markdown") must be a non-empty string.',
           ),
         ).called(1);
       });
@@ -761,6 +762,59 @@ void main() {
 
       test('returns empty when update_report never called', () {
         expect(strategy.extractReportContent(), isEmpty);
+      });
+
+      test('captures tldr from update_report tool call', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report-tldr',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({
+                'content': '# Full Report\n\nDetailed analysis.',
+                'tldr': 'Brief summary of the report.',
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(
+          strategy.extractReportContent(),
+          '# Full Report\n\nDetailed analysis.',
+        );
+        expect(
+          strategy.extractReportTldr(),
+          'Brief summary of the report.',
+        );
+      });
+
+      test('returns null tldr when not provided', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-no-tldr',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({
+                'content': '# Report',
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportContent(), '# Report');
+        expect(strategy.extractReportTldr(), isNull);
       });
     });
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -242,7 +243,11 @@ class TemplateEvolutionWorkflow {
       final bridge = GenUiBridge(processor: processor);
       final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
-      final strategy = EvolutionStrategy(genUiBridge: bridge);
+      final strategy = EvolutionStrategy(
+        genUiBridge: bridge,
+        currentGeneralDirective: currentVersion.generalDirective,
+        currentReportDirective: currentVersion.reportDirective,
+      );
       final conversationId = conversationRepository.createConversation(
         systemMessage: ctx.systemPrompt,
       );
@@ -359,13 +364,18 @@ class TemplateEvolutionWorkflow {
     try {
       // Create the new template version (idempotent: reuse cached version if
       // the proposal directives haven't changed since the last attempt).
-      final newVersion = active.getCachedVersion(proposal.directives) ??
+      final cacheKey = jsonEncode({
+        'generalDirective': proposal.generalDirective,
+        'reportDirective': proposal.reportDirective,
+      });
+      final newVersion = active.getCachedVersion(cacheKey) ??
           await _createVersionIdempotent(
             svc: svc,
             templateId: active.templateId,
-            directives: proposal.directives,
+            generalDirective: proposal.generalDirective,
+            reportDirective: proposal.reportDirective,
           );
-      active.cacheVersion(newVersion, proposal.directives);
+      active.cacheVersion(newVersion, cacheKey);
 
       // Persist any pending notes. _persistNotes drains the list as it goes,
       // so retries only persist notes that weren't written yet, and new notes
@@ -553,12 +563,15 @@ class TemplateEvolutionWorkflow {
   Future<AgentTemplateVersionEntity> _createVersionIdempotent({
     required AgentTemplateService svc,
     required String templateId,
-    required String directives,
+    required String generalDirective,
+    required String reportDirective,
   }) async {
     try {
       return await svc.createVersion(
         templateId: templateId,
-        directives: directives,
+        directives: '$generalDirective\n\n$reportDirective'.trim(),
+        generalDirective: generalDirective,
+        reportDirective: reportDirective,
         authoredBy: AgentAuthors.evolutionAgent,
       );
     } catch (e) {
@@ -566,7 +579,8 @@ class TemplateEvolutionWorkflow {
       // (post-commit sync failure).
       final activeVersion = await svc.getActiveVersion(templateId);
       if (activeVersion != null &&
-          activeVersion.directives == directives &&
+          activeVersion.generalDirective == generalDirective &&
+          activeVersion.reportDirective == reportDirective &&
           activeVersion.authoredBy == AgentAuthors.evolutionAgent) {
         developer.log(
           'createVersion threw but version was persisted, recovering',

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.892] - 2026-03-02
+### Added
+- Split agent template directives into separate general directive (persona,
+  tools, objectives) and report directive (output structure, formatting) fields.
+  Existing templates are automatically seeded with purpose-built defaults.
+- Agent reports now support a structured TLDR field alongside the full report
+  content. The TLDR is always visible with the full report expandable below.
+- Template edit page shows two distinct text areas for general and report
+  directives instead of a single combined field.
+- Evolution proposals now present both directive fields independently with
+  separate diff views.
+
 ## [0.9.890] - 2026-03-01
 ### Added
 - Meta-improver agent: recursive self-improvement layer that evaluates and

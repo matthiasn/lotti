@@ -39,7 +39,8 @@ void main() {
       final toolCall = makeToolCall(
         name: 'propose_directives',
         args: {
-          'directives': 'Be helpful and empathetic.',
+          'general_directive': 'Be helpful and empathetic.',
+          'report_directive': '',
           'rationale': 'Added empathy based on user feedback.',
         },
       );
@@ -55,7 +56,7 @@ void main() {
       expect(action, ConversationAction.wait);
       expect(strategy.latestProposal, isNotNull);
       expect(
-        strategy.latestProposal!.directives,
+        strategy.latestProposal!.generalDirective,
         'Be helpful and empathetic.',
       );
       expect(
@@ -67,7 +68,11 @@ void main() {
     test('rejects empty directives', () async {
       final toolCall = makeToolCall(
         name: 'propose_directives',
-        args: {'directives': '  ', 'rationale': 'Whatever'},
+        args: {
+          'general_directive': '  ',
+          'report_directive': '',
+          'rationale': 'Whatever'
+        },
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
 
@@ -82,7 +87,11 @@ void main() {
     test('overwrites previous proposal', () async {
       final call1 = makeToolCall(
         name: 'propose_directives',
-        args: {'directives': 'First draft', 'rationale': 'v1'},
+        args: {
+          'general_directive': 'First draft',
+          'report_directive': '',
+          'rationale': 'v1'
+        },
       );
       manager.addAssistantMessage(toolCalls: [call1]);
       await strategy.processToolCalls(
@@ -90,12 +99,16 @@ void main() {
         manager: manager,
       );
 
-      expect(strategy.latestProposal!.directives, 'First draft');
+      expect(strategy.latestProposal!.generalDirective, 'First draft');
 
       final call2 = makeToolCall(
         id: 'call-2',
         name: 'propose_directives',
-        args: {'directives': 'Revised draft', 'rationale': 'v2'},
+        args: {
+          'general_directive': 'Revised draft',
+          'report_directive': '',
+          'rationale': 'v2'
+        },
       );
       manager.addAssistantMessage(toolCalls: [call2]);
       await strategy.processToolCalls(
@@ -103,13 +116,17 @@ void main() {
         manager: manager,
       );
 
-      expect(strategy.latestProposal!.directives, 'Revised draft');
+      expect(strategy.latestProposal!.generalDirective, 'Revised draft');
     });
 
     test('clearProposal removes latest proposal', () async {
       final toolCall = makeToolCall(
         name: 'propose_directives',
-        args: {'directives': 'Some text', 'rationale': 'Because'},
+        args: {
+          'general_directive': 'Some text',
+          'report_directive': '',
+          'rationale': 'Because'
+        },
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -283,7 +300,8 @@ void main() {
       final proposalCall = makeToolCall(
         name: 'propose_directives',
         args: {
-          'directives': 'New directives',
+          'general_directive': 'New directives',
+          'report_directive': '',
           'rationale': 'Based on feedback',
         },
       );
@@ -323,7 +341,8 @@ void main() {
       final toolCall = makeToolCall(
         name: 'propose_directives',
         args: {
-          'directives': 'Be concise and helpful.',
+          'general_directive': 'Be concise and helpful.',
+          'report_directive': '',
           'rationale': 'User feedback suggested brevity.',
         },
       );
@@ -344,7 +363,11 @@ void main() {
         () async {
       final toolCall = makeToolCall(
         name: 'propose_directives',
-        args: {'directives': '  ', 'rationale': 'Whatever'},
+        args: {
+          'general_directive': '  ',
+          'report_directive': '',
+          'rationale': 'Whatever'
+        },
       );
       bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
 
@@ -412,7 +435,8 @@ void main() {
         id: 'call-2',
         name: 'propose_directives',
         args: {
-          'directives': 'Be concise.',
+          'general_directive': 'Be concise.',
+          'report_directive': '',
           'rationale': 'Users prefer short answers.',
         },
       );
@@ -433,7 +457,7 @@ void main() {
       expect(surfaceIds.last, startsWith('proposal-'));
       expect(strategyWithBridge.latestProposal, isNotNull);
       expect(
-        strategyWithBridge.latestProposal!.directives,
+        strategyWithBridge.latestProposal!.generalDirective,
         'Be concise.',
       );
     });
@@ -490,7 +514,11 @@ void main() {
       // non-string values as empty rather than throwing a TypeError.
       final toolCall = makeToolCall(
         name: 'propose_directives',
-        args: {'directives': 42, 'rationale': true},
+        args: {
+          'general_directive': 42,
+          'report_directive': true,
+          'rationale': true
+        },
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
 

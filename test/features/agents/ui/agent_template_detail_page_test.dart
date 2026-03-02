@@ -262,7 +262,7 @@ void main() {
           ),
           activeVersion: makeTestTemplateVersion(
             agentId: templateId,
-            directives: 'Be helpful and kind.',
+            generalDirective: 'Be helpful and kind.',
           ),
         ),
       );
@@ -294,13 +294,35 @@ void main() {
 
       // Name field populated with template display name
       expect(find.text('Test Template'), findsOneWidget);
-      // Directives field populated with version directives
+      // General directive field falls back to legacy directives when empty.
       expect(find.text('You are a helpful agent.'), findsOneWidget);
       // Save-as-new-version button present
       expect(
         find.text(context.messages.agentTemplateSaveNewVersion),
         findsOneWidget,
       );
+    });
+
+    testWidgets('uses generalDirective over legacy directives when non-empty',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(
+          templateId: templateId,
+          activeVersion: makeTestTemplateVersion(
+            agentId: templateId,
+            directives: 'Legacy text',
+            generalDirective: 'Modern general directive',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should use the new field, not the legacy one.
+      expect(find.text('Modern general directive'), findsOneWidget);
+      expect(find.text('Legacy text'), findsNothing);
     });
 
     testWidgets('save calls updateTemplate and createVersion', (tester) async {
@@ -320,6 +342,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => makeTestTemplateVersion(version: 2));
 
@@ -348,6 +372,8 @@ void main() {
           templateId: templateId,
           directives: any(named: 'directives'),
           authoredBy: 'user',
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).called(1);
     });
@@ -1148,6 +1174,68 @@ void main() {
 
       // Each report renders inside a ModernBaseCard
       expect(find.byType(AgentReportSection), findsNWidgets(2));
+    });
+
+    testWidgets('Reports tab renders report with tldr field', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final report = makeTestReport(
+        id: 'r1',
+        agentId: 'agent-a',
+        content: '# Full Report\n\nDetailed analysis here.',
+        tldr: 'Brief summary of findings.',
+        createdAt: DateTime(2025, 6, 15, 10, 30),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => makeTestTemplate(
+                id: templateId,
+                agentId: templateId,
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[
+                makeTestTemplateVersion(agentId: templateId),
+              ],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            templateTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => <AgentTokenUsageSummary>[],
+            ),
+            templateInstanceTokenBreakdownProvider.overrideWith(
+              (ref, id) async => <InstanceTokenBreakdown>[],
+            ),
+            templateRecentReportsProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[report],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+
+      // TLDR text should be visible (always shown)
+      expect(find.textContaining('Brief summary'), findsOneWidget);
+      expect(find.byType(AgentReportSection), findsOneWidget);
     });
 
     testWidgets('Reports tab skips non-AgentReportEntity items',

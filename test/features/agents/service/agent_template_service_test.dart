@@ -232,6 +232,48 @@ void main() {
       // Remaining 3 are from createVersion (archive, new version, head).
       expect(captured, hasLength(4));
     });
+
+    test('preserves split directive fields on model change version', () async {
+      stubTemplateExists();
+      final activeVersion = makeTestTemplateVersion(
+        generalDirective: 'Be thorough.',
+        reportDirective: 'Use bullet points.',
+      );
+      final head = makeTestTemplateHead();
+      when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
+          .thenAnswer((_) async => activeVersion);
+      when(() => mockRepo.getTemplateHead(kTestTemplateId))
+          .thenAnswer((_) async => head);
+      when(() => mockRepo.getEntity(head.versionId))
+          .thenAnswer((_) async => activeVersion);
+      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
+          .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[activeVersion]);
+
+      await service.updateTemplate(
+        templateId: kTestTemplateId,
+        modelId: 'models/new-model',
+      );
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      // Find the newly created version (not the archived one).
+      final newVersion = captured
+          .whereType<AgentTemplateVersionEntity>()
+          .where(
+            (v) => v.status == AgentTemplateVersionStatus.active,
+          )
+          .first;
+      expect(newVersion.generalDirective, 'Be thorough.');
+      expect(newVersion.reportDirective, 'Use bullet points.');
+    });
   });
 
   group('createVersion', () {
@@ -900,6 +942,8 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(metaImproverTemplateId))
           .thenAnswer((_) async => null);
+      // seedDirectiveFields calls listTemplates after creating defaults.
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
@@ -959,6 +1003,7 @@ void main() {
           .thenAnswer((_) async => improver);
       when(() => mockRepo.getEntity(metaImproverTemplateId))
           .thenAnswer((_) async => metaImprover);
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
@@ -983,11 +1028,142 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(metaImproverTemplateId))
           .thenAnswer((_) async => metaImprover);
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
       // Laura + Improver: 2 * 3 entities = 6 upserts.
       verify(() => mockSync.upsertEntity(any())).called(6);
+    });
+  });
+
+  group('seedDirectiveFields', () {
+    test('seeds empty directive fields for task agent template', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-task',
+        agentId: 'tpl-task',
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: 'tpl-task',
+        directives: 'Legacy directives',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-task'))
+          .thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      expect(captured, hasLength(1));
+      final seeded = captured.first as AgentTemplateVersionEntity;
+      expect(seeded.generalDirective, isNotEmpty);
+      expect(seeded.reportDirective, isNotEmpty);
+      // Legacy field is preserved unchanged.
+      expect(seeded.directives, 'Legacy directives');
+    });
+
+    test('seeds empty directive fields for improver template', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-imp',
+        agentId: 'tpl-imp',
+        kind: AgentTemplateKind.templateImprover,
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: 'tpl-imp',
+        directives: 'Old improver directives',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-imp'))
+          .thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      expect(captured, hasLength(1));
+      final seeded = captured.first as AgentTemplateVersionEntity;
+      expect(seeded.generalDirective, isNotEmpty);
+      // Template improver has empty report directive.
+      expect(seeded.reportDirective, isEmpty);
+    });
+
+    test('skips versions that already have directive fields populated',
+        () async {
+      final template = makeTestTemplate(
+        id: 'tpl-seeded',
+        agentId: 'tpl-seeded',
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: 'tpl-seeded',
+        generalDirective: 'Already set',
+        reportDirective: 'Already set',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-seeded'))
+          .thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('skips templates without active version', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-no-ver',
+        agentId: 'tpl-no-ver',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-no-ver'))
+          .thenAnswer((_) async => null);
+
+      await service.seedDirectiveFields();
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('seeds multiple templates in a single pass', () async {
+      final taskTemplate = makeTestTemplate(
+        id: 'tpl-task',
+        agentId: 'tpl-task',
+      );
+      final improverTemplate = makeTestTemplate(
+        id: 'tpl-imp',
+        agentId: 'tpl-imp',
+        kind: AgentTemplateKind.templateImprover,
+      );
+      final taskVersion = makeTestTemplateVersion(
+        id: 'v-task',
+        agentId: 'tpl-task',
+      );
+      final improverVersion = makeTestTemplateVersion(
+        id: 'v-imp',
+        agentId: 'tpl-imp',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [taskTemplate, improverTemplate]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-task'))
+          .thenAnswer((_) async => taskVersion);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-imp'))
+          .thenAnswer((_) async => improverVersion);
+
+      await service.seedDirectiveFields();
+
+      verify(() => mockSync.upsertEntity(any())).called(2);
     });
   });
 

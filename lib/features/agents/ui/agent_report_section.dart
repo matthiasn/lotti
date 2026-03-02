@@ -14,10 +14,15 @@ import 'package:url_launcher/url_launcher.dart';
 class AgentReportSection extends StatefulWidget {
   const AgentReportSection({
     required this.content,
+    this.tldr,
     super.key,
   });
 
   final String content;
+
+  /// Optional pre-extracted TLDR. When provided, used directly instead of
+  /// parsing the TLDR from [content].
+  final String? tldr;
 
   @override
   State<AgentReportSection> createState() => _AgentReportSectionState();
@@ -58,9 +63,20 @@ class _AgentReportSectionState extends State<AgentReportSection>
 
   /// Extracts the TLDR section and remaining content from the report markdown.
   ///
-  /// Delegates to [parseReportContent] for TLDR extraction.
-  ({String tldr, String? additional}) _parseContent() =>
-      parseReportContent(widget.content);
+  /// When a pre-extracted [AgentReportSection.tldr] is available, uses it
+  /// directly and treats the full [AgentReportSection.content] as the
+  /// additional content. Otherwise falls back to [parseReportContent].
+  ({String tldr, String? additional}) _parseContent() {
+    final explicitTldr = widget.tldr;
+    if (explicitTldr != null && explicitTldr.isNotEmpty) {
+      final content = widget.content.trim();
+      return (
+        tldr: explicitTldr,
+        additional: content.isNotEmpty ? content : null,
+      );
+    }
+    return parseReportContent(widget.content);
+  }
 
   void _toggleExpanded() {
     setState(() {
@@ -82,7 +98,9 @@ class _AgentReportSectionState extends State<AgentReportSection>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.content.isEmpty) return const SizedBox.shrink();
+    final hasContent = widget.content.trim().isNotEmpty;
+    final hasTldr = widget.tldr?.trim().isNotEmpty ?? false;
+    if (!hasContent && !hasTldr) return const SizedBox.shrink();
 
     final parsed = _parseContent();
 

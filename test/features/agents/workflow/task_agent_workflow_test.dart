@@ -569,6 +569,109 @@ void main() {
         );
       });
 
+      test('system prompt uses split directives when generalDirective is set',
+          () async {
+        final splitVersion = makeTestTemplateVersion(
+          generalDirective: 'Be thorough and precise.',
+        );
+        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
+            .thenAnswer((_) async => splitVersion);
+
+        String? capturedSystemMessage;
+        final capturingRepo = _CapturingConversationRepository(
+          mockConversationManager,
+          onSystemMessage: (msg) => capturedSystemMessage = msg,
+        );
+        final capturingWorkflow = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: capturingRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+        );
+
+        await capturingWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(capturedSystemMessage, isNotNull);
+        // Core scaffold present.
+        expect(capturedSystemMessage, contains('You are a Task Agent'));
+        // General directive injected.
+        expect(
+          capturedSystemMessage,
+          contains('Be thorough and precise.'),
+        );
+        expect(
+          capturedSystemMessage,
+          contains('Your Personality & Directives'),
+        );
+        // Default report scaffold used when reportDirective is empty.
+        expect(capturedSystemMessage, contains('## Report'));
+        expect(capturedSystemMessage, isNot(contains('## Report Directive')));
+      });
+
+      test(
+          'system prompt uses custom report directive when reportDirective is set',
+          () async {
+        final splitVersion = makeTestTemplateVersion(
+          generalDirective: 'Be concise.',
+          reportDirective: 'Write reports in bullet points only.',
+        );
+        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
+            .thenAnswer((_) async => splitVersion);
+
+        String? capturedSystemMessage;
+        final capturingRepo = _CapturingConversationRepository(
+          mockConversationManager,
+          onSystemMessage: (msg) => capturedSystemMessage = msg,
+        );
+        final capturingWorkflow = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: capturingRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+        );
+
+        await capturingWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(capturedSystemMessage, isNotNull);
+        // Custom report directive replaces the default report section.
+        expect(
+          capturedSystemMessage,
+          contains('## Report Directive'),
+        );
+        expect(
+          capturedSystemMessage,
+          contains('Write reports in bullet points only.'),
+        );
+        // General directive present.
+        expect(capturedSystemMessage, contains('Be concise.'));
+        // Tool usage guidelines (trailing scaffold) still present.
+        expect(capturedSystemMessage, contains('## Tool Usage Guidelines'));
+      });
+
       test('records template provenance on wake run', () async {
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -1079,6 +1182,64 @@ void main() {
             )
             .toList();
         expect(heads, hasLength(1));
+      });
+
+      test('persists report with tldr when provided', () async {
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          if (strategy is TaskAgentStrategy) {
+            await strategy.processToolCalls(
+              toolCalls: [
+                ChatCompletionMessageToolCall(
+                  id: 'rpt-call',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: 'update_report',
+                    arguments: jsonEncode({
+                      'content': '# Detailed Report\nFull analysis.',
+                      'tldr': 'Brief summary.',
+                    }),
+                  ),
+                ),
+              ],
+              manager: mockConversationManager,
+            );
+          }
+          return null;
+        };
+
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final reports = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(agentReport: (_) => true) ?? false,
+            )
+            .toList();
+        expect(reports, hasLength(1));
+        final report = reports.first as AgentReportEntity;
+        expect(report.content, '# Detailed Report\nFull analysis.');
+        expect(report.tldr, 'Brief summary.');
       });
 
       test('persists thought message when LLM produces final text', () async {
