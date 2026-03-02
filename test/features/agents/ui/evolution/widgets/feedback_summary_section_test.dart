@@ -174,7 +174,8 @@ void main() {
         expect(find.text('Positive item'), findsWidgets);
       });
 
-      testWidgets('empty tab shows no-feedback message', (tester) async {
+      testWidgets('empty tab shows tab-specific empty-state message',
+          (tester) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -192,7 +193,27 @@ void main() {
 
         // Default tab (Negative) is empty — should show no-feedback message
         expect(
-          find.text(context.messages.agentRitualReviewNoFeedback),
+          find.text(context.messages.agentRitualReviewNoNegativeSignals),
+          findsOneWidget,
+        );
+
+        // Positive tab has content, so no empty-state message should render.
+        await tester.tap(
+          find.text(context.messages.agentRitualReviewPositiveSignals),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text(context.messages.agentRitualReviewNoPositiveSignals),
+          findsNothing,
+        );
+
+        // Neutral tab is empty.
+        await tester.tap(
+          find.text(context.messages.agentRitualReviewNeutralSignals),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text(context.messages.agentRitualReviewNoNeutralSignals),
           findsOneWidget,
         );
       });

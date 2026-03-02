@@ -924,11 +924,29 @@ abstract class AppLocalizations {
   /// **'No feedback signals in this window'**
   String get agentRitualReviewNoFeedback;
 
+  /// No description provided for @agentRitualReviewNoNegativeSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'No negative feedback signals in this tab'**
+  String get agentRitualReviewNoNegativeSignals;
+
+  /// No description provided for @agentRitualReviewNoNeutralSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'No neutral feedback signals in this tab'**
+  String get agentRitualReviewNoNeutralSignals;
+
   /// No description provided for @agentRitualReviewNoProposal.
   ///
   /// In en, this message translates to:
   /// **'No active proposal'**
   String get agentRitualReviewNoProposal;
+
+  /// No description provided for @agentRitualReviewNoPositiveSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'No positive feedback signals in this tab'**
+  String get agentRitualReviewNoPositiveSignals;
 
   /// No description provided for @agentRitualReviewPositiveSignals.
   ///
@@ -8394,6 +8412,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide reasoning'**
   String get thinkingDisclosureHide;
+
+  /// No description provided for @thinkingDisclosureStateCollapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'collapsed'**
+  String get thinkingDisclosureStateCollapsed;
+
+  /// No description provided for @thinkingDisclosureStateExpanded.
+  ///
+  /// In en, this message translates to:
+  /// **'expanded'**
+  String get thinkingDisclosureStateExpanded;
 
   /// No description provided for @thinkingDisclosureShow.
   ///

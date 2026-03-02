@@ -470,7 +470,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun signal de retour dans cette fenêtre';
 
   @override
+  String get agentRitualReviewNoNegativeSignals =>
+      'Aucun signal de retour négatif dans cet onglet';
+
+  @override
+  String get agentRitualReviewNoNeutralSignals =>
+      'Aucun signal de retour neutre dans cet onglet';
+
+  @override
   String get agentRitualReviewNoProposal => 'Pas de proposition active';
+
+  @override
+  String get agentRitualReviewNoPositiveSignals =>
+      'Aucun signal de retour positif dans cet onglet';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positif';
@@ -4719,6 +4731,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get thinkingDisclosureHide => 'Masquer le raisonnement';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'replié';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'déplié';
 
   @override
   String get thinkingDisclosureShow => 'Afficher le raisonnement';

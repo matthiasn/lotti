@@ -470,7 +470,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sin señales de retroalimentación en esta ventana';
 
   @override
+  String get agentRitualReviewNoNegativeSignals =>
+      'No hay señales de retroalimentación negativas en esta pestaña';
+
+  @override
+  String get agentRitualReviewNoNeutralSignals =>
+      'No hay señales de retroalimentación neutrales en esta pestaña';
+
+  @override
   String get agentRitualReviewNoProposal => 'Sin propuesta activa';
+
+  @override
+  String get agentRitualReviewNoPositiveSignals =>
+      'No hay señales de retroalimentación positivas en esta pestaña';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positivo';
@@ -4716,6 +4728,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get thinkingDisclosureHide => 'Ocultar razonamiento';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'contraído';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'expandido';
 
   @override
   String get thinkingDisclosureShow => 'Mostrar razonamiento';

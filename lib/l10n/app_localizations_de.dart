@@ -468,7 +468,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine Feedback-Signale in diesem Zeitfenster';
 
   @override
+  String get agentRitualReviewNoNegativeSignals =>
+      'Keine negativen Feedback-Signale in diesem Tab';
+
+  @override
+  String get agentRitualReviewNoNeutralSignals =>
+      'Keine neutralen Feedback-Signale in diesem Tab';
+
+  @override
   String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
+
+  @override
+  String get agentRitualReviewNoPositiveSignals =>
+      'Keine positiven Feedback-Signale in diesem Tab';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positiv';
@@ -4657,6 +4669,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get thinkingDisclosureHide => 'Begründung ausblenden';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'eingeklappt';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'ausgeklappt';
 
   @override
   String get thinkingDisclosureShow => 'Begründung anzeigen';

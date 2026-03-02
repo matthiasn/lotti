@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -797,6 +800,182 @@ void main() {
       );
 
       expect(find.text('Session 2 of 5'), findsOneWidget);
+    });
+  });
+
+  group('CategoryRatings', () {
+    testWidgets('returns shrink widget when categories are empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(categoryRatingsItem, {
+            'categories': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.star_outline), findsNothing);
+      expect(find.text('Approve & Save'), findsNothing);
+    });
+
+    testWidgets('submits selected category ratings as ratings_submitted event',
+        (tester) async {
+      final events = <UiEvent>[];
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              final itemContext = CatalogItemContext(
+                data: <String, Object?>{
+                  'categories': <Map<String, Object?>>[
+                    {'name': 'accuracy', 'label': 'Accuracy'},
+                    {'name': 'communication', 'label': 'Communication'},
+                  ],
+                },
+                id: 'ratings-component',
+                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                dispatchEvent: events.add,
+                buildContext: context,
+                dataContext: DataContext(DataModel(), '/'),
+                getComponent: (_) => null,
+                surfaceId: 'ratings-surface',
+              );
+              return categoryRatingsItem.widgetBuilder(itemContext);
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Accuracy'), findsOneWidget);
+      expect(find.text('Communication'), findsOneWidget);
+
+      final firstRow = find
+          .ancestor(
+            of: find.text('Accuracy'),
+            matching: find.byType(Row),
+          )
+          .first;
+      final secondRow = find
+          .ancestor(
+            of: find.text('Communication'),
+            matching: find.byType(Row),
+          )
+          .first;
+
+      await tester.tap(
+        find
+            .descendant(of: firstRow, matching: find.byType(GestureDetector))
+            .at(3),
+      );
+      await tester.pump();
+      await tester.tap(
+        find
+            .descendant(of: secondRow, matching: find.byType(GestureDetector))
+            .at(1),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.text('Accuracy'));
+      await tester.tap(find.text(context.messages.agentTemplateEvolveApprove));
+      await tester.pumpAndSettle();
+
+      expect(events, hasLength(1));
+      final event = events.first as UserActionEvent;
+      expect(event.name, 'ratings_submitted');
+      expect(event.surfaceId, 'ratings-surface');
+
+      final ratings =
+          jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+      expect(ratings, {'accuracy': 4, 'communication': 2});
+
+      // After submit, the approve button is replaced by confirmation text.
+      expect(
+          find.text(context.messages.agentTemplateEvolveApprove), findsNothing);
+      expect(find.text(context.messages.agentCategoryRatingsSubmit),
+          findsOneWidget);
+    });
+
+    testWidgets('disambiguates duplicate and empty category names on submit',
+        (tester) async {
+      final events = <UiEvent>[];
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              final itemContext = CatalogItemContext(
+                data: <String, Object?>{
+                  'categories': <Map<String, Object?>>[
+                    {'name': 'accuracy', 'label': 'Accuracy A'},
+                    {'name': 'accuracy', 'label': 'Accuracy B'},
+                    {'name': '', 'label': 'Unlabeled'},
+                  ],
+                },
+                id: 'ratings-component',
+                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                dispatchEvent: events.add,
+                buildContext: context,
+                dataContext: DataContext(DataModel(), '/'),
+                getComponent: (_) => null,
+                surfaceId: 'ratings-surface',
+              );
+              return categoryRatingsItem.widgetBuilder(itemContext);
+            },
+          ),
+        ),
+      );
+
+      final firstRow = find
+          .ancestor(
+            of: find.text('Accuracy A'),
+            matching: find.byType(Row),
+          )
+          .first;
+      final secondRow = find
+          .ancestor(
+            of: find.text('Accuracy B'),
+            matching: find.byType(Row),
+          )
+          .first;
+      final thirdRow = find
+          .ancestor(
+            of: find.text('Unlabeled'),
+            matching: find.byType(Row),
+          )
+          .first;
+
+      await tester.tap(
+        find
+            .descendant(of: firstRow, matching: find.byType(GestureDetector))
+            .first,
+      );
+      await tester.pump();
+      await tester.tap(
+        find
+            .descendant(of: secondRow, matching: find.byType(GestureDetector))
+            .at(4),
+      );
+      await tester.pump();
+      await tester.tap(
+        find
+            .descendant(of: thirdRow, matching: find.byType(GestureDetector))
+            .at(2),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.text('Accuracy A'));
+      await tester.tap(find.text(context.messages.agentTemplateEvolveApprove));
+      await tester.pumpAndSettle();
+
+      final event = events.single as UserActionEvent;
+      final ratings =
+          jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+      expect(ratings, {
+        'accuracy': 1,
+        'accuracy_1': 5,
+        'category_2': 3,
+      });
     });
   });
 }

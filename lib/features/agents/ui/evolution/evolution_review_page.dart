@@ -33,12 +33,6 @@ class EvolutionReviewPage extends ConsumerWidget {
     final feedbackAsync = ref.watch(ritualFeedbackProvider(templateId));
     final pendingAsync = ref.watch(pendingRitualReviewProvider(templateId));
 
-    // Determine whether we have a pending session for the FAB.
-    final hasPendingSession = pendingAsync.whenOrNull(
-          data: (entity) => entity is EvolutionSessionEntity,
-        ) ??
-        false;
-
     return Scaffold(
       backgroundColor: GameyColors.surfaceDarkLow,
       appBar: AppBar(
@@ -52,23 +46,21 @@ class EvolutionReviewPage extends ConsumerWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      floatingActionButton: hasPendingSession
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => EvolutionChatPage(
-                    templateId: templateId,
-                  ),
-                ),
-              ),
-              backgroundColor: GameyColors.primaryPurple,
-              icon: const Icon(Icons.chat, color: Colors.white),
-              label: Text(
-                context.messages.agentRitualReviewAction,
-                style: const TextStyle(color: Colors.white),
-              ),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => EvolutionChatPage(
+              templateId: templateId,
+            ),
+          ),
+        ),
+        backgroundColor: GameyColors.primaryPurple,
+        icon: const Icon(Icons.chat, color: Colors.white),
+        label: Text(
+          context.messages.agentRitualReviewAction,
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -95,12 +96,21 @@ class _TemplateSelectionPage extends StatelessWidget {
               color: context.colorScheme.primary,
             ),
             title: Text(template.displayName),
-            subtitle: Text(template.kind.name),
+            subtitle: Text(_templateKindLabel(context, template.kind)),
             onTap: () => onTemplateSelected(template),
           );
         }).toList(),
       ),
     );
+  }
+
+  String _templateKindLabel(BuildContext context, AgentTemplateKind kind) {
+    return switch (kind) {
+      AgentTemplateKind.taskAgent =>
+        context.messages.agentTemplateKindTaskAgent,
+      AgentTemplateKind.templateImprover =>
+        context.messages.agentTemplateKindImprover,
+    };
   }
 }
 

@@ -1,3 +1,4 @@
+//ignore_for_file: avoid_redundant_argument_values
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -393,8 +394,8 @@ void main() {
       );
 
       expect(result.items, hasLength(1));
-      // Truncated to 200 chars + "…"
-      expect(result.items.first.detail.length, 201);
+      // Truncated to maxLength (including ellipsis).
+      expect(result.items.first.detail.length, 200);
       expect(result.items.first.detail, endsWith('…'));
     });
 
@@ -540,6 +541,107 @@ void main() {
         result.items.first.detail,
         'confirmed: Added label "urgent" to task #42',
       );
+    });
+
+    test(
+        'uses change-set item summary when decision humanSummary '
+        'is missing', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        changeSetId: 'cs-summary',
+        humanSummary: null,
+        itemIndex: 0,
+        toolName: 'fallback_tool',
+      );
+      stubDecisions([decision]);
+      when(() => mockRepo.getEntity('cs-summary')).thenAnswer(
+        (_) async => makeTestChangeSet(id: 'cs-summary'),
+      );
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, 'confirmed: Set estimate to 2 hours');
+    });
+
+    test(
+        'falls back to toolName and includes rejection reason '
+        'when no summary exists', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        verdict: ChangeDecisionVerdict.rejected,
+        humanSummary: null,
+        changeSetId: 'cs-missing',
+        toolName: 'update_title',
+        rejectionReason: 'unsafe change',
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(
+        result.items.first.detail,
+        'rejected: update_title — unsafe change',
+      );
+    });
+
+    test('continues when change-set fetch fails for a decision', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        humanSummary: null,
+        changeSetId: 'cs-fail',
+        toolName: 'safe_fallback_tool',
+      );
+      stubDecisions([decision]);
+      when(() => mockRepo.getEntity('cs-fail')).thenThrow(Exception('db down'));
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, contains('safe_fallback_tool'));
+    });
+
+    test('continues when observation payload fetch fails', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-fail',
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-fail'))
+          .thenThrow(Exception('payload read failed'));
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, 'Observation recorded');
+      expect(result.items.first.sentiment, FeedbackSentiment.neutral);
     });
 
     test('classifies high wake run rating as positive', () async {

@@ -557,6 +557,65 @@ void main() {
       });
     });
 
+    group('GenUI ratings actions', () {
+      test('ratings_submitted callback formats ratings and sends message',
+          () async {
+        final processor = A2uiMessageProcessor(
+          catalogs: [buildEvolutionCatalog()],
+        );
+        final bridge = GenUiBridge(processor: processor);
+        final eventHandler = GenUiEventHandler(processor: processor)..listen();
+
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Let us rate categories.');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(genUiBridge: bridge),
+            modelId: 'model-1',
+            processor: processor,
+            genUiBridge: bridge,
+            eventHandler: eventHandler,
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.sendMessage(
+            sessionId: 'session-1',
+            userMessage: 'My category ratings: accuracy: 4/5, tooling: 2/5',
+          ),
+        ).thenAnswer((_) async => 'Thanks, I will draft a proposal.');
+        when(() => mockWorkflow.getSession('session-1')).thenReturn(null);
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        eventHandler.onRatingsSubmitted?.call('surface-1', {
+          'accuracy': 4,
+          'tooling': 2,
+        });
+
+        await Future<void>.value();
+
+        verify(
+          () => mockWorkflow.sendMessage(
+            sessionId: 'session-1',
+            userMessage: 'My category ratings: accuracy: 4/5, tooling: 2/5',
+          ),
+        ).called(1);
+      });
+    });
+
     group('sendMessage - edge cases', () {
       test('does nothing when isWaiting is already true', () async {
         when(() => mockWorkflow.startSession(templateId: kTestTemplateId))

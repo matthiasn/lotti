@@ -159,19 +159,19 @@ Add to all 5 arb files (`app_en.arb`, `app_de.arb`, `app_es.arb`, `app_fr.arb`, 
 #### `evolution_context_builder.dart` — `_buildSystemPrompt()`
 
 **Remove**:
-```
+```text
 - NEVER end a turn without having called `propose_directives` at least once in
   the session, unless you are responding to a rejection with a refined proposal.
 ```
 
 And the line:
-```
+```text
 - **propose_directives**: ... You MUST call this tool in your first response.
 ```
 
 **Replace with two-phase instructions**:
 
-```
+```text
 ## Workflow — Two Phases
 
 ### Phase 1: Insights & Category Ratings
@@ -194,13 +194,13 @@ After receiving the user's category ratings:
 #### `_buildUserMessage()` — closing line
 
 **Replace**:
-```
+```text
 Review this data, record any evolution notes, and then propose improved
 directives using the `propose_directives` tool.
 ```
 
 **With**:
-```
+```text
 Review this data and share your insights about what's working and what isn't.
 Record any evolution notes, then ask me for category ratings before proposing
 directive changes.

@@ -817,6 +817,70 @@ void main() {
       expect(result!.directives, 'Updated directives');
       expect(workflow.activeSessions, isEmpty);
     });
+
+    test('returns success when stale-session cleanup throws during approval',
+        () async {
+      final newVersion = makeTestTemplateVersion(
+        id: 'new-ver',
+        version: 2,
+        directives: 'Updated directives',
+      );
+
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockRepository.getEntity(any()))
+          .thenAnswer((_) async => makeTestEvolutionSession());
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenThrow(StateError('cleanup failed'));
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Updated directives","report_directive":"","rationale":"R"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveProposal(sessionId: 'session-1');
+
+      expect(result, isNotNull);
+      expect(result!.id, 'new-ver');
+      expect(workflow.activeSessions, isEmpty);
+    });
   });
 
   group('rejectProposal', () {

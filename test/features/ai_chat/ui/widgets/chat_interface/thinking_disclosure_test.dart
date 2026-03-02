@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -22,12 +23,26 @@ void main() {
 
     // Initially shows "Show reasoning"
     expect(find.text(messages.thinkingDisclosureShow), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        '${messages.thinkingDisclosureShow}, '
+        '${messages.thinkingDisclosureStateCollapsed}',
+      ),
+      findsOneWidget,
+    );
 
     // Tap to expand
     await tester.tap(find.text(messages.thinkingDisclosureShow));
     await tester.pumpAndSettle();
 
     expect(find.text(messages.thinkingDisclosureHide), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        '${messages.thinkingDisclosureHide}, '
+        '${messages.thinkingDisclosureStateExpanded}',
+      ),
+      findsOneWidget,
+    );
     // The content should become visible (rendered by GptMarkdown)
     expect(find.textContaining('internal plan'), findsOneWidget);
   });
@@ -49,14 +64,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(messages.thinkingDisclosureHide), findsOneWidget);
 
+    // Trigger keyboard shortcut callbacks directly to validate both bindings.
+    final shortcuts = tester.widget<CallbackShortcuts>(
+      find.byType(CallbackShortcuts),
+    );
+    shortcuts.bindings[const SingleActivator(LogicalKeyboardKey.enter)]!.call();
+    await tester.pump();
+    expect(find.text(messages.thinkingDisclosureShow), findsOneWidget);
+    shortcuts.bindings[const SingleActivator(LogicalKeyboardKey.space)]!.call();
+    await tester.pump();
+    expect(find.text(messages.thinkingDisclosureHide), findsOneWidget);
+
     // Use copy action while expanded
-    await tester.pumpAndSettle();
-    // Tap the actual IconButton inside the tooltip
     final copyButton = find.descendant(
       of: find.byTooltip(messages.thinkingDisclosureCopy),
       matching: find.byType(IconButton),
     );
     await tester.tap(copyButton);
     await tester.pump();
+    expect(find.text(messages.thinkingDisclosureCopied), findsOneWidget);
   });
 }

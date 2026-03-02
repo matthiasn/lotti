@@ -178,12 +178,37 @@ void main() {
       );
     });
 
-    testWidgets('FAB is absent when there is no active session',
-        (tester) async {
+    testWidgets('FAB appears when there is no active session', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'ignores non-session pending entities for FAB and proposal card',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: (ref, id) async => makeTestTemplate(
+            id: 'not-a-session',
+            agentId: id,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(
+        find.text(context.messages.agentRitualReviewProposalSection),
+        findsNothing,
+      );
     });
 
     testWidgets(

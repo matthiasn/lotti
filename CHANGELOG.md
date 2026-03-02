@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Default inference profile" for clarity.
 - Delete action moved from bottom bar to Stats tab to reduce clutter.
 
+### Fixed
+- Evolution 1-on-1 review flow: restored the chat entry FAB so the interactive
+  conversation can always be opened from the review page.
+
 ## [0.9.893] - 2026-03-02
 ### Added
 - Voice transcription in evolution chat: mic button with batch and realtime

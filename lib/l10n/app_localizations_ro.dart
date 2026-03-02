@@ -470,7 +470,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun semnal de feedback în această fereastră';
 
   @override
+  String get agentRitualReviewNoNegativeSignals =>
+      'Niciun semnal de feedback negativ în această filă';
+
+  @override
+  String get agentRitualReviewNoNeutralSignals =>
+      'Niciun semnal de feedback neutru în această filă';
+
+  @override
   String get agentRitualReviewNoProposal => 'Nicio propunere activă';
+
+  @override
+  String get agentRitualReviewNoPositiveSignals =>
+      'Niciun semnal de feedback pozitiv în această filă';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitiv';
@@ -4654,6 +4666,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get thinkingDisclosureHide => 'Ascunde raționamentul';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'restrâns';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'extins';
 
   @override
   String get thinkingDisclosureShow => 'Afișează raționamentul';

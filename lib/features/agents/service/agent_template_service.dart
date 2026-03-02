@@ -63,6 +63,7 @@ const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
 const improverTemplateId = 'template-improver-001';
 const metaImproverTemplateId = 'template-meta-improver-001';
+const kDefaultAgentTemplateModelId = 'models/gemini-3-flash-preview';
 
 /// High-level service for agent template management.
 ///
@@ -682,7 +683,7 @@ class AgentTemplateService {
         templateId: lauraTemplateId,
         displayName: 'Laura',
         kind: AgentTemplateKind.taskAgent,
-        modelId: 'models/gemini-3-flash-preview',
+        modelId: kDefaultAgentTemplateModelId,
         directives: 'You are Laura, a diligent task management agent. '
             'You help users organize, prioritize, and complete their tasks '
             'efficiently. You write clear, actionable reports.',
@@ -697,7 +698,7 @@ class AgentTemplateService {
         templateId: tomTemplateId,
         displayName: 'Tom',
         kind: AgentTemplateKind.taskAgent,
-        modelId: 'models/gemini-3-flash-preview',
+        modelId: kDefaultAgentTemplateModelId,
         directives: 'You are Tom, a creative and analytical task agent. '
             'You help users think through problems, break down complex tasks, '
             'and find innovative solutions. You write insightful reports.',
@@ -712,7 +713,7 @@ class AgentTemplateService {
         templateId: improverTemplateId,
         displayName: 'Template Improver',
         kind: AgentTemplateKind.templateImprover,
-        modelId: 'models/gemini-3-flash-preview',
+        modelId: kDefaultAgentTemplateModelId,
         directives: 'You are a template improvement agent. You analyze '
             'feedback from agent instances, identify patterns in user '
             'decisions, and propose directive improvements during weekly '
@@ -727,7 +728,7 @@ class AgentTemplateService {
         templateId: metaImproverTemplateId,
         displayName: 'Meta Improver',
         kind: AgentTemplateKind.templateImprover,
-        modelId: 'models/gemini-3-flash-preview',
+        modelId: kDefaultAgentTemplateModelId,
         directives: 'You are a meta-improver agent. You evaluate and improve '
             'the template-improver agents themselves. Your focus is on:\n'
             '- Improver ritual effectiveness: Are the one-on-one sessions '

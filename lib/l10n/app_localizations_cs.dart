@@ -452,20 +452,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualReviewFeedbackTitle => 'Feedback Signals';
 
   @override
-  String get agentRitualReviewNegativeSignals => 'Negative';
+  String get agentRitualReviewNegativeSignals => 'Negativní';
 
   @override
-  String get agentRitualReviewNeutralSignals => 'Neutral';
+  String get agentRitualReviewNeutralSignals => 'Neutrální';
 
   @override
   String get agentRitualReviewNoFeedback =>
-      'No feedback signals in this window';
+      'V tomto okně nejsou žádné signály zpětné vazby';
 
   @override
-  String get agentRitualReviewNoProposal => 'No active proposal';
+  String get agentRitualReviewNoNegativeSignals =>
+      'V této záložce nejsou žádné negativní signály zpětné vazby';
 
   @override
-  String get agentRitualReviewPositiveSignals => 'Positive';
+  String get agentRitualReviewNoNeutralSignals =>
+      'V této záložce nejsou žádné neutrální signály zpětné vazby';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
+
+  @override
+  String get agentRitualReviewNoPositiveSignals =>
+      'V této záložce nejsou žádné pozitivní signály zpětné vazby';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Pozitivní';
 
   @override
   String get agentRitualReviewProposalSection => 'Current Proposal';
@@ -601,10 +613,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get agentTemplateKindImprover => 'Template Improver';
+  String get agentTemplateKindImprover => 'Zlepšovač šablon';
 
   @override
-  String get agentTemplateKindTaskAgent => 'Task Agent';
+  String get agentTemplateKindTaskAgent => 'Agent úkolů';
 
   @override
   String get agentTemplateMetricsActiveInstances => 'Active Instances';
@@ -4610,16 +4622,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskSummaries => 'Souhrny úkolů';
 
   @override
-  String get thinkingDisclosureCopied => 'Reasoning copied';
+  String get thinkingDisclosureCopied => 'Úvaha zkopírována';
 
   @override
-  String get thinkingDisclosureCopy => 'Copy reasoning';
+  String get thinkingDisclosureCopy => 'Kopírovat úvahu';
 
   @override
-  String get thinkingDisclosureHide => 'Hide reasoning';
+  String get thinkingDisclosureHide => 'Skrýt úvahu';
 
   @override
-  String get thinkingDisclosureShow => 'Show reasoning';
+  String get thinkingDisclosureStateCollapsed => 'sbaleno';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'rozbaleno';
+
+  @override
+  String get thinkingDisclosureShow => 'Zobrazit úvahu';
 
   @override
   String get timeByCategoryChartTitle => 'Čas podle kategorie';

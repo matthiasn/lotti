@@ -414,10 +414,20 @@ class TemplateEvolutionWorkflow {
       _cleanupSession(sessionId);
 
       // Abandon any other stale active sessions for this template.
-      await _abandonStaleActiveSessions(
-        templateId: active.templateId,
-        currentSessionId: sessionId,
-      );
+      try {
+        await _abandonStaleActiveSessions(
+          templateId: active.templateId,
+          currentSessionId: sessionId,
+        );
+      } catch (e, s) {
+        developer.log(
+          'Failed to auto-abandon stale sessions for template '
+          '${active.templateId}',
+          name: _logTag,
+          error: e,
+          stackTrace: s,
+        );
+      }
 
       _notifyUpdate(active.templateId);
 

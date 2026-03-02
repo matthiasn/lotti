@@ -73,6 +73,11 @@ class _SentimentTabViewState extends State<_SentimentTabView>
     final neutral = widget.feedback.neutral;
 
     final itemLists = [negative, positive, neutral];
+    final emptyMessages = [
+      messages.agentRitualReviewNoNegativeSignals,
+      messages.agentRitualReviewNoPositiveSignals,
+      messages.agentRitualReviewNoNeutralSignals,
+    ];
 
     return Column(
       children: [
@@ -104,6 +109,7 @@ class _SentimentTabViewState extends State<_SentimentTabView>
             // Use ValueKey so Flutter rebuilds the list when the tab changes.
             key: ValueKey(_tabController.index),
             items: itemLists[_tabController.index],
+            emptyMessage: emptyMessages[_tabController.index],
           ),
         ),
       ],
@@ -165,16 +171,21 @@ class _SentimentTab extends StatelessWidget {
 
 /// A bounded, scrollable list of feedback items for a single sentiment tab.
 class _SentimentItemList extends StatelessWidget {
-  const _SentimentItemList({required this.items, super.key});
+  const _SentimentItemList({
+    required this.items,
+    required this.emptyMessage,
+    super.key,
+  });
 
   final List<ClassifiedFeedbackItem> items;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return Center(
         child: Text(
-          context.messages.agentRitualReviewNoFeedback,
+          emptyMessage,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.4),
             fontSize: 13,

@@ -23,13 +23,17 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final messages = context.messages;
+    final toggleLabel =
+        _expanded ? messages.thinkingDisclosureHide : messages.thinkingDisclosureShow;
+    final stateLabel = _expanded
+        ? messages.thinkingDisclosureStateExpanded
+        : messages.thinkingDisclosureStateCollapsed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Semantics(
-          label:
-              '${messages.thinkingDisclosureShow}, ${_expanded ? "expanded" : "collapsed"}',
+          label: '$toggleLabel, $stateLabel',
           button: true,
           child: CallbackShortcuts(
             bindings: {
@@ -57,9 +61,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _expanded
-                          ? messages.thinkingDisclosureHide
-                          : messages.thinkingDisclosureShow,
+                      toggleLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

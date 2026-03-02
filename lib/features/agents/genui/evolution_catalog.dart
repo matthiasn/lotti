@@ -880,14 +880,41 @@ class _CategoryRatingsCard extends StatefulWidget {
 }
 
 class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
+  late final List<String> _categoryKeys;
   late final Map<String, int> _ratings;
   bool _submitted = false;
 
   @override
   void initState() {
     super.initState();
+    final rawNames = widget.categories
+        .map((cat) => _readString(cat, 'name').trim())
+        .toList(growable: false);
+
+    final seen = <String>{};
+    _categoryKeys = List<String>.generate(rawNames.length, (index) {
+      var key = rawNames[index];
+      if (key.isEmpty) {
+        key = 'category_$index';
+        debugPrint(
+          'CategoryRatings received empty category name at index $index; '
+          'using "$key".',
+        );
+      }
+      if (seen.contains(key)) {
+        final disambiguated = '${key}_$index';
+        debugPrint(
+          'CategoryRatings received duplicate category name "$key"; '
+          'using "$disambiguated".',
+        );
+        key = disambiguated;
+      }
+      seen.add(key);
+      return key;
+    });
+
     _ratings = {
-      for (final cat in widget.categories) _readString(cat, 'name'): 0,
+      for (final key in _categoryKeys) key: 0,
     };
   }
 
@@ -922,8 +949,10 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
               ],
             ),
             const SizedBox(height: 16),
-            ...widget.categories.map((cat) {
-              final name = _readString(cat, 'name');
+            ...widget.categories.asMap().entries.map((entry) {
+              final index = entry.key;
+              final cat = entry.value;
+              final name = _categoryKeys[index];
               final label = _readString(cat, 'label');
               final rating = _ratings[name] ?? 0;
 

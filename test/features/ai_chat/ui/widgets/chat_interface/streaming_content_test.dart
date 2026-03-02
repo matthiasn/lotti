@@ -44,7 +44,7 @@ void main() {
           theme: ThemeData(),
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 16));
 
       // One reasoning disclosure is rendered for the thinking segment
       expect(find.byType(ThinkingDisclosure), findsOneWidget);
@@ -63,7 +63,7 @@ void main() {
           theme: ThemeData(),
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 16));
 
       // For user messages, visible segments are wrapped in SelectionArea
       expect(find.byType(SelectionArea), findsWidgets);
@@ -81,7 +81,7 @@ void main() {
           theme: ThemeData(),
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 16));
 
       // No visible markdown segments; only the disclosure is present
       expect(find.byType(ThinkingDisclosure), findsOneWidget);
@@ -109,7 +109,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 16));
 
       // The visible portion should render as markdown and remain selectable
       expect(find.byType(SelectionArea), findsOneWidget);

@@ -361,7 +361,7 @@ class _AgentTemplateDetailPageState
         await templateService.createTemplate(
           displayName: name,
           kind: AgentTemplateKind.taskAgent,
-          modelId: 'models/gemini-3-flash-preview',
+          modelId: kDefaultAgentTemplateModelId,
           directives: '$generalDirective\n\n$reportDirective'.trim(),
           profileId: _selectedProfileId,
           generalDirective: generalDirective,
@@ -386,7 +386,7 @@ class _AgentTemplateDetailPageState
         await templateService.updateTemplate(
           templateId: widget.templateId!,
           displayName: name,
-          modelId: currentTemplate?.modelId ?? 'models/gemini-3-flash-preview',
+          modelId: currentTemplate?.modelId,
           profileId: _selectedProfileId,
           clearProfileId: _selectedProfileId == null,
         );
