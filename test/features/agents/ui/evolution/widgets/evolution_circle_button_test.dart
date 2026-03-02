@@ -47,7 +47,10 @@ void main() {
   testWidgets('does not invoke callback when onPressed is null',
       (tester) async {
     await tester.pumpWidget(buildSubject());
-    await tester.pumpAndSettle();
+    await tester.pump();
+
+    final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+    expect(iconButton.onPressed, isNull);
 
     // Tap should not throw — button is disabled
     await tester.tap(find.byIcon(Icons.mic));
@@ -57,10 +60,11 @@ void main() {
   testWidgets('shows active gradient when forceActive even without onPressed',
       (tester) async {
     await tester.pumpWidget(buildSubject(forceActive: true));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // The button should still render (visual test — mainly ensures no errors)
-    expect(find.byIcon(Icons.mic), findsOneWidget);
+    // forceActive makes icon white (active state) even without onPressed
+    final icon = tester.widget<Icon>(find.byIcon(Icons.mic));
+    expect(icon.color, Colors.white);
   });
 
   testWidgets('shows tooltip', (tester) async {

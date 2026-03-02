@@ -103,15 +103,19 @@ class _AgentReportSectionState extends State<AgentReportSection>
     TextStyle style,
   ) {
     final linkColor = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      onTap: () => _handleLinkTap(url, ''),
-      child: Text.rich(
-        TextSpan(
-          children: [text],
-          style: style.copyWith(
-            color: linkColor,
-            decoration: TextDecoration.underline,
-            decorationColor: linkColor,
+    return Semantics(
+      link: true,
+      child: InkWell(
+        onTap: () => _handleLinkTap(url, ''),
+        mouseCursor: SystemMouseCursors.click,
+        child: Text.rich(
+          TextSpan(
+            children: [text],
+            style: style.copyWith(
+              color: linkColor,
+              decoration: TextDecoration.underline,
+              decorationColor: linkColor,
+            ),
           ),
         ),
       ),

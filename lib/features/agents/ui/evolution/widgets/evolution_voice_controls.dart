@@ -20,6 +20,9 @@ class EvolutionVoiceControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch provider state so widget rebuilds as amplitudes change.
+    ref.watch(chatRecorderControllerProvider);
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): onCancel,
@@ -32,7 +35,7 @@ class EvolutionVoiceControls extends ConsumerWidget {
               child: WaveformBars(
                 key: const ValueKey('evolution_waveform'),
                 amplitudesNormalized: ref
-                    .watch(chatRecorderControllerProvider.notifier)
+                    .read(chatRecorderControllerProvider.notifier)
                     .getNormalizedAmplitudeHistory(),
               ),
             ),
