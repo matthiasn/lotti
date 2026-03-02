@@ -23,6 +23,7 @@ Catalog buildEvolutionCatalog() => Catalog(
         feedbackClassificationItem,
         feedbackCategoryBreakdownItem,
         sessionProgressItem,
+        categoryRatingsItem,
       ],
       catalogId: evolutionCatalogId,
     );
@@ -151,6 +152,22 @@ final _sessionProgressSchema = S.object(
     ),
   },
   required: ['sessionNumber', 'totalSessions', 'feedbackCount', 'status'],
+);
+
+final _categoryRatingsSchema = S.object(
+  properties: {
+    'categories': S.list(
+      items: S.object(
+        properties: {
+          'name': S.string(description: 'Category identifier (e.g., accuracy)'),
+          'label': S.string(description: 'Display label for the category'),
+        },
+        required: ['name', 'label'],
+      ),
+      description: 'Categories to rate',
+    ),
+  },
+  required: ['categories'],
 );
 
 // ── JSON Parsing Helpers ────────────────────────────────────────────────────
@@ -820,6 +837,163 @@ final sessionProgressItem = CatalogItem(
     );
   },
 );
+
+/// Interactive category ratings widget for Phase 1 of the two-phase dialog.
+final categoryRatingsItem = CatalogItem(
+  name: 'CategoryRatings',
+  dataSchema: _categoryRatingsSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final categories = _readMapList(json, 'categories');
+    if (categories.isEmpty) return const SizedBox.shrink();
+
+    return _CategoryRatingsCard(
+      categories: categories,
+      onSubmit: (ratings) {
+        final ratingsJson =
+            '{${ratings.entries.map((e) => '"${e.key}":${e.value}').join(',')}}';
+        itemContext.dispatchEvent(
+          UserActionEvent(
+            name: 'ratings_submitted',
+            sourceComponentId: ratingsJson,
+            surfaceId: itemContext.surfaceId,
+          ),
+        );
+      },
+    );
+  },
+);
+
+/// Stateful card that renders star ratings for each feedback category.
+class _CategoryRatingsCard extends StatefulWidget {
+  const _CategoryRatingsCard({
+    required this.categories,
+    required this.onSubmit,
+  });
+
+  final List<Map<String, Object?>> categories;
+  final void Function(Map<String, int> ratings) onSubmit;
+
+  @override
+  State<_CategoryRatingsCard> createState() => _CategoryRatingsCardState();
+}
+
+class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
+  late final Map<String, int> _ratings;
+  bool _submitted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ratings = {
+      for (final cat in widget.categories) _readString(cat, 'name'): 0,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(GameyColors.aiCyan),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.star_outline,
+                  size: 20,
+                  color: GameyColors.aiCyan,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  messages.agentCategoryRatingsTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...widget.categories.map((cat) {
+              final name = _readString(cat, 'name');
+              final label = _readString(cat, 'label');
+              final rating = _ratings[name] ?? 0;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ...List.generate(5, (i) {
+                      final starIndex = i + 1;
+                      return GestureDetector(
+                        onTap: _submitted
+                            ? null
+                            : () => setState(
+                                  () => _ratings[name] = starIndex,
+                                ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Icon(
+                            starIndex <= rating
+                                ? Icons.star
+                                : Icons.star_border,
+                            size: 24,
+                            color: starIndex <= rating
+                                ? GameyColors.primaryOrange
+                                : Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _submitted
+                  ? Text(
+                      messages.agentCategoryRatingsSubmit,
+                      style: TextStyle(
+                        color: GameyColors.primaryGreen.withValues(alpha: 0.8),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  : _approveButton(
+                      context: context,
+                      onPressed: () {
+                        setState(() => _submitted = true);
+                        widget.onSubmit(_ratings);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // ── Private helpers ─────────────────────────────────────────────────────────
 

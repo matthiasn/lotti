@@ -99,8 +99,7 @@ class _SentimentTabViewState extends State<_SentimentTabView>
             ),
           ],
         ),
-        SizedBox(
-          height: 350,
+        Expanded(
           child: _SentimentItemList(
             // Use ValueKey so Flutter rebuilds the list when the tab changes.
             key: ValueKey(_tabController.index),

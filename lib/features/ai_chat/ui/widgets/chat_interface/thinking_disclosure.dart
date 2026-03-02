@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/gamey/colors.dart';
 
 class ThinkingDisclosure extends StatefulWidget {
   const ThinkingDisclosure({
@@ -20,11 +22,14 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final messages = context.messages;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Semantics(
-          label: 'Reasoning section, ${_expanded ? "expanded" : "collapsed"}',
+          label:
+              '${messages.thinkingDisclosureShow}, ${_expanded ? "expanded" : "collapsed"}',
           button: true,
           child: CallbackShortcuts(
             bindings: {
@@ -51,10 +56,14 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(_expanded ? 'Hide reasoning' : 'Show reasoning',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        )),
+                    Text(
+                      _expanded
+                          ? messages.thinkingDisclosureHide
+                          : messages.thinkingDisclosureShow,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -69,11 +78,10 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color:
-                        theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    color: GameyColors.aiCyan.withValues(alpha: 0.15),
                   ),
                 ),
                 child: SelectionArea(
@@ -86,7 +94,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                 child: Material(
                   color: Colors.transparent,
                   child: Tooltip(
-                    message: 'Copy reasoning',
+                    message: messages.thinkingDisclosureCopy,
                     child: IconButton(
                       style: IconButton.styleFrom(
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -94,12 +102,14 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                       ),
                       icon: const Icon(Icons.copy, size: 16),
                       onPressed: () async {
-                        // Copying from the disclosure copies reasoning only; the main bubble copy strips thinking.
                         await Clipboard.setData(
-                            ClipboardData(text: widget.thinking));
+                          ClipboardData(text: widget.thinking),
+                        );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Reasoning copied')),
+                            SnackBar(
+                              content: Text(messages.thinkingDisclosureCopied),
+                            ),
                           );
                         }
                       },

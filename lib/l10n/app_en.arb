@@ -25,6 +25,8 @@
   "addToDictionarySuccess": "Term added to dictionary",
   "addToDictionaryTooLong": "Term too long (max 50 characters)",
   "agentActivityLogHeading": "Activity Log",
+  "agentCategoryRatingsSubmit": "Submit Ratings",
+  "agentCategoryRatingsTitle": "Rate Categories",
   "agentControlsActionError": "Action failed: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -232,7 +234,7 @@
   "agentRitualReviewPositiveSignals": "Positive",
   "agentRitualReviewProposalSection": "Current Proposal",
   "agentRitualReviewSessionHistory": "Session History",
-  "agentRitualReviewTitle": "Ritual Review",
+  "agentRitualReviewTitle": "1-on-1",
   "agentRunningIndicator": "Running",
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
@@ -297,22 +299,6 @@
   "@agentTemplateDirectivesLabel": {
     "description": "Label for the text field where the user writes agent directives."
   },
-  "agentTemplateGeneralDirectiveHint": "Define the agent's personality, tools, objectives, and interaction style...",
-  "@agentTemplateGeneralDirectiveHint": {
-    "description": "Placeholder hint for the general directive text field."
-  },
-  "agentTemplateGeneralDirectiveLabel": "General Directive",
-  "@agentTemplateGeneralDirectiveLabel": {
-    "description": "Label for the general directive text field (persona, tools, objectives)."
-  },
-  "agentTemplateReportDirectiveHint": "Define the report structure, required sections, and formatting rules...",
-  "@agentTemplateReportDirectiveHint": {
-    "description": "Placeholder hint for the report directive text field."
-  },
-  "agentTemplateReportDirectiveLabel": "Report Directive",
-  "@agentTemplateReportDirectiveLabel": {
-    "description": "Label for the report directive text field (report formatting)."
-  },
   "agentTemplateDisplayNameLabel": "Name",
   "@agentTemplateDisplayNameLabel": {
     "description": "Label for the template display name input field."
@@ -325,10 +311,6 @@
   "@agentTemplateEmptyList": {
     "description": "Placeholder shown when the template list is empty."
   },
-  "agentTemplateEvolveAction": "Evolve with AI",
-  "@agentTemplateEvolveAction": {
-    "description": "Button label to start AI-assisted template evolution."
-  },
   "agentTemplateEvolveApprove": "Approve & Save",
   "@agentTemplateEvolveApprove": {
     "description": "Button to accept and save proposed directive changes."
@@ -336,6 +318,14 @@
   "agentTemplateEvolveReject": "Reject",
   "@agentTemplateEvolveReject": {
     "description": "Button to reject the proposed directive changes."
+  },
+  "agentTemplateGeneralDirectiveHint": "Define the agent's personality, tools, objectives, and interaction style...",
+  "@agentTemplateGeneralDirectiveHint": {
+    "description": "Placeholder hint for the general directive text field."
+  },
+  "agentTemplateGeneralDirectiveLabel": "General Directive",
+  "@agentTemplateGeneralDirectiveLabel": {
+    "description": "Label for the general directive text field (persona, tools, objectives)."
   },
   "agentTemplateInstanceBreakdownHeading": "Per-Instance Breakdown",
   "@agentTemplateInstanceBreakdownHeading": {
@@ -400,6 +390,14 @@
   "agentTemplateNoVersions": "No versions",
   "@agentTemplateNoVersions": {
     "description": "Placeholder shown when a template has no version history."
+  },
+  "agentTemplateReportDirectiveHint": "Define the report structure, required sections, and formatting rules...",
+  "@agentTemplateReportDirectiveHint": {
+    "description": "Placeholder hint for the report directive text field."
+  },
+  "agentTemplateReportDirectiveLabel": "Report Directive",
+  "@agentTemplateReportDirectiveLabel": {
+    "description": "Label for the report directive text field (report formatting)."
   },
   "agentTemplateReportsEmpty": "No reports yet.",
   "agentTemplateReportsTab": "Reports",
@@ -2031,6 +2029,10 @@
   "taskStatusOpen": "Open",
   "taskStatusRejected": "Rejected",
   "taskSummaries": "Task Summaries",
+  "thinkingDisclosureCopied": "Reasoning copied",
+  "thinkingDisclosureCopy": "Copy reasoning",
+  "thinkingDisclosureHide": "Hide reasoning",
+  "thinkingDisclosureShow": "Show reasoning",
   "timeByCategoryChartTitle": "Time by Category",
   "timeByCategoryChartTotalLabel": "Total",
   "unlinkButton": "Unlink",

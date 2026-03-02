@@ -90,6 +90,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentActivityLogHeading => 'Registro de actividad';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Enviar calificaciones';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Calificar categorías';
+
+  @override
   String agentControlsActionError(String error) {
     return 'La acción falló: $error';
   }
@@ -473,7 +479,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Historial de sesiones';
 
   @override
-  String get agentRitualReviewTitle => 'Revisión de ritual';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'Ejecutando';
@@ -562,20 +568,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directivas';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Define la personalidad, herramientas, objetivos y estilo de interacción del agente...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'Directiva general';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Define la estructura del informe, secciones requeridas y reglas de formato...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Directiva de informe';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Nombre';
 
   @override
@@ -586,13 +578,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sin plantillas aún. Toca + para crear una.';
 
   @override
-  String get agentTemplateEvolveAction => 'Evolucionar con IA';
-
-  @override
   String get agentTemplateEvolveApprove => 'Aprobar y guardar';
 
   @override
   String get agentTemplateEvolveReject => 'Rechazar';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Define la personalidad, herramientas, objetivos y estilo de interacción del agente...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Directiva general';
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Desglose por instancia';
@@ -650,6 +646,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Sin versiones';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Define la estructura del informe, secciones requeridas y reglas de formato...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Directiva de informe';
 
   @override
   String get agentTemplateReportsEmpty => 'Aún no hay informes.';
@@ -4701,6 +4704,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Resúmenes de tareas';
+
+  @override
+  String get thinkingDisclosureCopied => 'Razonamiento copiado';
+
+  @override
+  String get thinkingDisclosureCopy => 'Copiar razonamiento';
+
+  @override
+  String get thinkingDisclosureHide => 'Ocultar razonamiento';
+
+  @override
+  String get thinkingDisclosureShow => 'Mostrar razonamiento';
 
   @override
   String get timeByCategoryChartTitle => 'Tiempo por categoría';

@@ -95,7 +95,7 @@ class _TemplateSelectionPage extends StatelessWidget {
               color: context.colorScheme.primary,
             ),
             title: Text(template.displayName),
-            subtitle: Text(template.modelId),
+            subtitle: Text(template.kind.name),
             onTap: () => onTemplateSelected(template),
           );
         }).toList(),

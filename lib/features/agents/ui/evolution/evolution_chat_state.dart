@@ -129,9 +129,15 @@ class EvolutionChatState extends _$EvolutionChatState {
       }
     };
 
+    // Wire up category ratings handler.
+    session.eventHandler?.onRatingsSubmitted = (surfaceId, ratings) {
+      _handleRatingsSubmitted(ratings);
+    };
+
     ref.onDispose(() {
-      // Remove GenUI event handler callback to avoid calling disposed notifier.
+      // Remove GenUI event handler callbacks to avoid calling disposed notifier.
       session.eventHandler?.onProposalAction = null;
+      session.eventHandler?.onRatingsSubmitted = null;
       // Abandon session on dispose if still active.
       if (workflow.getActiveSessionForTemplate(templateId) != null) {
         unawaited(
@@ -156,6 +162,16 @@ class EvolutionChatState extends _$EvolutionChatState {
       currentDirectives: currentDirectives,
       processor: processor,
     );
+  }
+
+  /// Handles the user submitting category ratings from the CategoryRatings
+  /// widget. Formats the ratings as a user message and sends it to the LLM
+  /// so it can proceed to Phase 2 (proposal).
+  void _handleRatingsSubmitted(Map<String, int> ratings) {
+    final formatted =
+        ratings.entries.map((e) => '${e.key}: ${e.value}/5').join(', ');
+    final message = 'My category ratings: $formatted';
+    sendMessage(message);
   }
 
   /// Send a user message and receive the assistant's response.

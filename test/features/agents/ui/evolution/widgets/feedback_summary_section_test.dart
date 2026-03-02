@@ -197,7 +197,7 @@ void main() {
         );
       });
 
-      testWidgets('tab content is bounded in a fixed-height container',
+      testWidgets('tab content fills available space via Expanded',
           (tester) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
@@ -214,10 +214,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // The item list is wrapped in a SizedBox with height 350
-        final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
-        final bounded = sizedBoxes.where((sb) => sb.height == 350);
-        expect(bounded, isNotEmpty);
+        // The item list is wrapped in an Expanded widget (not a
+        // fixed-height SizedBox) so it fills the remaining space.
+        final expandedWidgets =
+            tester.widgetList<Expanded>(find.byType(Expanded));
+        expect(expandedWidgets, isNotEmpty);
       });
     });
   });

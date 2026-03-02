@@ -8,12 +8,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
+import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
+import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -29,42 +33,20 @@ late MockNavService _mockNavService;
 
 final _testDate = DateTime(2024, 3, 15);
 
-final _testProvider = AiConfig.inferenceProvider(
-  id: 'prov-1',
-  baseUrl: 'https://example.com',
-  apiKey: 'key',
-  name: 'Test Provider',
+final _testProfile = AiConfig.inferenceProfile(
+  id: 'profile-1',
+  name: 'Test Profile',
+  thinkingModelId: 'models/test-thinking',
   createdAt: _testDate,
-  inferenceProviderType: InferenceProviderType.gemini,
 );
 
-final _testModel = AiConfig.model(
-  id: 'model-1',
-  name: 'Test Model',
-  providerModelId: 'models/test-model',
-  inferenceProviderId: 'prov-1',
-  createdAt: _testDate,
-  inputModalities: [Modality.text],
-  outputModalities: [Modality.text],
-  isReasoningModel: true,
-  supportsFunctionCalling: true,
-);
-
-/// Shared overrides for the AI config providers used by AgentModelSelector.
-List<Override> _aiConfigOverrides({
-  List<AiConfig> providers = const [],
-  List<AiConfig> models = const [],
+/// Shared overrides for the inference profile provider used by ProfileSelector.
+List<Override> _profileOverrides({
+  List<AiConfig> profiles = const [],
 }) =>
     [
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ).overrideWithBuild(
-        (ref, notifier) => Stream.value(providers),
-      ),
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.model,
-      ).overrideWithBuild(
-        (ref, notifier) => Stream.value(models),
+      inferenceProfileControllerProvider.overrideWithBuild(
+        (ref, notifier) => Stream.value(profiles),
       ),
     ];
 
@@ -78,6 +60,26 @@ List<Override> _templateStatsOverrides() => [
       ),
       templateRecentReportsProvider.overrideWith(
         (ref, id) async => <AgentDomainEntity>[],
+      ),
+      evolutionSessionsProvider.overrideWith(
+        (ref, id) async => <AgentDomainEntity>[],
+      ),
+      evolutionSessionStatsProvider.overrideWith(
+        (ref, id) async => const EvolutionSessionStats(
+          totalSessions: 0,
+          completedCount: 0,
+          abandonedCount: 0,
+          approvalRate: 0,
+        ),
+      ),
+      templateWakeRunTimeSeriesProvider.overrideWith(
+        (ref, id) async => const WakeRunTimeSeries(
+          dailyBuckets: [],
+          versionBuckets: [],
+        ),
+      ),
+      templateTaskResolutionTimeSeriesProvider.overrideWith(
+        (ref, id) async => const TaskResolutionTimeSeries(dailyBuckets: []),
       ),
     ];
 
@@ -100,8 +102,7 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   Widget buildCreateSubject({
-    List<AiConfig> providers = const [],
-    List<AiConfig> models = const [],
+    List<AiConfig> profiles = const [],
     List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
@@ -111,7 +112,7 @@ void main() {
         agentTemplatesProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
         ),
-        ..._aiConfigOverrides(providers: providers, models: models),
+        ..._profileOverrides(profiles: profiles),
         ...extraOverrides,
       ],
     );
@@ -124,8 +125,12 @@ void main() {
     List<AgentTemplateVersionEntity> versionHistory = const [],
     List<Override> extraOverrides = const [],
   }) {
-    final tpl =
-        template ?? makeTestTemplate(id: templateId, agentId: templateId);
+    final tpl = template ??
+        makeTestTemplate(
+          id: templateId,
+          agentId: templateId,
+          profileId: 'profile-1',
+        );
     final ver = activeVersion ?? makeTestTemplateVersion(agentId: templateId);
 
     return makeTestableWidgetNoScroll(
@@ -147,7 +152,7 @@ void main() {
           (ref) async => <AgentDomainEntity>[],
         ),
         ..._templateStatsOverrides(),
-        ..._aiConfigOverrides(),
+        ..._profileOverrides(),
         ...extraOverrides,
       ],
     );
@@ -171,29 +176,27 @@ void main() {
       );
     });
 
-    testWidgets('save is enabled with default model pre-selected',
-        (tester) async {
+    testWidgets('save is disabled without profile selection', (tester) async {
       await tester.pumpWidget(buildCreateSubject());
       await tester.pumpAndSettle();
 
-      // Enter a name — model is pre-selected to Gemini Flash
+      // Enter a name — but no profile selected
       final nameField = find.byType(TextField).first;
       await tester.enterText(nameField, 'My Template');
       await tester.pump();
 
-      // Create button should be enabled since model defaults to Flash
+      // Create button should be disabled since no profile is selected
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       final createButton = find.text(context.messages.createButton);
       expect(createButton, findsOneWidget);
 
-      // The button's ancestor FilledButton should have null onPressed
       final button = tester.widget<FilledButton>(
         find.ancestor(
           of: createButton,
           matching: find.byType(FilledButton),
         ),
       );
-      expect(button.onPressed, isNotNull);
+      expect(button.onPressed, isNull);
     });
 
     testWidgets('save calls createTemplate and pops', (tester) async {
@@ -204,13 +207,15 @@ void main() {
           modelId: any(named: 'modelId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          profileId: any(named: 'profileId'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => makeTestTemplate());
 
       await tester.pumpWidget(
         buildCreateSubject(
-          providers: [_testProvider],
-          models: [_testModel],
+          profiles: [_testProfile],
         ),
       );
       await tester.pumpAndSettle();
@@ -220,11 +225,11 @@ void main() {
       await tester.enterText(nameField, 'My Template');
       await tester.pump();
 
-      // Select a model via the model picker
-      final modelDropdowns = find.byIcon(Icons.arrow_drop_down);
-      await tester.tap(modelDropdowns.at(1));
+      // Select a profile via the profile picker
+      final profileDropdown = find.byIcon(Icons.arrow_drop_down);
+      await tester.tap(profileDropdown.first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Test Model'));
+      await tester.tap(find.text('Test Profile'));
       await tester.pumpAndSettle();
 
       // Tap create button
@@ -236,9 +241,12 @@ void main() {
         () => mockTemplateService.createTemplate(
           displayName: 'My Template',
           kind: AgentTemplateKind.taskAgent,
-          modelId: 'models/test-model',
+          modelId: 'models/gemini-3-flash-preview',
           directives: any(named: 'directives'),
           authoredBy: 'user',
+          profileId: 'profile-1',
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).called(1);
     });
@@ -258,7 +266,7 @@ void main() {
             id: templateId,
             agentId: templateId,
             displayName: 'Laura',
-            modelId: 'models/custom-model',
+            profileId: 'profile-1',
           ),
           activeVersion: makeTestTemplateVersion(
             agentId: templateId,
@@ -270,9 +278,6 @@ void main() {
 
       // Name field populated
       expect(find.text('Laura'), findsOneWidget);
-      // Model selector shows providerModelId as subtitle
-      // (model name won't resolve without matching AI config)
-      expect(find.text('models/custom-model'), findsOneWidget);
       // Directives populated
       expect(find.text('Be helpful and kind.'), findsOneWidget);
     });
@@ -404,6 +409,10 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
+      // Switch to Stats tab where version history now lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
       // Scroll to make version history visible
       await tester.scrollUntilVisible(
         find.text(context.messages.agentTemplateVersionHistoryTitle),
@@ -463,6 +472,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Switch to Stats tab where version history now lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
       // Scroll down to make the restore icon visible, then tap it
       await tester.scrollUntilVisible(
         find.byIcon(Icons.restore),
@@ -474,7 +489,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Confirm in dialog
-      final context = tester.element(find.byType(AgentTemplateDetailPage));
       await tester.tap(
         find.text(context.messages.agentTemplateRollbackAction).last,
       );
@@ -567,7 +581,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -595,7 +609,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -632,7 +646,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -727,6 +741,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Switch to Stats tab where version history now lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
       // Scroll to restore icon and tap
       await tester.scrollUntilVisible(
         find.byIcon(Icons.restore),
@@ -738,7 +758,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Confirm in dialog
-      final context = tester.element(find.byType(AgentTemplateDetailPage));
       await tester.tap(
         find.text(context.messages.agentTemplateRollbackAction).last,
       );
@@ -773,13 +792,17 @@ void main() {
               (ref) async => <AgentDomainEntity>[],
             ),
             ..._templateStatsOverrides(),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Switch to Stats tab where version history now lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
 
       // Scroll to version history section
       await tester.scrollUntilVisible(
@@ -822,7 +845,7 @@ void main() {
               (ref) async => <AgentDomainEntity>[],
             ),
             ..._templateStatsOverrides(),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -832,11 +855,19 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Scroll to version history section
+      // Switch to Stats tab where version history now lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Pump multiple frames to complete tab switch animation
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // Scroll to version history section using the last vertical Scrollable
+      // (the Stats tab's ListView, not the NestedScrollView or TabBarView)
       await tester.scrollUntilVisible(
         find.text(context.messages.agentTemplateVersionHistoryTitle),
         200,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: find.byType(Scrollable).last,
       );
       await tester.pump();
 
@@ -871,13 +902,17 @@ void main() {
               (ref) async => <AgentDomainEntity>[],
             ),
             ..._templateStatsOverrides(),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Switch to Stats tab where version history now lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
 
       // Scroll to version history section
       await tester.scrollUntilVisible(
@@ -914,8 +949,11 @@ void main() {
       final overrides = [
         agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         agentTemplateProvider.overrideWith(
-          (ref, id) async =>
-              makeTestTemplate(id: templateId, agentId: templateId),
+          (ref, id) async => makeTestTemplate(
+            id: templateId,
+            agentId: templateId,
+            profileId: 'profile-1',
+          ),
         ),
         activeTemplateVersionProvider.overrideWith(
           (ref, id) async => currentVersion,
@@ -935,7 +973,7 @@ void main() {
         templateRecentReportsProvider.overrideWith(
           (ref, id) async => <AgentDomainEntity>[],
         ),
-        ..._aiConfigOverrides(),
+        ..._profileOverrides(),
       ];
 
       final container = ProviderContainer(overrides: overrides);
@@ -976,7 +1014,7 @@ void main() {
       expect(find.text('Version 1 directives'), findsNothing);
     });
 
-    testWidgets('shows evolve action button in edit mode', (tester) async {
+    testWidgets('shows 1-on-1 review button in edit mode', (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
 
@@ -987,19 +1025,19 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Scroll to evolve button
+      // Scroll to 1-on-1 review button
       await tester.scrollUntilVisible(
-        find.text(context.messages.agentTemplateEvolveAction),
+        find.text(context.messages.agentRitualReviewTitle),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
 
       expect(
-        find.text(context.messages.agentTemplateEvolveAction),
+        find.text(context.messages.agentRitualReviewTitle),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(Icons.rate_review), findsOneWidget);
     });
 
     testWidgets('shows three tabs in edit mode', (tester) async {
@@ -1155,7 +1193,7 @@ void main() {
             templateRecentReportsProvider.overrideWith(
               (ref, id) async => <AgentDomainEntity>[report1, report2],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -1221,7 +1259,7 @@ void main() {
             templateRecentReportsProvider.overrideWith(
               (ref, id) async => <AgentDomainEntity>[report],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -1288,7 +1326,7 @@ void main() {
             templateRecentReportsProvider.overrideWith(
               (ref, id) async => <AgentDomainEntity>[report, nonReport],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -1345,7 +1383,7 @@ void main() {
             templateRecentReportsProvider.overrideWith(
               (ref, id) => Completer<List<AgentDomainEntity>>().future,
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -1403,7 +1441,7 @@ void main() {
                 StackTrace.current,
               ),
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -1486,7 +1524,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );
@@ -1516,7 +1554,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
-            ..._aiConfigOverrides(),
+            ..._profileOverrides(),
           ],
         ),
       );

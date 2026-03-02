@@ -19,6 +19,9 @@ class GenUiEventHandler {
   /// `proposal_rejected`.
   void Function(String surfaceId, String action)? onProposalAction;
 
+  /// Called when the user submits category ratings.
+  void Function(String surfaceId, Map<String, int> ratings)? onRatingsSubmitted;
+
   StreamSubscription<UserUiInteractionMessage>? _subscription;
 
   /// Start listening for surface events. Idempotent: cancels any existing
@@ -40,6 +43,19 @@ class GenUiEventHandler {
       final name = action.name;
       if (name == 'proposal_approved' || name == 'proposal_rejected') {
         onProposalAction?.call(action.surfaceId, name);
+      } else if (name == 'ratings_submitted') {
+        final ratingsJson = action.sourceComponentId;
+        try {
+          final decoded = jsonDecode(ratingsJson);
+          if (decoded is Map<String, dynamic>) {
+            final ratings = decoded.map(
+              (k, v) => MapEntry(k, v is num ? v.toInt() : 0),
+            );
+            onRatingsSubmitted?.call(action.surfaceId, ratings);
+          }
+        } catch (_) {
+          // Ignore malformed ratings JSON.
+        }
       }
     } catch (e, s) {
       developer.log(

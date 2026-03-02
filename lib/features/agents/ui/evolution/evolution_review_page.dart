@@ -69,102 +69,106 @@ class EvolutionReviewPage extends ConsumerWidget {
               ),
             )
           : null,
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        children: [
-          // Template name
-          Text(
-            templateName,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Template name
+            Text(
+              templateName,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Proposal summary card (if pending session has feedback summary)
-          pendingAsync.whenOrNull(
-                data: (entity) {
-                  final session =
-                      entity is EvolutionSessionEntity ? entity : null;
-                  if (session?.feedbackSummary == null) return null;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color:
-                              GameyColors.primaryPurple.withValues(alpha: 0.3),
+            // Proposal summary card (if pending session has feedback summary)
+            pendingAsync.whenOrNull(
+                  data: (entity) {
+                    final session =
+                        entity is EvolutionSessionEntity ? entity : null;
+                    if (session?.feedbackSummary == null) return null;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: GameyColors.primaryPurple
+                                .withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  size: 16,
+                                  color: GameyColors.primaryPurple,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  context.messages
+                                      .agentRitualReviewProposalSection,
+                                  style: TextStyle(
+                                    color: GameyColors.primaryPurple
+                                        .withValues(alpha: 0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              session!.feedbackSummary!,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 13,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome,
-                                size: 16,
-                                color: GameyColors.primaryPurple,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                context
-                                    .messages.agentRitualReviewProposalSection,
-                                style: TextStyle(
-                                  color: GameyColors.primaryPurple
-                                      .withValues(alpha: 0.8),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            session!.feedbackSummary!,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 13,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ) ??
-              const SizedBox.shrink(),
+                    );
+                  },
+                ) ??
+                const SizedBox.shrink(),
 
-          // Feedback Signals
-          _SectionHeader(
-            title: context.messages.agentRitualReviewFeedbackTitle,
-            icon: Icons.analytics_outlined,
-          ),
-          const SizedBox(height: 12),
-          feedbackAsync.when(
-            data: (feedback) {
-              if (feedback == null) {
-                return _EmptyState(
-                  text: context.messages.agentRitualReviewNoFeedback,
-                );
-              }
-              return FeedbackSummarySection(feedback: feedback);
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
+            // Feedback Signals
+            _SectionHeader(
+              title: context.messages.agentRitualReviewFeedbackTitle,
+              icon: Icons.analytics_outlined,
             ),
-            error: (_, __) => _EmptyState(
-              text: context.messages.commonError,
+            const SizedBox(height: 12),
+            Expanded(
+              child: feedbackAsync.when(
+                data: (feedback) {
+                  if (feedback == null) {
+                    return _EmptyState(
+                      text: context.messages.agentRitualReviewNoFeedback,
+                    );
+                  }
+                  return FeedbackSummarySection(feedback: feedback);
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, __) => _EmptyState(
+                  text: context.messages.commonError,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 80),
-        ],
+          ],
+        ),
       ),
     );
   }

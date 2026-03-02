@@ -4,10 +4,14 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/streaming_content.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
-  Widget wrap(Widget child, {ThemeData? theme}) => MaterialApp(
-        theme: theme ?? ThemeData.light(),
-        home: Scaffold(body: Center(child: child)),
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
+
+  Widget wrap(Widget child) => makeTestableWidgetWithScaffold(
+        Center(child: child),
       );
 
   group('StreamingContent', () {
@@ -20,6 +24,9 @@ void main() {
           theme: ThemeData(),
         ),
       ));
+      // Use pump() instead of pumpAndSettle() because
+      // CircularProgressIndicator animates indefinitely.
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Thinking...'), findsOneWidget);
@@ -37,6 +44,7 @@ void main() {
           theme: ThemeData(),
         ),
       ));
+      await tester.pumpAndSettle();
 
       // One reasoning disclosure is rendered for the thinking segment
       expect(find.byType(ThinkingDisclosure), findsOneWidget);
@@ -55,6 +63,7 @@ void main() {
           theme: ThemeData(),
         ),
       ));
+      await tester.pumpAndSettle();
 
       // For user messages, visible segments are wrapped in SelectionArea
       expect(find.byType(SelectionArea), findsWidgets);
@@ -72,6 +81,7 @@ void main() {
           theme: ThemeData(),
         ),
       ));
+      await tester.pumpAndSettle();
 
       // No visible markdown segments; only the disclosure is present
       expect(find.byType(ThinkingDisclosure), findsOneWidget);
@@ -88,14 +98,12 @@ void main() {
           'Visible part before bad block\n<thinking>Unclosed block';
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: StreamingContent(
-                content: malformed,
-                isUser: true,
-                theme: Theme.of(context),
-              ),
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => StreamingContent(
+              content: malformed,
+              isUser: true,
+              theme: Theme.of(context),
             ),
           ),
         ),

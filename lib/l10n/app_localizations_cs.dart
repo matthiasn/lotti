@@ -88,6 +88,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentActivityLogHeading => 'Protokol aktivity';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Rate Categories';
+
+  @override
   String agentControlsActionError(String error) {
     return 'Akce se nezdařila: $error';
   }
@@ -465,7 +471,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Session History';
 
   @override
-  String get agentRitualReviewTitle => 'Ritual Review';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -555,20 +561,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directives';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Definuj osobnost, nástroje, cíle a styl interakce agenta...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'Obecná direktiva';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Definuj strukturu reportu, povinné sekce a pravidla formátování...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Direktiva reportu';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Name';
 
   @override
@@ -578,13 +570,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateEmptyList => 'No templates yet. Tap + to create one.';
 
   @override
-  String get agentTemplateEvolveAction => 'Evolve with AI';
-
-  @override
   String get agentTemplateEvolveApprove => 'Approve & Save';
 
   @override
   String get agentTemplateEvolveReject => 'Reject';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Definuj osobnost, nástroje, cíle a styl interakce agenta...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Obecná direktiva';
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Rozpis podle instancí';
@@ -641,6 +637,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'No versions';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Definuj strukturu reportu, povinné sekce a pravidla formátování...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Direktiva reportu';
 
   @override
   String get agentTemplateReportsEmpty => 'No reports yet.';
@@ -4602,6 +4605,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Souhrny úkolů';
+
+  @override
+  String get thinkingDisclosureCopied => 'Reasoning copied';
+
+  @override
+  String get thinkingDisclosureCopy => 'Copy reasoning';
+
+  @override
+  String get thinkingDisclosureHide => 'Hide reasoning';
+
+  @override
+  String get thinkingDisclosureShow => 'Show reasoning';
 
   @override
   String get timeByCategoryChartTitle => 'Čas podle kategorie';

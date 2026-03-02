@@ -31,7 +31,7 @@ void main() {
       final catalog = buildEvolutionCatalog();
       final items = catalog.items;
 
-      expect(items, hasLength(7));
+      expect(items, hasLength(8));
       expect(
           items.map((i) => i.name),
           containsAll([
@@ -42,6 +42,7 @@ void main() {
             'FeedbackClassification',
             'FeedbackCategoryBreakdown',
             'SessionProgress',
+            'CategoryRatings',
           ]));
     });
 

@@ -4,13 +4,18 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/message_bubble.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/message_timestamp.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
-  Widget wrap(Widget child) => MaterialApp(
-          home: Scaffold(
-              body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
-      )));
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
+
+  Widget wrap(Widget child) => makeTestableWidgetWithScaffold(
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: child,
+        ),
+      );
 
   group('MessageBubble', () {
     testWidgets('renders user and assistant content', (tester) async {
@@ -25,6 +30,7 @@ void main() {
           ],
         )),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('User says'), findsOneWidget);
       expect(find.text('Assistant replies'), findsOneWidget);
@@ -33,6 +39,7 @@ void main() {
     testWidgets('hides timestamp for pure thinking messages', (tester) async {
       final thinkingOnly = ChatMessage.assistant('<thinking>plan</thinking>');
       await tester.pumpWidget(wrap(MessageBubble(message: thinkingOnly)));
+      await tester.pumpAndSettle();
 
       // Timestamp widget should not be rendered for thinking-only messages
       expect(find.byType(MessageTimestamp), findsNothing);
@@ -42,6 +49,7 @@ void main() {
         (tester) async {
       final ai = ChatMessage.assistant('Visible content');
       await tester.pumpWidget(wrap(MessageBubble(message: ai)));
+      await tester.pumpAndSettle();
 
       // Tap the copy corner action (tooltip 'Copy')
       await tester.tap(find.byTooltip('Copy'));

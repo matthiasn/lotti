@@ -88,6 +88,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentActivityLogHeading => 'Jurnal de activitate';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Trimite evaluările';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Evaluează categoriile';
+
+  @override
   String agentControlsActionError(String error) {
     return 'Acțiunea a eșuat: $error';
   }
@@ -473,7 +479,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Istoricul sesiunilor';
 
   @override
-  String get agentRitualReviewTitle => 'Revizuire ritual';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'În execuție';
@@ -563,20 +569,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directive';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Definiți personalitatea, instrumentele, obiectivele și stilul de interacțiune al agentului...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'Directivă generală';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Definiți structura raportului, secțiunile necesare și regulile de formatare...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Directivă de raport';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Nume';
 
   @override
@@ -587,13 +579,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun șablon încă. Apasă + pentru a crea unul.';
 
   @override
-  String get agentTemplateEvolveAction => 'Evoluează cu IA';
-
-  @override
   String get agentTemplateEvolveApprove => 'Aprobă și salvează';
 
   @override
   String get agentTemplateEvolveReject => 'Respinge';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Definiți personalitatea, instrumentele, obiectivele și stilul de interacțiune al agentului...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Directivă generală';
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Detaliere pe instanță';
@@ -651,6 +647,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Nicio versiune';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Definiți structura raportului, secțiunile necesare și regulile de formatare...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Directivă de raport';
 
   @override
   String get agentTemplateReportsEmpty => 'Niciun raport încă.';
@@ -4639,6 +4642,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Rezumate sarcini';
+
+  @override
+  String get thinkingDisclosureCopied => 'Raționament copiat';
+
+  @override
+  String get thinkingDisclosureCopy => 'Copiază raționamentul';
+
+  @override
+  String get thinkingDisclosureHide => 'Ascunde raționamentul';
+
+  @override
+  String get thinkingDisclosureShow => 'Afișează raționamentul';
 
   @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';

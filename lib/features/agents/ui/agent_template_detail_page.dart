@@ -6,12 +6,9 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
-import 'package:lotti/features/agents/ui/agent_model_selector.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
-import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
@@ -50,7 +47,6 @@ class _AgentTemplateDetailPageState
   late TextEditingController _nameController;
   late TextEditingController _generalDirectiveController;
   late TextEditingController _reportDirectiveController;
-  String? _selectedModelId;
   String? _selectedProfileId;
   bool _didSeedControllers = false;
   String? _seededVersionId;
@@ -67,9 +63,7 @@ class _AgentTemplateDetailPageState
     _nameController = TextEditingController();
     _generalDirectiveController = TextEditingController();
     _reportDirectiveController = TextEditingController();
-    if (widget.isCreateMode) {
-      _selectedModelId = 'models/gemini-3-flash-preview';
-    } else {
+    if (!widget.isCreateMode) {
       _tabController = TabController(length: _tabCount, vsync: this)
         ..addListener(_onTabChanged);
     }
@@ -142,7 +136,6 @@ class _AgentTemplateDetailPageState
     // changes (e.g. after an evolution proposal is approved).
     if (!_didSeedControllers) {
       _nameController.text = template.displayName;
-      _selectedModelId = template.modelId;
       _selectedProfileId = template.profileId;
       if (activeVersion != null) {
         _generalDirectiveController.text =
@@ -180,7 +173,7 @@ class _AgentTemplateDetailPageState
 
     final saveEnabled = !_isSaving &&
         _nameController.text.trim().isNotEmpty &&
-        (_selectedModelId?.isNotEmpty ?? false);
+        (_selectedProfileId?.isNotEmpty ?? false);
 
     final showBottomBar = widget.isCreateMode || _currentTabIndex == 0;
 
@@ -298,11 +291,6 @@ class _AgentTemplateDetailPageState
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 16),
-        AgentModelSelector(
-          currentModelId: _selectedModelId,
-          onModelSelected: (id) => setState(() => _selectedModelId = id),
-        ),
-        const SizedBox(height: 16),
         ProfileSelector(
           selectedProfileId: _selectedProfileId,
           onProfileSelected: (id) => setState(() => _selectedProfileId = id),
@@ -333,7 +321,6 @@ class _AgentTemplateDetailPageState
     try {
       final templateService = ref.read(agentTemplateServiceProvider);
       final name = _nameController.text.trim();
-      final modelId = _selectedModelId ?? '';
       final generalDirective = _generalDirectiveController.text.trim();
       final reportDirective = _reportDirectiveController.text.trim();
 
@@ -341,7 +328,7 @@ class _AgentTemplateDetailPageState
         await templateService.createTemplate(
           displayName: name,
           kind: AgentTemplateKind.taskAgent,
-          modelId: modelId,
+          modelId: 'models/gemini-3-flash-preview',
           directives: '$generalDirective\n\n$reportDirective'.trim(),
           profileId: _selectedProfileId,
           generalDirective: generalDirective,
@@ -357,11 +344,16 @@ class _AgentTemplateDetailPageState
         ref.invalidate(agentTemplatesProvider);
         Navigator.of(context).pop();
       } else {
-        // Persist template-level fields (name, model, profile).
+        // Persist template-level fields (name, profile).
+        // modelId is preserved from the existing template (hidden default).
+        final currentTemplate = ref
+            .read(agentTemplateProvider(widget.templateId!))
+            .value
+            ?.mapOrNull(agentTemplate: (e) => e);
         await templateService.updateTemplate(
           templateId: widget.templateId!,
           displayName: name,
-          modelId: modelId,
+          modelId: currentTemplate?.modelId ?? 'models/gemini-3-flash-preview',
           profileId: _selectedProfileId,
           clearProfileId: _selectedProfileId == null,
         );
@@ -616,8 +608,8 @@ class _VersionTile extends ConsumerWidget {
   }
 }
 
-/// Settings tab content — form fields, version history, evolve button.
-class _SettingsTabContent extends ConsumerWidget {
+/// Settings tab content — form fields and evolve button.
+class _SettingsTabContent extends StatelessWidget {
   const _SettingsTabContent({
     required this.formFields,
     required this.templateId,
@@ -627,37 +619,18 @@ class _SettingsTabContent extends ConsumerWidget {
   final String templateId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hasPendingReview =
-        ref.watch(pendingRitualReviewProvider(templateId)).value != null;
-
+  Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         formFields,
         const SizedBox(height: 24),
-        _VersionHistorySection(templateId: templateId),
-        const SizedBox(height: 24),
-        if (hasPendingReview) ...[
-          LottiPrimaryButton(
-            onPressed: () => beamToNamed(
-              '/settings/agents/templates/$templateId/review',
-            ),
-            label: context.messages.agentRitualReviewTitle,
-            icon: Icons.rate_review,
+        LottiPrimaryButton(
+          onPressed: () => beamToNamed(
+            '/settings/agents/templates/$templateId/review',
           ),
-          const SizedBox(height: 12),
-        ],
-        LottiSecondaryButton(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => EvolutionChatPage(
-                templateId: templateId,
-              ),
-            ),
-          ),
-          label: context.messages.agentTemplateEvolveAction,
-          icon: Icons.auto_awesome,
+          label: context.messages.agentRitualReviewTitle,
+          icon: Icons.rate_review,
         ),
         const SizedBox(height: 80),
       ],
@@ -665,7 +638,8 @@ class _SettingsTabContent extends ConsumerWidget {
   }
 }
 
-/// Stats tab content — evolution history dashboard + token usage.
+/// Stats tab content — evolution history dashboard, token usage, and version
+/// history.
 class _StatsTabContent extends StatelessWidget {
   const _StatsTabContent({required this.templateId});
 
@@ -679,6 +653,8 @@ class _StatsTabContent extends StatelessWidget {
         EvolutionHistoryDashboard(templateId: templateId),
         const SizedBox(height: 24),
         TemplateTokenUsageSection(templateId: templateId),
+        const SizedBox(height: 24),
+        _VersionHistorySection(templateId: templateId),
         const SizedBox(height: 80),
       ],
     );

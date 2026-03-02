@@ -88,6 +88,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentActivityLogHeading => 'Activity Log';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Rate Categories';
+
+  @override
   String agentControlsActionError(String error) {
     return 'Action failed: $error';
   }
@@ -465,7 +471,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Session History';
 
   @override
-  String get agentRitualReviewTitle => 'Ritual Review';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -554,20 +560,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directives';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Define the agent\'s personality, tools, objectives, and interaction style...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'General Directive';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Define the report structure, required sections, and formatting rules...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Report Directive';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Name';
 
   @override
@@ -577,13 +569,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateEmptyList => 'No templates yet. Tap + to create one.';
 
   @override
-  String get agentTemplateEvolveAction => 'Evolve with AI';
-
-  @override
   String get agentTemplateEvolveApprove => 'Approve & Save';
 
   @override
   String get agentTemplateEvolveReject => 'Reject';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Define the agent\'s personality, tools, objectives, and interaction style...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'General Directive';
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Per-Instance Breakdown';
@@ -640,6 +636,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'No versions';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Define the report structure, required sections, and formatting rules...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Report Directive';
 
   @override
   String get agentTemplateReportsEmpty => 'No reports yet.';
@@ -4566,6 +4569,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Task Summaries';
+
+  @override
+  String get thinkingDisclosureCopied => 'Reasoning copied';
+
+  @override
+  String get thinkingDisclosureCopy => 'Copy reasoning';
+
+  @override
+  String get thinkingDisclosureHide => 'Hide reasoning';
+
+  @override
+  String get thinkingDisclosureShow => 'Show reasoning';
 
   @override
   String get timeByCategoryChartTitle => 'Time by Category';
