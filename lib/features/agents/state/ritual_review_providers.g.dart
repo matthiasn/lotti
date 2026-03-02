@@ -14,7 +14,7 @@ part of 'ritual_review_providers.dart';
 /// Only the newest session is considered: if a newer completed or abandoned
 /// session exists, older active sessions are treated as stale and ignored.
 /// Actual DB reconciliation (marking stale sessions as abandoned) happens
-/// in [TemplateEvolutionWorkflow] during startSession/approveProposal.
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
@@ -27,7 +27,7 @@ final pendingRitualReviewProvider = PendingRitualReviewFamily._();
 /// Only the newest session is considered: if a newer completed or abandoned
 /// session exists, older active sessions are treated as stale and ignored.
 /// Actual DB reconciliation (marking stale sessions as abandoned) happens
-/// in [TemplateEvolutionWorkflow] during startSession/approveProposal.
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
@@ -44,7 +44,7 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
   /// Only the newest session is considered: if a newer completed or abandoned
   /// session exists, older active sessions are treated as stale and ignored.
   /// Actual DB reconciliation (marking stale sessions as abandoned) happens
-  /// in [TemplateEvolutionWorkflow] during startSession/approveProposal.
+  /// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
   PendingRitualReviewProvider._(
@@ -103,7 +103,7 @@ String _$pendingRitualReviewHash() =>
 /// Only the newest session is considered: if a newer completed or abandoned
 /// session exists, older active sessions are treated as stale and ignored.
 /// Actual DB reconciliation (marking stale sessions as abandoned) happens
-/// in [TemplateEvolutionWorkflow] during startSession/approveProposal.
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
@@ -124,7 +124,7 @@ final class PendingRitualReviewFamily extends $Family
   /// Only the newest session is considered: if a newer completed or abandoned
   /// session exists, older active sessions are treated as stale and ignored.
   /// Actual DB reconciliation (marking stale sessions as abandoned) happens
-  /// in [TemplateEvolutionWorkflow] during startSession/approveProposal.
+  /// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 

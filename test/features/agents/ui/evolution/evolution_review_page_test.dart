@@ -138,7 +138,7 @@ void main() {
       await tester.pumpWidget(
         buildSubject(pendingOverride: (ref, id) async => session),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(EvolutionReviewPage));
       expect(
@@ -147,10 +147,26 @@ void main() {
       );
     });
 
+    testWidgets('summary text is bounded with ellipsis overflow',
+        (tester) async {
+      final session = makeTestEvolutionSession(
+        feedbackSummary: 'Summary text here.',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(pendingOverride: (ref, id) async => session),
+      );
+      await tester.pump();
+
+      final summaryText = tester.widget<Text>(find.text('Summary text here.'));
+      expect(summaryText.maxLines, 8);
+      expect(summaryText.overflow, TextOverflow.ellipsis);
+    });
+
     testWidgets('does not show proposal card when pending session is null',
         (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(EvolutionReviewPage));
       // No proposal section label should appear (it's part of the card)
@@ -201,7 +217,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(EvolutionReviewPage));
       expect(find.byType(FloatingActionButton), findsOneWidget);
@@ -239,9 +255,10 @@ void main() {
 
       // The FAB should still be present.
       expect(find.byType(FloatingActionButton), findsOneWidget);
-      // No summary container should be rendered.
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      // Proposal section label exists only inside the summary card.
       expect(
-        find.text('Agent performed well in most areas.'),
+        find.text(context.messages.agentRitualReviewProposalSection),
         findsNothing,
       );
     });

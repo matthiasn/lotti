@@ -146,9 +146,9 @@ While in this file, localize these hardcoded strings:
 - `'Hide reasoning'` / `'Show reasoning'` → `context.messages.thinkingDisclosureHide` / `context.messages.thinkingDisclosureShow`
 - `'Copy reasoning'` tooltip → `context.messages.thinkingDisclosureCopy`
 - `'Reasoning copied'` snackbar → `context.messages.thinkingDisclosureCopied`
-- `'Reasoning section, expanded/collapsed'` semantics label → `context.messages.thinkingDisclosureSemantics`
+- Semantics label composed from `context.messages.thinkingDisclosureShow` / `thinkingDisclosureHide` + `context.messages.thinkingDisclosureStateExpanded` / `thinkingDisclosureStateCollapsed`
 
-Add to all 5 arb files (`app_en.arb`, `app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_ro.arb`).
+Add to all arb files (`app_en.arb`, `app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_ro.arb`, `app_cs.arb`).
 
 ---
 

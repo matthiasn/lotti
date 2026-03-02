@@ -23,8 +23,9 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final messages = context.messages;
-    final toggleLabel =
-        _expanded ? messages.thinkingDisclosureHide : messages.thinkingDisclosureShow;
+    final toggleLabel = _expanded
+        ? messages.thinkingDisclosureHide
+        : messages.thinkingDisclosureShow;
     final stateLabel = _expanded
         ? messages.thinkingDisclosureStateExpanded
         : messages.thinkingDisclosureStateCollapsed;

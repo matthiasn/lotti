@@ -81,7 +81,8 @@ class EvolutionReviewPage extends ConsumerWidget {
                   data: (entity) {
                     final session =
                         entity is EvolutionSessionEntity ? entity : null;
-                    if (session?.feedbackSummary == null) return null;
+                    final summary = session?.feedbackSummary?.trim();
+                    if (summary == null || summary.isEmpty) return null;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: Container(
@@ -120,7 +121,9 @@ class EvolutionReviewPage extends ConsumerWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              session!.feedbackSummary!,
+                              summary,
+                              maxLines: 8,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 13,

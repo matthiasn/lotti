@@ -53,8 +53,13 @@ class GenUiEventHandler {
             );
             onRatingsSubmitted?.call(action.surfaceId, ratings);
           }
-        } catch (_) {
-          // Ignore malformed ratings JSON.
+        } catch (e, s) {
+          developer.log(
+            'Failed to parse ratings JSON: $ratingsJson',
+            name: 'GenUiEventHandler',
+            error: e,
+            stackTrace: s,
+          );
         }
       }
     } catch (e, s) {

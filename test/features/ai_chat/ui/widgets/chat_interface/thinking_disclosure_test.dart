@@ -47,8 +47,22 @@ void main() {
     expect(find.textContaining('internal plan'), findsOneWidget);
   });
 
-  testWidgets('Keyboard toggles expansion and copy shows snackbar',
+  testWidgets('Keyboard toggles expansion and copy action writes clipboard',
       (tester) async {
+    String? copiedText;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        final args = call.arguments as Map<dynamic, dynamic>;
+        copiedText = args['text'] as String?;
+      }
+      return null;
+    });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const ThinkingDisclosure(thinking: 'internal plan'),
@@ -82,6 +96,6 @@ void main() {
     );
     await tester.tap(copyButton);
     await tester.pump();
-    expect(find.text(messages.thinkingDisclosureCopied), findsOneWidget);
+    expect(copiedText, 'internal plan');
   });
 }
