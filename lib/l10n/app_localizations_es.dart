@@ -152,6 +152,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get agentDefaultProfileLabel => 'Perfil de inferencia predeterminado';
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Error al cargar el agente: $error';
   }

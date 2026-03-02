@@ -150,6 +150,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get agentDefaultProfileLabel => 'Default inference profile';
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Error loading agent: $error';
   }

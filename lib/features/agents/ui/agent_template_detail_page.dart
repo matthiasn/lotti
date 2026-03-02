@@ -53,6 +53,18 @@ class _AgentTemplateDetailPageState
   bool _isSaving = false;
   TabController? _tabController;
 
+  // Original values for dirty-state tracking.
+  String _originalName = '';
+  String? _originalProfileId;
+  String _originalGeneralDirective = '';
+  String _originalReportDirective = '';
+
+  bool get _isDirty =>
+      _nameController.text != _originalName ||
+      _selectedProfileId != _originalProfileId ||
+      _generalDirectiveController.text != _originalGeneralDirective ||
+      _reportDirectiveController.text != _originalReportDirective;
+
   static const _tabCount = 3;
 
   int _currentTabIndex = 0;
@@ -145,6 +157,10 @@ class _AgentTemplateDetailPageState
         _reportDirectiveController.text = activeVersion.reportDirective;
         _seededVersionId = activeVersion.id;
       }
+      _originalName = _nameController.text;
+      _originalProfileId = _selectedProfileId;
+      _originalGeneralDirective = _generalDirectiveController.text;
+      _originalReportDirective = _reportDirectiveController.text;
       _didSeedControllers = true;
     } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
       _generalDirectiveController.text =
@@ -153,6 +169,8 @@ class _AgentTemplateDetailPageState
               : activeVersion.directives;
       _reportDirectiveController.text = activeVersion.reportDirective;
       _seededVersionId = activeVersion.id;
+      _originalGeneralDirective = _generalDirectiveController.text;
+      _originalReportDirective = _reportDirectiveController.text;
     }
 
     return _buildScaffold(
@@ -184,29 +202,40 @@ class _AgentTemplateDetailPageState
           : _buildEditBody(context, title: title),
       bottomNavigationBar: showBottomBar
           ? FormBottomBar(
-              leftButton: widget.isCreateMode
-                  ? null
-                  : IconButton(
-                      onPressed:
-                          _isSaving ? null : () => _handleDelete(context),
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: context.colorScheme.error,
+              rightButtons: widget.isCreateMode
+                  ? [
+                      LottiSecondaryButton(
+                        onPressed: () => navigateBackFromAgent(context),
+                        label: context.messages.cancelButton,
                       ),
-                      tooltip: context.messages.deleteButton,
-                    ),
-              rightButtons: [
-                LottiSecondaryButton(
-                  onPressed: () => navigateBackFromAgent(context),
-                  label: context.messages.cancelButton,
-                ),
-                LottiPrimaryButton(
-                  onPressed: saveEnabled ? () => _handleSave(context) : null,
-                  label: widget.isCreateMode
-                      ? context.messages.createButton
-                      : context.messages.agentTemplateSaveNewVersion,
-                ),
-              ],
+                      LottiPrimaryButton(
+                        onPressed:
+                            saveEnabled ? () => _handleSave(context) : null,
+                        label: context.messages.createButton,
+                      ),
+                    ]
+                  : _isDirty
+                      ? [
+                          LottiSecondaryButton(
+                            onPressed: () => navigateBackFromAgent(context),
+                            label: context.messages.cancelButton,
+                          ),
+                          LottiPrimaryButton(
+                            onPressed:
+                                saveEnabled ? () => _handleSave(context) : null,
+                            label: context.messages.agentTemplateSaveNewVersion,
+                          ),
+                        ]
+                      : [
+                          LottiPrimaryButton(
+                            onPressed: () => beamToNamed(
+                              '/settings/agents/templates/'
+                              '${widget.templateId}/review',
+                            ),
+                            label: context.messages.agentRitualReviewTitle,
+                            icon: Icons.rate_review,
+                          ),
+                        ],
             )
           : null,
     );
@@ -268,10 +297,12 @@ class _AgentTemplateDetailPageState
           // Settings tab
           _SettingsTabContent(
             formFields: _buildFormFields(context),
-            templateId: templateId,
           ),
           // Stats tab
-          _StatsTabContent(templateId: templateId),
+          _StatsTabContent(
+            templateId: templateId,
+            onDelete: () => _handleDelete(context),
+          ),
           // Reports tab
           _ReportsTabContent(templateId: templateId),
         ],
@@ -301,7 +332,8 @@ class _AgentTemplateDetailPageState
           labelText: context.messages.agentTemplateGeneralDirectiveLabel,
           hintText: context.messages.agentTemplateGeneralDirectiveHint,
           minLines: 4,
-          maxLines: 12,
+          maxLines: null,
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 16),
         LottiTextArea(
@@ -309,7 +341,8 @@ class _AgentTemplateDetailPageState
           labelText: context.messages.agentTemplateReportDirectiveLabel,
           hintText: context.messages.agentTemplateReportDirectiveHint,
           minLines: 4,
-          maxLines: 12,
+          maxLines: null,
+          onChanged: (_) => setState(() {}),
         ),
       ],
     );
@@ -372,6 +405,10 @@ class _AgentTemplateDetailPageState
             content: Text(context.messages.agentTemplateVersionSaved),
           ),
         );
+        _originalName = _nameController.text;
+        _originalProfileId = _selectedProfileId;
+        _originalGeneralDirective = _generalDirectiveController.text;
+        _originalReportDirective = _reportDirectiveController.text;
         ref
           ..invalidate(agentTemplatesProvider)
           ..invalidate(agentTemplateProvider(widget.templateId!))
@@ -608,15 +645,13 @@ class _VersionTile extends ConsumerWidget {
   }
 }
 
-/// Settings tab content — form fields and evolve button.
+/// Settings tab content — form fields.
 class _SettingsTabContent extends StatelessWidget {
   const _SettingsTabContent({
     required this.formFields,
-    required this.templateId,
   });
 
   final Widget formFields;
-  final String templateId;
 
   @override
   Widget build(BuildContext context) {
@@ -624,26 +659,22 @@ class _SettingsTabContent extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         formFields,
-        const SizedBox(height: 24),
-        LottiPrimaryButton(
-          onPressed: () => beamToNamed(
-            '/settings/agents/templates/$templateId/review',
-          ),
-          label: context.messages.agentRitualReviewTitle,
-          icon: Icons.rate_review,
-        ),
-        const SizedBox(height: 80),
+        const SizedBox(height: 16),
       ],
     );
   }
 }
 
-/// Stats tab content — evolution history dashboard, token usage, and version
-/// history.
+/// Stats tab content — evolution history dashboard, token usage, version
+/// history, and delete action.
 class _StatsTabContent extends StatelessWidget {
-  const _StatsTabContent({required this.templateId});
+  const _StatsTabContent({
+    required this.templateId,
+    required this.onDelete,
+  });
 
   final String templateId;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -655,6 +686,20 @@ class _StatsTabContent extends StatelessWidget {
         TemplateTokenUsageSection(templateId: templateId),
         const SizedBox(height: 24),
         _VersionHistorySection(templateId: templateId),
+        const SizedBox(height: 24),
+        Center(
+          child: TextButton.icon(
+            onPressed: onDelete,
+            icon: Icon(
+              Icons.delete_outline,
+              color: context.colorScheme.error,
+            ),
+            label: Text(
+              context.messages.deleteButton,
+              style: TextStyle(color: context.colorScheme.error),
+            ),
+          ),
+        ),
         const SizedBox(height: 80),
       ],
     );

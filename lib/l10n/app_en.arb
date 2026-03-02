@@ -76,6 +76,7 @@
       }
     }
   },
+  "agentDefaultProfileLabel": "Default inference profile",
   "agentDetailErrorLoading": "Error loading agent: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {

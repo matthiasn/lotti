@@ -150,6 +150,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get agentDefaultProfileLabel => 'Výchozí inferenční profil';
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Chyba při načítání agenta: $error';
   }

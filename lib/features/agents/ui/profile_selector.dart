@@ -46,7 +46,7 @@ class ProfileSelector extends ConsumerWidget {
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: InputDecoration(
-          labelText: context.messages.inferenceProfilesTitle,
+          labelText: context.messages.agentDefaultProfileLabel,
           border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
@@ -84,7 +84,7 @@ class ProfileSelector extends ConsumerWidget {
   ) {
     SelectionModalBase.show(
       context: context,
-      title: context.messages.inferenceProfilesTitle,
+      title: context.messages.agentDefaultProfileLabel,
       child: _ProfilePickerContent(
         profiles: profiles,
         selectedProfileId: selectedProfileId,

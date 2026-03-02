@@ -150,6 +150,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get agentDefaultProfileLabel => 'Profil de inferență implicit';
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Eroare la încărcarea agentului: $error';
   }

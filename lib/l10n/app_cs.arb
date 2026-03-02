@@ -53,6 +53,7 @@
       }
     }
   },
+  "agentDefaultProfileLabel": "Výchozí inferenční profil",
   "agentDetailErrorLoading": "Chyba při načítání agenta: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {

@@ -301,10 +301,14 @@ void main() {
       expect(find.text('Test Template'), findsOneWidget);
       // General directive field falls back to legacy directives when empty.
       expect(find.text('You are a helpful agent.'), findsOneWidget);
-      // Save-as-new-version button present
+      // Form is clean, so 1-on-1 button should be shown (not save button)
+      expect(
+        find.text(context.messages.agentRitualReviewTitle),
+        findsOneWidget,
+      );
       expect(
         find.text(context.messages.agentTemplateSaveNewVersion),
-        findsOneWidget,
+        findsNothing,
       );
     });
 
@@ -357,6 +361,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Make form dirty so Save button appears
+      final nameField = find.byType(TextField).first;
+      await tester.enterText(nameField, 'Test Template Modified');
+      await tester.pump();
+
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       await tester.tap(
         find.text(context.messages.agentTemplateSaveNewVersion),
@@ -366,7 +375,7 @@ void main() {
       verify(
         () => mockTemplateService.updateTemplate(
           templateId: templateId,
-          displayName: 'Test Template',
+          displayName: 'Test Template Modified',
           modelId: 'models/gemini-3-flash-preview',
           profileId: any(named: 'profileId'),
           clearProfileId: any(named: 'clearProfileId'),
@@ -515,7 +524,19 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete icon button
+      // Navigate to Stats tab where delete button lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      // Scroll to find delete button
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.delete_outline),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Tap delete button
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
@@ -546,7 +567,19 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete icon button
+      // Navigate to Stats tab where delete button lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      // Scroll to find delete button
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.delete_outline),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Tap delete button
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
@@ -677,6 +710,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Make form dirty so Save button appears
+      final nameField = find.byType(TextField).first;
+      await tester.enterText(nameField, 'Test Template Changed');
+      await tester.pump();
+
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       await tester.tap(
         find.text(context.messages.agentTemplateSaveNewVersion),
@@ -700,7 +738,19 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete icon button
+      // Navigate to Stats tab where delete button lives
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      // Scroll to find delete button
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.delete_outline),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Tap delete button
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
@@ -1014,7 +1064,8 @@ void main() {
       expect(find.text('Version 1 directives'), findsNothing);
     });
 
-    testWidgets('shows 1-on-1 review button in edit mode', (tester) async {
+    testWidgets('shows 1-on-1 review button when form is clean',
+        (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
 
@@ -1025,19 +1076,104 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Scroll to 1-on-1 review button
-      await tester.scrollUntilVisible(
+      // 1-on-1 button is in the bottom bar when form is clean
+      final bottomBar = find.byType(FormBottomBar);
+      expect(bottomBar, findsOneWidget);
+      expect(
+        find.descendant(
+          of: bottomBar,
+          matching: find.text(context.messages.agentRitualReviewTitle),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: bottomBar,
+          matching: find.byIcon(Icons.rate_review),
+        ),
+        findsOneWidget,
+      );
+      // Save/Cancel should not be visible
+      expect(
+        find.text(context.messages.agentTemplateSaveNewVersion),
+        findsNothing,
+      );
+      expect(find.text(context.messages.cancelButton), findsNothing);
+    });
+
+    testWidgets('shows Cancel and Save when form is dirty', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Initially clean — shows 1-on-1 button
+      expect(
         find.text(context.messages.agentRitualReviewTitle),
+        findsOneWidget,
+      );
+
+      // Make form dirty by editing the name
+      final nameField = find.byType(TextField).first;
+      await tester.enterText(nameField, 'Modified Name');
+      await tester.pump();
+
+      // Now Cancel + Save should appear
+      expect(
+        find.text(context.messages.cancelButton),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentTemplateSaveNewVersion),
+        findsOneWidget,
+      );
+      // 1-on-1 button should be gone
+      expect(
+        find.text(context.messages.agentRitualReviewTitle),
+        findsNothing,
+      );
+    });
+
+    testWidgets('delete button visible on Stats tab', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Delete button should NOT be in the bottom bar
+      final bottomBar = find.byType(FormBottomBar);
+      expect(
+        find.descendant(
+          of: bottomBar,
+          matching: find.byIcon(Icons.delete_outline),
+        ),
+        findsNothing,
+      );
+
+      // Navigate to Stats tab
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      // Scroll to delete button
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.delete_outline),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(context.messages.agentRitualReviewTitle),
-        findsOneWidget,
-      );
-      expect(find.byIcon(Icons.rate_review), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+      expect(find.text(context.messages.deleteButton), findsOneWidget);
     });
 
     testWidgets('shows three tabs in edit mode', (tester) async {
@@ -1076,10 +1212,10 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Bottom bar visible on Settings tab
+      // Bottom bar visible on Settings tab (shows 1-on-1 when clean)
       expect(find.byType(FormBottomBar), findsOneWidget);
       expect(
-        find.text(context.messages.agentTemplateSaveNewVersion),
+        find.text(context.messages.agentRitualReviewTitle),
         findsOneWidget,
       );
 
@@ -1566,7 +1702,8 @@ void main() {
       verify(() => _mockNavService.beamBack()).called(1);
     });
 
-    testWidgets('cancel button navigates back', (tester) async {
+    testWidgets('cancel button navigates back when form is dirty',
+        (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
 
@@ -1574,6 +1711,11 @@ void main() {
         buildEditSubject(templateId: templateId),
       );
       await tester.pumpAndSettle();
+
+      // Make form dirty so Cancel button appears
+      final nameField = find.byType(TextField).first;
+      await tester.enterText(nameField, 'Dirty Name');
+      await tester.pump();
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       await tester.tap(find.text(context.messages.cancelButton));

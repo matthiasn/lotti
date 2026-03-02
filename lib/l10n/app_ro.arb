@@ -77,6 +77,7 @@
       }
     }
   },
+  "agentDefaultProfileLabel": "Profil de inferență implicit",
   "agentDetailErrorLoading": "Eroare la încărcarea agentului: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {

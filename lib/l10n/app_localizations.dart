@@ -366,6 +366,12 @@ abstract class AppLocalizations {
   /// **'{tokenCount} tokens'**
   String agentConversationTokenCount(String tokenCount);
 
+  /// No description provided for @agentDefaultProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default inference profile'**
+  String get agentDefaultProfileLabel;
+
   /// No description provided for @agentDetailErrorLoading.
   ///
   /// In en, this message translates to:
