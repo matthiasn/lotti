@@ -562,17 +562,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTemplateGeneralDirectiveHint =>
-      'Define the agent\'s personality, tools, objectives, and interaction style...';
+      'Definuj osobnost, nástroje, cíle a styl interakce agenta...';
 
   @override
-  String get agentTemplateGeneralDirectiveLabel => 'General Directive';
+  String get agentTemplateGeneralDirectiveLabel => 'Obecná direktiva';
 
   @override
   String get agentTemplateReportDirectiveHint =>
-      'Define the report structure, required sections, and formatting rules...';
+      'Definuj strukturu reportu, povinné sekce a pravidla formátování...';
 
   @override
-  String get agentTemplateReportDirectiveLabel => 'Report Directive';
+  String get agentTemplateReportDirectiveLabel => 'Direktiva reportu';
 
   @override
   String get agentTemplateDisplayNameLabel => 'Name';

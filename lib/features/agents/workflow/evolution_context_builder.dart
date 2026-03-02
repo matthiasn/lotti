@@ -138,21 +138,28 @@ again. The conversation should always be driving toward an approved proposal.
 
     // Present directives — use split fields when available, fall back to
     // the legacy single field.
-    final hasNewDirectives = currentVersion.generalDirective.isNotEmpty ||
-        currentVersion.reportDirective.isNotEmpty;
+    final generalDirective = currentVersion.generalDirective.trim();
+    final reportDirective = currentVersion.reportDirective.trim();
+    final hasNewDirectives =
+        generalDirective.isNotEmpty || reportDirective.isNotEmpty;
 
     if (hasNewDirectives) {
-      buf
-        ..writeln(
-          '## Current General Directive (v${currentVersion.version})',
-        )
-        ..writeln(currentVersion.generalDirective)
-        ..writeln()
-        ..writeln(
-          '## Current Report Directive (v${currentVersion.version})',
-        )
-        ..writeln(currentVersion.reportDirective)
-        ..writeln();
+      if (generalDirective.isNotEmpty) {
+        buf
+          ..writeln(
+            '## Current General Directive (v${currentVersion.version})',
+          )
+          ..writeln(generalDirective)
+          ..writeln();
+      }
+      if (reportDirective.isNotEmpty) {
+        buf
+          ..writeln(
+            '## Current Report Directive (v${currentVersion.version})',
+          )
+          ..writeln(reportDirective)
+          ..writeln();
+      }
     } else {
       buf
         ..writeln('## Current Directives (v${currentVersion.version})')

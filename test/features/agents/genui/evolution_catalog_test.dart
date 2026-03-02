@@ -82,8 +82,12 @@ void main() {
       );
 
       expect(find.text('New general directive'), findsOneWidget);
-      // Empty report directive section should be absent.
-      expect(find.text(''), findsNothing);
+      expect(find.text('Better performance'), findsOneWidget);
+      // Report directive section should be absent when empty.
+      expect(
+        find.textContaining('Report Directive'),
+        findsNothing,
+      );
     });
 
     testWidgets('hides directive sections when empty', (tester) async {
@@ -98,6 +102,97 @@ void main() {
       );
 
       expect(find.text('Rationale text'), findsOneWidget);
+      // Both directive sections should be absent when empty.
+      expect(
+        find.textContaining('General Directive'),
+        findsNothing,
+      );
+      expect(
+        find.textContaining('Report Directive'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('renders current general and report directives when provided',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionProposalItem, {
+            'generalDirective': 'New general approach.',
+            'reportDirective': 'New report format.',
+            'rationale': 'Improvement rationale.',
+            'currentGeneralDirective': 'Old general approach.',
+            'currentReportDirective': 'Old report format.',
+          }),
+        ),
+      );
+
+      // Current directive sections should be present.
+      expect(
+        find.textContaining('Current Directives'),
+        findsNWidgets(2),
+      );
+      expect(
+        find.textContaining('General Directive'),
+        findsNWidgets(2),
+      );
+      expect(
+        find.textContaining('Report Directive'),
+        findsNWidgets(2),
+      );
+      expect(find.text('Old general approach.'), findsOneWidget);
+      expect(find.text('Old report format.'), findsOneWidget);
+      // Proposed directives should also be present.
+      expect(find.text('New general approach.'), findsOneWidget);
+      expect(find.text('New report format.'), findsOneWidget);
+    });
+
+    testWidgets('renders only current report directive when general is empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionProposalItem, {
+            'generalDirective': 'New general.',
+            'reportDirective': '',
+            'rationale': 'Rationale.',
+            'currentGeneralDirective': '',
+            'currentReportDirective': 'Old report only.',
+          }),
+        ),
+      );
+
+      // Only the report current directive should appear.
+      expect(find.text('Old report only.'), findsOneWidget);
+      expect(
+        find.textContaining('Current Directives'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders only report proposed directive when general is empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionProposalItem, {
+            'generalDirective': '',
+            'reportDirective': 'New report directive only.',
+            'rationale': 'Report-focused rationale.',
+          }),
+        ),
+      );
+
+      expect(find.text('New report directive only.'), findsOneWidget);
+      expect(find.text('Report-focused rationale.'), findsOneWidget);
+      // General directive section should be absent.
+      expect(
+        find.textContaining('General Directive'),
+        findsNothing,
+      );
+      // Proposed Report Directive section should be present.
+      expect(
+        find.textContaining('Proposed Directives'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('dispatches proposal_approved on approve tap', (tester) async {

@@ -175,6 +175,69 @@ void main() {
       expect(ctx.initialUserMessage, contains('Review this data'));
       expect(ctx.initialUserMessage, contains('propose_directives'));
     });
+
+    test('uses split directives when generalDirective is populated', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Be helpful and precise.',
+          reportDirective: 'Write concise reports.',
+        ),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Current General Directive'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        contains('Be helpful and precise.'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        contains('Current Report Directive'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        contains('Write concise reports.'),
+      );
+      // Legacy "Current Directives" heading should NOT appear.
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('## Current Directives')),
+      );
+    });
+
+    test('falls back to legacy directives when split fields are empty', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          directives: 'Legacy directives text.',
+        ),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(ctx.initialUserMessage, contains('## Current Directives'));
+      expect(
+        ctx.initialUserMessage,
+        contains('Legacy directives text.'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('Current General Directive')),
+      );
+    });
   });
 
   group('hard caps', () {

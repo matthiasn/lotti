@@ -98,7 +98,9 @@ class _AgentReportSectionState extends State<AgentReportSection>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.content.isEmpty) return const SizedBox.shrink();
+    final hasContent = widget.content.trim().isNotEmpty;
+    final hasTldr = widget.tldr?.trim().isNotEmpty ?? false;
+    if (!hasContent && !hasTldr) return const SizedBox.shrink();
 
     final parsed = _parseContent();
 

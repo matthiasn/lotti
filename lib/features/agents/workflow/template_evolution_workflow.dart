@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -242,7 +243,11 @@ class TemplateEvolutionWorkflow {
       final bridge = GenUiBridge(processor: processor);
       final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
-      final strategy = EvolutionStrategy(genUiBridge: bridge);
+      final strategy = EvolutionStrategy(
+        genUiBridge: bridge,
+        currentGeneralDirective: currentVersion.generalDirective,
+        currentReportDirective: currentVersion.reportDirective,
+      );
       final conversationId = conversationRepository.createConversation(
         systemMessage: ctx.systemPrompt,
       );
@@ -359,8 +364,10 @@ class TemplateEvolutionWorkflow {
     try {
       // Create the new template version (idempotent: reuse cached version if
       // the proposal directives haven't changed since the last attempt).
-      final cacheKey =
-          '${proposal.generalDirective}\n---\n${proposal.reportDirective}';
+      final cacheKey = jsonEncode({
+        'generalDirective': proposal.generalDirective,
+        'reportDirective': proposal.reportDirective,
+      });
       final newVersion = active.getCachedVersion(cacheKey) ??
           await _createVersionIdempotent(
             svc: svc,
@@ -562,7 +569,7 @@ class TemplateEvolutionWorkflow {
     try {
       return await svc.createVersion(
         templateId: templateId,
-        directives: '',
+        directives: '$generalDirective\n\n$reportDirective'.trim(),
         generalDirective: generalDirective,
         reportDirective: reportDirective,
         authoredBy: AgentAuthors.evolutionAgent,

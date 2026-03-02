@@ -568,7 +568,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTemplateGeneralDirectiveHint =>
-      'Definiere die Persönlichkeit, Tools, Ziele und Interaktionsstil des Agenten...';
+      'Definiere die Persönlichkeit, Tools, Ziele und den Interaktionsstil des Agenten...';
 
   @override
   String get agentTemplateGeneralDirectiveLabel => 'Allgemeine Anweisung';

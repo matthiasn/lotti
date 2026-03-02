@@ -45,7 +45,7 @@ graph LR
 
 ### In Scope
 1. **Data model refactoring** — split `directives` into `generalDirective` + `reportDirective`
-2. **Report structure enhancement** — split report `content` into `tldr` + `report`
+2. **Report structure enhancement** — split report `content` into `tldr` + `content`
 3. **UI improvements** — dual-field report rendering, backwards compatibility
 4. **Evolution workflow updates** — evolve both directive fields independently
 
@@ -213,7 +213,7 @@ String _buildSystemPrompt(_TemplateContext ctx) {
 }
 ```
 
-The `taskAgentScaffold` constant currently embeds report formatting instructions. These will be extracted into `_defaultReportDirective` and used as the fallback when `reportDirective` is empty. When `generalDirective` is also empty (pre-seeding), the old `directives` field is used as-is — ensuring zero behavior change for unseeded templates.
+The `taskAgentScaffold` constant currently embeds report formatting instructions. These will be extracted into `_defaultReportDirective` and used as the fallback when `reportDirective` is empty. When neither new directive field is populated (pre-seeding), the old `directives` field is used as-is — ensuring zero behavior change for unseeded templates. When only `reportDirective` is set but `generalDirective` is empty, the legacy `directives` field is used as the personality/general directive fallback.
 
 ### 2.2 Report Creation — update_report Tool
 
@@ -235,7 +235,7 @@ sequenceDiagram
 
 **Tool signature change:**
 
-```
+```dart
 // Before:
 update_report(content: string)
 
@@ -359,7 +359,7 @@ graph LR
 
 The evolution context builder must present both directives separately so the LLM understands which field to evolve:
 
-```
+```markdown
 ## Current General Directive (v14)
 [general directive content]
 
@@ -385,7 +385,7 @@ The `propose_directives` tool schema changes to accept both fields:
 
 ## 5. Migration Strategy — Fresh Seeding
 
-Both `generalDirective` and `reportDirective` default to `@Default('')` in the freezed model, so old entities deserialize cleanly. The old `directives` field is **not** copied wholesale — instead, a **seeding pass** writes fresh, purpose-built content into each field for every existing template version where the new fields are empty.
+Both `generalDirective` and `reportDirective` default to `@Default('')` in the Freezed model, so old entities deserialize cleanly. The old `directives` field is **not** copied wholesale — instead, a **seeding pass** writes fresh, purpose-built content into each field for every existing template version where the new fields are empty.
 
 ```mermaid
 flowchart TD
@@ -415,7 +415,7 @@ The seeded `reportDirective` for task agents should match the quality of the pre
 ```markdown
 ## Report Structure
 
-You MUST call `update_report` with two fields: `tldr` and `report`.
+You MUST call `update_report` with two fields: `tldr` and `content`.
 
 ### TLDR field
 A concise 1-3 sentence overview of the task's current state. This is what
@@ -570,6 +570,7 @@ gantt
 ## 7. Files to Modify
 
 ### Data Model Layer
+
 | File | Change |
 |------|--------|
 | `lib/features/agents/model/agent_domain_entity.dart` | Add `generalDirective` + `reportDirective` (keep `directives`); add nullable `tldr` to `AgentReportEntity` |
@@ -577,6 +578,7 @@ gantt
 | `lib/features/agents/model/agent_domain_entity.g.dart` | Regenerated |
 
 ### Workflow Layer
+
 | File | Change |
 |------|--------|
 | `lib/features/agents/workflow/task_agent_workflow.dart` | Extract report scaffold from `taskAgentScaffold`; use `generalDirective` + `reportDirective` |
@@ -587,11 +589,13 @@ gantt
 | `lib/features/agents/tools/agent_tool_registry.dart` | Update tool schemas for `propose_directives` and `update_report` |
 
 ### Service Layer
+
 | File | Change |
 |------|--------|
 | `lib/features/agents/service/agent_template_service.dart` | Accept `generalDirective` + `reportDirective` in `createVersion` |
 
 ### UI Layer
+
 | File | Change |
 |------|--------|
 | `lib/features/agents/ui/agent_template_detail_page.dart` | Two textarea fields instead of one |
@@ -600,6 +604,7 @@ gantt
 | `lib/features/agents/ui/evolution/evolution_chat_page.dart` | Update proposal rendering for dual fields |
 
 ### Tests
+
 | File | Change |
 |------|--------|
 | `test/features/agents/ui/report_content_parser_test.dart` | Verify backwards-compat parsing |
@@ -626,7 +631,7 @@ gantt
 - [ ] `AgentTemplateVersionEntity` has `generalDirective` and `reportDirective` fields (alongside existing `directives`)
 - [ ] `AgentReportEntity` has nullable `tldr` field alongside existing `content`
 - [ ] Task agent wake constructs system prompt from both directive fields
-- [ ] `update_report` tool accepts `tldr` and `report` separately
+- [ ] `update_report` tool accepts `tldr` and `content` separately
 - [ ] Evolution agent proposes both directives independently
 - [ ] Template edit page shows two distinct text areas
 - [ ] Report UI shows TLDR always visible, full report expandable

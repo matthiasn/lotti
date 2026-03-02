@@ -146,6 +146,7 @@ AgentReportEntity makeTestReport({
   DateTime? createdAt,
   VectorClock? vectorClock,
   String content = '# Test Report\n\nEverything is fine.',
+  String? tldr,
   double? confidence,
 }) {
   return AgentDomainEntity.agentReport(
@@ -155,6 +156,7 @@ AgentReportEntity makeTestReport({
     createdAt: createdAt ?? kAgentTestDate,
     vectorClock: vectorClock,
     content: content,
+    tldr: tldr,
     confidence: confidence,
   ) as AgentReportEntity;
 }

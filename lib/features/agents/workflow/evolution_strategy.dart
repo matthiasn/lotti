@@ -40,10 +40,19 @@ class PendingNote {
 /// After each LLM turn, the strategy returns [ConversationAction.wait] to
 /// hand control back to the user for the next message.
 class EvolutionStrategy extends ConversationStrategy {
-  EvolutionStrategy({this.genUiBridge});
+  EvolutionStrategy({
+    this.genUiBridge,
+    this.currentGeneralDirective = '',
+    this.currentReportDirective = '',
+  });
 
   /// Optional GenUI bridge for handling `render_surface` tool calls.
   final GenUiBridge? genUiBridge;
+
+  /// Current directive values from the active template version, used to
+  /// show a before/after comparison in the proposal card.
+  final String currentGeneralDirective;
+  final String currentReportDirective;
 
   final List<PendingNote> _pendingNotes = [];
   PendingProposal? _latestProposal;
@@ -157,6 +166,8 @@ class EvolutionStrategy extends ConversationStrategy {
             'generalDirective': generalDirective,
             'reportDirective': reportDirective,
             'rationale': rationale,
+            'currentGeneralDirective': currentGeneralDirective,
+            'currentReportDirective': currentReportDirective,
           },
         });
       } catch (_) {

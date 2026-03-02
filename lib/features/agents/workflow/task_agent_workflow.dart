@@ -611,32 +611,38 @@ class TaskAgentWorkflow {
   /// directive is present, since the template provides its own.
   String _buildSystemPrompt(_TemplateContext ctx) {
     final version = ctx.version;
-    final hasNewDirectives = version.generalDirective.isNotEmpty ||
-        version.reportDirective.isNotEmpty;
+    final trimmedGeneralDirective = version.generalDirective.trim();
+    final trimmedReportDirective = version.reportDirective.trim();
+    final trimmedLegacyDirective = version.directives.trim();
+    final hasNewDirectives =
+        trimmedGeneralDirective.isNotEmpty || trimmedReportDirective.isNotEmpty;
 
     if (hasNewDirectives) {
       final buf = StringBuffer()..write(taskAgentScaffoldCore);
 
-      if (version.reportDirective.isNotEmpty) {
+      if (trimmedReportDirective.isNotEmpty) {
         buf
           ..writeln()
           ..writeln()
           ..writeln('## Report Directive')
           ..writeln()
-          ..write(version.reportDirective);
+          ..write(trimmedReportDirective);
       } else {
         buf.write(taskAgentScaffoldReport);
       }
 
       buf.write(taskAgentScaffoldTrailing);
 
-      if (version.generalDirective.isNotEmpty) {
+      final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
+          ? trimmedGeneralDirective
+          : trimmedLegacyDirective;
+      if (effectiveGeneralDirective.isNotEmpty) {
         buf
           ..writeln()
           ..writeln()
           ..writeln('## Your Personality & Directives')
           ..writeln()
-          ..write(version.generalDirective);
+          ..write(effectiveGeneralDirective);
       }
 
       return buf.toString();

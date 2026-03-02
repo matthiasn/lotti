@@ -192,8 +192,14 @@ void main() {
       );
       await tester.pump();
 
-      // Empty content renders nothing (the widget returns SizedBox.shrink)
-      expect(find.byType(GptMarkdown), findsNothing);
+      // TLDR is rendered even when content is empty.
+      expect(find.byType(GptMarkdown), findsOneWidget);
+      final gptMarkdown = tester.widget<GptMarkdown>(
+        find.byType(GptMarkdown).first,
+      );
+      expect(gptMarkdown.data, 'Just the TLDR');
+      // No expand button since there's no additional content.
+      expect(find.byIcon(Icons.expand_more), findsNothing);
     });
 
     testWidgets('explicit tldr with non-empty content shows expand button',

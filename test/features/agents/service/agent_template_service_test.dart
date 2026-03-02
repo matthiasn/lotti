@@ -232,6 +232,48 @@ void main() {
       // Remaining 3 are from createVersion (archive, new version, head).
       expect(captured, hasLength(4));
     });
+
+    test('preserves split directive fields on model change version', () async {
+      stubTemplateExists();
+      final activeVersion = makeTestTemplateVersion(
+        generalDirective: 'Be thorough.',
+        reportDirective: 'Use bullet points.',
+      );
+      final head = makeTestTemplateHead();
+      when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
+          .thenAnswer((_) async => activeVersion);
+      when(() => mockRepo.getTemplateHead(kTestTemplateId))
+          .thenAnswer((_) async => head);
+      when(() => mockRepo.getEntity(head.versionId))
+          .thenAnswer((_) async => activeVersion);
+      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
+          .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[activeVersion]);
+
+      await service.updateTemplate(
+        templateId: kTestTemplateId,
+        modelId: 'models/new-model',
+      );
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      // Find the newly created version (not the archived one).
+      final newVersion = captured
+          .whereType<AgentTemplateVersionEntity>()
+          .where(
+            (v) => v.status == AgentTemplateVersionStatus.active,
+          )
+          .first;
+      expect(newVersion.generalDirective, 'Be thorough.');
+      expect(newVersion.reportDirective, 'Use bullet points.');
+    });
   });
 
   group('createVersion', () {

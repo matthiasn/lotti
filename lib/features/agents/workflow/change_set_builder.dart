@@ -234,15 +234,15 @@ class ChangeSetBuilder {
       );
 
       // Gather items from non-survivor sets that aren't already in the
-      // survivor (e.g. from a race that created duplicates).
-      final survivorFingerprints =
-          survivor.items.map(ChangeItem.fingerprint).toSet();
+      // survivor or in the new deduped items.
+      final knownFingerprints = {
+        ...survivor.items.map(ChangeItem.fingerprint),
+        ...deduped.map(ChangeItem.fingerprint),
+      };
       final otherItems = existingPendingSets
           .where((cs) => cs.id != survivor.id)
           .expand((cs) => cs.items)
-          .where((i) => !survivorFingerprints.contains(
-                ChangeItem.fingerprint(i),
-              ))
+          .where((i) => knownFingerprints.add(ChangeItem.fingerprint(i)))
           .toList();
 
       final merged = survivor.copyWith(

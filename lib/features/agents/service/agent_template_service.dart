@@ -191,6 +191,8 @@ class AgentTemplateService {
           await createVersion(
             templateId: templateId,
             directives: activeVersion.directives,
+            generalDirective: activeVersion.generalDirective,
+            reportDirective: activeVersion.reportDirective,
             authoredBy: 'system:config_change',
           );
         }
@@ -769,8 +771,8 @@ class AgentTemplateService {
       final activeVersion = await getActiveVersion(template.id);
       if (activeVersion == null) continue;
 
-      // Skip versions that already have the new fields populated.
-      if (activeVersion.generalDirective.isNotEmpty ||
+      // Skip versions that already have both new fields populated.
+      if (activeVersion.generalDirective.isNotEmpty &&
           activeVersion.reportDirective.isNotEmpty) {
         continue;
       }
@@ -787,8 +789,12 @@ class AgentTemplateService {
       };
 
       final updated = activeVersion.copyWith(
-        generalDirective: general,
-        reportDirective: report,
+        generalDirective: activeVersion.generalDirective.isNotEmpty
+            ? activeVersion.generalDirective
+            : general,
+        reportDirective: activeVersion.reportDirective.isNotEmpty
+            ? activeVersion.reportDirective
+            : report,
       );
       await syncService.upsertEntity(updated);
 

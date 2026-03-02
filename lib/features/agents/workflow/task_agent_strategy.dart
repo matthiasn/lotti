@@ -280,14 +280,18 @@ class TaskAgentStrategy extends ConversationStrategy {
     ConversationManager manager,
   ) async {
     // Accept `content` first, fall back to legacy `markdown`.
-    final rawContent = args['content'] ?? args['markdown'];
+    final contentArg = args['content'];
+    final markdownArg = args['markdown'];
+    final rawContent = (contentArg is String && contentArg.trim().isNotEmpty)
+        ? contentArg
+        : markdownArg;
     final rawTldr = args['tldr'];
 
     if (rawContent is String && rawContent.trim().isNotEmpty) {
       _reportContent = rawContent.trim();
-      if (rawTldr is String && rawTldr.trim().isNotEmpty) {
-        _reportTldr = rawTldr.trim();
-      }
+      _reportTldr = (rawTldr is String && rawTldr.trim().isNotEmpty)
+          ? rawTldr.trim()
+          : null;
 
       developer.log(
         'Report updated (${_reportContent!.length} chars, '

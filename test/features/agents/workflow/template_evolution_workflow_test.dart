@@ -626,7 +626,7 @@ void main() {
       verify(
         () => mockTemplateService.createVersion(
           templateId: kTestTemplateId,
-          directives: '',
+          directives: 'Improved directives',
           generalDirective: 'Improved directives',
           // ignore: avoid_redundant_argument_values
           reportDirective: '',

@@ -235,14 +235,15 @@ void main() {
         expect(tool.description, contains('report'));
       });
 
-      test('requires tldr and content parameters', () {
+      test('requires tldr parameter and accepts content', () {
         final properties = tool.parameters['properties'] as Map;
         final tldrProp = properties['tldr'] as Map;
         expect(tldrProp['type'], equals('string'));
         final contentProp = properties['content'] as Map;
         expect(contentProp['type'], equals('string'));
         expect(tool.parameters['required'], contains('tldr'));
-        expect(tool.parameters['required'], contains('content'));
+        // content is optional for backward compat with legacy markdown param
+        expect(tool.parameters['required'], isNot(contains('content')));
       });
     });
 

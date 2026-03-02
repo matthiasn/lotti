@@ -48,7 +48,6 @@ class _AgentTemplateDetailPageState
     extends ConsumerState<AgentTemplateDetailPage>
     with TickerProviderStateMixin {
   late TextEditingController _nameController;
-  late TextEditingController _directivesController;
   late TextEditingController _generalDirectiveController;
   late TextEditingController _reportDirectiveController;
   String? _selectedModelId;
@@ -66,7 +65,6 @@ class _AgentTemplateDetailPageState
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _directivesController = TextEditingController();
     _generalDirectiveController = TextEditingController();
     _reportDirectiveController = TextEditingController();
     if (widget.isCreateMode) {
@@ -87,7 +85,6 @@ class _AgentTemplateDetailPageState
   void dispose() {
     _tabController?.removeListener(_onTabChanged);
     _nameController.dispose();
-    _directivesController.dispose();
     _generalDirectiveController.dispose();
     _reportDirectiveController.dispose();
     _tabController?.dispose();
@@ -148,7 +145,6 @@ class _AgentTemplateDetailPageState
       _selectedModelId = template.modelId;
       _selectedProfileId = template.profileId;
       if (activeVersion != null) {
-        _directivesController.text = activeVersion.directives;
         _generalDirectiveController.text =
             activeVersion.generalDirective.isNotEmpty
                 ? activeVersion.generalDirective
@@ -158,7 +154,6 @@ class _AgentTemplateDetailPageState
       }
       _didSeedControllers = true;
     } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
-      _directivesController.text = activeVersion.directives;
       _generalDirectiveController.text =
           activeVersion.generalDirective.isNotEmpty
               ? activeVersion.generalDirective
@@ -374,7 +369,7 @@ class _AgentTemplateDetailPageState
         // Create a new directive version.
         await templateService.createVersion(
           templateId: widget.templateId!,
-          directives: '',
+          directives: '$generalDirective\n\n$reportDirective'.trim(),
           generalDirective: generalDirective,
           reportDirective: reportDirective,
           authoredBy: 'user',

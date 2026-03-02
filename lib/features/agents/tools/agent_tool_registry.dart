@@ -266,7 +266,7 @@ class AgentToolRegistry {
                 'provided, "content" takes precedence.',
           },
         },
-        'required': ['tldr', 'content'],
+        'required': ['tldr'],
         'additionalProperties': false,
       },
     ),

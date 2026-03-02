@@ -1176,6 +1176,68 @@ void main() {
       expect(find.byType(AgentReportSection), findsNWidgets(2));
     });
 
+    testWidgets('Reports tab renders report with tldr field', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final report = makeTestReport(
+        id: 'r1',
+        agentId: 'agent-a',
+        content: '# Full Report\n\nDetailed analysis here.',
+        tldr: 'Brief summary of findings.',
+        createdAt: DateTime(2025, 6, 15, 10, 30),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => makeTestTemplate(
+                id: templateId,
+                agentId: templateId,
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[
+                makeTestTemplateVersion(agentId: templateId),
+              ],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            templateTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => <AgentTokenUsageSummary>[],
+            ),
+            templateInstanceTokenBreakdownProvider.overrideWith(
+              (ref, id) async => <InstanceTokenBreakdown>[],
+            ),
+            templateRecentReportsProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[report],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+
+      // TLDR text should be visible (always shown)
+      expect(find.textContaining('Brief summary'), findsOneWidget);
+      expect(find.byType(AgentReportSection), findsOneWidget);
+    });
+
     testWidgets('Reports tab skips non-AgentReportEntity items',
         (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))

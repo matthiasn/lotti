@@ -36,6 +36,10 @@ final _proposalSchema = S.object(
     'reportDirective':
         S.string(description: 'The proposed report directive text'),
     'rationale': S.string(description: 'Brief rationale for the changes'),
+    'currentGeneralDirective':
+        S.string(description: 'The current general directive for comparison'),
+    'currentReportDirective':
+        S.string(description: 'The current report directive for comparison'),
   },
   required: ['generalDirective', 'reportDirective', 'rationale'],
 );
@@ -200,10 +204,18 @@ final evolutionProposalItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final generalDirective = _readString(json, 'generalDirective');
-    final reportDirective = _readString(json, 'reportDirective');
-    final rationale = _readString(json, 'rationale');
+    final generalDirective = _readString(json, 'generalDirective').trim();
+    final reportDirective = _readString(json, 'reportDirective').trim();
+    final rationale = _readString(json, 'rationale').trim();
+    final currentGeneral =
+        _readStringOrNull(json, 'currentGeneralDirective')?.trim();
+    final currentReport =
+        _readStringOrNull(json, 'currentReportDirective')?.trim();
     final context = itemContext.buildContext;
+
+    final hasCurrentDirectives =
+        (currentGeneral != null && currentGeneral.isNotEmpty) ||
+            (currentReport != null && currentReport.isNotEmpty);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -233,11 +245,36 @@ final evolutionProposalItem = CatalogItem(
                 ),
               ],
             ),
+            // Current directives (before)
+            if (hasCurrentDirectives) ...[
+              if (currentGeneral != null && currentGeneral.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _sectionLabel(
+                  context,
+                  '${context.messages.agentEvolutionCurrentDirectives}'
+                  ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
+                ),
+                const SizedBox(height: 6),
+                _directiveBox(text: currentGeneral),
+              ],
+              if (currentReport != null && currentReport.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _sectionLabel(
+                  context,
+                  '${context.messages.agentEvolutionCurrentDirectives}'
+                  ' — ${context.messages.agentTemplateReportDirectiveLabel}',
+                ),
+                const SizedBox(height: 6),
+                _directiveBox(text: currentReport),
+              ],
+            ],
+            // Proposed directives (after)
             if (generalDirective.isNotEmpty) ...[
               const SizedBox(height: 16),
               _sectionLabel(
                 context,
-                context.messages.agentTemplateGeneralDirectiveLabel,
+                '${context.messages.agentEvolutionProposedDirectives}'
+                ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
               ),
               const SizedBox(height: 6),
               _directiveBox(
@@ -251,7 +288,8 @@ final evolutionProposalItem = CatalogItem(
               const SizedBox(height: 14),
               _sectionLabel(
                 context,
-                context.messages.agentTemplateReportDirectiveLabel,
+                '${context.messages.agentEvolutionProposedDirectives}'
+                ' — ${context.messages.agentTemplateReportDirectiveLabel}',
               ),
               const SizedBox(height: 6),
               _directiveBox(
