@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -851,8 +852,7 @@ final categoryRatingsItem = CatalogItem(
     return _CategoryRatingsCard(
       categories: categories,
       onSubmit: (ratings) {
-        final ratingsJson =
-            '{${ratings.entries.map((e) => '"${e.key}":${e.value}').join(',')}}';
+        final ratingsJson = jsonEncode(ratings);
         itemContext.dispatchEvent(
           UserActionEvent(
             name: 'ratings_submitted',

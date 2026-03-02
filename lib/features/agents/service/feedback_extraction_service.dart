@@ -110,14 +110,33 @@ class FeedbackExtractionService {
         observations.where((o) => inWindow(o.createdAt)).toList();
 
     // Bulk-fetch observation payloads for richer detail text.
-    final payloadIds =
-        windowObservations.map((obs) => obs.contentEntryId).whereType<String>();
-    final payloadEntities =
-        await Future.wait(payloadIds.map(agentRepository.getEntity));
+    // Per-ID error handling so one failure doesn't abort the whole run.
+    final payloadIds = windowObservations
+        .map((obs) => obs.contentEntryId)
+        .whereType<String>()
+        .toSet();
+    final payloadEntries = await Future.wait(
+      payloadIds.map((id) async {
+        try {
+          final entity = await agentRepository.getEntity(id);
+          if (entity is AgentMessagePayloadEntity) {
+            return MapEntry(id, entity);
+          }
+        } catch (e, s) {
+          developer.log(
+            'Failed to fetch payload $id',
+            name: 'FeedbackExtractionService',
+            error: e,
+            stackTrace: s,
+          );
+        }
+        return null;
+      }),
+    );
     final payloadMap = <String, AgentMessagePayloadEntity>{
-      for (final entity
-          in payloadEntities.whereType<AgentMessagePayloadEntity>())
-        entity.id: entity,
+      for (final entry in payloadEntries
+          .whereType<MapEntry<String, AgentMessagePayloadEntity>>())
+        entry.key: entry.value,
     };
 
     for (final observation in windowObservations) {
@@ -223,7 +242,9 @@ class FeedbackExtractionService {
     Map<String, ChangeSetEntity> changeSetMap,
   ) {
     final changeSet = changeSetMap[decision.changeSetId];
-    if (changeSet != null && decision.itemIndex < changeSet.items.length) {
+    if (changeSet != null &&
+        decision.itemIndex >= 0 &&
+        decision.itemIndex < changeSet.items.length) {
       return changeSet.items[decision.itemIndex].humanSummary;
     }
     return decision.toolName;
