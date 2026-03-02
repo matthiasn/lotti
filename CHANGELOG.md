@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.894] - 2026-03-02
+### Improved
+- Agent template settings tab UX: the 1-on-1 review button is now prominently
+  placed in the sticky bottom bar when no edits have been made. Save/Cancel
+  buttons only appear when the form has unsaved changes.
+- Directive text areas expand to full height instead of capping at 12 lines.
+- Profile selector label changed from "Inference Profiles" to
+  "Default inference profile" for clarity.
+- Delete action moved from bottom bar to Stats tab to reduce clutter.
+
+### Fixed
+- Evolution 1-on-1 review flow: restored the chat entry FAB so the interactive
+  conversation can always be opened from the review page.
+
 ## [0.9.893] - 2026-03-02
 ### Added
 - Voice transcription in evolution chat: mic button with batch and realtime

@@ -1,3 +1,4 @@
+//ignore_for_file: avoid_redundant_argument_values
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -59,6 +60,8 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
+    // Default: no entity found for payload lookups.
+    when(() => mockRepo.getEntity(any())).thenAnswer((_) async => null);
     // Template kind check: null → not an improver, skips evolution feedback.
     when(() => mockTemplateService.getTemplate(any()))
         .thenAnswer((_) async => null);
@@ -303,7 +306,7 @@ void main() {
       expect(result.totalDecisionsScanned, 1);
     });
 
-    test('classifies observations as neutral', () async {
+    test('classifies observations as neutral with default detail', () async {
       stubEmptyData();
       final observation = makeTestMessage(
         kind: AgentMessageKind.observation,
@@ -326,7 +329,319 @@ void main() {
       expect(result.items.first.sentiment, FeedbackSentiment.neutral);
       expect(result.items.first.source, FeedbackSources.observation);
       expect(result.items.first.category, FeedbackCategory.general);
+      expect(result.items.first.detail, 'Observation recorded');
       expect(result.totalObservationsScanned, 1);
+    });
+
+    test('enriches observation detail with payload text', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-enrich-1',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-enrich-1',
+        content: {'text': 'The agent noticed high CPU usage on the server.'},
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-enrich-1'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(
+        result.items.first.detail,
+        'The agent noticed high CPU usage on the server.',
+      );
+    });
+
+    test('truncates long observation payload text to 200 chars', () async {
+      stubEmptyData();
+      final longText = 'A' * 250;
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-long',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-long',
+        content: {'text': longText},
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-long'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      // Truncated to maxLength (including ellipsis).
+      expect(result.items.first.detail.length, 200);
+      expect(result.items.first.detail, endsWith('…'));
+    });
+
+    test('falls back to default detail when payload has no text', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-empty',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-empty',
+        content: {'data': 'some non-text content'},
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-empty'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, 'Observation recorded');
+    });
+
+    test('classifies observation with positive keywords as positive', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-positive',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-positive',
+        content: {'text': 'Task completed successfully and approved by user.'},
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-positive'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.positive);
+    });
+
+    test('classifies observation with negative keywords as negative', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-negative',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-negative',
+        content: {'text': 'Agent encountered an error and the task failed.'},
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-negative'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('classifies observation with mixed keywords as dominant sentiment',
+        () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-mixed',
+      );
+      // Two negative keywords (error, crash) vs one positive (resolved)
+      final payload = makeTestMessagePayload(
+        id: 'payload-mixed',
+        content: {'text': 'System error caused a crash but was resolved.'},
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-mixed'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      // 2 negative > 1 positive → negative
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('uses humanSummary in decision detail when available', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        humanSummary: 'Added label "urgent" to task #42',
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(
+        result.items.first.detail,
+        'confirmed: Added label "urgent" to task #42',
+      );
+    });
+
+    test(
+        'uses change-set item summary when decision humanSummary '
+        'is missing', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        changeSetId: 'cs-summary',
+        humanSummary: null,
+        itemIndex: 0,
+        toolName: 'fallback_tool',
+      );
+      stubDecisions([decision]);
+      when(() => mockRepo.getEntity('cs-summary')).thenAnswer(
+        (_) async => makeTestChangeSet(id: 'cs-summary'),
+      );
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, 'confirmed: Set estimate to 2 hours');
+    });
+
+    test(
+        'falls back to toolName and includes rejection reason '
+        'when no summary exists', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        verdict: ChangeDecisionVerdict.rejected,
+        humanSummary: null,
+        changeSetId: 'cs-missing',
+        toolName: 'update_title',
+        rejectionReason: 'unsafe change',
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(
+        result.items.first.detail,
+        'rejected: update_title — unsafe change',
+      );
+    });
+
+    test('continues when change-set fetch fails for a decision', () async {
+      stubEmptyData();
+      final decision = makeTestChangeDecision(
+        createdAt: DateTime(2024, 3, 15),
+        humanSummary: null,
+        changeSetId: 'cs-fail',
+        toolName: 'safe_fallback_tool',
+      );
+      stubDecisions([decision]);
+      when(() => mockRepo.getEntity('cs-fail')).thenThrow(Exception('db down'));
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, contains('safe_fallback_tool'));
+    });
+
+    test('continues when observation payload fetch fails', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-fail',
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-fail'))
+          .thenThrow(Exception('payload read failed'));
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.detail, 'Observation recorded');
+      expect(result.items.first.sentiment, FeedbackSentiment.neutral);
     });
 
     test('classifies high wake run rating as positive', () async {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/feedback_category_breakdown.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_summary_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -35,7 +34,7 @@ void main() {
         );
       });
 
-      testWidgets('does not show segmented button when items list is empty',
+      testWidgets('does not show tab bar when items list is empty',
           (tester) async {
         final feedback = makeTestClassifiedFeedback(items: []);
 
@@ -44,38 +43,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(SegmentedButton<dynamic>), findsNothing);
+        expect(find.byType(TabBar), findsNothing);
       });
     });
 
-    group('segmented button toggle', () {
-      testWidgets('shows segmented button with By Sentiment and By Category',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              detail: 'Good accuracy',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-        expect(
-          find.text(context.messages.agentRitualReviewBySentiment),
-          findsOneWidget,
-        );
-        expect(
-          find.text(context.messages.agentRitualReviewByCategory),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('defaults to sentiment view showing sentiment groups',
+    group('sentiment tab view', () {
+      testWidgets('shows tab bar with all three sentiment tabs',
           (tester) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
@@ -97,86 +70,17 @@ void main() {
           find.text(context.messages.agentRitualReviewNegativeSignals),
           findsOneWidget,
         );
-        // Category breakdown should NOT be visible in sentiment view
-        expect(find.byType(FeedbackCategoryBreakdown), findsNothing);
-      });
-
-      testWidgets('switching to category view hides sentiment groups',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.negative,
-              source: 'observation',
-              detail: 'Inaccurate report',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-
-        // Tap "By Category" segment
-        await tester.tap(
-          find.text(context.messages.agentRitualReviewByCategory),
-        );
-        await tester.pumpAndSettle();
-
-        // Sentiment group headers should disappear
-        expect(
-          find.text(context.messages.agentRitualReviewNegativeSignals),
-          findsNothing,
-        );
-        // Category breakdown widget should now be present
-        expect(find.byType(FeedbackCategoryBreakdown), findsOneWidget);
-      });
-
-      testWidgets('switching back to sentiment view hides category breakdown',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              category: FeedbackCategory.communication,
-              detail: 'Clear communication',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-
-        // Switch to category view
-        await tester.tap(
-          find.text(context.messages.agentRitualReviewByCategory),
-        );
-        await tester.pumpAndSettle();
-        expect(find.byType(FeedbackCategoryBreakdown), findsOneWidget);
-
-        // Switch back to sentiment view
-        await tester.tap(
-          find.text(context.messages.agentRitualReviewBySentiment),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byType(FeedbackCategoryBreakdown), findsNothing);
         expect(
           find.text(context.messages.agentRitualReviewPositiveSignals),
           findsOneWidget,
         );
+        expect(
+          find.text(context.messages.agentRitualReviewNeutralSignals),
+          findsOneWidget,
+        );
       });
-    });
 
-    group('sentiment view groups', () {
-      testWidgets('shows negative signals group header with correct count',
-          (tester) async {
+      testWidgets('shows count badges for each sentiment tab', (tester) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -189,6 +93,9 @@ void main() {
               category: FeedbackCategory.prioritization,
               detail: 'Second negative',
             ),
+            makeTestClassifiedFeedbackItem(
+              detail: 'One positive',
+            ),
           ],
         );
 
@@ -197,135 +104,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final context = tester.element(find.byType(FeedbackSummarySection));
-        expect(
-          find.text(context.messages.agentRitualReviewNegativeSignals),
-          findsOneWidget,
-        );
-        // Count badge shows 2
+        // Negative tab badge shows 2, positive shows 1, neutral shows 0
         expect(find.text('2'), findsOneWidget);
-      });
-
-      testWidgets('shows positive signals group header with correct count',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              detail: 'Great accuracy',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-        expect(
-          find.text(context.messages.agentRitualReviewPositiveSignals),
-          findsOneWidget,
-        );
         expect(find.text('1'), findsOneWidget);
-      });
-
-      testWidgets('shows neutral signals group header with correct count',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.neutral,
-              category: FeedbackCategory.general,
-              source: 'metric',
-              detail: 'Observed but no clear signal',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-        expect(
-          find.text(context.messages.agentRitualReviewNeutralSignals),
-          findsOneWidget,
-        );
-        expect(find.text('1'), findsOneWidget);
+        expect(find.text('0'), findsOneWidget);
       });
 
       testWidgets(
-          'omits negative group header when there are no negative items',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              detail: 'Great result',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-        expect(
-          find.text(context.messages.agentRitualReviewNegativeSignals),
-          findsNothing,
-        );
-        expect(
-          find.text(context.messages.agentRitualReviewNeutralSignals),
-          findsNothing,
-        );
-      });
-
-      testWidgets(
-          'shows all three sentiment groups when all sentiments present',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.negative,
-              source: 'observation',
-              detail: 'Bad accuracy',
-            ),
-            makeTestClassifiedFeedbackItem(
-              category: FeedbackCategory.communication,
-              detail: 'Good communication',
-            ),
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.neutral,
-              category: FeedbackCategory.general,
-              source: 'metric',
-              detail: 'Neutral observation',
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FeedbackSummarySection));
-        expect(
-          find.text(context.messages.agentRitualReviewNegativeSignals),
-          findsOneWidget,
-        );
-        expect(
-          find.text(context.messages.agentRitualReviewPositiveSignals),
-          findsOneWidget,
-        );
-        expect(
-          find.text(context.messages.agentRitualReviewNeutralSignals),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('renders FeedbackItemTile for each item in expanded group',
+          'renders FeedbackItemTile for items in the initially visible tab',
           (tester) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
@@ -347,22 +133,23 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Groups are expanded by default — both tiles should be visible
+        // Default tab is Negative (first tab) — both tiles should be visible
         expect(find.byType(FeedbackItemTile), findsNWidgets(2));
-        // AnimatedCrossFade renders both children simultaneously,
-        // so each detail text may appear in multiple Text widgets.
         expect(find.text('Item A detail'), findsWidgets);
         expect(find.text('Item B detail'), findsWidgets);
       });
 
-      testWidgets('collapsing sentiment group hides its FeedbackItemTiles',
+      testWidgets('switching tabs shows items for the selected sentiment',
           (tester) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
               sentiment: FeedbackSentiment.negative,
               source: 'observation',
-              detail: 'Negative detail text',
+              detail: 'Negative item',
+            ),
+            makeTestClassifiedFeedbackItem(
+              detail: 'Positive item',
             ),
           ],
         );
@@ -372,18 +159,87 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Initially expanded — tile visible
-        expect(find.byType(FeedbackItemTile), findsOneWidget);
-
-        // Tap the group header GestureDetector to collapse
         final context = tester.element(find.byType(FeedbackSummarySection));
+
+        // Initial tab (Negative) shows negative item
+        expect(find.text('Negative item'), findsWidgets);
+
+        // Tap Positive tab
         await tester.tap(
-          find.text(context.messages.agentRitualReviewNegativeSignals),
+          find.text(context.messages.agentRitualReviewPositiveSignals),
         );
         await tester.pumpAndSettle();
 
-        // After collapse, the tile should be hidden
-        expect(find.byType(FeedbackItemTile), findsNothing);
+        // Positive item should now be visible
+        expect(find.text('Positive item'), findsWidgets);
+      });
+
+      testWidgets('empty tab shows tab-specific empty-state message',
+          (tester) async {
+        final feedback = makeTestClassifiedFeedback(
+          items: [
+            makeTestClassifiedFeedbackItem(
+              detail: 'Positive item only',
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(FeedbackSummarySection(feedback: feedback)),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FeedbackSummarySection));
+
+        // Default tab (Negative) is empty — should show no-feedback message
+        expect(
+          find.text(context.messages.agentRitualReviewNoNegativeSignals),
+          findsOneWidget,
+        );
+
+        // Positive tab has content, so no empty-state message should render.
+        await tester.tap(
+          find.text(context.messages.agentRitualReviewPositiveSignals),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text(context.messages.agentRitualReviewNoPositiveSignals),
+          findsNothing,
+        );
+
+        // Neutral tab is empty.
+        await tester.tap(
+          find.text(context.messages.agentRitualReviewNeutralSignals),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text(context.messages.agentRitualReviewNoNeutralSignals),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('tab content fills available space via Expanded',
+          (tester) async {
+        final feedback = makeTestClassifiedFeedback(
+          items: [
+            makeTestClassifiedFeedbackItem(
+              sentiment: FeedbackSentiment.negative,
+              source: 'observation',
+              detail: 'A signal',
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(FeedbackSummarySection(feedback: feedback)),
+        );
+        await tester.pumpAndSettle();
+
+        // The item list is wrapped in an Expanded widget (not a
+        // fixed-height SizedBox) so it fills the remaining space.
+        final expandedWidgets =
+            tester.widgetList<Expanded>(find.byType(Expanded));
+        expect(expandedWidgets, isNotEmpty);
       });
     });
   });

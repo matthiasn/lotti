@@ -88,6 +88,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentActivityLogHeading => 'Protokol aktivity';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Rate Categories';
+
+  @override
   String agentControlsActionError(String error) {
     return 'Akce se nezdařila: $error';
   }
@@ -142,6 +148,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String agentConversationTokenCount(String tokenCount) {
     return '$tokenCount tokenů';
   }
+
+  @override
+  String get agentDefaultProfileLabel => 'Výchozí inferenční profil';
 
   @override
   String agentDetailErrorLoading(String error) {
@@ -440,29 +449,35 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualReviewAction => 'Start Conversation';
 
   @override
-  String get agentRitualReviewByCategory => 'By Category';
-
-  @override
-  String get agentRitualReviewBySentiment => 'By Sentiment';
-
-  @override
   String get agentRitualReviewFeedbackTitle => 'Feedback Signals';
 
   @override
-  String get agentRitualReviewNegativeSignals => 'Negative Signals';
+  String get agentRitualReviewNegativeSignals => 'Negativní';
 
   @override
-  String get agentRitualReviewNeutralSignals => 'Neutral Signals';
+  String get agentRitualReviewNeutralSignals => 'Neutrální';
 
   @override
   String get agentRitualReviewNoFeedback =>
-      'No feedback signals in this window';
+      'V tomto okně nejsou žádné signály zpětné vazby';
 
   @override
-  String get agentRitualReviewNoProposal => 'No active proposal';
+  String get agentRitualReviewNoNegativeSignals =>
+      'V této záložce nejsou žádné negativní signály zpětné vazby';
 
   @override
-  String get agentRitualReviewPositiveSignals => 'Positive Signals';
+  String get agentRitualReviewNoNeutralSignals =>
+      'V této záložce nejsou žádné neutrální signály zpětné vazby';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
+
+  @override
+  String get agentRitualReviewNoPositiveSignals =>
+      'V této záložce nejsou žádné pozitivní signály zpětné vazby';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Pozitivní';
 
   @override
   String get agentRitualReviewProposalSection => 'Current Proposal';
@@ -471,7 +486,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Session History';
 
   @override
-  String get agentRitualReviewTitle => 'Ritual Review';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -561,20 +576,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directives';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Definuj osobnost, nástroje, cíle a styl interakce agenta...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'Obecná direktiva';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Definuj strukturu reportu, povinné sekce a pravidla formátování...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Direktiva reportu';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Name';
 
   @override
@@ -584,13 +585,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateEmptyList => 'No templates yet. Tap + to create one.';
 
   @override
-  String get agentTemplateEvolveAction => 'Evolve with AI';
-
-  @override
   String get agentTemplateEvolveApprove => 'Approve & Save';
 
   @override
   String get agentTemplateEvolveReject => 'Reject';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Definuj osobnost, nástroje, cíle a styl interakce agenta...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Obecná direktiva';
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Rozpis podle instancí';
@@ -608,10 +613,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get agentTemplateKindImprover => 'Template Improver';
+  String get agentTemplateKindImprover => 'Zlepšovač šablon';
 
   @override
-  String get agentTemplateKindTaskAgent => 'Task Agent';
+  String get agentTemplateKindTaskAgent => 'Agent úkolů';
 
   @override
   String get agentTemplateMetricsActiveInstances => 'Active Instances';
@@ -647,6 +652,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'No versions';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Definuj strukturu reportu, povinné sekce a pravidla formátování...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Direktiva reportu';
 
   @override
   String get agentTemplateReportsEmpty => 'No reports yet.';
@@ -4611,6 +4623,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Souhrny úkolů';
+
+  @override
+  String get thinkingDisclosureCopied => 'Úvaha zkopírována';
+
+  @override
+  String get thinkingDisclosureCopy => 'Kopírovat úvahu';
+
+  @override
+  String get thinkingDisclosureHide => 'Skrýt úvahu';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'sbaleno';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'rozbaleno';
+
+  @override
+  String get thinkingDisclosureShow => 'Zobrazit úvahu';
 
   @override
   String get timeByCategoryChartTitle => 'Čas podle kategorie';

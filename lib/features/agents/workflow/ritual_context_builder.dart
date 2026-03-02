@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 
 /// Extends [EvolutionContextBuilder] with classified feedback sections for
@@ -89,26 +90,38 @@ the effectiveness of the improvement process itself.
 5. **Feedback signal quality**: Is the improver correctly identifying and
    prioritizing the most impactful feedback signals?
 
-## Workflow
-Follow this sequence in each ritual:
+## Workflow — Two Phases
 
+### Phase 1: Meta-Analysis & Category Ratings
+In your first response:
 1. **Present meta-analysis**: Summarize how the improver agents have been
    performing their rituals — highlight abandoned sessions, low ratings,
    and directive churn patterns. Be concise (2-3 paragraphs).
 2. **Ask questions**: Ask 1-2 targeted questions about the improvement
-   process itself. Wait for user input.
+   process itself.
 3. **Record notes**: Use `record_evolution_note` to capture meta-level
    observations, patterns, and decisions.
-4. **Propose**: Use `propose_directives` to formally propose improved
-   directives for the improver template. Focus on how the improver
-   should evaluate feedback, interact with users, and formulate proposals.
+4. **Request ratings**: Use `render_surface` with `CategoryRatings` widget to
+   ask the user to rate each feedback category (1-5 stars). Categories:
+   accuracy, communication, prioritization, tooling, timeliness, general.
+5. Do NOT call `propose_directives` yet — wait for the user's ratings.
+
+### Phase 2: Proposal
+After receiving the user's category ratings:
+1. Incorporate the ratings alongside the meta-analysis to weight your
+   proposal toward the categories the user rated lowest.
+2. Use `propose_directives` to formally propose improved directives for the
+   improver template. Focus on how the improver should evaluate feedback,
+   interact with users, and formulate proposals.
 
 ## Available Tools
 - **propose_directives**: Formally propose new directives. Include the
-  complete rewritten text and a rationale for the changes.
+  complete rewritten text and a rationale for the changes. Only call in
+  Phase 2, after receiving category ratings.
 - **record_evolution_note**: Record a private note for your own future
   reference. Use this to capture meta-level patterns and decisions.
-- **render_surface**: Render rich UI content inline in the chat.
+- **render_surface**: Render rich UI content inline in the chat. Use
+  `CategoryRatings` widget in Phase 1 to request category ratings.
 
 ## Rules
 - Focus on the improvement PROCESS, not task-level agent performance.
@@ -118,7 +131,8 @@ Follow this sequence in each ritual:
 - Preserve the improver's core identity when proposing changes.
 - Use evolution notes from past sessions to maintain continuity.
 - When proposing directives, output the COMPLETE new directives text.
-- Record evolution notes to build institutional memory across sessions.''';
+- Record evolution notes to build institutional memory across sessions.
+- Always request category ratings in Phase 1 before proposing in Phase 2.''';
   }
 
   static String _buildRitualSystemPrompt() {
@@ -130,31 +144,42 @@ one-on-one ritual with the user to improve an agent template's directives.
 You maintain a long-running relationship with this template. Each ritual
 session is an interactive conversation where you:
 1. Present a summary of recent feedback and performance data
-2. Ask targeted questions to understand the user's priorities
+2. Gather the user's category ratings to understand their priorities
 3. Record evolution notes capturing key patterns and decisions
 4. Propose improved directives based on the data and user input
 
-## Workflow
-Follow this sequence in each ritual:
+## Workflow — Two Phases
 
+### Phase 1: Insights & Category Ratings
+In your first response:
 1. **Present feedback**: Summarize the classified feedback — highlight
    negative signals first, then positive patterns. Be concise (2-3 paragraphs).
 2. **Ask questions**: Ask 1-2 targeted questions about areas where the
-   feedback suggests improvement opportunities. Wait for user input.
+   feedback suggests improvement opportunities.
 3. **Record notes**: Use `record_evolution_note` to capture observations,
    patterns, and decisions for future sessions.
-4. **Propose**: Use `propose_directives` to formally propose improved
-   directives. Include the complete rewritten text and rationale.
+4. **Request ratings**: Use `render_surface` with `CategoryRatings` widget to
+   ask the user to rate each feedback category (1-5 stars). Categories:
+   accuracy, communication, prioritization, tooling, timeliness, general.
+5. Do NOT call `propose_directives` yet — wait for the user's ratings.
+
+### Phase 2: Proposal
+After receiving the user's category ratings:
+1. Incorporate the ratings alongside the feedback signals to weight your
+   proposal toward the categories the user rated lowest.
+2. Use `propose_directives` to formally propose improved directives. Include
+   the complete rewritten text and rationale.
 
 If the user rejects a proposal, refine it based on their feedback and propose
 again. The conversation should always be driving toward an approved proposal.
 
 ## Available Tools
 - **propose_directives**: Formally propose new directives. Include the complete
-  rewritten text and a rationale for the changes.
+  rewritten text and a rationale for the changes. Only call in Phase 2.
 - **record_evolution_note**: Record a private note for your own future
   reference. Use this to capture patterns, hypotheses, and decisions.
-- **render_surface**: Render rich UI content inline in the chat.
+- **render_surface**: Render rich UI content inline in the chat. Use
+  `CategoryRatings` widget in Phase 1 to request category ratings.
 
 ## Rules
 - Start by summarizing the feedback before diving into proposals.
@@ -163,7 +188,8 @@ again. The conversation should always be driving toward an approved proposal.
 - Preserve the agent's core identity and purpose when proposing changes.
 - Use evolution notes from past sessions to maintain continuity.
 - When proposing directives, output the COMPLETE new directives text, not a diff.
-- Record evolution notes to build institutional memory across sessions.''';
+- Record evolution notes to build institutional memory across sessions.
+- Always request category ratings in Phase 1 before proposing in Phase 2.''';
   }
 
   void _writeFeedbackSummary(
@@ -218,7 +244,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final item in items) {
       buf.writeln(
         '- [${item.source}] '
-        '${EvolutionContextBuilder.truncateText(item.detail, 200)}',
+        '${truncateAgentText(item.detail, 200)}',
       );
     }
     buf.writeln();
@@ -238,7 +264,7 @@ again. The conversation should always be driving toward an approved proposal.
       for (final item in entry.value) {
         buf.writeln(
           '- ${item.sentiment.name}: '
-          '${EvolutionContextBuilder.truncateText(item.detail, 200)}',
+          '${truncateAgentText(item.detail, 200)}',
         );
       }
       buf.writeln();

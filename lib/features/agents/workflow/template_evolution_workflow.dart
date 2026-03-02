@@ -190,6 +190,13 @@ class TemplateEvolutionWorkflow {
     // propagating to the UI caller.
     final sessionId = _uuid.v4();
     try {
+      // Abandon any stale active sessions for this template before starting
+      // a new one (e.g., sessions left active from a crash or disconnect).
+      await _abandonStaleActiveSessions(
+        templateId: templateId,
+        currentSessionId: sessionId,
+      );
+
       final EvolutionContext ctx;
       final int sessionNumber;
 
@@ -405,6 +412,23 @@ class TemplateEvolutionWorkflow {
 
       // Clean up and notify UI.
       _cleanupSession(sessionId);
+
+      // Abandon any other stale active sessions for this template.
+      try {
+        await _abandonStaleActiveSessions(
+          templateId: active.templateId,
+          currentSessionId: sessionId,
+        );
+      } catch (e, s) {
+        developer.log(
+          'Failed to auto-abandon stale sessions for template '
+          '${active.templateId}',
+          name: _logTag,
+          error: e,
+          stackTrace: s,
+        );
+      }
+
       _notifyUpdate(active.templateId);
 
       // Invoke the post-approval callback (e.g., schedule next ritual).
@@ -526,6 +550,38 @@ class TemplateEvolutionWorkflow {
   }
 
   // ── Multi-turn helpers ──────────────────────────────────────────────────────
+
+  /// Marks any active evolution sessions for [templateId] as abandoned,
+  /// excluding [currentSessionId]. This prevents stale sessions from
+  /// lingering when a newer session starts or completes.
+  Future<void> _abandonStaleActiveSessions({
+    required String templateId,
+    required String currentSessionId,
+  }) async {
+    final svc = templateService;
+    final sync = syncService;
+    if (svc == null || sync == null) return;
+
+    final sessions = await svc.getEvolutionSessions(templateId);
+    final now = clock.now();
+    for (final session in sessions) {
+      if (session.status == EvolutionSessionStatus.active &&
+          session.id != currentSessionId) {
+        await sync.upsertEntity(
+          session.copyWith(
+            status: EvolutionSessionStatus.abandoned,
+            completedAt: now,
+            updatedAt: now,
+          ),
+        );
+        developer.log(
+          'Auto-abandoned stale session ${session.id} '
+          '(#${session.sessionNumber}) for template $templateId',
+          name: _logTag,
+        );
+      }
+    }
+  }
 
   /// Persists pending notes one by one, draining each from the strategy
   /// *before* writing to guard against post-commit sync failures that would

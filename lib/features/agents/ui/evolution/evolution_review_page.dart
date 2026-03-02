@@ -5,17 +5,16 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_timeline.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_summary_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
-/// Read-only review page for classified feedback and evolution session history.
+/// Read-only review page for classified feedback and the current proposal.
 ///
-/// Provides a summary of feedback signals, the current active proposal,
-/// and a "Start Conversation" button to navigate to [EvolutionChatPage].
+/// Provides a summary of feedback signals, the current active proposal summary
+/// as a compact card, and a floating action button to navigate to
+/// [EvolutionChatPage].
 class EvolutionReviewPage extends ConsumerWidget {
   const EvolutionReviewPage({
     required this.templateId,
@@ -47,114 +46,124 @@ class EvolutionReviewPage extends ConsumerWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => EvolutionChatPage(
+              templateId: templateId,
+            ),
+          ),
+        ),
+        backgroundColor: GameyColors.primaryPurple,
+        icon: const Icon(Icons.chat, color: Colors.white),
+        label: Text(
+          context.messages.agentRitualReviewAction,
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        children: [
-          // Template name
-          Text(
-            templateName,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Template name
+            Text(
+              templateName,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Section 1: Feedback Summary
-          _SectionHeader(
-            title: context.messages.agentRitualReviewFeedbackTitle,
-            icon: Icons.analytics_outlined,
-          ),
-          const SizedBox(height: 12),
-          feedbackAsync.when(
-            data: (feedback) {
-              if (feedback == null) {
-                return _EmptyState(
-                  text: context.messages.agentRitualReviewNoFeedback,
-                );
-              }
-              return FeedbackSummarySection(feedback: feedback);
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (_, __) => _EmptyState(
-              text: context.messages.commonError,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Section 2: Current Proposal / Start Conversation
-          _SectionHeader(
-            title: context.messages.agentRitualReviewProposalSection,
-            icon: Icons.auto_awesome,
-          ),
-          const SizedBox(height: 12),
-          pendingAsync.when(
-            data: (entity) {
-              final session = entity is EvolutionSessionEntity ? entity : null;
-              if (session == null) {
-                return _EmptyState(
-                  text: context.messages.agentRitualReviewNoProposal,
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (session.feedbackSummary != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Text(
-                        session.feedbackSummary!,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  Center(
-                    child: LottiPrimaryButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => EvolutionChatPage(
-                            templateId: templateId,
+            // Proposal summary card (if pending session has feedback summary)
+            pendingAsync.whenOrNull(
+                  data: (entity) {
+                    final session =
+                        entity is EvolutionSessionEntity ? entity : null;
+                    final summary = session?.feedbackSummary?.trim();
+                    if (summary == null || summary.isEmpty) return null;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: GameyColors.primaryPurple
+                                .withValues(alpha: 0.3),
                           ),
                         ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  size: 16,
+                                  color: GameyColors.primaryPurple,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  context.messages
+                                      .agentRitualReviewProposalSection,
+                                  style: TextStyle(
+                                    color: GameyColors.primaryPurple
+                                        .withValues(alpha: 0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              summary,
+                              maxLines: 8,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 13,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      label: context.messages.agentRitualReviewAction,
-                      icon: Icons.chat,
-                    ),
-                  ),
-                ],
-              );
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 24),
+                    );
+                  },
+                ) ??
+                const SizedBox.shrink(),
 
-          // Section 3: Session History
-          _SectionHeader(
-            title: context.messages.agentRitualReviewSessionHistory,
-            icon: Icons.timeline,
-          ),
-          const SizedBox(height: 12),
-          EvolutionSessionTimeline(templateId: templateId),
-          const SizedBox(height: 80),
-        ],
+            // Feedback Signals
+            _SectionHeader(
+              title: context.messages.agentRitualReviewFeedbackTitle,
+              icon: Icons.analytics_outlined,
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: feedbackAsync.when(
+                data: (feedback) {
+                  if (feedback == null) {
+                    return _EmptyState(
+                      text: context.messages.agentRitualReviewNoFeedback,
+                    );
+                  }
+                  return FeedbackSummarySection(feedback: feedback);
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, __) => _EmptyState(
+                  text: context.messages.commonError,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

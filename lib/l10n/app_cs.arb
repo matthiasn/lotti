@@ -53,6 +53,7 @@
       }
     }
   },
+  "agentDefaultProfileLabel": "Výchozí inferenční profil",
   "agentDetailErrorLoading": "Chyba při načítání agenta: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -1636,6 +1637,22 @@
   "taskStatusOpen": "Otevřeno",
   "taskStatusRejected": "Odmítnuto",
   "taskSummaries": "Souhrny úkolů",
+  "agentRitualReviewNegativeSignals": "Negativní",
+  "agentRitualReviewNeutralSignals": "Neutrální",
+  "agentRitualReviewNoFeedback": "V tomto okně nejsou žádné signály zpětné vazby",
+  "agentRitualReviewNoNegativeSignals": "V této záložce nejsou žádné negativní signály zpětné vazby",
+  "agentRitualReviewNoNeutralSignals": "V této záložce nejsou žádné neutrální signály zpětné vazby",
+  "agentRitualReviewNoPositiveSignals": "V této záložce nejsou žádné pozitivní signály zpětné vazby",
+  "agentRitualReviewNoProposal": "Žádný aktivní návrh",
+  "agentRitualReviewPositiveSignals": "Pozitivní",
+  "agentTemplateKindImprover": "Zlepšovač šablon",
+  "agentTemplateKindTaskAgent": "Agent úkolů",
+  "thinkingDisclosureCopied": "Úvaha zkopírována",
+  "thinkingDisclosureCopy": "Kopírovat úvahu",
+  "thinkingDisclosureHide": "Skrýt úvahu",
+  "thinkingDisclosureShow": "Zobrazit úvahu",
+  "thinkingDisclosureStateCollapsed": "sbaleno",
+  "thinkingDisclosureStateExpanded": "rozbaleno",
   "timeByCategoryChartTitle": "Čas podle kategorie",
   "timeByCategoryChartTotalLabel": "Celkem",
   "unlinkButton": "Zrušit propojení",

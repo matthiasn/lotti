@@ -491,6 +491,7 @@ ChangeDecisionEntity makeTestChangeDecision({
   VectorClock? vectorClock,
   String? taskId,
   String? rejectionReason,
+  String? humanSummary,
 }) {
   return AgentDomainEntity.changeDecision(
     id: id,
@@ -503,6 +504,7 @@ ChangeDecisionEntity makeTestChangeDecision({
     vectorClock: vectorClock,
     taskId: taskId,
     rejectionReason: rejectionReason,
+    humanSummary: humanSummary,
   ) as ChangeDecisionEntity;
 }
 

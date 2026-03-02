@@ -1,7 +1,6 @@
-import 'dart:math';
-
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 
 /// Assembled context for an evolution session, ready to feed the LLM.
 class EvolutionContext {
@@ -72,28 +71,37 @@ continuously improving an agent template's directives over time.
 ## Your Role
 You maintain a long-running relationship with this template. Each session is a
 1-on-1 conversation with the user where you:
-1. Briefly review how the template's agent instances have been performing
-2. Record evolution notes capturing key patterns and observations
-3. Propose improved directives based on the data
+1. Review how the template's agent instances have been performing
+2. Gather the user's category ratings to understand their priorities
+3. Record evolution notes capturing key patterns and observations
+4. Propose improved directives based on the data and user input
 
-## Workflow — IMPORTANT
-Your primary job is to **propose improved directives**. Every session should
-culminate in a concrete proposal. Follow this sequence:
+## Workflow — Two Phases
 
-1. **Analyze** (1-2 paragraphs): Summarize the key patterns and performance
-   data. Be concise.
+### Phase 1: Insights & Category Ratings
+In your first response:
+1. **Analyze** (2-3 paragraphs): Share clear insights about what went well and
+   what didn't, based on the feedback signals and performance data.
 2. **Record notes**: Use `record_evolution_note` to capture observations for
    future sessions.
-3. **Propose**: Use `propose_directives` to formally propose the improved
-   directives. This is the most important step — do NOT skip it.
+3. **Request ratings**: Use `render_surface` with `CategoryRatings` widget to
+   ask the user to rate each feedback category (1-5 stars). Categories:
+   accuracy, communication, prioritization, tooling, timeliness, general.
+4. Do NOT call `propose_directives` yet — wait for the user's ratings.
+
+### Phase 2: Proposal
+After receiving the user's category ratings:
+1. Incorporate the ratings alongside the feedback signals to weight your
+   proposal toward the categories the user rated lowest.
+2. Use `propose_directives` to formally propose improved directives.
 
 If the user rejects a proposal, refine it based on their feedback and propose
 again. The conversation should always be driving toward an approved proposal.
 
 ## Available Tools
 - **propose_directives**: Formally propose new directives. Include the complete
-  rewritten text and a rationale for the changes. You MUST call this tool in
-  your first response.
+  rewritten text and a rationale for the changes. Only call this in Phase 2,
+  after receiving category ratings.
 - **record_evolution_note**: Record a private note for your own future
   reference. Use this to capture patterns, hypotheses, and decisions that will
   help in future sessions.
@@ -101,6 +109,8 @@ again. The conversation should always be driving toward an approved proposal.
   `propose_directives` automatically renders a proposal card, so you do NOT need
   to call `render_surface` for proposals. Use `render_surface` for other widget
   types:
+  - **CategoryRatings**: Ask the user to rate feedback categories. Data:
+    `categories` (array of `{name, label}` objects). Use this in Phase 1.
   - **EvolutionNoteConfirmation**: Confirmation for a recorded note. Data:
     `kind` (enum: reflection/hypothesis/decision/pattern), `content` (string).
   - **MetricsSummary**: Inline metrics display. Data: `totalWakes` (int),
@@ -111,14 +121,13 @@ again. The conversation should always be driving toward an approved proposal.
     `afterDirectives` (string), `changesSummary?` (string).
 
 ## Rules
-- Be concise — do not write lengthy analyses. Get to the proposal quickly.
+- Be concise — do not write lengthy analyses.
 - Preserve the agent's core identity and purpose when proposing changes.
 - Use the evolution notes from past sessions to maintain continuity.
 - When proposing directives, output the COMPLETE new directives text, not a diff.
 - Briefly explain your reasoning before proposing changes.
 - Record evolution notes to build institutional memory across sessions.
-- NEVER end a turn without having called `propose_directives` at least once in
-  the session, unless you are responding to a rejection with a refined proposal.''';
+- Always request category ratings in Phase 1 before proposing in Phase 2.''';
   }
 
   String _buildUserMessage({
@@ -205,9 +214,9 @@ again. The conversation should always be driving toward an approved proposal.
     }
 
     buf.writeln(
-      'Review this data, record any evolution notes, and then propose '
-      'improved directives using the `propose_directives` tool. '
-      'Be concise in your analysis — focus on actionable improvements.',
+      'Review this data and share your insights about what is working and '
+      'what is not. Record any evolution notes, then ask me for category '
+      'ratings before proposing directive changes.',
     );
 
     return buf.toString();
@@ -241,7 +250,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final v in capped) {
       buf.writeln(
         '- v${v.version} (${v.status.name}, by ${v.authoredBy}): '
-        '${truncateText(v.directives, 120)}',
+        '${truncateAgentText(v.directives, 120)}',
       );
     }
     buf.writeln();
@@ -256,7 +265,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final report in capped) {
       buf
         ..writeln('### Agent ${_shortId(report.agentId)}')
-        ..writeln(truncateText(report.content, 500))
+        ..writeln(truncateAgentText(report.content, 500))
         ..writeln();
     }
   }
@@ -277,7 +286,7 @@ again. The conversation should always be driving toward an approved proposal.
       if (payload != null) {
         final text = _extractPayloadText(payload);
         if (text != null) {
-          buf.writeln(truncateText(text, 400));
+          buf.writeln(truncateAgentText(text, 400));
         }
       }
 
@@ -293,7 +302,7 @@ again. The conversation should always be driving toward an approved proposal.
     buf.writeln('## Your Notes From Past Sessions (${capped.length})');
     for (final note in capped) {
       buf.writeln(
-          '- **${note.kind.name}**: ${truncateText(note.content, 200)}');
+          '- **${note.kind.name}**: ${truncateAgentText(note.content, 200)}');
     }
     buf.writeln();
   }
@@ -303,13 +312,6 @@ again. The conversation should always be driving toward an approved proposal.
     final text = payload.content['text'];
     if (text is String && text.trim().isNotEmpty) return text;
     return null;
-  }
-
-  /// Truncate [text] to [maxLength] characters, appending "…" if truncated.
-  static String truncateText(String text, int maxLength) {
-    final singleLine = text.replaceAll('\n', ' ').trim();
-    if (singleLine.length <= maxLength) return singleLine;
-    return '${singleLine.substring(0, min(maxLength, singleLine.length))}…';
   }
 
   /// Return the first 8 chars of an ID for display.

@@ -91,6 +91,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentActivityLogHeading => 'Journal d\'activité';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Envoyer les évaluations';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Évaluer les catégories';
+
+  @override
   String agentControlsActionError(String error) {
     return 'L\'action a échoué : $error';
   }
@@ -145,6 +151,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String agentConversationTokenCount(String tokenCount) {
     return '$tokenCount jetons';
   }
+
+  @override
+  String get agentDefaultProfileLabel => 'Profil d\'inférence par défaut';
 
   @override
   String agentDetailErrorLoading(String error) {
@@ -448,29 +457,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentRitualReviewAction => 'Démarrer la conversation';
 
   @override
-  String get agentRitualReviewByCategory => 'Par catégorie';
-
-  @override
-  String get agentRitualReviewBySentiment => 'Par sentiment';
-
-  @override
   String get agentRitualReviewFeedbackTitle => 'Signaux de retour';
 
   @override
-  String get agentRitualReviewNegativeSignals => 'Signaux négatifs';
+  String get agentRitualReviewNegativeSignals => 'Négatif';
 
   @override
-  String get agentRitualReviewNeutralSignals => 'Signaux neutres';
+  String get agentRitualReviewNeutralSignals => 'Neutre';
 
   @override
   String get agentRitualReviewNoFeedback =>
       'Aucun signal de retour dans cette fenêtre';
 
   @override
+  String get agentRitualReviewNoNegativeSignals =>
+      'Aucun signal de retour négatif dans cet onglet';
+
+  @override
+  String get agentRitualReviewNoNeutralSignals =>
+      'Aucun signal de retour neutre dans cet onglet';
+
+  @override
   String get agentRitualReviewNoProposal => 'Pas de proposition active';
 
   @override
-  String get agentRitualReviewPositiveSignals => 'Signaux positifs';
+  String get agentRitualReviewNoPositiveSignals =>
+      'Aucun signal de retour positif dans cet onglet';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Positif';
 
   @override
   String get agentRitualReviewProposalSection => 'Proposition actuelle';
@@ -479,7 +494,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Historique des sessions';
 
   @override
-  String get agentRitualReviewTitle => 'Révision de rituel';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'En cours';
@@ -569,20 +584,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directives';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Définis la personnalité, les outils, les objectifs et le style d\'interaction de l\'agent...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'Directive générale';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Définis la structure du rapport, les sections requises et les règles de formatage...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Directive de rapport';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Nom';
 
   @override
@@ -593,13 +594,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pas encore de modèles. Appuie sur + pour en créer un.';
 
   @override
-  String get agentTemplateEvolveAction => 'Évoluer avec l\'IA';
-
-  @override
   String get agentTemplateEvolveApprove => 'Approuver et enregistrer';
 
   @override
   String get agentTemplateEvolveReject => 'Rejeter';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Définis la personnalité, les outils, les objectifs et le style d\'interaction de l\'agent...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Directive générale';
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Détail par instance';
@@ -656,6 +661,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Aucune version';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Définis la structure du rapport, les sections requises et les règles de formatage...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Directive de rapport';
 
   @override
   String get agentTemplateReportsEmpty => 'Pas encore de rapports.';
@@ -4713,6 +4725,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Résumés de tâches';
+
+  @override
+  String get thinkingDisclosureCopied => 'Raisonnement copié';
+
+  @override
+  String get thinkingDisclosureCopy => 'Copier le raisonnement';
+
+  @override
+  String get thinkingDisclosureHide => 'Masquer le raisonnement';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'replié';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'déplié';
+
+  @override
+  String get thinkingDisclosureShow => 'Afficher le raisonnement';
 
   @override
   String get timeByCategoryChartTitle => 'Temps par catégorie';

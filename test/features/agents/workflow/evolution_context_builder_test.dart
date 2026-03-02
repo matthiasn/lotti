@@ -173,7 +173,7 @@ void main() {
       final ctx = buildWithDefaults();
 
       expect(ctx.initialUserMessage, contains('Review this data'));
-      expect(ctx.initialUserMessage, contains('propose_directives'));
+      expect(ctx.initialUserMessage, contains('category ratings'));
     });
 
     test('uses split directives when generalDirective is populated', () {

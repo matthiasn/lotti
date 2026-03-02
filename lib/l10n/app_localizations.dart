@@ -263,6 +263,18 @@ abstract class AppLocalizations {
   /// **'Activity Log'**
   String get agentActivityLogHeading;
 
+  /// No description provided for @agentCategoryRatingsSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Ratings'**
+  String get agentCategoryRatingsSubmit;
+
+  /// No description provided for @agentCategoryRatingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Categories'**
+  String get agentCategoryRatingsTitle;
+
   /// No description provided for @agentControlsActionError.
   ///
   /// In en, this message translates to:
@@ -353,6 +365,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{tokenCount} tokens'**
   String agentConversationTokenCount(String tokenCount);
+
+  /// No description provided for @agentDefaultProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default inference profile'**
+  String get agentDefaultProfileLabel;
 
   /// No description provided for @agentDetailErrorLoading.
   ///
@@ -882,18 +900,6 @@ abstract class AppLocalizations {
   /// **'Start Conversation'**
   String get agentRitualReviewAction;
 
-  /// No description provided for @agentRitualReviewByCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'By Category'**
-  String get agentRitualReviewByCategory;
-
-  /// No description provided for @agentRitualReviewBySentiment.
-  ///
-  /// In en, this message translates to:
-  /// **'By Sentiment'**
-  String get agentRitualReviewBySentiment;
-
   /// No description provided for @agentRitualReviewFeedbackTitle.
   ///
   /// In en, this message translates to:
@@ -903,13 +909,13 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualReviewNegativeSignals.
   ///
   /// In en, this message translates to:
-  /// **'Negative Signals'**
+  /// **'Negative'**
   String get agentRitualReviewNegativeSignals;
 
   /// No description provided for @agentRitualReviewNeutralSignals.
   ///
   /// In en, this message translates to:
-  /// **'Neutral Signals'**
+  /// **'Neutral'**
   String get agentRitualReviewNeutralSignals;
 
   /// No description provided for @agentRitualReviewNoFeedback.
@@ -918,16 +924,34 @@ abstract class AppLocalizations {
   /// **'No feedback signals in this window'**
   String get agentRitualReviewNoFeedback;
 
+  /// No description provided for @agentRitualReviewNoNegativeSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'No negative feedback signals in this tab'**
+  String get agentRitualReviewNoNegativeSignals;
+
+  /// No description provided for @agentRitualReviewNoNeutralSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'No neutral feedback signals in this tab'**
+  String get agentRitualReviewNoNeutralSignals;
+
   /// No description provided for @agentRitualReviewNoProposal.
   ///
   /// In en, this message translates to:
   /// **'No active proposal'**
   String get agentRitualReviewNoProposal;
 
+  /// No description provided for @agentRitualReviewNoPositiveSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'No positive feedback signals in this tab'**
+  String get agentRitualReviewNoPositiveSignals;
+
   /// No description provided for @agentRitualReviewPositiveSignals.
   ///
   /// In en, this message translates to:
-  /// **'Positive Signals'**
+  /// **'Positive'**
   String get agentRitualReviewPositiveSignals;
 
   /// No description provided for @agentRitualReviewProposalSection.
@@ -945,7 +969,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualReviewTitle.
   ///
   /// In en, this message translates to:
-  /// **'Ritual Review'**
+  /// **'1-on-1'**
   String get agentRitualReviewTitle;
 
   /// No description provided for @agentRunningIndicator.
@@ -1110,30 +1134,6 @@ abstract class AppLocalizations {
   /// **'Directives'**
   String get agentTemplateDirectivesLabel;
 
-  /// Placeholder hint for the general directive text field.
-  ///
-  /// In en, this message translates to:
-  /// **'Define the agent\'s personality, tools, objectives, and interaction style...'**
-  String get agentTemplateGeneralDirectiveHint;
-
-  /// Label for the general directive text field (persona, tools, objectives).
-  ///
-  /// In en, this message translates to:
-  /// **'General Directive'**
-  String get agentTemplateGeneralDirectiveLabel;
-
-  /// Placeholder hint for the report directive text field.
-  ///
-  /// In en, this message translates to:
-  /// **'Define the report structure, required sections, and formatting rules...'**
-  String get agentTemplateReportDirectiveHint;
-
-  /// Label for the report directive text field (report formatting).
-  ///
-  /// In en, this message translates to:
-  /// **'Report Directive'**
-  String get agentTemplateReportDirectiveLabel;
-
   /// Label for the template display name input field.
   ///
   /// In en, this message translates to:
@@ -1152,12 +1152,6 @@ abstract class AppLocalizations {
   /// **'No templates yet. Tap + to create one.'**
   String get agentTemplateEmptyList;
 
-  /// Button label to start AI-assisted template evolution.
-  ///
-  /// In en, this message translates to:
-  /// **'Evolve with AI'**
-  String get agentTemplateEvolveAction;
-
   /// Button to accept and save proposed directive changes.
   ///
   /// In en, this message translates to:
@@ -1169,6 +1163,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reject'**
   String get agentTemplateEvolveReject;
+
+  /// Placeholder hint for the general directive text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the agent\'s personality, tools, objectives, and interaction style...'**
+  String get agentTemplateGeneralDirectiveHint;
+
+  /// Label for the general directive text field (persona, tools, objectives).
+  ///
+  /// In en, this message translates to:
+  /// **'General Directive'**
+  String get agentTemplateGeneralDirectiveLabel;
 
   /// Heading for the per-instance breakdown section in agent template stats.
   ///
@@ -1259,6 +1265,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No versions'**
   String get agentTemplateNoVersions;
+
+  /// Placeholder hint for the report directive text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the report structure, required sections, and formatting rules...'**
+  String get agentTemplateReportDirectiveHint;
+
+  /// Label for the report directive text field (report formatting).
+  ///
+  /// In en, this message translates to:
+  /// **'Report Directive'**
+  String get agentTemplateReportDirectiveLabel;
 
   /// No description provided for @agentTemplateReportsEmpty.
   ///
@@ -8382,6 +8400,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task Summaries'**
   String get taskSummaries;
+
+  /// No description provided for @thinkingDisclosureCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning copied'**
+  String get thinkingDisclosureCopied;
+
+  /// No description provided for @thinkingDisclosureCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy reasoning'**
+  String get thinkingDisclosureCopy;
+
+  /// No description provided for @thinkingDisclosureHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide reasoning'**
+  String get thinkingDisclosureHide;
+
+  /// No description provided for @thinkingDisclosureStateCollapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'collapsed'**
+  String get thinkingDisclosureStateCollapsed;
+
+  /// No description provided for @thinkingDisclosureStateExpanded.
+  ///
+  /// In en, this message translates to:
+  /// **'expanded'**
+  String get thinkingDisclosureStateExpanded;
+
+  /// No description provided for @thinkingDisclosureShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show reasoning'**
+  String get thinkingDisclosureShow;
 
   /// No description provided for @timeByCategoryChartTitle.
   ///

@@ -10,22 +10,23 @@ import '../test_utils.dart';
 
 void main() {
   group('pendingRitualReviewProvider', () {
-    test('filters and returns the first active session', () async {
-      final completedSession = makeTestEvolutionSession(
-        id: 'evo-completed',
-        status: EvolutionSessionStatus.completed,
-      );
+    test('returns the newest session when it is active', () async {
+      // Sessions are newest-first: active is the newest, completed is older.
       final activeSession = makeTestEvolutionSession(
         id: 'evo-active',
         sessionNumber: 2,
+      );
+      final completedSession = makeTestEvolutionSession(
+        id: 'evo-completed',
+        status: EvolutionSessionStatus.completed,
       );
 
       final container = ProviderContainer(
         overrides: [
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[
-              completedSession,
               activeSession,
+              completedSession,
             ],
           ),
         ],
@@ -41,6 +42,37 @@ void main() {
       final session = result! as EvolutionSessionEntity;
       expect(session.id, 'evo-active');
       expect(session.status, EvolutionSessionStatus.active);
+    });
+
+    test('returns null when newest session is completed (stale active ignored)',
+        () async {
+      // Completed session is newer; the older active session is stale.
+      final completedSession = makeTestEvolutionSession(
+        id: 'evo-completed',
+        sessionNumber: 2,
+        status: EvolutionSessionStatus.completed,
+      );
+      final staleActiveSession = makeTestEvolutionSession(
+        id: 'evo-stale',
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          evolutionSessionsProvider(kTestTemplateId).overrideWith(
+            (ref) async => <AgentDomainEntity>[
+              completedSession,
+              staleActiveSession,
+            ],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        pendingRitualReviewProvider(kTestTemplateId).future,
+      );
+
+      expect(result, isNull);
     });
 
     test('returns null when all sessions are completed or abandoned', () async {
@@ -108,6 +140,7 @@ void main() {
         pendingRitualReviewProvider(kTestTemplateId).future,
       );
 
+      // The note is skipped, active session is the first typed session → newest.
       expect(result, isNotNull);
       expect(result, isA<EvolutionSessionEntity>());
       expect((result! as EvolutionSessionEntity).id, 'evo-active');

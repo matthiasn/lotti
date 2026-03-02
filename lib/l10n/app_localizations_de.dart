@@ -90,6 +90,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentActivityLogHeading => 'Aktivitätsprotokoll';
 
   @override
+  String get agentCategoryRatingsSubmit => 'Bewertungen absenden';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Kategorien bewerten';
+
+  @override
   String agentControlsActionError(String error) {
     return 'Aktion fehlgeschlagen: $error';
   }
@@ -144,6 +150,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String agentConversationTokenCount(String tokenCount) {
     return '$tokenCount Tokens';
   }
+
+  @override
+  String get agentDefaultProfileLabel => 'Standard-Inferenzprofil';
 
   @override
   String agentDetailErrorLoading(String error) {
@@ -446,29 +455,35 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentRitualReviewAction => 'Gespräch starten';
 
   @override
-  String get agentRitualReviewByCategory => 'Nach Kategorie';
-
-  @override
-  String get agentRitualReviewBySentiment => 'Nach Stimmung';
-
-  @override
   String get agentRitualReviewFeedbackTitle => 'Feedback-Signale';
 
   @override
-  String get agentRitualReviewNegativeSignals => 'Negative Signale';
+  String get agentRitualReviewNegativeSignals => 'Negativ';
 
   @override
-  String get agentRitualReviewNeutralSignals => 'Neutrale Signale';
+  String get agentRitualReviewNeutralSignals => 'Neutral';
 
   @override
   String get agentRitualReviewNoFeedback =>
       'Keine Feedback-Signale in diesem Zeitfenster';
 
   @override
+  String get agentRitualReviewNoNegativeSignals =>
+      'Keine negativen Feedback-Signale in diesem Tab';
+
+  @override
+  String get agentRitualReviewNoNeutralSignals =>
+      'Keine neutralen Feedback-Signale in diesem Tab';
+
+  @override
   String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
 
   @override
-  String get agentRitualReviewPositiveSignals => 'Positive Signale';
+  String get agentRitualReviewNoPositiveSignals =>
+      'Keine positiven Feedback-Signale in diesem Tab';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Positiv';
 
   @override
   String get agentRitualReviewProposalSection => 'Aktueller Vorschlag';
@@ -477,7 +492,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Sitzungsverlauf';
 
   @override
-  String get agentRitualReviewTitle => 'Ritual-Überprüfung';
+  String get agentRitualReviewTitle => '1-on-1';
 
   @override
   String get agentRunningIndicator => 'Läuft';
@@ -567,20 +582,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Anweisungen';
 
   @override
-  String get agentTemplateGeneralDirectiveHint =>
-      'Definiere die Persönlichkeit, Tools, Ziele und den Interaktionsstil des Agenten...';
-
-  @override
-  String get agentTemplateGeneralDirectiveLabel => 'Allgemeine Anweisung';
-
-  @override
-  String get agentTemplateReportDirectiveHint =>
-      'Definiere die Berichtsstruktur, erforderliche Abschnitte und Formatierungsregeln...';
-
-  @override
-  String get agentTemplateReportDirectiveLabel => 'Berichtsanweisung';
-
-  @override
   String get agentTemplateDisplayNameLabel => 'Name';
 
   @override
@@ -591,13 +592,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.';
 
   @override
-  String get agentTemplateEvolveAction => 'Mit KI weiterentwickeln';
-
-  @override
   String get agentTemplateEvolveApprove => 'Genehmigen & Speichern';
 
   @override
   String get agentTemplateEvolveReject => 'Ablehnen';
+
+  @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Definiere die Persönlichkeit, Tools, Ziele und den Interaktionsstil des Agenten...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Allgemeine Anweisung';
 
   @override
   String get agentTemplateInstanceBreakdownHeading =>
@@ -656,6 +661,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Keine Versionen';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Definiere die Berichtsstruktur, erforderliche Abschnitte und Formatierungsregeln...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Berichtsanweisung';
 
   @override
   String get agentTemplateReportsEmpty => 'Noch keine Berichte.';
@@ -4651,6 +4663,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Aufgabenzusammenfassungen';
+
+  @override
+  String get thinkingDisclosureCopied => 'Begründung kopiert';
+
+  @override
+  String get thinkingDisclosureCopy => 'Begründung kopieren';
+
+  @override
+  String get thinkingDisclosureHide => 'Begründung ausblenden';
+
+  @override
+  String get thinkingDisclosureStateCollapsed => 'eingeklappt';
+
+  @override
+  String get thinkingDisclosureStateExpanded => 'ausgeklappt';
+
+  @override
+  String get thinkingDisclosureShow => 'Begründung anzeigen';
 
   @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';

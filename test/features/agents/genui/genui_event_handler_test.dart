@@ -60,7 +60,7 @@ void main() {
       );
 
       // Allow the stream to deliver the event.
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.value();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'proposal-surface');
@@ -87,7 +87,7 @@ void main() {
         surfaceId: 'proposal-surface-2',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.value();
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'proposal_rejected');
@@ -104,7 +104,7 @@ void main() {
         surfaceId: 'any-surface',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.value();
 
       expect(events, isEmpty);
     });
@@ -125,7 +125,7 @@ void main() {
         surfaceId: 'proposal-surface-3',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.value();
       // No exception = pass.
     });
 
@@ -142,7 +142,47 @@ void main() {
         surfaceId: 'some-surface',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.value();
+
+      expect(events, isEmpty);
+    });
+
+    test('routes ratings_submitted event to callback', () async {
+      final events = <(String, Map<String, int>)>[];
+      handler.onRatingsSubmitted = (surfaceId, ratings) {
+        events.add((surfaceId, ratings));
+      };
+
+      dispatchAction(
+        name: 'ratings_submitted',
+        surfaceId: 'ratings-surface',
+        sourceComponentId: '{"accuracy":5,"tooling":"bad","timeliness":2.2}',
+      );
+
+      await Future<void>.value();
+
+      expect(events, hasLength(1));
+      expect(events.first.$1, 'ratings-surface');
+      expect(events.first.$2, {
+        'accuracy': 5,
+        'tooling': 0,
+        'timeliness': 2,
+      });
+    });
+
+    test('ignores malformed ratings JSON', () async {
+      final events = <(String, Map<String, int>)>[];
+      handler.onRatingsSubmitted = (surfaceId, ratings) {
+        events.add((surfaceId, ratings));
+      };
+
+      dispatchAction(
+        name: 'ratings_submitted',
+        surfaceId: 'ratings-surface',
+        sourceComponentId: '{invalid-json',
+      );
+
+      await Future<void>.value();
 
       expect(events, isEmpty);
     });

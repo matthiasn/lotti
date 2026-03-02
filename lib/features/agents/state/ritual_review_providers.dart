@@ -12,6 +12,11 @@ part 'ritual_review_providers.g.dart';
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
 ///
+/// Only the newest session is considered: if a newer completed or abandoned
+/// session exists, older active sessions are treated as stale and ignored.
+/// Actual DB reconciliation (marking stale sessions as abandoned) happens
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
+///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 @riverpod
 Future<AgentDomainEntity?> pendingRitualReview(
@@ -20,9 +25,15 @@ Future<AgentDomainEntity?> pendingRitualReview(
 ) async {
   final sessions =
       await ref.watch(evolutionSessionsProvider(templateId).future);
-  return sessions
-      .whereType<EvolutionSessionEntity>()
-      .firstWhereOrNull((s) => s.status == EvolutionSessionStatus.active);
+  final typed = sessions.whereType<EvolutionSessionEntity>().toList();
+
+  // Sessions are newest-first. Only return the newest one if it's active.
+  // An active session that's not the newest is stale and should not be shown.
+  final newest = typed.firstOrNull;
+  if (newest != null && newest.status == EvolutionSessionStatus.active) {
+    return newest;
+  }
+  return null;
 }
 
 /// Extracts classified feedback for a template's review window.

@@ -188,7 +188,8 @@ void main() {
     );
   });
 
-  testWidgets('template page shows model IDs as subtitles', (tester) async {
+  testWidgets('template page shows localized template kind subtitles',
+      (tester) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile();
 
@@ -203,9 +204,11 @@ void main() {
     await tester.tap(find.text('Open Modal'));
     await tester.pumpAndSettle();
 
-    // Templates have modelId 'models/gemini-3-flash-preview' as default.
+    final context = tester.element(find.byType(ElevatedButton));
+
+    // Templates show localized kind labels as subtitle.
     expect(
-      find.text('models/gemini-3-flash-preview'),
+      find.text(context.messages.agentTemplateKindTaskAgent),
       findsNWidgets(2),
     );
   });

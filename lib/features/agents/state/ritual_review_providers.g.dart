@@ -11,6 +11,11 @@ part of 'ritual_review_providers.dart';
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
 ///
+/// Only the newest session is considered: if a newer completed or abandoned
+/// session exists, older active sessions are treated as stale and ignored.
+/// Actual DB reconciliation (marking stale sessions as abandoned) happens
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
+///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
 @ProviderFor(pendingRitualReview)
@@ -18,6 +23,11 @@ final pendingRitualReviewProvider = PendingRitualReviewFamily._();
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
+///
+/// Only the newest session is considered: if a newer completed or abandoned
+/// session exists, older active sessions are treated as stale and ignored.
+/// Actual DB reconciliation (marking stale sessions as abandoned) happens
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
@@ -30,6 +40,11 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
         $FutureProvider<AgentDomainEntity?> {
   /// Returns the most recent active [EvolutionSessionEntity] for a template,
   /// or `null` if there is no active session pending review.
+  ///
+  /// Only the newest session is considered: if a newer completed or abandoned
+  /// session exists, older active sessions are treated as stale and ignored.
+  /// Actual DB reconciliation (marking stale sessions as abandoned) happens
+  /// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
   PendingRitualReviewProvider._(
@@ -80,10 +95,15 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
 }
 
 String _$pendingRitualReviewHash() =>
-    r'97fe8447294a1c650d34ff666a12f0841ef6ad26';
+    r'ed6c31af16a65acf2b44a343793c81efca486905';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
+///
+/// Only the newest session is considered: if a newer completed or abandoned
+/// session exists, older active sessions are treated as stale and ignored.
+/// Actual DB reconciliation (marking stale sessions as abandoned) happens
+/// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
@@ -100,6 +120,11 @@ final class PendingRitualReviewFamily extends $Family
 
   /// Returns the most recent active [EvolutionSessionEntity] for a template,
   /// or `null` if there is no active session pending review.
+  ///
+  /// Only the newest session is considered: if a newer completed or abandoned
+  /// session exists, older active sessions are treated as stale and ignored.
+  /// Actual DB reconciliation (marking stale sessions as abandoned) happens
+  /// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
