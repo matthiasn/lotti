@@ -20,6 +20,11 @@ const ollamaMinTemperature = 0.0;
 const ollamaContentType = 'application/json';
 const ollamaResponseIdPrefix = 'ollama-';
 
+// Ollama Embedding API constants
+const ollamaEmbedEndpoint = '/api/embed';
+const ollamaEmbedTimeoutSeconds = 60;
+const ollamaEmbedDefaultModel = 'mxbai-embed-large';
+
 // Whisper API constants
 const whisperTranscriptionTimeoutSeconds =
     600; // 10 minutes for audio transcription

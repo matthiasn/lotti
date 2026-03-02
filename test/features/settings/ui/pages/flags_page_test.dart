@@ -71,6 +71,11 @@ void main() {
             description: 'Enable Agents?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableEmbeddingsFlag,
+            description: 'Generate Embeddings?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -326,6 +331,45 @@ void main() {
         ),
       );
       expect(agentsSwitch.value, isFalse);
+    });
+
+    testWidgets(
+        'displays enableEmbeddingsFlag with correct icon, title, and description',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      final embeddingsCard = find.widgetWithText(
+        AnimatedModernSettingsCardWithIcon,
+        context.messages.configFlagEnableEmbeddings,
+      );
+      expect(embeddingsCard, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: embeddingsCard,
+          matching: find.text(
+            context.messages.configFlagAttemptEmbeddingDescription,
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      expect(find.byIcon(Icons.hub_outlined), findsAtLeastNWidgets(1));
+
+      final embeddingsSwitch = tester.widget<Switch>(
+        find.descendant(
+          of: embeddingsCard,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(embeddingsSwitch.value, isFalse);
     });
   });
 }

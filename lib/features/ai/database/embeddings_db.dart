@@ -6,7 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 /// The fixed embedding dimension used by the vec0 virtual table.
 ///
 /// This must match the `float[N]` declaration in the vec0 schema.
-const kEmbeddingDimensions = 2048;
+const kEmbeddingDimensions = 1024;
 
 /// Result of a vector similarity search.
 class EmbeddingSearchResult {

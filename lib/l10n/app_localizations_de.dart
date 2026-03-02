@@ -1788,6 +1788,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt die Dashboard-Seite in der Hauptnavigation an. Zeige deine Daten und Erkenntnisse in anpassbaren Dashboards an.';
 
   @override
+  String get configFlagEnableEmbeddings => 'Einbettungen generieren';
+
+  @override
   String get configFlagEnableEvents => 'Ereignisse aktivieren';
 
   @override

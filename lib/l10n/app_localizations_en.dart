@@ -1757,6 +1757,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Dashboards page in the main navigation. View your data and insights in customizable dashboards.';
 
   @override
+  String get configFlagEnableEmbeddings => 'Generate Embeddings';
+
+  @override
   String get configFlagEnableEvents => 'Enable Events';
 
   @override

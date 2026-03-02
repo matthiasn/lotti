@@ -139,5 +139,13 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableEmbeddingsFlag,
+      description: 'Generate embeddings for entries?',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }
