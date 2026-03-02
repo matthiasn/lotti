@@ -478,11 +478,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun semnal de feedback neutru în această filă';
 
   @override
-  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'Niciun semnal de feedback pozitiv în această filă';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitiv';
@@ -2846,6 +2846,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get logsSearchHint => 'Caută în toate jurnalele...';
 
   @override
+  String get maintenanceDeleteAgentDb => 'Șterge baza de date a agenților';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Șterge baza de date a agenților și repornește aplicația';
+
+  @override
   String get maintenanceDeleteDatabaseConfirm => 'DA, ȘTERGE BAZA DE DATE';
 
   @override
@@ -4671,13 +4678,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get thinkingDisclosureHide => 'Ascunde raționamentul';
 
   @override
+  String get thinkingDisclosureShow => 'Afișează raționamentul';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'restrâns';
 
   @override
   String get thinkingDisclosureStateExpanded => 'extins';
-
-  @override
-  String get thinkingDisclosureShow => 'Afișează raționamentul';
 
   @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';

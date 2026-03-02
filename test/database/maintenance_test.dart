@@ -14,6 +14,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -459,6 +460,57 @@ void main() {
         await maintenance.deleteEditorDb();
 
         expect(dbFile.existsSync(), isFalse);
+      });
+
+      test('deleteAgentDb removes database and WAL companion files', () async {
+        final dbFile = await getDatabaseFile(agentDbFileName);
+        await dbFile.create(recursive: true);
+        final shmFile = File('${dbFile.path}-shm');
+        final walFile = File('${dbFile.path}-wal');
+        await shmFile.create();
+        await walFile.create();
+        expect(dbFile.existsSync(), isTrue);
+        expect(shmFile.existsSync(), isTrue);
+        expect(walFile.existsSync(), isTrue);
+
+        await maintenance.deleteAgentDb();
+
+        expect(dbFile.existsSync(), isFalse);
+        expect(shmFile.existsSync(), isFalse);
+        expect(walFile.existsSync(), isFalse);
+      });
+
+      test('deleteAgentDb creates backup before deletion', () async {
+        final dbFile = await getDatabaseFile(agentDbFileName);
+        await dbFile.create(recursive: true);
+        await dbFile.writeAsString('test-data');
+
+        await maintenance.deleteAgentDb();
+
+        expect(dbFile.existsSync(), isFalse);
+
+        final backupDir = Directory('${tempDir.path}/backup');
+        expect(backupDir.existsSync(), isTrue);
+        final backupFiles = backupDir.listSync();
+        expect(backupFiles, isNotEmpty);
+      });
+
+      test('deleteAgentDb is idempotent when file does not exist', () async {
+        final dbFile = await getDatabaseFile(agentDbFileName);
+        if (dbFile.existsSync()) {
+          await dbFile.delete();
+        }
+
+        await maintenance.deleteAgentDb();
+
+        expect(dbFile.existsSync(), isFalse);
+        verify(
+          () => loggingService.captureEvent(
+            'Database file $agentDbFileName does not exist',
+            domain: 'MAINTENANCE',
+            subDomain: 'deleteAgentDb',
+          ),
+        ).called(1);
       });
     });
 

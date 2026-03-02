@@ -478,11 +478,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay señales de retroalimentación neutrales en esta pestaña';
 
   @override
-  String get agentRitualReviewNoProposal => 'Sin propuesta activa';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'No hay señales de retroalimentación positivas en esta pestaña';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Sin propuesta activa';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positivo';
@@ -2884,6 +2884,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get logsSearchHint => 'Buscar todos los logs...';
 
   @override
+  String get maintenanceDeleteAgentDb => 'Eliminar la base de datos de agentes';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Eliminar la base de datos de agentes y reiniciar la app';
+
+  @override
   String get maintenanceDeleteDatabaseConfirm => 'SÍ, ELIMINAR BASE DE DATOS';
 
   @override
@@ -4733,13 +4740,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get thinkingDisclosureHide => 'Ocultar razonamiento';
 
   @override
+  String get thinkingDisclosureShow => 'Mostrar razonamiento';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'contraído';
 
   @override
   String get thinkingDisclosureStateExpanded => 'expandido';
-
-  @override
-  String get thinkingDisclosureShow => 'Mostrar razonamiento';
 
   @override
   String get timeByCategoryChartTitle => 'Tiempo por categoría';
