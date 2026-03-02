@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_timeline.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_summary_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -84,28 +83,6 @@ void main() {
       );
     });
 
-    testWidgets('shows Current Proposal section header', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(
-        find.text(context.messages.agentRitualReviewProposalSection),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows Session History section header', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(
-        find.text(context.messages.agentRitualReviewSessionHistory),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('shows no-feedback empty state when feedback is null',
         (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -114,18 +91,6 @@ void main() {
       final context = tester.element(find.byType(EvolutionReviewPage));
       expect(
         find.text(context.messages.agentRitualReviewNoFeedback),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows no-proposal empty state when pending session is null',
-        (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(
-        find.text(context.messages.agentRitualReviewNoProposal),
         findsOneWidget,
       );
     });
@@ -164,9 +129,11 @@ void main() {
     });
 
     testWidgets(
-        '"Start Conversation" button appears when there is an active session',
-        (tester) async {
-      final session = makeTestEvolutionSession();
+        'shows proposal section label inside summary card when session has '
+        'feedbackSummary', (tester) async {
+      final session = makeTestEvolutionSession(
+        feedbackSummary: 'Summary text here.',
+      );
 
       await tester.pumpWidget(
         buildSubject(pendingOverride: (ref, id) async => session),
@@ -175,22 +142,48 @@ void main() {
 
       final context = tester.element(find.byType(EvolutionReviewPage));
       expect(
-        find.text(context.messages.agentRitualReviewAction),
+        find.text(context.messages.agentRitualReviewProposalSection),
         findsOneWidget,
       );
     });
 
-    testWidgets(
-        '"Start Conversation" button is absent when there is no active session',
+    testWidgets('does not show proposal card when pending session is null',
         (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(EvolutionReviewPage));
+      // No proposal section label should appear (it's part of the card)
       expect(
-        find.text(context.messages.agentRitualReviewAction),
+        find.text(context.messages.agentRitualReviewProposalSection),
         findsNothing,
       );
+    });
+
+    testWidgets(
+        'FAB with "Start Conversation" appears when there is an active session',
+        (tester) async {
+      final session = makeTestEvolutionSession();
+
+      await tester.pumpWidget(
+        buildSubject(pendingOverride: (ref, id) async => session),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('FAB is absent when there is no active session',
+        (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsNothing);
     });
 
     testWidgets(
@@ -205,13 +198,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(EvolutionReviewPage));
-      // Unlike the feedback error which shows commonError, the pending
-      // error branch renders SizedBox.shrink — no error text should appear.
       expect(find.text(context.messages.commonError), findsNothing);
-      expect(
-        find.text(context.messages.agentRitualReviewNoProposal),
-        findsNothing,
-      );
     });
 
     testWidgets(
@@ -225,26 +212,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      // The "Start Conversation" button should still be present.
-      expect(
-        find.text(context.messages.agentRitualReviewAction),
-        findsOneWidget,
-      );
-      // No summary container should be rendered — verify no
-      // DecoratedBox with the summary style appears in the proposal section.
-      // Since feedbackSummary is null, the conditional Container is skipped.
+      // The FAB should still be present.
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      // No summary container should be rendered.
       expect(
         find.text('Agent performed well in most areas.'),
         findsNothing,
       );
-    });
-
-    testWidgets('shows EvolutionSessionTimeline widget', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      expect(find.byType(EvolutionSessionTimeline), findsOneWidget);
     });
 
     testWidgets('shows empty template name when template is not loaded',
@@ -267,19 +241,6 @@ void main() {
         buildSubject(feedbackOverride: (ref, id) => completer.future),
       );
       // One pump to start the async operation — provider stays in loading.
-      await tester.pump();
-
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
-    });
-
-    testWidgets('shows loading indicator while pending session is loading',
-        (tester) async {
-      // Use a Completer so no timer is left pending after the test.
-      final completer = Completer<AgentDomainEntity?>();
-
-      await tester.pumpWidget(
-        buildSubject(pendingOverride: (ref, id) => completer.future),
-      );
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsWidgets);

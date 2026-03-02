@@ -8,6 +8,9 @@ import 'package:lotti/themes/gamey/colors.dart';
 /// Groups feedback items by [FeedbackCategory] using
 /// [ClassifiedFeedbackX.byCategory]. Each category shows an icon, count,
 /// and items with sentiment-colored indicators.
+///
+/// The entire section is bounded to a max height of 350 pixels with
+/// internal scrolling to prevent unbounded lists from flooding the page.
 class FeedbackCategoryBreakdown extends StatelessWidget {
   const FeedbackCategoryBreakdown({
     required this.feedback,
@@ -27,14 +30,19 @@ class FeedbackCategoryBreakdown extends StatelessWidget {
     final sortedEntries = grouped.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: sortedEntries.map((entry) {
-        return _CategoryGroup(
-          category: entry.key,
-          items: entry.value,
-        );
-      }).toList(),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 350),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sortedEntries.map((entry) {
+            return _CategoryGroup(
+              category: entry.key,
+              items: entry.value,
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }
@@ -108,7 +116,13 @@ class _CategoryGroupState extends State<_CategoryGroup> {
           ),
           if (_isExpanded) ...[
             const SizedBox(height: 6),
-            ...widget.items.map((item) => FeedbackItemTile(item: item)),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: widget.items.length,
+              itemBuilder: (context, index) =>
+                  FeedbackItemTile(item: widget.items[index]),
+            ),
           ],
         ],
       ),

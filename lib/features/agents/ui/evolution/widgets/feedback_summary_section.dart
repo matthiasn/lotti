@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/feedback_category_breakdown.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 
-/// Renders [ClassifiedFeedback] grouped by sentiment (negative first, then
-/// positive, then neutral). Supports toggling between sentiment and category
-/// views via a [SegmentedButton].
-class FeedbackSummarySection extends StatefulWidget {
+/// Renders [ClassifiedFeedback] grouped by sentiment using tabs (negative,
+/// positive, neutral) with count badges.
+class FeedbackSummarySection extends StatelessWidget {
   const FeedbackSummarySection({
     required this.feedback,
     super.key,
@@ -17,22 +15,11 @@ class FeedbackSummarySection extends StatefulWidget {
   final ClassifiedFeedback feedback;
 
   @override
-  State<FeedbackSummarySection> createState() => _FeedbackSummarySectionState();
-}
-
-enum _ViewMode { sentiment, category }
-
-class _FeedbackSummarySectionState extends State<FeedbackSummarySection> {
-  _ViewMode _viewMode = _ViewMode.sentiment;
-
-  @override
   Widget build(BuildContext context) {
-    final messages = context.messages;
-
-    if (widget.feedback.items.isEmpty) {
+    if (feedback.items.isEmpty) {
       return Center(
         child: Text(
-          messages.agentRitualReviewNoFeedback,
+          context.messages.agentRitualReviewNoFeedback,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 14,
@@ -41,169 +28,166 @@ class _FeedbackSummarySectionState extends State<FeedbackSummarySection> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // View toggle
-        Center(
-          child: SegmentedButton<_ViewMode>(
-            segments: [
-              ButtonSegment(
-                value: _ViewMode.sentiment,
-                label: Text(messages.agentRitualReviewBySentiment),
-              ),
-              ButtonSegment(
-                value: _ViewMode.category,
-                label: Text(messages.agentRitualReviewByCategory),
-              ),
-            ],
-            selected: {_viewMode},
-            onSelectionChanged: (selection) {
-              setState(() => _viewMode = selection.first);
-            },
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              textStyle: WidgetStatePropertyAll(
-                TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_viewMode == _ViewMode.sentiment)
-          _SentimentView(feedback: widget.feedback)
-        else
-          FeedbackCategoryBreakdown(feedback: widget.feedback),
-      ],
-    );
+    return _SentimentTabView(feedback: feedback);
   }
 }
 
-class _SentimentView extends StatelessWidget {
-  const _SentimentView({required this.feedback});
+/// Tabbed view with three sentiment tabs (Negative, Positive, Neutral),
+/// each showing a bounded, scrollable list of [FeedbackItemTile] widgets.
+class _SentimentTabView extends StatefulWidget {
+  const _SentimentTabView({required this.feedback});
 
   final ClassifiedFeedback feedback;
 
   @override
+  State<_SentimentTabView> createState() => _SentimentTabViewState();
+}
+
+class _SentimentTabViewState extends State<_SentimentTabView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this)
+      ..addListener(_onTabChanged);
+  }
+
+  /// Trigger rebuild so the ValueKey-based content swap picks up the new index.
+  void _onTabChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _tabController
+      ..removeListener(_onTabChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final negative = feedback.negative;
-    final positive = feedback.positive;
-    final neutral = feedback.neutral;
+    final negative = widget.feedback.negative;
+    final positive = widget.feedback.positive;
+    final neutral = widget.feedback.neutral;
+
+    final itemLists = [negative, positive, neutral];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (negative.isNotEmpty)
-          _SentimentGroup(
-            title: messages.agentRitualReviewNegativeSignals,
-            count: negative.length,
-            color: GameyColors.primaryRed,
-            items: negative,
+        TabBar(
+          controller: _tabController,
+          indicatorColor: GameyColors.primaryPurple,
+          dividerColor: Colors.white.withValues(alpha: 0.1),
+          labelPadding: EdgeInsets.zero,
+          tabs: [
+            _SentimentTab(
+              label: messages.agentRitualReviewNegativeSignals,
+              count: negative.length,
+              color: GameyColors.primaryRed,
+            ),
+            _SentimentTab(
+              label: messages.agentRitualReviewPositiveSignals,
+              count: positive.length,
+              color: GameyColors.primaryGreen,
+            ),
+            _SentimentTab(
+              label: messages.agentRitualReviewNeutralSignals,
+              count: neutral.length,
+              color: GameyColors.primaryOrange,
+            ),
+          ],
+        ),
+        SizedBox(
+          height: 350,
+          child: _SentimentItemList(
+            // Use ValueKey so Flutter rebuilds the list when the tab changes.
+            key: ValueKey(_tabController.index),
+            items: itemLists[_tabController.index],
           ),
-        if (positive.isNotEmpty)
-          _SentimentGroup(
-            title: messages.agentRitualReviewPositiveSignals,
-            count: positive.length,
-            color: GameyColors.primaryGreen,
-            items: positive,
-          ),
-        if (neutral.isNotEmpty)
-          _SentimentGroup(
-            title: messages.agentRitualReviewNeutralSignals,
-            count: neutral.length,
-            color: GameyColors.primaryOrange,
-            items: neutral,
-          ),
+        ),
       ],
     );
   }
 }
 
-/// A collapsible section with a colored header + count badge.
-class _SentimentGroup extends StatefulWidget {
-  const _SentimentGroup({
-    required this.title,
+/// A single tab label with sentiment-colored text and count badge.
+class _SentimentTab extends StatelessWidget {
+  const _SentimentTab({
+    required this.label,
     required this.count,
     required this.color,
-    required this.items,
   });
 
-  final String title;
+  final String label;
   final int count;
   final Color color;
-  final List<ClassifiedFeedbackItem> items;
-
-  @override
-  State<_SentimentGroup> createState() => _SentimentGroupState();
-}
-
-class _SentimentGroupState extends State<_SentimentGroup> {
-  bool _isExpanded = true;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Tab(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            child: Row(
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: widget.color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    color: widget.color,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${widget.count}',
-                    style: TextStyle(
-                      color: widget.color,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
-              ],
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (_isExpanded) ...[
-            const SizedBox(height: 6),
-            ...widget.items.map((item) => FeedbackItemTile(item: item)),
-          ],
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// A bounded, scrollable list of feedback items for a single sentiment tab.
+class _SentimentItemList extends StatelessWidget {
+  const _SentimentItemList({required this.items, super.key});
+
+  final List<ClassifiedFeedbackItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(
+        child: Text(
+          context.messages.agentRitualReviewNoFeedback,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 13,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8),
+      itemCount: items.length,
+      itemBuilder: (context, index) => FeedbackItemTile(item: items[index]),
     );
   }
 }

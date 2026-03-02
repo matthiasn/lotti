@@ -117,6 +117,12 @@ void main() {
         .thenAnswer((_) async => makeTestTemplateVersion());
     when(() => templateService.gatherEvolutionData(any()))
         .thenAnswer((_) async => makeTestEvolutionDataBundle());
+    when(
+      () => templateService.getEvolutionSessions(
+        any(),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
   }
 
@@ -534,6 +540,13 @@ void main() {
       mockSyncService = MockAgentSyncService();
       mockRepository = MockAgentRepository();
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      // Stub for auto-abandon of stale sessions during approval.
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     });
 
     test('creates new version, persists notes, and completes session',
@@ -1171,6 +1184,12 @@ void main() {
       mockSyncService = MockAgentSyncService();
       mockRepository = MockAgentRepository();
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     });
 
     test('retry does not create duplicate version or notes', () async {
@@ -1843,6 +1862,12 @@ void main() {
       mockRepository = MockAgentRepository();
       mockNotifications = MockUpdateNotifications();
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     });
 
     test('startSession fires notification on success', () async {
@@ -1992,6 +2017,12 @@ void main() {
       mockSyncService = MockAgentSyncService();
       mockRepository = MockAgentRepository();
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     });
 
     test('uses contextOverride instead of building context internally',
@@ -2087,10 +2118,14 @@ void main() {
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
       when(() => mockTemplateService.getEvolutionSessions(any()))
           .thenAnswer((_) async => [
-                makeTestEvolutionSession(sessionNumber: 5),
+                makeTestEvolutionSession(
+                  sessionNumber: 5,
+                  status: EvolutionSessionStatus.completed,
+                ),
                 makeTestEvolutionSession(
                   id: 'evo-session-002',
                   sessionNumber: 3,
+                  status: EvolutionSessionStatus.completed,
                 ),
               ]);
 
@@ -2119,9 +2154,10 @@ void main() {
 
       expect(response, isNotNull);
 
-      // Should fetch sessions to compute next session number.
+      // Should fetch sessions to compute next session number (once) and
+      // to check for stale sessions to auto-abandon (once).
       verify(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
-          .called(1);
+          .called(2);
 
       // Should NOT call the full gatherEvolutionData.
       verifyNever(() => mockTemplateService.gatherEvolutionData(any()));
@@ -2146,6 +2182,12 @@ void main() {
       mockSyncService = MockAgentSyncService();
       mockRepository = MockAgentRepository();
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
     });
 
     test('fires callback after approveProposal completes', () async {
@@ -2328,6 +2370,110 @@ void main() {
       final result = await workflow.approveProposal(sessionId: 'session-1');
       expect(result, isNotNull);
       expect(result!.id, 'new-version');
+    });
+  });
+
+  group('auto-abandon stale sessions', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('startSession abandons stale active sessions for same template',
+        () async {
+      stubProviderResolution();
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Return a stale active session from the DB.
+      final staleSession = makeTestEvolutionSession(
+        id: 'stale-session-id',
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [staleSession]);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Opening response.',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      // Verify that the stale session was abandoned.
+      final captured =
+          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      final abandonedEntities = captured
+          .whereType<EvolutionSessionEntity>()
+          .where(
+            (e) =>
+                e.id == 'stale-session-id' &&
+                e.status == EvolutionSessionStatus.abandoned,
+          )
+          .toList();
+      expect(abandonedEntities, hasLength(1));
+    });
+
+    test(
+        'startSession does not abandon non-active sessions '
+        'for the same template', () async {
+      stubProviderResolution();
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Return a completed session — should not be re-abandoned.
+      final completedSession = makeTestEvolutionSession(
+        id: 'completed-session-id',
+        status: EvolutionSessionStatus.completed,
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [completedSession]);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Opening response.',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      // Verify that no session was abandoned — the only upserted entities
+      // should be the new session (active status).
+      final captured =
+          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      final abandonedEntities = captured
+          .whereType<EvolutionSessionEntity>()
+          .where(
+            (e) => e.status == EvolutionSessionStatus.abandoned,
+          )
+          .toList();
+      expect(abandonedEntities, isEmpty);
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer show log;
+
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 
 /// Well-known feedback source identifiers.
 abstract final class FeedbackSources {
@@ -60,11 +63,34 @@ class FeedbackExtractionService {
       templateId,
       since: since,
     );
-    final windowDecisions = allDecisions.where((d) => inWindow(d.createdAt));
+    final windowDecisions =
+        allDecisions.where((d) => inWindow(d.createdAt)).toList();
     final totalDecisionsScanned = windowDecisions.length;
 
+    // Bulk-fetch change sets for decisions missing humanSummary.
+    final missingIds = windowDecisions
+        .where((d) => d.humanSummary == null)
+        .map((d) => d.changeSetId)
+        .toSet();
+    var changeSetMap = <String, ChangeSetEntity>{};
+    try {
+      final changeSetEntities =
+          await Future.wait(missingIds.map(agentRepository.getEntity));
+      changeSetMap = {
+        for (final entity in changeSetEntities.whereType<ChangeSetEntity>())
+          entity.id: entity,
+      };
+    } catch (e) {
+      developer.log(
+        'Failed to fetch change sets: $e',
+        name: 'FeedbackExtractionService',
+      );
+    }
+
     for (final decision in windowDecisions) {
-      items.add(_classifyDecision(decision));
+      items.add(
+        _classifyDecision(decision, changeSetMap: changeSetMap),
+      );
     }
 
     // 2–4: Observations, reports, and wake runs are independent — fetch
@@ -79,11 +105,26 @@ class FeedbackExtractionService {
     final reports = results[1] as List<AgentReportEntity>;
     final wakeRuns = results[2] as List<WakeRunLogData>;
 
-    // 2. Classify observations (heuristic)
-    final windowObservations = observations.where((o) => inWindow(o.createdAt));
+    // 2. Classify observations (heuristic), enriched with payload text.
+    final windowObservations =
+        observations.where((o) => inWindow(o.createdAt)).toList();
+
+    // Bulk-fetch observation payloads for richer detail text.
+    final payloadIds =
+        windowObservations.map((obs) => obs.contentEntryId).whereType<String>();
+    final payloadEntities =
+        await Future.wait(payloadIds.map(agentRepository.getEntity));
+    final payloadMap = <String, AgentMessagePayloadEntity>{
+      for (final entity
+          in payloadEntities.whereType<AgentMessagePayloadEntity>())
+        entity.id: entity,
+    };
 
     for (final observation in windowObservations) {
-      final classified = _classifyObservation(observation);
+      final payload = observation.contentEntryId != null
+          ? payloadMap[observation.contentEntryId]
+          : null;
+      final classified = _classifyObservation(observation, payload: payload);
       if (classified != null) {
         items.add(classified);
       }
@@ -130,44 +171,183 @@ class FeedbackExtractionService {
   }
 
   /// Rule-based classification for decisions.
-  ClassifiedFeedbackItem _classifyDecision(ChangeDecisionEntity decision) {
+  ///
+  /// When [changeSetMap] is provided, looks up the parent change set to extract
+  /// the item's `humanSummary` for decisions that lack one.
+  ClassifiedFeedbackItem _classifyDecision(
+    ChangeDecisionEntity decision, {
+    Map<String, ChangeSetEntity> changeSetMap = const {},
+  }) {
     final sentiment = switch (decision.verdict) {
       ChangeDecisionVerdict.confirmed => FeedbackSentiment.positive,
       ChangeDecisionVerdict.rejected => FeedbackSentiment.negative,
       ChangeDecisionVerdict.deferred => FeedbackSentiment.neutral,
     };
 
+    final detail = _decisionDetailText(decision, changeSetMap);
+
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
       category: FeedbackCategory.accuracy,
       source: FeedbackSources.decision,
-      detail: '${decision.verdict.name} change: ${decision.toolName}',
+      detail: detail,
       agentId: decision.agentId,
       sourceEntityId: decision.id,
       confidence: 1,
     );
   }
 
-  /// Placeholder classification for observations.
+  /// Build a human-readable detail string for a decision.
   ///
-  /// This is a temporary stub that will be replaced by LLM classification
-  /// in Phase 4. Currently always emits a neutral observation signal because
-  /// the observation text lives in a linked payload entity that is not
-  /// loaded here.
-  ClassifiedFeedbackItem? _classifyObservation(
-    AgentMessageEntity observation,
+  /// Prefers `humanSummary` on the decision entity, falls back to the change
+  /// item's summary from the parent change set, and finally to the tool name.
+  static String _decisionDetailText(
+    ChangeDecisionEntity decision,
+    Map<String, ChangeSetEntity> changeSetMap,
   ) {
-    // Observations don't have inline text content — their text lives in
-    // a linked AgentMessagePayloadEntity. Without loading the payload we
-    // can only record a neutral observation-count signal.
+    final summary =
+        decision.humanSummary ?? _changeItemSummary(decision, changeSetMap);
+
+    final prefix = decision.verdict.name;
+    final suffix = decision.rejectionReason != null
+        ? ' — ${decision.rejectionReason}'
+        : '';
+
+    return '$prefix: $summary$suffix';
+  }
+
+  /// Retrieve the humanSummary from the change set item, or fall back to
+  /// the tool name.
+  static String _changeItemSummary(
+    ChangeDecisionEntity decision,
+    Map<String, ChangeSetEntity> changeSetMap,
+  ) {
+    final changeSet = changeSetMap[decision.changeSetId];
+    if (changeSet != null && decision.itemIndex < changeSet.items.length) {
+      return changeSet.items[decision.itemIndex].humanSummary;
+    }
+    return decision.toolName;
+  }
+
+  /// Heuristic classification for observations.
+  ///
+  /// Uses keyword-based sentiment analysis on the observation payload text.
+  /// When a [payload] is provided, extracts text content to use as the
+  /// detail string. Falls back to "Observation recorded" when no payload
+  /// text is available.
+  ClassifiedFeedbackItem? _classifyObservation(
+    AgentMessageEntity observation, {
+    AgentMessagePayloadEntity? payload,
+  }) {
+    final detail = _observationDetailText(payload);
+    final sentiment = _classifyTextSentiment(detail);
     return ClassifiedFeedbackItem(
-      sentiment: FeedbackSentiment.neutral,
+      sentiment: sentiment,
       category: FeedbackCategory.general,
       source: FeedbackSources.observation,
-      detail: 'Observation recorded',
+      detail: detail,
       agentId: observation.agentId,
       sourceEntityId: observation.id,
     );
+  }
+
+  /// Keyword-based heuristic for classifying text sentiment.
+  ///
+  /// Scans the lowercase text for positive and negative indicator words/phrases
+  /// and returns the dominant sentiment. Returns [FeedbackSentiment.neutral]
+  /// when signals are balanced or absent.
+  static FeedbackSentiment _classifyTextSentiment(String text) {
+    final lower = text.toLowerCase();
+
+    var positiveScore = 0;
+    var negativeScore = 0;
+
+    for (final keyword in _positiveKeywords) {
+      if (lower.contains(keyword)) positiveScore++;
+    }
+    for (final keyword in _negativeKeywords) {
+      if (lower.contains(keyword)) negativeScore++;
+    }
+
+    if (positiveScore > negativeScore) return FeedbackSentiment.positive;
+    if (negativeScore > positiveScore) return FeedbackSentiment.negative;
+    return FeedbackSentiment.neutral;
+  }
+
+  static const _positiveKeywords = [
+    'success',
+    'completed',
+    'approved',
+    'confirmed',
+    'improved',
+    'resolved',
+    'fixed',
+    'accomplished',
+    'achieved',
+    'excellent',
+    'good',
+    'great',
+    'well done',
+    'on track',
+    'progress',
+    'ahead of schedule',
+    'passed',
+    'accepted',
+    'positive',
+    'helpful',
+    'efficient',
+    'effective',
+    'reliable',
+    'consistent',
+    'satisfied',
+    'exceeded',
+    'upgraded',
+    'optimized',
+    'stable',
+  ];
+
+  static const _negativeKeywords = [
+    'fail',
+    'error',
+    'issue',
+    'problem',
+    'bug',
+    'crash',
+    'reject',
+    'declined',
+    'timeout',
+    'timed out',
+    'slow',
+    'degraded',
+    'broken',
+    'missing',
+    'incorrect',
+    'wrong',
+    'bad',
+    'poor',
+    'unstable',
+    'regression',
+    'overdue',
+    'behind schedule',
+    'abandoned',
+    'blocked',
+    'stale',
+    'negative',
+    'inconsistent',
+    'unreliable',
+    'warning',
+    'critical',
+    'severe',
+  ];
+
+  /// Extract a displayable detail string from an observation payload.
+  static String _observationDetailText(AgentMessagePayloadEntity? payload) {
+    if (payload == null) return 'Observation recorded';
+    final text = payload.content['text'];
+    if (text is String && text.trim().isNotEmpty) {
+      return truncateAgentText(text, 200);
+    }
+    return 'Observation recorded';
   }
 
   /// Rule-based classification for reports by confidence score.

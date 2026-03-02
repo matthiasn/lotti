@@ -448,19 +448,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentRitualReviewAction => 'Iniciar conversación';
 
   @override
-  String get agentRitualReviewByCategory => 'Por categoría';
-
-  @override
-  String get agentRitualReviewBySentiment => 'Por sentimiento';
-
-  @override
   String get agentRitualReviewFeedbackTitle => 'Señales de retroalimentación';
 
   @override
-  String get agentRitualReviewNegativeSignals => 'Señales negativas';
+  String get agentRitualReviewNegativeSignals => 'Negativo';
 
   @override
-  String get agentRitualReviewNeutralSignals => 'Señales neutras';
+  String get agentRitualReviewNeutralSignals => 'Neutro';
 
   @override
   String get agentRitualReviewNoFeedback =>
@@ -470,7 +464,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentRitualReviewNoProposal => 'Sin propuesta activa';
 
   @override
-  String get agentRitualReviewPositiveSignals => 'Señales positivas';
+  String get agentRitualReviewPositiveSignals => 'Positivo';
 
   @override
   String get agentRitualReviewProposalSection => 'Propuesta actual';

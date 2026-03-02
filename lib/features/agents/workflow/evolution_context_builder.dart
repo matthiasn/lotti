@@ -1,7 +1,6 @@
-import 'dart:math';
-
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 
 /// Assembled context for an evolution session, ready to feed the LLM.
 class EvolutionContext {
@@ -241,7 +240,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final v in capped) {
       buf.writeln(
         '- v${v.version} (${v.status.name}, by ${v.authoredBy}): '
-        '${truncateText(v.directives, 120)}',
+        '${truncateAgentText(v.directives, 120)}',
       );
     }
     buf.writeln();
@@ -256,7 +255,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final report in capped) {
       buf
         ..writeln('### Agent ${_shortId(report.agentId)}')
-        ..writeln(truncateText(report.content, 500))
+        ..writeln(truncateAgentText(report.content, 500))
         ..writeln();
     }
   }
@@ -277,7 +276,7 @@ again. The conversation should always be driving toward an approved proposal.
       if (payload != null) {
         final text = _extractPayloadText(payload);
         if (text != null) {
-          buf.writeln(truncateText(text, 400));
+          buf.writeln(truncateAgentText(text, 400));
         }
       }
 
@@ -293,7 +292,7 @@ again. The conversation should always be driving toward an approved proposal.
     buf.writeln('## Your Notes From Past Sessions (${capped.length})');
     for (final note in capped) {
       buf.writeln(
-          '- **${note.kind.name}**: ${truncateText(note.content, 200)}');
+          '- **${note.kind.name}**: ${truncateAgentText(note.content, 200)}');
     }
     buf.writeln();
   }
@@ -303,13 +302,6 @@ again. The conversation should always be driving toward an approved proposal.
     final text = payload.content['text'];
     if (text is String && text.trim().isNotEmpty) return text;
     return null;
-  }
-
-  /// Truncate [text] to [maxLength] characters, appending "…" if truncated.
-  static String truncateText(String text, int maxLength) {
-    final singleLine = text.replaceAll('\n', ' ').trim();
-    if (singleLine.length <= maxLength) return singleLine;
-    return '${singleLine.substring(0, min(maxLength, singleLine.length))}…';
   }
 
   /// Return the first 8 chars of an ID for display.

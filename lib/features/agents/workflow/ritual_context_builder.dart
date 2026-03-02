@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 
 /// Extends [EvolutionContextBuilder] with classified feedback sections for
@@ -218,7 +219,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final item in items) {
       buf.writeln(
         '- [${item.source}] '
-        '${EvolutionContextBuilder.truncateText(item.detail, 200)}',
+        '${truncateAgentText(item.detail, 200)}',
       );
     }
     buf.writeln();
@@ -238,7 +239,7 @@ again. The conversation should always be driving toward an approved proposal.
       for (final item in entry.value) {
         buf.writeln(
           '- ${item.sentiment.name}: '
-          '${EvolutionContextBuilder.truncateText(item.detail, 200)}',
+          '${truncateAgentText(item.detail, 200)}',
         );
       }
       buf.writeln();

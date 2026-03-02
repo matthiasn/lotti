@@ -882,18 +882,6 @@ abstract class AppLocalizations {
   /// **'Start Conversation'**
   String get agentRitualReviewAction;
 
-  /// No description provided for @agentRitualReviewByCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'By Category'**
-  String get agentRitualReviewByCategory;
-
-  /// No description provided for @agentRitualReviewBySentiment.
-  ///
-  /// In en, this message translates to:
-  /// **'By Sentiment'**
-  String get agentRitualReviewBySentiment;
-
   /// No description provided for @agentRitualReviewFeedbackTitle.
   ///
   /// In en, this message translates to:
@@ -903,13 +891,13 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualReviewNegativeSignals.
   ///
   /// In en, this message translates to:
-  /// **'Negative Signals'**
+  /// **'Negative'**
   String get agentRitualReviewNegativeSignals;
 
   /// No description provided for @agentRitualReviewNeutralSignals.
   ///
   /// In en, this message translates to:
-  /// **'Neutral Signals'**
+  /// **'Neutral'**
   String get agentRitualReviewNeutralSignals;
 
   /// No description provided for @agentRitualReviewNoFeedback.
@@ -927,7 +915,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualReviewPositiveSignals.
   ///
   /// In en, this message translates to:
-  /// **'Positive Signals'**
+  /// **'Positive'**
   String get agentRitualReviewPositiveSignals;
 
   /// No description provided for @agentRitualReviewProposalSection.

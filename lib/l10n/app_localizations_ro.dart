@@ -448,19 +448,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRitualReviewAction => 'Începe conversația';
 
   @override
-  String get agentRitualReviewByCategory => 'După categorie';
-
-  @override
-  String get agentRitualReviewBySentiment => 'După sentiment';
-
-  @override
   String get agentRitualReviewFeedbackTitle => 'Semnale de feedback';
 
   @override
-  String get agentRitualReviewNegativeSignals => 'Semnale negative';
+  String get agentRitualReviewNegativeSignals => 'Negativ';
 
   @override
-  String get agentRitualReviewNeutralSignals => 'Semnale neutre';
+  String get agentRitualReviewNeutralSignals => 'Neutru';
 
   @override
   String get agentRitualReviewNoFeedback =>
@@ -470,7 +464,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRitualReviewNoProposal => 'Nicio propunere activă';
 
   @override
-  String get agentRitualReviewPositiveSignals => 'Semnale pozitive';
+  String get agentRitualReviewPositiveSignals => 'Pozitiv';
 
   @override
   String get agentRitualReviewProposalSection => 'Propunerea curentă';
