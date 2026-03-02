@@ -20,8 +20,10 @@ class EvolutionVoiceControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch provider state so widget rebuilds as amplitudes change.
-    ref.watch(chatRecorderControllerProvider);
+    // Watch only amplitude history so widget rebuilds as amplitudes change.
+    ref.watch(
+      chatRecorderControllerProvider.select((s) => s.amplitudeHistory),
+    );
 
     return CallbackShortcuts(
       bindings: {

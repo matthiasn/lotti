@@ -255,15 +255,11 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
           const SizedBox(width: 4),
           EvolutionCircleButton(
             icon: useRealtime ? Icons.graphic_eq : Icons.mic,
-            onPressed: () {
-              if (useRealtime) {
-                ref
+            onPressed: useRealtime
+                ? ref
                     .read(chatRecorderControllerProvider.notifier)
-                    .startRealtime();
-              } else {
-                ref.read(chatRecorderControllerProvider.notifier).start();
-              }
-            },
+                    .startRealtime
+                : ref.read(chatRecorderControllerProvider.notifier).start,
             tooltip: useRealtime
                 ? context.messages.chatInputStartRealtime
                 : context.messages.chatInputRecordVoice,

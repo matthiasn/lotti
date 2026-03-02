@@ -389,21 +389,33 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Default mode: batch. Toggle button shows mic (small), main button
-      // shows graphic_eq (or vice versa depending on useRealtimeMode).
-      // By default useRealtimeMode=false, so toggle icon=graphic_eq,
-      // main mic icon=mic
-      expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
+      // Helper: find the icon inside a Container of given size to
+      // distinguish the small toggle button (32) from the main button (40).
+      Icon iconInButtonOfSize(double size) {
+        final containers = find.byWidgetPredicate(
+          (w) => w is Container && w.constraints?.maxWidth == size,
+        );
+        // Each EvolutionCircleButton is a Container > IconButton > Icon.
+        final iconFinder = find.descendant(
+          of: containers,
+          matching: find.byType(Icon),
+        );
+        return tester.widget<Icon>(iconFinder.first);
+      }
 
-      // Tap toggle button (the smaller one with graphic_eq)
+      // Default: batch mode. Toggle (small=32) shows graphic_eq,
+      // main (40) shows mic.
+      expect(iconInButtonOfSize(32).icon, Icons.graphic_eq);
+      expect(iconInButtonOfSize(40).icon, Icons.mic);
+
+      // Tap toggle button (the smaller one)
       await tester.tap(find.byIcon(Icons.graphic_eq));
       await tester.pump();
 
-      // After toggle, useRealtimeMode=true, icons swap
-      // Toggle shows mic (small), main shows graphic_eq
-      expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
+      // After toggle: realtime mode. Toggle (32) shows mic,
+      // main (40) shows graphic_eq.
+      expect(iconInButtonOfSize(32).icon, Icons.mic);
+      expect(iconInButtonOfSize(40).icon, Icons.graphic_eq);
     });
 
     testWidgets('realtime mode starts realtime recording on main button tap',
@@ -443,8 +455,13 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Some text');
       await tester.pump();
 
-      // The send button should show but be disabled (canSend = false)
+      // The hourglass button should be visible (waiting state)
       expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
+
+      // Attempt to send via keyboard action — should be blocked
+      await tester.testTextInput.receiveAction(TextInputAction.send);
+      await tester.pump();
+
       expect(lastSent, isNull);
     });
   });
