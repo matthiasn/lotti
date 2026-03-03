@@ -5,13 +5,21 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
@@ -78,6 +86,8 @@ void _stubUpsertEmbedding(MockEmbeddingsDb db) {
       embedding: any(named: 'embedding'),
       contentHash: any(named: 'contentHash'),
       categoryId: any(named: 'categoryId'),
+      taskId: any(named: 'taskId'),
+      subtype: any(named: 'subtype'),
     ),
   ).thenReturn(null);
 }
@@ -138,6 +148,10 @@ void main() {
     // Default: embeddings flag enabled
     when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
         .thenAnswer((_) async => true);
+
+    // Default: no labels (needed for label resolver)
+    when(() => mockJournalDb.getAllLabelDefinitions())
+        .thenAnswer((_) async => []);
 
     container = ProviderContainer();
   });
@@ -664,6 +678,480 @@ void main() {
       const original = EmbeddingBackfillState(error: 'old error');
       final cleared = original.copyWith(clearError: true, error: 'new error');
       expect(cleared.error, isNull);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // backfillAgentReports tests
+  // -------------------------------------------------------------------------
+
+  group('EmbeddingBackfillController.backfillAgentReports', () {
+    late MockAgentRepository mockAgentRepo;
+
+    /// Creates a test agent identity.
+    AgentIdentityEntity makeAgent(String id) => AgentDomainEntity.agent(
+          id: id,
+          agentId: id,
+          kind: 'task_agent',
+          displayName: 'Test Agent $id',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-$id',
+          config: const AgentConfig(),
+          createdAt: _fixedDate,
+          updatedAt: _fixedDate,
+          vectorClock: null,
+        ) as AgentIdentityEntity;
+
+    /// Creates a test agent report.
+    AgentReportEntity makeReport({
+      required String id,
+      required String agentId,
+      String content = 'A long enough agent report content for embedding.',
+    }) =>
+        AgentDomainEntity.agentReport(
+          id: id,
+          agentId: agentId,
+          scope: AgentReportScopes.current,
+          createdAt: _fixedDate,
+          vectorClock: null,
+          content: content,
+        ) as AgentReportEntity;
+
+    /// Creates a test agent link.
+    AgentLink makeTaskLink({
+      required String fromId,
+      required String toId,
+    }) =>
+        AgentLink.basic(
+          id: 'link-$fromId-$toId',
+          fromId: fromId,
+          toId: toId,
+          createdAt: _fixedDate,
+          updatedAt: _fixedDate,
+          vectorClock: null,
+        );
+
+    setUp(() async {
+      mockAgentRepo = MockAgentRepository();
+      if (getIt.isRegistered<AgentRepository>()) {
+        getIt.unregister<AgentRepository>();
+      }
+      getIt.registerSingleton<AgentRepository>(mockAgentRepo);
+    });
+
+    test('embeds agent reports and tracks progress', () async {
+      final agent = makeAgent('agent-1');
+      final report = makeReport(id: 'report-1', agentId: 'agent-1');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
+      );
+      when(
+        () => mockAgentRepo.getLatestReport(
+          'agent-1',
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => report);
+
+      // Stub task entity lookup for category resolution.
+      final task = Task(
+        meta: _meta(id: 'task-1'),
+        data: _taskData('Test task'),
+      );
+      _stubEntity(mockJournalDb, task);
+
+      await controller().backfillAgentReports();
+
+      final s = state();
+      expect(s.isRunning, isFalse);
+      expect(s.processedCount, 1);
+      expect(s.totalCount, 1);
+      expect(s.embeddedCount, 1);
+      expect(s.progress, 1.0);
+
+      verify(
+        () => mockEmbeddingsDb.upsertEmbedding(
+          entityId: 'report-1',
+          entityType: kEntityTypeAgentReport,
+          modelId: any(named: 'modelId'),
+          embedding: any(named: 'embedding'),
+          contentHash: any(named: 'contentHash'),
+          categoryId: any(named: 'categoryId'),
+          taskId: 'task-1',
+          subtype: AgentReportScopes.current,
+        ),
+      ).called(1);
+    });
+
+    test('skips agents with no task links', () async {
+      final agent = makeAgent('agent-1');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer((_) async => []);
+
+      await controller().backfillAgentReports();
+
+      final s = state();
+      expect(s.processedCount, 1);
+      expect(s.embeddedCount, 0);
+    });
+
+    test('skips agents with no report', () async {
+      final agent = makeAgent('agent-1');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
+      );
+      when(
+        () => mockAgentRepo.getLatestReport(
+          'agent-1',
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await controller().backfillAgentReports();
+
+      expect(state().processedCount, 1);
+      expect(state().embeddedCount, 0);
+    });
+
+    test('skips agents with empty report content', () async {
+      final agent = makeAgent('agent-1');
+      final emptyReport =
+          makeReport(id: 'report-1', agentId: 'agent-1', content: '');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
+      );
+      when(
+        () => mockAgentRepo.getLatestReport(
+          'agent-1',
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => emptyReport);
+
+      await controller().backfillAgentReports();
+
+      expect(state().processedCount, 1);
+      expect(state().embeddedCount, 0);
+    });
+
+    test('handles empty agent list gracefully', () async {
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => []);
+
+      await controller().backfillAgentReports();
+
+      final s = state();
+      expect(s.isRunning, isFalse);
+      expect(s.progress, 1.0);
+      expect(s.totalCount, 0);
+    });
+
+    test('sets error when AgentRepository is not registered', () async {
+      getIt.unregister<AgentRepository>();
+
+      await controller().backfillAgentReports();
+
+      expect(state().error, contains('not available'));
+      expect(state().isRunning, isFalse);
+    });
+
+    test('sets error when embeddings are disabled', () async {
+      when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
+          .thenAnswer((_) async => false);
+
+      await controller().backfillAgentReports();
+
+      expect(state().error, contains('disabled'));
+      expect(state().isRunning, isFalse);
+    });
+
+    test('sets error when no Ollama provider configured', () async {
+      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
+          .thenAnswer((_) async => null);
+
+      await controller().backfillAgentReports();
+
+      expect(state().error, contains('No Ollama provider'));
+      expect(state().isRunning, isFalse);
+    });
+
+    test('continues processing after per-agent error', () async {
+      final agent1 = makeAgent('agent-1');
+      final agent2 = makeAgent('agent-2');
+      final report2 = makeReport(id: 'report-2', agentId: 'agent-2');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent1, agent2]);
+
+      // Agent 1: getLinksFrom throws
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenThrow(Exception('Agent DB error'));
+
+      // Agent 2: works fine
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-2',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [makeTaskLink(fromId: 'agent-2', toId: 'task-2')],
+      );
+      when(
+        () => mockAgentRepo.getLatestReport(
+          'agent-2',
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => report2);
+
+      final task = Task(
+        meta: _meta(id: 'task-2'),
+        data: _taskData('Test task 2'),
+      );
+      _stubEntity(mockJournalDb, task);
+
+      await controller().backfillAgentReports();
+
+      final s = state();
+      expect(s.processedCount, 2);
+      expect(s.embeddedCount, 1);
+      expect(s.error, isNull);
+    });
+
+    test('resolves task category from journal entity', () async {
+      final agent = makeAgent('agent-1');
+      final report = makeReport(id: 'report-1', agentId: 'agent-1');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
+      );
+      when(
+        () => mockAgentRepo.getLatestReport(
+          'agent-1',
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => report);
+
+      // Task with a specific category
+      final task = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: _fixedDate,
+          updatedAt: _fixedDate,
+          dateFrom: _fixedDate,
+          dateTo: _fixedDate,
+          categoryId: 'my-category',
+        ),
+        data: _taskData('Categorized task'),
+      );
+      _stubEntity(mockJournalDb, task);
+
+      await controller().backfillAgentReports();
+
+      verify(
+        () => mockEmbeddingsDb.upsertEmbedding(
+          entityId: 'report-1',
+          entityType: kEntityTypeAgentReport,
+          modelId: any(named: 'modelId'),
+          embedding: any(named: 'embedding'),
+          contentHash: any(named: 'contentHash'),
+          categoryId: 'my-category',
+          taskId: 'task-1',
+          subtype: AgentReportScopes.current,
+        ),
+      ).called(1);
+    });
+
+    test('uses empty category when task not found', () async {
+      final agent = makeAgent('agent-1');
+      final report = makeReport(id: 'report-1', agentId: 'agent-1');
+
+      when(() => mockAgentRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          'agent-1',
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
+      );
+      when(
+        () => mockAgentRepo.getLatestReport(
+          'agent-1',
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => report);
+
+      // Task not found in journal DB
+      when(() => mockJournalDb.journalEntityById('task-1'))
+          .thenAnswer((_) async => null);
+
+      await controller().backfillAgentReports();
+
+      verify(
+        () => mockEmbeddingsDb.upsertEmbedding(
+          entityId: 'report-1',
+          entityType: kEntityTypeAgentReport,
+          modelId: any(named: 'modelId'),
+          embedding: any(named: 'embedding'),
+          contentHash: any(named: 'contentHash'),
+          taskId: 'task-1',
+          subtype: AgentReportScopes.current,
+        ),
+      ).called(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Label resolver in backfillCategory tests
+  // -------------------------------------------------------------------------
+
+  group('EmbeddingBackfillController label resolver', () {
+    test('enriches task embeddings with resolved label names', () async {
+      final task = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: _fixedDate,
+          updatedAt: _fixedDate,
+          dateFrom: _fixedDate,
+          dateTo: _fixedDate,
+          labelIds: ['label-1', 'label-2'],
+        ),
+        data: _taskData('Fix auth bug'),
+        entryText: const EntryText(plainText: _longText),
+      );
+
+      _stubEntityIds(mockJournalDb, ['task-1']);
+      _stubEntity(mockJournalDb, task);
+
+      // Stub label definitions
+      when(() => mockJournalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => [
+                LabelDefinition(
+                  id: 'label-1',
+                  name: 'security',
+                  color: '#FF0000',
+                  createdAt: _fixedDate,
+                  updatedAt: _fixedDate,
+                  vectorClock: null,
+                ),
+                LabelDefinition(
+                  id: 'label-2',
+                  name: 'backend',
+                  color: '#00FF00',
+                  createdAt: _fixedDate,
+                  updatedAt: _fixedDate,
+                  vectorClock: null,
+                ),
+              ]);
+
+      await controller().backfillCategory(_testCategoryId);
+
+      const expectedText =
+          'Fix auth bug\nLabels: security, backend\n$_longText';
+      verify(
+        () => mockEmbeddingRepo.embed(
+          input: expectedText,
+          baseUrl: _ollamaBaseUrl,
+          model: any(named: 'model'),
+        ),
+      ).called(1);
+    });
+
+    test('filters out deleted labels from resolver', () async {
+      final task = Task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: _fixedDate,
+          updatedAt: _fixedDate,
+          dateFrom: _fixedDate,
+          dateTo: _fixedDate,
+          labelIds: ['label-1', 'label-deleted'],
+        ),
+        data: _taskData('Some task with enough title for testing'),
+      );
+
+      _stubEntityIds(mockJournalDb, ['task-1']);
+      _stubEntity(mockJournalDb, task);
+
+      when(() => mockJournalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => [
+                LabelDefinition(
+                  id: 'label-1',
+                  name: 'active',
+                  color: '#FF0000',
+                  createdAt: _fixedDate,
+                  updatedAt: _fixedDate,
+                  vectorClock: null,
+                ),
+                LabelDefinition(
+                  id: 'label-deleted',
+                  name: 'deleted',
+                  color: '#999999',
+                  createdAt: _fixedDate,
+                  updatedAt: _fixedDate,
+                  vectorClock: null,
+                  deletedAt: _fixedDate,
+                ),
+              ]);
+
+      await controller().backfillCategory(_testCategoryId);
+
+      // Capture the input text that was embedded.
+      final captured = verify(
+        () => mockEmbeddingRepo.embed(
+          input: captureAny(named: 'input'),
+          baseUrl: _ollamaBaseUrl,
+          model: any(named: 'model'),
+        ),
+      ).captured;
+
+      final embeddedText = captured.first as String;
+      // Only 'active' label should appear, not 'deleted'
+      expect(embeddedText, contains('Labels: active'));
+      expect(embeddedText, isNot(contains('deleted')));
     });
   });
 }

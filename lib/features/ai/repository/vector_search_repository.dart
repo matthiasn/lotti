@@ -107,14 +107,31 @@ class VectorSearchRepository {
         .where((r) => r.entityType == kEntityTypeTask)
         .map((r) => r.entityId)
         .toSet();
+
+    // 1b. Collect task IDs from agent report results (direct lookup via
+    // task_id metadata — no link table needed).
+    final agentReportTaskIds = results
+        .where(
+          (r) => r.entityType == kEntityTypeAgentReport && r.taskId.isNotEmpty,
+        )
+        .map((r) => r.taskId)
+        .toSet();
+
+    final allDirectTaskIds = {...directTaskIds, ...agentReportTaskIds};
     final directEntities = <String, JournalEntity>{
-      for (final e in await _journalDb.getJournalEntitiesForIds(directTaskIds))
+      for (final e
+          in await _journalDb.getJournalEntitiesForIds(allDirectTaskIds))
         e.meta.id: e,
     };
 
-    // 2. Batch-fetch linked entries for all non-task results.
-    final nonTaskIds =
-        results.where((r) => r.entityType != kEntityTypeTask).toList();
+    // 2. Batch-fetch linked entries for non-task, non-agent-report results.
+    final nonTaskIds = results
+        .where(
+          (r) =>
+              r.entityType != kEntityTypeTask &&
+              r.entityType != kEntityTypeAgentReport,
+        )
+        .toList();
     final childToParentIds = <String, List<String>>{};
     if (nonTaskIds.isNotEmpty) {
       final links = await _journalDb
@@ -141,6 +158,17 @@ class VectorSearchRepository {
         final entity = directEntities[result.entityId];
         if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
+        }
+        continue;
+      }
+
+      // Agent report results resolve via task_id metadata.
+      if (result.entityType == kEntityTypeAgentReport) {
+        if (result.taskId.isNotEmpty) {
+          final entity = directEntities[result.taskId];
+          if (entity is Task && seenIds.add(entity.meta.id)) {
+            tasks.add(entity);
+          }
         }
         continue;
       }

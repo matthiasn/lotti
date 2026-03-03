@@ -368,6 +368,81 @@ void main() {
     });
   });
 
+  group('EmbeddingContentExtractor.extractTaskText', () {
+    test('combines title and labels', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: 'Fix login bug',
+        labelNames: ['authentication', 'security', 'backend'],
+      );
+
+      expect(
+          result, 'Fix login bug\nLabels: authentication, security, backend');
+    });
+
+    test('includes body text after labels', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: 'Fix login bug',
+        labelNames: ['security'],
+        bodyText: 'The JWT token validation is failing.',
+      );
+
+      expect(
+        result,
+        'Fix login bug\nLabels: security\nThe JWT token validation is failing.',
+      );
+    });
+
+    test('omits labels line when labelNames is empty', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: 'A task title that is long enough for embedding',
+        labelNames: [],
+      );
+
+      expect(result, 'A task title that is long enough for embedding');
+    });
+
+    test('returns null when total text is below minimum length', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: 'Short',
+        labelNames: [],
+      );
+
+      expect(result, isNull);
+    });
+
+    test('labels push short titles over minimum length threshold', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: 'Fix auth',
+        labelNames: ['security', 'backend'],
+      );
+
+      // "Fix auth\nLabels: security, backend" = 34 chars, > 20
+      expect(result, isNotNull);
+      expect(result, contains('Labels: security, backend'));
+    });
+
+    test('handles empty body text same as null', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: 'A task title that is long enough for embedding',
+        labelNames: ['label-one'],
+        bodyText: '',
+      );
+
+      expect(result, isNot(contains('\n\n')));
+      expect(result, endsWith('Labels: label-one'));
+    });
+
+    test('trims whitespace from result', () {
+      final result = EmbeddingContentExtractor.extractTaskText(
+        title: '  A padded title that is long enough  ',
+        labelNames: [],
+      );
+
+      expect(result, startsWith('A padded'));
+      expect(result, endsWith('enough'));
+    });
+  });
+
   group('kMinEmbeddingTextLength', () {
     test('is 20', () {
       expect(kMinEmbeddingTextLength, 20);

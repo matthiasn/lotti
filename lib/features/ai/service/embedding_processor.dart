@@ -73,6 +73,26 @@ class EmbeddingProcessor {
     return true;
   }
 
+  /// Builds a [LabelNameResolver] backed by a cached snapshot of all label
+  /// definitions from [journalDb].
+  ///
+  /// Filters out deleted labels. The snapshot is taken once and reused for
+  /// all subsequent lookups, making this efficient for batch processing.
+  static Future<LabelNameResolver> buildLabelResolver(
+    JournalDb journalDb,
+  ) async {
+    final allLabels = await journalDb.getAllLabelDefinitions();
+    final labelMap = <String, String>{};
+    for (final label in allLabels) {
+      if (label.deletedAt == null) {
+        labelMap[label.id] = label.name;
+      }
+    }
+    return (List<String> labelIds) async {
+      return labelIds.map((id) => labelMap[id]).whereType<String>().toList();
+    };
+  }
+
   /// Extracts text for embedding, using the enriched task template when a
   /// label resolver is available for task entities.
   static Future<String?> _extractText(

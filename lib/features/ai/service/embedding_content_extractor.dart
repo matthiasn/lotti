@@ -84,7 +84,7 @@ class EmbeddingContentExtractor {
   /// Produces a "tiny template" that gives tasks enough semantic content for
   /// meaningful embeddings, even when they have no body text:
   ///
-  /// ```
+  /// ```text
   /// Fix login bug
   /// Labels: authentication, security, backend
   /// ```

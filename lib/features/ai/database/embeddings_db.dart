@@ -222,8 +222,14 @@ class EmbeddingsDb {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ''',
           [
-            entityId, entityType, modelId, contentHash, now, categoryId,
-            taskId, subtype,
+            entityId,
+            entityType,
+            modelId,
+            contentHash,
+            now,
+            categoryId,
+            taskId,
+            subtype,
           ],
         )
         // vec0 virtual tables don't support INSERT OR REPLACE — delete first.

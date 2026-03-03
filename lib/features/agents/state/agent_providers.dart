@@ -22,9 +22,11 @@ import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -730,6 +732,14 @@ Future<List<AgentDomainEntity>> evolutionNotes(
 /// The task agent workflow with all dependencies resolved.
 @Riverpod(keepAlive: true)
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
+  // Embedding dependencies are optional — the pipeline may not be available
+  // (e.g. missing native sqlite-vec library on CI).
+  final embeddingsDb =
+      getIt.isRegistered<EmbeddingsDb>() ? getIt<EmbeddingsDb>() : null;
+  final embeddingRepository = getIt.isRegistered<OllamaEmbeddingRepository>()
+      ? getIt<OllamaEmbeddingRepository>()
+      : null;
+
   return TaskAgentWorkflow(
     agentRepository: ref.watch(agentRepositoryProvider),
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
@@ -743,6 +753,8 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    embeddingsDb: embeddingsDb,
+    embeddingRepository: embeddingRepository,
   );
 }
 
