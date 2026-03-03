@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
@@ -344,12 +345,17 @@ class _TaskAgentReportSectionState
       final templateService = ref.read(agentTemplateServiceProvider);
 
       // Try category-specific templates first, then all templates.
+      // Only show Task Agent templates — Template Improver agents are
+      // not assignable to tasks.
       var templates = categoryId != null
           ? await templateService.listTemplatesForCategory(categoryId)
           : <AgentTemplateEntity>[];
       if (templates.isEmpty) {
         templates = await templateService.listTemplates();
       }
+      templates = templates
+          .where((t) => t.kind == AgentTemplateKind.taskAgent)
+          .toList();
 
       if (templates.isEmpty) {
         if (!context.mounted) return;
