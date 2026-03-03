@@ -324,7 +324,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentFeedbackGrievancesTitle => 'Griefs';
 
   @override
-  String get agentFeedbackHighPriorityTitle => 'Feedback hautement prioritaire';
+  String get agentFeedbackHighPriorityTitle => 'Retours hautement prioritaires';
 
   @override
   String agentFeedbackItemCount(int count) {

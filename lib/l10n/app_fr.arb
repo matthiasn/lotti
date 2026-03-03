@@ -153,7 +153,7 @@
   "agentFeedbackClassificationTitle": "Classification des retours",
   "agentFeedbackExcellenceTitle": "Notes d'excellence",
   "agentFeedbackGrievancesTitle": "Griefs",
-  "agentFeedbackHighPriorityTitle": "Feedback hautement prioritaire",
+  "agentFeedbackHighPriorityTitle": "Retours hautement prioritaires",
   "agentFeedbackItemCount": "{count, plural, =1{1 élément} other{{count} éléments}}",
   "@agentFeedbackItemCount": {
     "placeholders": {

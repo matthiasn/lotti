@@ -392,24 +392,29 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Handles both legacy bare strings and new structured objects.
   static ObservationRecord? _parseObservationItem(Object? item) {
     // Legacy format: bare string.
-    if (item is String && item.trim().isNotEmpty) {
-      return ObservationRecord(text: item);
+    if (item is String) {
+      final trimmed = item.trim();
+      if (trimmed.isNotEmpty) {
+        return ObservationRecord(text: trimmed);
+      }
     }
 
     // New structured format: {text, priority?, category?}.
     if (item is Map<String, dynamic>) {
-      final text = item['text'];
-      if (text is String && text.trim().isNotEmpty) {
+      final rawText = item['text'];
+      if (rawText is String) {
+        final text = rawText.trim();
+        if (text.isEmpty) return null;
         final rawPriority = item['priority'];
         final rawCategory = item['category'];
         return ObservationRecord(
           text: text,
-          priority: _parseEnumByName(
+          priority: parseEnumByName(
                 ObservationPriority.values,
                 rawPriority is String ? rawPriority : null,
               ) ??
               ObservationPriority.routine,
-          category: _parseEnumByName(
+          category: parseEnumByName(
                 ObservationCategory.values,
                 rawCategory is String ? rawCategory : null,
               ) ??
@@ -418,17 +423,6 @@ class TaskAgentStrategy extends ConversationStrategy {
       }
     }
 
-    return null;
-  }
-
-  /// Safely looks up an enum value by name, returning `null` on mismatch.
-  static T? _parseEnumByName<T extends Enum>(List<T> values, String? name) {
-    if (name == null) return null;
-    // Handle snake_case from the tool schema (e.g., "template_improvement").
-    final normalized = name.trim().replaceAll('_', '').toLowerCase();
-    for (final value in values) {
-      if (value.name.toLowerCase() == normalized) return value;
-    }
     return null;
   }
 

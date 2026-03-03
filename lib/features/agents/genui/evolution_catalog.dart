@@ -180,7 +180,7 @@ final _highPriorityFeedbackSchema = S.object(
           'agentId': S.string(description: 'Short agent ID'),
           'detail': S.string(description: 'Full grievance text'),
         },
-        required: ['agentId', 'detail'],
+        required: ['detail'],
       ),
       description: 'Negative critical observations (grievances)',
     ),
@@ -190,7 +190,7 @@ final _highPriorityFeedbackSchema = S.object(
           'agentId': S.string(description: 'Short agent ID'),
           'detail': S.string(description: 'Full excellence note text'),
         },
-        required: ['agentId', 'detail'],
+        required: ['detail'],
       ),
       description: 'Positive critical observations (excellence notes)',
     ),
@@ -1335,12 +1335,17 @@ Widget _highPriorityItemTile({
         ),
         const SizedBox(width: 8),
         if (agentId.isNotEmpty) ...[
-          Text(
-            '[$agentId]',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: Text(
+              '[$agentId]',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 6),

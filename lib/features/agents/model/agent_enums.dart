@@ -253,3 +253,17 @@ enum AgentMessageKind {
   /// System-generated message (e.g., lifecycle events).
   system,
 }
+
+/// Safely looks up an enum value by name, returning `null` on mismatch.
+///
+/// Normalizes the input by trimming whitespace, stripping underscores, and
+/// lowercasing — so both `camelCase` enum names and `snake_case` schema
+/// values (e.g., `template_improvement` → `templateimprovement`) match.
+T? parseEnumByName<T extends Enum>(List<T> values, String? name) {
+  if (name == null) return null;
+  final normalized = name.trim().replaceAll('_', '').toLowerCase();
+  for (final value in values) {
+    if (value.name.toLowerCase() == normalized) return value;
+  }
+  return null;
+}

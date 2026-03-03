@@ -57,8 +57,11 @@ class RitualContextBuilder extends EvolutionContextBuilder {
         _writeHighPrioritySection(buf, classifiedFeedback);
 
     final remainingSlots = maxFeedbackItems - highPriorityCount;
+    final nonCriticalItems = classifiedFeedback.items
+        .where((i) => i.observationPriority != ObservationPriority.critical)
+        .toList();
     final cappedItems = remainingSlots > 0
-        ? classifiedFeedback.items.take(remainingSlots).toList()
+        ? nonCriticalItems.take(remainingSlots).toList()
         : <ClassifiedFeedbackItem>[];
 
     _writeFeedbackSummary(buf, classifiedFeedback, cappedItems);

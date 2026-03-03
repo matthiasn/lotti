@@ -1198,19 +1198,19 @@ and never shown to the user. They persist as your memory across wakes.''';
       if (payload == null) continue;
 
       final rawPriority = payload.content['priority'];
-      if (rawPriority is! String ||
-          rawPriority.toLowerCase() !=
-              ObservationPriority.critical.name.toLowerCase()) {
-        continue;
-      }
+      final priority = rawPriority is String
+          ? parseEnumByName(ObservationPriority.values, rawPriority)
+          : null;
+      if (priority != ObservationPriority.critical) continue;
 
       final text = payload.content['text'];
       if (text is! String || text.trim().isEmpty) continue;
 
       final rawCategory = payload.content['category'];
-      if (rawCategory is String &&
-          rawCategory.toLowerCase() ==
-              ObservationCategory.excellence.name.toLowerCase()) {
+      final category = rawCategory is String
+          ? parseEnumByName(ObservationCategory.values, rawCategory)
+          : null;
+      if (category == ObservationCategory.excellence) {
         excellence.add((obs.createdAt, text));
       } else {
         // grievance, template_improvement, or unrecognized critical
