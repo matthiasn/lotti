@@ -30,6 +30,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       ),
     );
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'x'));
@@ -52,6 +53,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       when(() => repo.fetchPending(limit: any<int>(named: 'limit')))
           .thenAnswer((_) async => [pending]);
@@ -107,6 +109,7 @@ void main() {
           retries: 2, // maxRetriesOverride=3 → nextAttempts=3 hits cap
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
         );
 
         when(() => repo.fetchPending(limit: any(named: 'limit')))
@@ -165,6 +168,7 @@ void main() {
           retries: 2,
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
         );
 
         when(() => repo.fetchPending(limit: any(named: 'limit')))
@@ -228,6 +232,7 @@ void main() {
         retries: 2,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       final b = OutboxItem(
         id: 12,
@@ -237,6 +242,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
 
       var call = 0;
@@ -294,6 +300,7 @@ void main() {
           retries: 0,
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
         );
         when(() => repo.fetchPending(limit: any(named: 'limit')))
             .thenAnswer((_) async => [pending]);
@@ -342,6 +349,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       when(() => repo.fetchPending(limit: any(named: 'limit')))
           .thenAnswer((_) async => [pending]);
@@ -386,6 +394,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       when(() => repo.fetchPending(limit: any(named: 'limit')))
           .thenAnswer((_) async => [pending]);
@@ -436,6 +445,7 @@ void main() {
       retries: 0,
       createdAt: DateTime(2024),
       updatedAt: DateTime(2024),
+      priority: OutboxPriority.low.index,
     );
     when(() => repo.fetchPending(limit: any(named: 'limit')))
         .thenAnswer((_) async => [item]);
@@ -486,6 +496,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       // Second failure: same subject, retries=1 → repeats=2
       final item1 = item0.copyWith(retries: 1, updatedAt: DateTime(2024, 1, 2));
@@ -554,6 +565,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       final a1 = a0.copyWith(retries: 1);
       final b0 = OutboxItem(
@@ -564,6 +576,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
 
       var call = 0;
@@ -624,6 +637,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       final s1 = s0.copyWith(retries: 1);
       final s2 = s0.copyWith(updatedAt: DateTime(2024, 2));
@@ -707,6 +721,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
 
       // Refreshed item has updated message (simulating merge that happened)
@@ -719,6 +734,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024, 1, 2),
+        priority: OutboxPriority.low.index,
       );
 
       when(() => repo.fetchPending(limit: any(named: 'limit')))
@@ -770,6 +786,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
 
       when(() => repo.fetchPending(limit: any(named: 'limit')))
@@ -816,6 +833,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
       final item2 = OutboxItem(
         id: 103,
@@ -826,6 +844,7 @@ void main() {
         retries: 0,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
+        priority: OutboxPriority.low.index,
       );
 
       // First fetch returns both items

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
@@ -90,7 +91,7 @@ void main() {
       // Verify the migration occurred by checking schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 5);
+      expect(db.schemaVersion, 6);
 
       // Verify sync_sequence_log table exists and has correct schema
       final seqLogResult = await db
@@ -133,7 +134,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 5);
+      expect(versionResult.first.read<int>('user_version'), 6);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -257,7 +258,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 5);
+      expect(versionResult.first.read<int>('user_version'), 6);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -274,6 +275,95 @@ void main() {
       );
       final updated = await db.oldestOutboxItems(10);
       expect(updated.first.payloadSize, 42);
+
+      await db.close();
+    });
+
+    test('v6 migration adds priority column to outbox', () async {
+      // Create a v5 database with the outbox table lacking priority
+      final dbFile = File(path.join(testDirectory!.path, 'test_sync_v6.db'));
+      final sqlite = sqlite3.open(dbFile.path);
+
+      // v5 schema: outbox with payload_size but no priority
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS outbox (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          status INTEGER NOT NULL DEFAULT 0,
+          retries INTEGER NOT NULL DEFAULT 0,
+          message TEXT NOT NULL,
+          subject TEXT NOT NULL,
+          file_path TEXT,
+          outbox_entry_id TEXT,
+          payload_size INTEGER
+        )
+      ''');
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS sync_sequence_log (
+          host_id TEXT NOT NULL,
+          counter INTEGER NOT NULL,
+          entry_id TEXT,
+          payload_type INTEGER NOT NULL DEFAULT 0,
+          originating_host_id TEXT,
+          status INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          request_count INTEGER NOT NULL DEFAULT 0,
+          last_requested_at INTEGER,
+          PRIMARY KEY (host_id, counter)
+        )
+      ''');
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS host_activity (
+          host_id TEXT NOT NULL PRIMARY KEY,
+          last_seen_at INTEGER NOT NULL
+        )
+      ''');
+
+      // Insert a v5 row (no priority column)
+      final createdAtSeconds =
+          DateTime(2024, 8, 20).millisecondsSinceEpoch ~/ 1000;
+      sqlite.execute('''
+        INSERT INTO outbox (created_at, updated_at, status, retries, message, subject)
+        VALUES ($createdAtSeconds, $createdAtSeconds, 0, 0, '{"v5": true}', 'v5-subject')
+      ''');
+
+      sqlite.execute('PRAGMA user_version = 5');
+      sqlite.dispose();
+
+      // Open with SyncDatabase to trigger v5→v6 migration
+      final db = SyncDatabase(overriddenFilename: 'test_sync_v6.db');
+
+      // Verify schema version updated
+      final versionResult = await db.customSelect('PRAGMA user_version').get();
+      expect(versionResult.first.read<int>('user_version'), 6);
+
+      // Verify existing row survived with default priority=2 (low)
+      final items = await db.oldestOutboxItems(10);
+      expect(items, hasLength(1));
+      expect(items.first.subject, 'v5-subject');
+      expect(items.first.priority, OutboxPriority.low.index);
+
+      // Verify priority column is usable
+      await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"v6": true}'),
+          subject: const Value('v6-high'),
+          createdAt: Value(DateTime(2024, 8, 21)),
+          updatedAt: Value(DateTime(2024, 8, 21)),
+          priority: Value(OutboxPriority.high.index),
+        ),
+      );
+
+      // The high-priority item should appear first
+      final allItems = await db.oldestOutboxItems(10);
+      expect(allItems, hasLength(2));
+      expect(allItems.first.subject, 'v6-high');
+      expect(allItems.first.priority, OutboxPriority.high.index);
+      expect(allItems.last.subject, 'v5-subject');
+      expect(allItems.last.priority, OutboxPriority.low.index);
 
       await db.close();
     });

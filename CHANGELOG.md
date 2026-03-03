@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.896] - 2026-03-03
+### Added
+- Outbox priority queue: user-initiated actions (journal entries, entry links)
+  now sync before bulk operations (entity definitions, tags, AI config). Three
+  priority levels (high/normal/low) ensure responsive UX during large resyncs.
+- Sync health reporter: periodic health summary (every 5 min) logs outbox and
+  sequence log counters when sync domain logging is enabled.
+- Domain-filtered sync logging in outbox send path via DomainLogger.
+
 ## [0.9.895] - 2026-03-03
 ### Changed
 - Simplified audio recording modal: removed Checklist Updates and Task Summary

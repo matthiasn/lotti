@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -29,6 +30,7 @@ void main() {
           'id': 'config-id',
         }),
         subject: 'subject',
+        priority: OutboxPriority.low.index,
       );
 
       await tester.pumpWidget(
@@ -69,6 +71,7 @@ void main() {
         // malformed payload should fall back to Unknown payload
         message: '{"unexpected":"shape"}',
         subject: '   ',
+        priority: OutboxPriority.low.index,
       );
 
       await tester.pumpWidget(
@@ -119,6 +122,7 @@ void main() {
           'requesterId': 'requester-1',
         }),
         subject: 'Backfill',
+        priority: OutboxPriority.low.index,
       );
 
       await tester.pumpWidget(
@@ -161,6 +165,7 @@ void main() {
           'deleted': true,
         }),
         subject: 'Backfill Response',
+        priority: OutboxPriority.low.index,
       );
 
       await tester.pumpWidget(
@@ -195,6 +200,7 @@ void main() {
         updatedAt: DateTime(2024),
         status: 0,
         retries: 0,
+        priority: OutboxPriority.low.index,
         message: jsonEncode({
           'runtimeType': 'agentEntity',
           'agentEntity': {
@@ -249,6 +255,7 @@ void main() {
         updatedAt: DateTime(2024),
         status: 0,
         retries: 0,
+        priority: OutboxPriority.low.index,
         message: jsonEncode({
           'runtimeType': 'agentLink',
           'agentLink': {
@@ -300,6 +307,7 @@ void main() {
             }),
             subject: 'test',
             payloadSize: payloadSize,
+            priority: OutboxPriority.low.index,
           );
 
       testWidgets('is null when payloadSize is null', (tester) async {

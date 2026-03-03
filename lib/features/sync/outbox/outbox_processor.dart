@@ -6,6 +6,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 
 abstract class OutboxMessageSender {
@@ -35,9 +36,11 @@ class OutboxProcessor {
     Duration? errorDelayOverride,
     int? maxRetriesOverride,
     Duration? sendTimeoutOverride,
+    DomainLogger? domainLogger,
   })  : _repository = repository,
         _messageSender = messageSender,
         _loggingService = loggingService,
+        _domainLogger = domainLogger,
         batchSize = batchSizeOverride ?? 10,
         retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
         errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
@@ -48,11 +51,16 @@ class OutboxProcessor {
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
   final LoggingService _loggingService;
+  final DomainLogger? _domainLogger;
   final int batchSize;
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
   final Duration sendTimeout;
+
+  void _syncLog(String message, {String? subDomain}) {
+    _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
+  }
 
   // Diagnostics for repeated failures on the same head-of-queue subject.
   String? _lastFailedSubject;
@@ -112,6 +120,10 @@ class OutboxProcessor {
       } catch (_) {
         // best-effort logging only
       }
+      _syncLog(
+        'send type=${syncMessage.runtimeType} subject=${refreshedItem.subject}',
+        subDomain: 'outbox.send',
+      );
       var timedOut = false;
       final success = await _messageSender
           .send(syncMessage)
@@ -123,6 +135,10 @@ class OutboxProcessor {
       if (!success) {
         final nextAttempts = refreshedItem.retries + 1;
         await _repository.markRetry(refreshedItem);
+        _syncLog(
+          'sendFail subject=${refreshedItem.subject} attempts=$nextAttempts timedOut=$timedOut',
+          subDomain: 'outbox.retry',
+        );
         // Track repeated failures for quick visibility on head-of-queue pins.
         if (_lastFailedSubject == refreshedItem.subject) {
           _lastFailedRepeats++;
@@ -152,6 +168,8 @@ class OutboxProcessor {
       }
 
       await _repository.markSent(refreshedItem);
+      _syncLog('sent subject=${refreshedItem.subject}',
+          subDomain: 'outbox.send');
       _loggingService.captureEvent(
         '${refreshedItem.subject} done',
         domain: 'OUTBOX',

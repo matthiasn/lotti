@@ -77,8 +77,12 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
 /// restarting the agent runtime.
 @Riverpod(keepAlive: true)
 DomainLogger domainLogger(Ref ref) {
-  final loggingService = ref.watch(loggingServiceProvider);
-  final logger = DomainLogger(loggingService: loggingService);
+  // Use the GetIt-registered instance so sync components (also GetIt-managed)
+  // share the same DomainLogger and benefit from config flag toggles.
+  // Falls back to a fresh instance in tests where GetIt is not configured.
+  final logger = getIt.isRegistered<DomainLogger>()
+      ? getIt<DomainLogger>()
+      : DomainLogger(loggingService: ref.watch(loggingServiceProvider));
 
   // Mutate enabledDomains in-place on flag changes — no provider rebuild.
   void listenFlag(String flagName, String domain) {

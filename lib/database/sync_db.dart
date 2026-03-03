@@ -64,6 +64,11 @@ class Outbox extends Table {
   /// Total payload size in bytes (attachment file size + JSON message size).
   /// Recorded at enqueue time for volume tracking and visualization.
   IntColumn get payloadSize => integer().named('payload_size').nullable()();
+
+  /// Sync priority: 0=high (user), 1=normal (agent/system), 2=low (bulk resync).
+  /// Entries are processed in priority order (ASC), then by creation date.
+  IntColumn get priority =>
+      integer().withDefault(Constant(OutboxPriority.low.index))();
 }
 
 /// Tracks sync sequence entries by (hostId, counter) to detect gaps
@@ -170,7 +175,10 @@ class SyncDatabase extends _$SyncDatabase {
   Future<List<OutboxItem>> oldestOutboxItems(int limit) {
     return (select(outbox)
           ..where((t) => t.status.equals(OutboxStatus.pending.index))
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.priority),
+            (t) => OrderingTerm(expression: t.createdAt),
+          ])
           ..limit(limit))
         .get();
   }
@@ -190,7 +198,10 @@ class SyncDatabase extends _$SyncDatabase {
                   (t.status.equals(_outboxSendingStatus) &
                       t.updatedAt.isSmallerThanValue(reclaimWindow)),
             )
-            ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.priority),
+              (t) => OrderingTerm(expression: t.createdAt),
+            ])
             ..limit(1))
           .getSingleOrNull();
 
@@ -229,6 +240,7 @@ class SyncDatabase extends _$SyncDatabase {
         filePath: candidate.filePath,
         outboxEntryId: candidate.outboxEntryId,
         payloadSize: candidate.payloadSize,
+        priority: candidate.priority,
       );
     });
   }
@@ -247,6 +259,7 @@ class SyncDatabase extends _$SyncDatabase {
                 .isIn(statuses.map((OutboxStatus status) => status.index)),
           )
           ..orderBy([
+            (t) => OrderingTerm(expression: t.priority),
             (t) => OrderingTerm(
                   expression: t.createdAt,
                   mode: OrderingMode.desc,
@@ -615,6 +628,7 @@ class SyncDatabase extends _$SyncDatabase {
     required String newMessage,
     required String newSubject,
     int? payloadSize,
+    int? priority,
   }) {
     return (update(outbox)..where((t) => t.id.equals(itemId))).write(
       OutboxCompanion(
@@ -623,6 +637,7 @@ class SyncDatabase extends _$SyncDatabase {
         updatedAt: Value(DateTime.now()),
         payloadSize:
             payloadSize != null ? Value(payloadSize) : const Value.absent(),
+        priority: priority != null ? Value(priority) : const Value.absent(),
       ),
     );
   }
@@ -674,8 +689,48 @@ class SyncDatabase extends _$SyncDatabase {
     }).toList();
   }
 
+  // ============ Sync Health Query Helpers ============
+
+  /// Count of sequence log entries matching the given [status].
+  Future<int> _countSequenceByStatus(SyncSequenceStatus status) async {
+    final query = selectOnly(syncSequenceLog)
+      ..addColumns([syncSequenceLog.hostId.count()])
+      ..where(syncSequenceLog.status.equals(status.index));
+    final result = await query.getSingle();
+    return result.read(syncSequenceLog.hostId.count()) ?? 0;
+  }
+
+  /// Count of sequence log entries with status = missing.
+  Future<int> getMissingSequenceCount() =>
+      _countSequenceByStatus(SyncSequenceStatus.missing);
+
+  /// Count of sequence log entries with status = requested.
+  Future<int> getRequestedSequenceCount() =>
+      _countSequenceByStatus(SyncSequenceStatus.requested);
+
+  /// Count of pending outbox items (non-stream, single-shot).
+  Future<int> getPendingOutboxCount() async {
+    final query = selectOnly(outbox)
+      ..addColumns([outbox.id.count()])
+      ..where(outbox.status.equals(OutboxStatus.pending.index));
+    final result = await query.getSingle();
+    return result.read(outbox.id.count()) ?? 0;
+  }
+
+  /// Count of outbox items with status = sent and updatedAt >= [since].
+  Future<int> getSentCountSince(DateTime since) async {
+    final query = selectOnly(outbox)
+      ..addColumns([outbox.id.count()])
+      ..where(
+        outbox.status.equals(OutboxStatus.sent.index) &
+            outbox.updatedAt.isBiggerOrEqualValue(since),
+      );
+    final result = await query.getSingle();
+    return result.read(outbox.id.count()) ?? 0;
+  }
+
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -699,6 +754,10 @@ class SyncDatabase extends _$SyncDatabase {
         if (from < 5) {
           // Add payloadSize column for volume tracking
           await m.addColumn(outbox, outbox.payloadSize);
+        }
+        if (from < 6) {
+          // Add priority column for outbox priority queue
+          await m.addColumn(outbox, outbox.priority);
         }
       },
     );

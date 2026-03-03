@@ -40,3 +40,4 @@ Each ADR should contain:
 - [`0010-scheduled-wake-infrastructure.md`](./0010-scheduled-wake-infrastructure.md)
 - [`0011-feedback-classification-strategy.md`](./0011-feedback-classification-strategy.md)
 - [`0012-recursive-self-improvement-depth-policy.md`](./0012-recursive-self-improvement-depth-policy.md)
+- [`0013-outbox-priority-queue.md`](./0013-outbox-priority-queue.md)

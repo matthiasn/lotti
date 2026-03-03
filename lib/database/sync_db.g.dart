@@ -78,6 +78,14 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
   late final GeneratedColumn<int> payloadSize = GeneratedColumn<int>(
       'payload_size', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _priorityMeta =
+      const VerificationMeta('priority');
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+      'priority', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: Constant(OutboxPriority.low.index));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -89,7 +97,8 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
         subject,
         filePath,
         outboxEntryId,
-        payloadSize
+        payloadSize,
+        priority
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -148,6 +157,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
           payloadSize.isAcceptableOrUnknown(
               data['payload_size']!, _payloadSizeMeta));
     }
+    if (data.containsKey('priority')) {
+      context.handle(_priorityMeta,
+          priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta));
+    }
     return context;
   }
 
@@ -177,6 +190,8 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
           .read(DriftSqlType.string, data['${effectivePrefix}outbox_entry_id']),
       payloadSize: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}payload_size']),
+      priority: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}priority'])!,
     );
   }
 
@@ -204,6 +219,10 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
   /// Total payload size in bytes (attachment file size + JSON message size).
   /// Recorded at enqueue time for volume tracking and visualization.
   final int? payloadSize;
+
+  /// Sync priority: 0=high (user), 1=normal (agent/system), 2=low (bulk resync).
+  /// Entries are processed in priority order (ASC), then by creation date.
+  final int priority;
   const OutboxItem(
       {required this.id,
       required this.createdAt,
@@ -214,7 +233,8 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
       required this.subject,
       this.filePath,
       this.outboxEntryId,
-      this.payloadSize});
+      this.payloadSize,
+      required this.priority});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -234,6 +254,7 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
     if (!nullToAbsent || payloadSize != null) {
       map['payload_size'] = Variable<int>(payloadSize);
     }
+    map['priority'] = Variable<int>(priority);
     return map;
   }
 
@@ -255,6 +276,7 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
       payloadSize: payloadSize == null && nullToAbsent
           ? const Value.absent()
           : Value(payloadSize),
+      priority: Value(priority),
     );
   }
 
@@ -272,6 +294,7 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
       filePath: serializer.fromJson<String?>(json['filePath']),
       outboxEntryId: serializer.fromJson<String?>(json['outboxEntryId']),
       payloadSize: serializer.fromJson<int?>(json['payloadSize']),
+      priority: serializer.fromJson<int>(json['priority']),
     );
   }
   @override
@@ -288,6 +311,7 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
       'filePath': serializer.toJson<String?>(filePath),
       'outboxEntryId': serializer.toJson<String?>(outboxEntryId),
       'payloadSize': serializer.toJson<int?>(payloadSize),
+      'priority': serializer.toJson<int>(priority),
     };
   }
 
@@ -301,7 +325,8 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
           String? subject,
           Value<String?> filePath = const Value.absent(),
           Value<String?> outboxEntryId = const Value.absent(),
-          Value<int?> payloadSize = const Value.absent()}) =>
+          Value<int?> payloadSize = const Value.absent(),
+          int? priority}) =>
       OutboxItem(
         id: id ?? this.id,
         createdAt: createdAt ?? this.createdAt,
@@ -314,6 +339,7 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
         outboxEntryId:
             outboxEntryId.present ? outboxEntryId.value : this.outboxEntryId,
         payloadSize: payloadSize.present ? payloadSize.value : this.payloadSize,
+        priority: priority ?? this.priority,
       );
   OutboxItem copyWithCompanion(OutboxCompanion data) {
     return OutboxItem(
@@ -330,6 +356,7 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
           : this.outboxEntryId,
       payloadSize:
           data.payloadSize.present ? data.payloadSize.value : this.payloadSize,
+      priority: data.priority.present ? data.priority.value : this.priority,
     );
   }
 
@@ -345,14 +372,15 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
           ..write('subject: $subject, ')
           ..write('filePath: $filePath, ')
           ..write('outboxEntryId: $outboxEntryId, ')
-          ..write('payloadSize: $payloadSize')
+          ..write('payloadSize: $payloadSize, ')
+          ..write('priority: $priority')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, createdAt, updatedAt, status, retries,
-      message, subject, filePath, outboxEntryId, payloadSize);
+      message, subject, filePath, outboxEntryId, payloadSize, priority);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -366,7 +394,8 @@ class OutboxItem extends DataClass implements Insertable<OutboxItem> {
           other.subject == this.subject &&
           other.filePath == this.filePath &&
           other.outboxEntryId == this.outboxEntryId &&
-          other.payloadSize == this.payloadSize);
+          other.payloadSize == this.payloadSize &&
+          other.priority == this.priority);
 }
 
 class OutboxCompanion extends UpdateCompanion<OutboxItem> {
@@ -380,6 +409,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
   final Value<String?> filePath;
   final Value<String?> outboxEntryId;
   final Value<int?> payloadSize;
+  final Value<int> priority;
   const OutboxCompanion({
     this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -391,6 +421,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
     this.filePath = const Value.absent(),
     this.outboxEntryId = const Value.absent(),
     this.payloadSize = const Value.absent(),
+    this.priority = const Value.absent(),
   });
   OutboxCompanion.insert({
     this.id = const Value.absent(),
@@ -403,6 +434,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
     this.filePath = const Value.absent(),
     this.outboxEntryId = const Value.absent(),
     this.payloadSize = const Value.absent(),
+    this.priority = const Value.absent(),
   })  : message = Value(message),
         subject = Value(subject);
   static Insertable<OutboxItem> custom({
@@ -416,6 +448,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
     Expression<String>? filePath,
     Expression<String>? outboxEntryId,
     Expression<int>? payloadSize,
+    Expression<int>? priority,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -428,6 +461,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
       if (filePath != null) 'file_path': filePath,
       if (outboxEntryId != null) 'outbox_entry_id': outboxEntryId,
       if (payloadSize != null) 'payload_size': payloadSize,
+      if (priority != null) 'priority': priority,
     });
   }
 
@@ -441,7 +475,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
       Value<String>? subject,
       Value<String?>? filePath,
       Value<String?>? outboxEntryId,
-      Value<int?>? payloadSize}) {
+      Value<int?>? payloadSize,
+      Value<int>? priority}) {
     return OutboxCompanion(
       id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
@@ -453,6 +488,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
       filePath: filePath ?? this.filePath,
       outboxEntryId: outboxEntryId ?? this.outboxEntryId,
       payloadSize: payloadSize ?? this.payloadSize,
+      priority: priority ?? this.priority,
     );
   }
 
@@ -489,6 +525,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
     if (payloadSize.present) {
       map['payload_size'] = Variable<int>(payloadSize.value);
     }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
     return map;
   }
 
@@ -504,7 +543,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
           ..write('subject: $subject, ')
           ..write('filePath: $filePath, ')
           ..write('outboxEntryId: $outboxEntryId, ')
-          ..write('payloadSize: $payloadSize')
+          ..write('payloadSize: $payloadSize, ')
+          ..write('priority: $priority')
           ..write(')'))
         .toString();
   }
@@ -1294,6 +1334,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   Value<String?> filePath,
   Value<String?> outboxEntryId,
   Value<int?> payloadSize,
+  Value<int> priority,
 });
 typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<int> id,
@@ -1306,6 +1347,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<String?> filePath,
   Value<String?> outboxEntryId,
   Value<int?> payloadSize,
+  Value<int> priority,
 });
 
 class $$OutboxTableFilterComposer
@@ -1346,6 +1388,9 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<int> get payloadSize => $composableBuilder(
       column: $table.payloadSize, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get priority => $composableBuilder(
+      column: $table.priority, builder: (column) => ColumnFilters(column));
 }
 
 class $$OutboxTableOrderingComposer
@@ -1387,6 +1432,9 @@ class $$OutboxTableOrderingComposer
 
   ColumnOrderings<int> get payloadSize => $composableBuilder(
       column: $table.payloadSize, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get priority => $composableBuilder(
+      column: $table.priority, builder: (column) => ColumnOrderings(column));
 }
 
 class $$OutboxTableAnnotationComposer
@@ -1427,6 +1475,9 @@ class $$OutboxTableAnnotationComposer
 
   GeneratedColumn<int> get payloadSize => $composableBuilder(
       column: $table.payloadSize, builder: (column) => column);
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
 }
 
 class $$OutboxTableTableManager extends RootTableManager<
@@ -1462,6 +1513,7 @@ class $$OutboxTableTableManager extends RootTableManager<
             Value<String?> filePath = const Value.absent(),
             Value<String?> outboxEntryId = const Value.absent(),
             Value<int?> payloadSize = const Value.absent(),
+            Value<int> priority = const Value.absent(),
           }) =>
               OutboxCompanion(
             id: id,
@@ -1474,6 +1526,7 @@ class $$OutboxTableTableManager extends RootTableManager<
             filePath: filePath,
             outboxEntryId: outboxEntryId,
             payloadSize: payloadSize,
+            priority: priority,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -1486,6 +1539,7 @@ class $$OutboxTableTableManager extends RootTableManager<
             Value<String?> filePath = const Value.absent(),
             Value<String?> outboxEntryId = const Value.absent(),
             Value<int?> payloadSize = const Value.absent(),
+            Value<int> priority = const Value.absent(),
           }) =>
               OutboxCompanion.insert(
             id: id,
@@ -1498,6 +1552,7 @@ class $$OutboxTableTableManager extends RootTableManager<
             filePath: filePath,
             outboxEntryId: outboxEntryId,
             payloadSize: payloadSize,
+            priority: priority,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

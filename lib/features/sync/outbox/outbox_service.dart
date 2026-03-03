@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -48,6 +50,7 @@ class OutboxService {
     Stream<List<ConnectivityResult>>? connectivityStream,
     SyncSequenceLogService? sequenceLogService,
     Duration postDrainSettle = _defaultPostDrainSettle,
+    DomainLogger? domainLogger,
   })  : _postDrainSettle = postDrainSettle,
         _syncDatabase = syncDatabase,
         _loggingService = loggingService,
@@ -63,7 +66,8 @@ class OutboxService {
         _ownsActivityGate = ownsActivityGate ?? activityGate == null,
         _matrixService = matrixService,
         _connectivityStream = connectivityStream,
-        _sequenceLogService = sequenceLogService {
+        _sequenceLogService = sequenceLogService,
+        _domainLogger = domainLogger {
     // Runtime validation that works in release builds
     if (messageSender == null && matrixService == null) {
       throw ArgumentError(
@@ -83,6 +87,7 @@ class OutboxService {
           messageSender: _messageSender,
           loggingService: _loggingService,
           maxRetriesOverride: maxRetries,
+          domainLogger: _domainLogger,
         );
 
     _startRunner();
@@ -150,6 +155,7 @@ class OutboxService {
   }
 
   final LoggingService _loggingService;
+  final DomainLogger? _domainLogger;
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
   final JournalDb _journalDb;
@@ -181,6 +187,10 @@ class OutboxService {
   Timer? _watchdogTimer;
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
+
+  void _syncLog(String message, {String? subDomain}) {
+    _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
+  }
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
@@ -249,12 +259,14 @@ class OutboxService {
 
       final jsonString = json.encode(messageToEnqueue);
       final jsonByteLength = utf8.encode(jsonString).length;
+      final priority = _priorityForMessage(messageToEnqueue);
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
         message: Value(jsonString),
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
         payloadSize: Value(jsonByteLength),
+        priority: Value(priority),
       );
 
       // Dispatch by message type using pattern matching
@@ -312,6 +324,11 @@ class OutboxService {
           ),
       };
 
+      _syncLog(
+        'enqueue type=${messageToEnqueue.runtimeType} priority=$priority',
+        subDomain: 'outbox.enqueue',
+      );
+
       // Schedule next send unless merge already did (returns true)
       if (!merged) {
         unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
@@ -324,6 +341,22 @@ class OutboxService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  static int _priorityForMessage(SyncMessage message) {
+    return switch (message) {
+      SyncJournalEntity() => OutboxPriority.high.index,
+      SyncEntryLink() => OutboxPriority.high.index,
+      SyncBackfillRequest() => OutboxPriority.normal.index,
+      SyncBackfillResponse() => OutboxPriority.normal.index,
+      SyncAgentEntity() => OutboxPriority.normal.index,
+      SyncAgentLink() => OutboxPriority.normal.index,
+      SyncThemingSelection() => OutboxPriority.normal.index,
+      SyncEntityDefinition() => OutboxPriority.low.index,
+      SyncTagEntity() => OutboxPriority.low.index,
+      SyncAiConfig() => OutboxPriority.low.index,
+      SyncAiConfigDelete() => OutboxPriority.low.index,
+    };
   }
 
   static const int _maxDrainPasses = 20;
@@ -713,6 +746,10 @@ class OutboxService {
             newMessage: mergedJson,
             newSubject: '$hostHash:$localCounter',
             payloadSize: mergedPayloadSize,
+            priority: math.min(
+              existingItem.priority,
+              commonFields.priority.value,
+            ),
           );
 
           // Log covered clocks for debugging
@@ -843,6 +880,10 @@ class OutboxService {
             newMessage: mergedJson,
             newSubject: subject,
             payloadSize: utf8.encode(mergedJson).length,
+            priority: math.min(
+              existingItem.priority,
+              commonFields.priority.value,
+            ),
           );
 
           // Log covered clocks for debugging
@@ -1135,6 +1176,10 @@ class OutboxService {
         newMessage: enrichedJson,
         newSubject: subject,
         payloadSize: enrichedSize,
+        priority: math.min(
+          existingItem.priority,
+          commonFields.priority.value,
+        ),
       );
       _loggingService.captureEvent(
         'enqueue MERGED type=$typeName id=$id',

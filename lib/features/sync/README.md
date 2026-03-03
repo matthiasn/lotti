@@ -39,7 +39,8 @@ that keeps the pipeline testable and observable.
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. Also handles `SyncAgentEntity` and `SyncAgentLink` variants: upserts agent data via `AgentSyncService`, restores wake subscriptions for active task agents on incoming identity entities, and restores subscriptions on incoming `agent_task` links when the linked agent is active. |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
-| **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages, resolves attachments, and hands work to `MatrixMessageSender`. Handles `SyncAgentEntity` and `SyncAgentLink` message variants alongside journal entities and links. |
+| **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages with priority-based ordering, resolves attachments, and hands work to `MatrixMessageSender`. Handles `SyncAgentEntity` and `SyncAgentLink` message variants alongside journal entities and links. Priority is assigned based on message type (high for user actions, normal for agent/system, low for bulk resync). |
+| **SyncHealthReporter** (`health/sync_health_reporter.dart`) | Periodic health summary emitter. When sync domain logging is enabled, logs outbox pending/sent counts and sequence log missing/requested counts every 5 minutes via `DomainLogger`. |
 | **UserActivityGate** (`features/user_activity/state/user_activity_gate.dart`) | Exposes reactive idleness signals so heavy timeline processing defers while the user is active. |
 | **SyncSequenceLogService** (`sequence/sync_sequence_log_service.dart`) | Tracks (hostId, counter) pairs for gap detection; enables self-healing backfill. |
 | **BackfillRequestService** (`backfill/backfill_request_service.dart`) | Periodically scans for missing entries and broadcasts batched backfill requests. |
@@ -131,6 +132,29 @@ that keeps the pipeline testable and observable.
   preventing rapid-fire retries during spotty connectivity.
 - Logging DB writes are best-effort (exceptions captured, file breadcrumbs kept)
   so diagnostics never block outbox progress.
+
+### Outbox Priority Queue (2026-03)
+
+The outbox uses priority-based ordering so user-initiated actions sync before
+bulk operations. Each outbox entry has a `priority` column (integer, lower =
+higher priority):
+
+| Priority | Index | Message Types |
+| --- | --- | --- |
+| **High** | 0 | `SyncJournalEntity`, `SyncEntryLink` (user edits) |
+| **Normal** | 1 | `SyncBackfillRequest/Response`, `SyncAgentEntity/Link`, `SyncThemingSelection` |
+| **Low** | 2 | `SyncEntityDefinition`, `SyncTagEntity`, `SyncAiConfig`, `SyncAiConfigDelete` |
+
+Queries `oldestOutboxItems` and `claimNextOutboxItem` order by
+`priority ASC, createdAt ASC` so high-priority items are processed first.
+`watchOutboxItems` orders by `priority ASC, createdAt DESC` for UI display
+(newest items first within each priority band).
+
+The `OutboxPriority` enum is defined in `outbox_state_controller.dart`. Priority
+assignment happens in `OutboxService.enqueueMessage()` via an exhaustive switch
+on the `SyncMessage` variant.
+
+**Schema:** Added in migration v5→v6. Existing rows default to `low` (2).
 
 ### Self-Healing Sync / Backfill (2025-12)
 
@@ -396,6 +420,19 @@ Key helpers:
     `trailing.liveScan.scheduled`, `catchup.start`, `catchup.done events=…`.
 - Typical messages include invite acceptance/filters, hydration retries, send
   attempts, and timeline processing outcomes.
+
+### Domain-Filtered Logging (2026-03)
+
+When the `logSyncFlag` config flag is enabled, `DomainLogger` writes structured
+sync events to both the logging DB and a per-domain file
+(`{documentsDir}/logs/sync-YYYY-MM-DD.log`). The outbox send path logs enqueue
+and send events with sub-domains like `outbox.enqueue` and `outbox.send`.
+
+`SyncHealthReporter` emits a periodic health summary (every 5 min) with:
+- `outbox.pending` — items waiting to be sent
+- `outbox.sentRecent` — items sent in the last interval
+- `seq.missing` — missing sequence entries awaiting backfill
+- `seq.requested` — sequence entries with outstanding requests
 
 ## Testing
 

@@ -874,6 +874,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       // Return existing item for this entry
@@ -890,6 +891,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -944,6 +946,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).called(1);
       verifyNever(() => syncDatabase.addOutboxItem(any()));
@@ -999,6 +1002,7 @@ void main() {
         subject: 'hhash:6',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1011,6 +1015,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1103,6 +1108,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1115,6 +1121,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1217,6 +1224,7 @@ void main() {
         subject: 'hhash:link:3',
         filePath: null,
         outboxEntryId: 'link-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('link-id'))
@@ -1231,6 +1239,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1274,6 +1283,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).called(1);
       verifyNever(() => syncDatabase.addOutboxItem(any()));
@@ -1324,6 +1334,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1334,6 +1345,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -1423,6 +1435,7 @@ void main() {
         subject: 'hhash:link:3',
         filePath: null,
         outboxEntryId: 'link-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('link-id'))
@@ -1433,6 +1446,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -1498,6 +1512,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1551,6 +1566,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       );
     });
@@ -1739,6 +1755,7 @@ void main() {
                   message: '{}',
                   subject: 'test',
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -1982,6 +1999,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -2204,6 +2222,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -2293,6 +2312,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       final gate = createGate();
@@ -2358,6 +2378,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       final gate = createGate();
@@ -2434,6 +2455,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       when(() => syncDatabase.watchOutboxCount())
@@ -2528,6 +2550,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       final gate = createGate();
@@ -2768,6 +2791,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -2855,6 +2879,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       when(() => processor.processQueue())
@@ -2952,6 +2977,7 @@ void main() {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
             filePath: null,
+            priority: OutboxPriority.low.index,
           )
         ];
       });
@@ -4067,12 +4093,14 @@ void main() {
                 createdAt: DateTime(2024, 3, 15),
                 updatedAt: DateTime(2024, 3, 15),
                 subject: 'agentEntity:agent-xyz',
+                priority: OutboxPriority.low.index,
               ));
       when(() => syncDatabase.updateOutboxMessage(
             itemId: any(named: 'itemId'),
             newMessage: any(named: 'newMessage'),
             newSubject: any(named: 'newSubject'),
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).thenAnswer((_) async => 1);
 
       await service.enqueueMessage(message);
@@ -4082,6 +4110,7 @@ void main() {
             newMessage: any(named: 'newMessage'),
             newSubject: 'agentEntity:agent-xyz',
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).called(1);
       verifyNever(
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
@@ -4200,12 +4229,14 @@ void main() {
                 createdAt: DateTime(2024, 3, 15),
                 updatedAt: DateTime(2024, 3, 15),
                 subject: 'agentLink:link-abc',
+                priority: OutboxPriority.low.index,
               ));
       when(() => syncDatabase.updateOutboxMessage(
             itemId: any(named: 'itemId'),
             newMessage: any(named: 'newMessage'),
             newSubject: any(named: 'newSubject'),
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).thenAnswer((_) async => 1);
 
       await service.enqueueMessage(message);
@@ -4215,6 +4246,7 @@ void main() {
             newMessage: any(named: 'newMessage'),
             newSubject: 'agentLink:link-abc',
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).called(1);
       verifyNever(
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),

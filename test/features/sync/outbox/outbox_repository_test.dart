@@ -37,6 +37,7 @@ void main() {
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
         subject: 'subject',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => database.updateOutboxItem(any())).thenAnswer((_) async => 1);
@@ -65,6 +66,7 @@ void main() {
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
         subject: 'subject',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => database.updateOutboxItem(any())).thenAnswer((_) async => 1);
@@ -91,6 +93,7 @@ void main() {
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
         subject: 'subject',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => database.updateOutboxItem(any())).thenAnswer((_) async => 1);
@@ -118,6 +121,7 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           subject: 'subject',
+          priority: OutboxPriority.low.index,
         );
 
         when(() => database.getOutboxItemById(10))
@@ -138,6 +142,7 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           subject: 'subject',
+          priority: OutboxPriority.low.index,
         );
 
         when(() => database.getOutboxItemById(11))
@@ -157,6 +162,7 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           subject: 'subject',
+          priority: OutboxPriority.low.index,
         );
 
         final sentItem = OutboxItem(
@@ -167,6 +173,7 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           subject: 'subject',
+          priority: OutboxPriority.low.index,
         );
 
         when(() => database.getOutboxItemById(12))
@@ -186,6 +193,7 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           subject: 'subject',
+          priority: OutboxPriority.low.index,
         );
 
         final errorItem = OutboxItem(
@@ -196,6 +204,7 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           subject: 'subject',
+          priority: OutboxPriority.low.index,
         );
 
         when(() => database.getOutboxItemById(13))

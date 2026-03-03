@@ -1,6 +1,7 @@
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -193,6 +194,10 @@ void registerAllFallbackValues() {
       vectorClock: null,
     ) as ChangeSetEntity,
   );
+
+  // Logging enum fallbacks
+  registerFallbackValue(InsightLevel.info);
+  registerFallbackValue(InsightType.log);
 
   // Common builtin fallbacks
   registerFallbackValue(StackTrace.empty);
