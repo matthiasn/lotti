@@ -211,9 +211,19 @@ $highPriorityProtocol''';
   ) {
     buf.writeln('## Classified Feedback Summary');
 
-    if (items.isEmpty) {
+    if (feedback.items.isEmpty) {
       buf
         ..writeln('No classified feedback items in this window.')
+        ..writeln();
+      return;
+    }
+
+    if (items.isEmpty) {
+      buf
+        ..writeln(
+          'All feedback items in this window are high-priority and shown '
+          'in the section above.',
+        )
         ..writeln();
       return;
     }

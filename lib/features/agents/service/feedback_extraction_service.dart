@@ -263,13 +263,18 @@ class FeedbackExtractionService {
     final priority = _extractObservationPriority(payload);
     final obsCategory = _extractObservationCategory(payload);
 
-    // For critical observations, derive sentiment from category rather than
-    // keyword heuristics. Grievances and template improvements are negative;
-    // excellence is positive.
+    // For critical observations with an explicit category, derive sentiment
+    // directly: excellence → positive, grievance/templateImprovement → negative.
+    // When the category is operational (default for missing/invalid category),
+    // fall back to text heuristics to avoid misclassifying praise as negative.
     final sentiment = priority == ObservationPriority.critical
-        ? (obsCategory == ObservationCategory.excellence
-            ? FeedbackSentiment.positive
-            : FeedbackSentiment.negative)
+        ? switch (obsCategory) {
+            ObservationCategory.excellence => FeedbackSentiment.positive,
+            ObservationCategory.grievance => FeedbackSentiment.negative,
+            ObservationCategory.templateImprovement =>
+              FeedbackSentiment.negative,
+            ObservationCategory.operational => _classifyTextSentiment(detail),
+          }
         : _classifyTextSentiment(detail);
 
     return ClassifiedFeedbackItem(
