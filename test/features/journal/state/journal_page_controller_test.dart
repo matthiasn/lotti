@@ -14,6 +14,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
@@ -2710,6 +2711,286 @@ void main() {
               any(that: contains('"sortOption":"byDueDate"')),
             ),
           ).called(greaterThan(0));
+        });
+      });
+    });
+
+    group('Vector Search', () {
+      late MockVectorSearchRepository mockVectorSearchRepo;
+
+      setUp(() {
+        mockVectorSearchRepo = MockVectorSearchRepository();
+      });
+
+      /// Enables the vector search feature flag by emitting it via the
+      /// config flags stream, then waits for the controller to process it.
+      void emitVectorSearchFlag(FakeAsync async) {
+        configFlagsController.add({enableVectorSearchFlag});
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+      }
+
+      test('setSearchMode guards against vector mode when flag is disabled',
+          () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Flag is disabled by default
+          controller.setSearchMode(SearchMode.vector);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.searchMode, equals(SearchMode.fullText));
+        });
+      });
+
+      test('setSearchMode allows vector mode when flag is enabled', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller.setSearchMode(SearchMode.vector);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.searchMode, equals(SearchMode.vector));
+          expect(state.enableVectorSearch, isTrue);
+        });
+      });
+
+      test('vector search returns results and updates telemetry state', () {
+        fakeAsync((async) {
+          // Register the VectorSearchRepository mock in getIt
+          getIt.registerSingleton<VectorSearchRepository>(
+            mockVectorSearchRepo,
+          );
+
+          final testTask = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'vs-status-1',
+                createdAt: DateTime(2024, 3, 1),
+                utcOffset: 0,
+              ),
+              title: 'Vector search result task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 1),
+              dateTo: DateTime(2024, 3, 1),
+            ),
+            meta: Metadata(
+              id: 'vector-task-1',
+              createdAt: DateTime(2024, 3, 1),
+              dateFrom: DateTime(2024, 3, 1),
+              dateTo: DateTime(2024, 3, 1),
+              updatedAt: DateTime(2024, 3, 1),
+            ),
+          );
+
+          when(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VectorSearchResult(
+              tasks: [testTask],
+              elapsed: const Duration(milliseconds: 42),
+            ),
+          );
+
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller
+            ..setSearchMode(SearchMode.vector)
+            ..setSearchString('semantic query');
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.vectorSearchInFlight, isFalse);
+          expect(state.vectorSearchElapsed, const Duration(milliseconds: 42));
+          expect(state.vectorSearchResultCount, 1);
+
+          // Verify the results appear in the paging controller
+          final items = state.pagingController?.value.items ?? [];
+          expect(items.length, 1);
+          expect((items[0] as Task).meta.id, 'vector-task-1');
+        });
+      });
+
+      test('vector search handles VectorSearchRepository not being registered',
+          () {
+        fakeAsync((async) {
+          // Do NOT register VectorSearchRepository in getIt
+
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller
+            ..setSearchMode(SearchMode.vector)
+            ..setSearchString('query without repo');
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.vectorSearchInFlight, isFalse);
+          expect(state.vectorSearchElapsed, Duration.zero);
+          expect(state.vectorSearchResultCount, 0);
+
+          // Paging controller should have no items from vector search
+          final items = state.pagingController?.value.items ?? [];
+          expect(items, isEmpty);
+        });
+      });
+
+      test('vector search handles exceptions gracefully and resets telemetry',
+          () {
+        fakeAsync((async) {
+          getIt.registerSingleton<VectorSearchRepository>(
+            mockVectorSearchRepo,
+          );
+
+          when(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenThrow(Exception('Ollama connection failed'));
+
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller
+            ..setSearchMode(SearchMode.vector)
+            ..setSearchString('failing query');
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.vectorSearchInFlight, isFalse);
+          expect(state.vectorSearchElapsed, Duration.zero);
+          expect(state.vectorSearchResultCount, 0);
+
+          final items = state.pagingController?.value.items ?? [];
+          expect(items, isEmpty);
+        });
+      });
+
+      test('vector search passes categoryIds to the repository', () {
+        fakeAsync((async) {
+          getIt.registerSingleton<VectorSearchRepository>(
+            mockVectorSearchRepo,
+          );
+
+          when(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VectorSearchResult(
+              tasks: [],
+              elapsed: const Duration(milliseconds: 10),
+            ),
+          );
+
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          // Select a category before searching
+          controller.toggleSelectedCategoryIds('cat-42');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setSearchMode(SearchMode.vector)
+            ..setSearchString('category search');
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          // Verify searchRelatedTasks was called with the selected category.
+          // The default tasks tab starts with {''} (unassigned), so toggling
+          // 'cat-42' yields {'', 'cat-42'}.
+          verify(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: 'category search',
+              categoryIds: any(
+                named: 'categoryIds',
+                that: contains('cat-42'),
+              ),
+            ),
+          ).called(greaterThan(0));
+        });
+      });
+
+      test(
+          'disabling vector search flag resets search mode from vector '
+          'to fullText', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Enable flag, then set vector mode
+          emitVectorSearchFlag(async);
+          controller.setSearchMode(SearchMode.vector);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          var state = container.read(journalPageControllerProvider(true));
+          expect(state.searchMode, equals(SearchMode.vector));
+
+          // Now disable the flag
+          configFlagsController.add(<String>{});
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          state = container.read(journalPageControllerProvider(true));
+          expect(state.searchMode, equals(SearchMode.fullText));
+          expect(state.enableVectorSearch, isFalse);
         });
       });
     });

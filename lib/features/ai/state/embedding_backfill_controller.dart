@@ -63,6 +63,10 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
   }
 
   Future<void> backfillCategory(String categoryId) async {
+    if (state.isRunning) {
+      return;
+    }
+
     if (!getIt.isRegistered<EmbeddingsDb>()) {
       state = state.copyWith(
         error: 'Embedding pipeline not available',

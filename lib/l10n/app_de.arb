@@ -1223,7 +1223,7 @@
   "maintenanceBackfillEmbeddingsConfirm": "JA, STARTEN",
   "maintenanceBackfillEmbeddingsDescription": "Embeddings für alle Einträge einer Kategorie generieren",
   "maintenanceBackfillEmbeddingsMessage": "Wähle eine Kategorie, um Embeddings für alle enthaltenen Einträge zu generieren.",
-  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} Einträge ({embedded} eingebettet)",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} Eintrag ({embedded} eingebettet)} other{{processed} / {total} Einträge ({embedded} eingebettet)}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -1922,7 +1922,7 @@
   "unlinkButton": "Verknüpfung aufheben",
   "unlinkTaskConfirm": "Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?",
   "unlinkTaskTitle": "Verknüpfung aufheben",
-  "vectorSearchTiming": "{elapsed}ms, {count} Ergebnisse",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} Ergebnis} other{{elapsed}ms, {count} Ergebnisse}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

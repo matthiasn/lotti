@@ -302,6 +302,44 @@ void main() {
       );
     });
 
+    test('resolveOllamaBaseUrl returns URL of first Ollama provider', () async {
+      final ollamaProvider = AiConfig.inferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Local Ollama',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      await repository.saveConfig(ollamaProvider);
+
+      final url = await repository.resolveOllamaBaseUrl();
+      expect(url, 'http://localhost:11434');
+    });
+
+    test('resolveOllamaBaseUrl returns null when no Ollama provider exists',
+        () async {
+      final openAiProvider = AiConfig.inferenceProvider(
+        id: 'openai-1',
+        baseUrl: 'https://api.openai.com',
+        apiKey: 'key',
+        name: 'OpenAI',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      await repository.saveConfig(openAiProvider);
+
+      final url = await repository.resolveOllamaBaseUrl();
+      expect(url, isNull);
+    });
+
+    test('resolveOllamaBaseUrl returns null on empty database', () async {
+      final url = await repository.resolveOllamaBaseUrl();
+      expect(url, isNull);
+    });
+
     test('watchConfigsByType returns configs of the specified type', () async {
       // Arrange
       final apiConfig = AiConfig.inferenceProvider(

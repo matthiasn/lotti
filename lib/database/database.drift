@@ -766,6 +766,7 @@ journalEntityIdsByCategory:
 SELECT id FROM journal
   WHERE deleted = false
   AND category = :categoryId
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
 linksForIds:

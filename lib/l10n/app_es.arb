@@ -1223,7 +1223,7 @@
   "maintenanceBackfillEmbeddingsConfirm": "SÍ, INICIAR",
   "maintenanceBackfillEmbeddingsDescription": "Generar embeddings para todas las entradas de una categoría",
   "maintenanceBackfillEmbeddingsMessage": "Selecciona una categoría para generar embeddings de todas sus entradas.",
-  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} entradas ({embedded} incrustadas)",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrada ({embedded} incrustada)} other{{processed} / {total} entradas ({embedded} incrustadas)}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -1922,7 +1922,7 @@
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "¿Estás seguro de que quieres desvincular esta tarea?",
   "unlinkTaskTitle": "Desvincular tarea",
-  "vectorSearchTiming": "{elapsed}ms, {count} resultados",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultado} other{{elapsed}ms, {count} resultados}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

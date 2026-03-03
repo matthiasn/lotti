@@ -999,7 +999,7 @@
   "maintenanceBackfillEmbeddingsConfirm": "ANO, SPUSTIT",
   "maintenanceBackfillEmbeddingsDescription": "Vygenerovat embeddings pro všechny záznamy v kategorii",
   "maintenanceBackfillEmbeddingsMessage": "Vyberte kategorii pro vygenerování embeddings všech jejích záznamů.",
-  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} záznamů ({embedded} vloženo)",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} záznam ({embedded} vložen)} few{{processed} / {total} záznamy ({embedded} vloženy)} other{{processed} / {total} záznamů ({embedded} vloženo)}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -1682,7 +1682,7 @@
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
   "unlinkTaskTitle": "Zrušit propojení úkolu",
-  "vectorSearchTiming": "{elapsed}ms, {count} výsledků",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} výsledek} few{{elapsed}ms, {count} výsledky} other{{elapsed}ms, {count} výsledků}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

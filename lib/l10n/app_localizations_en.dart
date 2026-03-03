@@ -470,11 +470,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'No neutral feedback signals in this tab';
 
   @override
-  String get agentRitualReviewNoProposal => 'No active proposal';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'No positive feedback signals in this tab';
+
+  @override
+  String get agentRitualReviewNoProposal => 'No active proposal';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positive';
@@ -2824,8 +2824,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded) {
-    return '$processed / $total entries ($embedded embedded)';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total entries ($embedded embedded)',
+      one: '$processed / $total entry ($embedded embedded)',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String get maintenanceDeleteAgentDb => 'Delete Agents Database';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Delete agents database and restart app';
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
@@ -4631,13 +4644,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thinkingDisclosureHide => 'Hide reasoning';
 
   @override
+  String get thinkingDisclosureShow => 'Show reasoning';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'collapsed';
 
   @override
   String get thinkingDisclosureStateExpanded => 'expanded';
-
-  @override
-  String get thinkingDisclosureShow => 'Show reasoning';
 
   @override
   String get timeByCategoryChartTitle => 'Time by Category';
@@ -4656,7 +4669,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String vectorSearchTiming(int elapsed, int count) {
-    return '${elapsed}ms, $count results';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count results',
+      one: '${elapsed}ms, $count result',
+    );
+    return '$_temp0';
   }
 
   @override

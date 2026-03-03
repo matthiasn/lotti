@@ -478,11 +478,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun semnal de feedback neutru în această filă';
 
   @override
-  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'Niciun semnal de feedback pozitiv în această filă';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitiv';
@@ -2869,8 +2869,21 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded) {
-    return '$processed / $total intrări ($embedded încorporate)';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total intrări ($embedded încorporate)',
+      one: '$processed / $total intrare ($embedded încorporată)',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String get maintenanceDeleteAgentDb => 'Șterge baza de date a agenților';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Șterge baza de date a agenților și repornește aplicația';
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'DA, ȘTERGE BAZA DE DATE';
@@ -4704,13 +4717,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get thinkingDisclosureHide => 'Ascunde raționamentul';
 
   @override
+  String get thinkingDisclosureShow => 'Afișează raționamentul';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'restrâns';
 
   @override
   String get thinkingDisclosureStateExpanded => 'extins';
-
-  @override
-  String get thinkingDisclosureShow => 'Afișează raționamentul';
 
   @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';
@@ -4730,7 +4743,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String vectorSearchTiming(int elapsed, int count) {
-    return '${elapsed}ms, $count rezultate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count rezultate',
+      one: '${elapsed}ms, $count rezultat',
+    );
+    return '$_temp0';
   }
 
   @override

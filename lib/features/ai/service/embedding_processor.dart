@@ -51,6 +51,7 @@ class EmbeddingProcessor {
       modelId: ollamaEmbedDefaultModel,
       embedding: embedding,
       contentHash: hash,
+      categoryId: entity.meta.categoryId ?? '',
     );
 
     return true;

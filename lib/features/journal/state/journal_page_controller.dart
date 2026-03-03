@@ -199,6 +199,9 @@ class JournalPageController extends _$JournalPageController {
       _enableHabits = configFlags.contains(enableHabitsPageFlag);
       _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
       _enableVectorSearch = configFlags.contains(enableVectorSearchFlag);
+      if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
+        _searchMode = SearchMode.fullText;
+      }
 
       // Compute newly allowed types based on updated flags
       final newAllowed = computeAllowedEntryTypes(
@@ -424,7 +427,7 @@ class JournalPageController extends _$JournalPageController {
 
   /// Switches between full-text and vector search modes.
   void setSearchMode(SearchMode mode) {
-    _searchMode = mode;
+    _searchMode = _enableVectorSearch ? mode : SearchMode.fullText;
     refreshQuery();
   }
 
@@ -604,6 +607,7 @@ class JournalPageController extends _$JournalPageController {
   Future<List<JournalEntity>> _runQuery(int pageKey) async {
     // Vector search: bypass FTS5 and DB pagination entirely.
     if (_showTasks &&
+        _enableVectorSearch &&
         _searchMode == SearchMode.vector &&
         _query.isNotEmpty &&
         pageKey == 0) {
@@ -694,14 +698,26 @@ class JournalPageController extends _$JournalPageController {
         message: 'VectorSearchRepository not registered — '
             'is the embedding pipeline available?',
       );
+      state = state.copyWith(
+        vectorSearchInFlight: false,
+        vectorSearchElapsed: Duration.zero,
+        vectorSearchResultCount: 0,
+      );
       return [];
     }
 
-    state = state.copyWith(vectorSearchInFlight: true);
+    state = state.copyWith(
+      vectorSearchInFlight: true,
+      vectorSearchElapsed: Duration.zero,
+      vectorSearchResultCount: 0,
+    );
 
     try {
-      final result = await getIt<VectorSearchRepository>()
-          .searchRelatedTasks(query: _query);
+      final result = await getIt<VectorSearchRepository>().searchRelatedTasks(
+        query: _query,
+        categoryIds:
+            _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
+      );
 
       state = state.copyWith(
         vectorSearchInFlight: false,
@@ -715,7 +731,11 @@ class JournalPageController extends _$JournalPageController {
         name: 'JournalPageController',
         message: 'Vector search failed: $e',
       );
-      state = state.copyWith(vectorSearchInFlight: false);
+      state = state.copyWith(
+        vectorSearchInFlight: false,
+        vectorSearchElapsed: Duration.zero,
+        vectorSearchResultCount: 0,
+      );
       return [];
     }
   }

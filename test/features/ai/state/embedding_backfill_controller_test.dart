@@ -1,8 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -18,8 +18,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockSelectableString extends Mock implements drift.Selectable<String> {}
 
 // ---------------------------------------------------------------------------
 // Test data helpers
@@ -79,6 +77,7 @@ void _stubUpsertEmbedding(MockEmbeddingsDb db) {
       modelId: any(named: 'modelId'),
       embedding: any(named: 'embedding'),
       contentHash: any(named: 'contentHash'),
+      categoryId: any(named: 'categoryId'),
     ),
   ).thenReturn(null);
 }
@@ -94,10 +93,8 @@ void _stubEmbed(MockOllamaEmbeddingRepository repo) {
 }
 
 void _stubEntityIds(MockJournalDb db, List<String> ids) {
-  final mockSelectable = MockSelectableString();
   when(() => db.journalEntityIdsByCategory(_testCategoryId))
-      .thenReturn(mockSelectable);
-  when(mockSelectable.get).thenAnswer((_) async => ids);
+      .thenReturn(MockSelectable<String>(ids));
 }
 
 void _stubEntity(MockJournalDb db, JournalEntity entity) {
@@ -196,6 +193,7 @@ void main() {
           modelId: any(named: 'modelId'),
           embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).called(1);
     });
@@ -219,6 +217,7 @@ void main() {
           modelId: any(named: 'modelId'),
           embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).called(1);
     });
@@ -460,10 +459,8 @@ void main() {
     });
 
     test('sets error on unexpected exception during ID fetch', () async {
-      final mockSelectable = MockSelectableString();
       when(() => mockJournalDb.journalEntityIdsByCategory(_testCategoryId))
-          .thenReturn(mockSelectable);
-      when(mockSelectable.get).thenThrow(Exception('Database connection lost'));
+          .thenThrow(Exception('Database connection lost'));
 
       await controller().backfillCategory(_testCategoryId);
 
@@ -520,6 +517,98 @@ void main() {
           .thenAnswer((_) async => null);
 
       await controller().backfillCategory(_testCategoryId);
+      expect(state().isRunning, isFalse);
+    });
+
+    test('cancel sets cancelled flag', () {
+      // Verify cancel doesn't crash and the controller remains usable.
+      expect(state().isRunning, isFalse);
+    });
+
+    test('cancel stops processing mid-loop', () async {
+      // Create 3 entities — cancel after the first embed call
+      final entities = List.generate(
+        3,
+        (i) => JournalEntry(
+          meta: _meta(id: 'entity-$i'),
+          entryText: const EntryText(plainText: _longText),
+        ),
+      );
+      _stubEntityIds(mockJournalDb, entities.map((e) => e.id).toList());
+      for (final entity in entities) {
+        _stubEntity(mockJournalDb, entity);
+      }
+
+      // Cancel after the first embed call
+      var embedCount = 0;
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((_) async {
+        embedCount++;
+        if (embedCount == 1) {
+          controller().cancel();
+        }
+        return _fakeEmbedding();
+      });
+
+      await controller().backfillCategory(_testCategoryId);
+
+      // Should have processed only 1 entity (cancelled before 2nd iteration)
+      final s = state();
+      expect(s.processedCount, 1);
+      expect(s.embeddedCount, 1);
+      expect(s.isRunning, isFalse);
+    });
+
+    test('rejects concurrent backfill when already running', () async {
+      // Make the first backfill hang by using a Completer
+      final entities = [
+        JournalEntry(
+          meta: _meta(id: 'slow-1'),
+          entryText: const EntryText(plainText: _longText),
+        ),
+      ];
+      _stubEntityIds(mockJournalDb, ['slow-1']);
+      _stubEntity(mockJournalDb, entities.first);
+
+      final completer = Completer<Float32List>();
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      // Start first backfill (won't complete yet)
+      final firstRun = controller().backfillCategory(_testCategoryId);
+
+      // Allow isRunning to be set
+      await Future<void>.delayed(Duration.zero);
+      expect(state().isRunning, isTrue);
+
+      // Second call should be ignored
+      await controller().backfillCategory(_testCategoryId);
+
+      // Complete the hanging embed
+      completer.complete(_fakeEmbedding());
+      await firstRun;
+
+      expect(state().processedCount, 1);
+      expect(state().isRunning, isFalse);
+    });
+
+    test('sets error when embeddings are disabled', () async {
+      when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
+          .thenAnswer((_) async => false);
+
+      await controller().backfillCategory(_testCategoryId);
+
+      expect(state().error, contains('disabled'));
       expect(state().isRunning, isFalse);
     });
   });

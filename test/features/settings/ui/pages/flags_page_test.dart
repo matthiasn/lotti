@@ -76,6 +76,11 @@ void main() {
             description: 'Generate Embeddings?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableVectorSearchFlag,
+            description: 'Enable Vector Search?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -370,6 +375,48 @@ void main() {
         ),
       );
       expect(embeddingsSwitch.value, isFalse);
+    });
+
+    testWidgets(
+        'displays enableVectorSearchFlag with correct icon, title, and description',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      final vectorSearchCard = find.widgetWithText(
+        AnimatedModernSettingsCardWithIcon,
+        context.messages.configFlagEnableVectorSearch,
+      );
+      expect(vectorSearchCard, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: vectorSearchCard,
+          matching: find.text(
+            context.messages.configFlagEnableVectorSearchDescription,
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      expect(
+        find.byIcon(Icons.manage_search_rounded),
+        findsAtLeastNWidgets(1),
+      );
+
+      final vectorSearchSwitch = tester.widget<Switch>(
+        find.descendant(
+          of: vectorSearchCard,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(vectorSearchSwitch.value, isFalse);
     });
   });
 }

@@ -1223,7 +1223,7 @@
   "maintenanceBackfillEmbeddingsConfirm": "OUI, DÉMARRER",
   "maintenanceBackfillEmbeddingsDescription": "Générer les embeddings pour toutes les entrées d'une catégorie",
   "maintenanceBackfillEmbeddingsMessage": "Sélectionne une catégorie pour générer les embeddings de toutes ses entrées.",
-  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} entrées ({embedded} intégrées)",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrée ({embedded} intégrée)} other{{processed} / {total} entrées ({embedded} intégrées)}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -1922,7 +1922,7 @@
   "unlinkButton": "Délier",
   "unlinkTaskConfirm": "Es-tu sûr de vouloir délier cette tâche ?",
   "unlinkTaskTitle": "Délier la tâche",
-  "vectorSearchTiming": "{elapsed}ms, {count} résultats",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} résultat} other{{elapsed}ms, {count} résultats}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

@@ -78,6 +78,7 @@ void main() {
         modelId: any(named: 'modelId'),
         embedding: any(named: 'embedding'),
         contentHash: any(named: 'contentHash'),
+        categoryId: any(named: 'categoryId'),
       ),
     ).thenReturn(null);
   });
@@ -147,6 +148,7 @@ void main() {
             modelId: ollamaEmbedDefaultModel,
             embedding: any(named: 'embedding'),
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
+            categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
 
@@ -359,6 +361,7 @@ void main() {
             modelId: any(named: 'modelId'),
             embedding: any(named: 'embedding'),
             contentHash: any(named: 'contentHash'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
 
@@ -396,6 +399,7 @@ void main() {
             modelId: any(named: 'modelId'),
             embedding: any(named: 'embedding'),
             contentHash: any(named: 'contentHash'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
 

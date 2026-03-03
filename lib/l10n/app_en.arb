@@ -1370,7 +1370,7 @@
   "maintenanceBackfillEmbeddingsConfirm": "YES, START BACKFILL",
   "maintenanceBackfillEmbeddingsDescription": "Generate embeddings for all entries in a category",
   "maintenanceBackfillEmbeddingsMessage": "Select a category to generate embeddings for all its entries.",
-  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} entries ({embedded} embedded)",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -2069,7 +2069,7 @@
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
   "unlinkTaskTitle": "Unlink Task",
-  "vectorSearchTiming": "{elapsed}ms, {count} results",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

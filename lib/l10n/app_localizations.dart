@@ -936,17 +936,17 @@ abstract class AppLocalizations {
   /// **'No neutral feedback signals in this tab'**
   String get agentRitualReviewNoNeutralSignals;
 
-  /// No description provided for @agentRitualReviewNoProposal.
-  ///
-  /// In en, this message translates to:
-  /// **'No active proposal'**
-  String get agentRitualReviewNoProposal;
-
   /// No description provided for @agentRitualReviewNoPositiveSignals.
   ///
   /// In en, this message translates to:
   /// **'No positive feedback signals in this tab'**
   String get agentRitualReviewNoPositiveSignals;
+
+  /// No description provided for @agentRitualReviewNoProposal.
+  ///
+  /// In en, this message translates to:
+  /// **'No active proposal'**
+  String get agentRitualReviewNoProposal;
 
   /// No description provided for @agentRitualReviewPositiveSignals.
   ///
@@ -5163,9 +5163,21 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceBackfillEmbeddingsProgress.
   ///
   /// In en, this message translates to:
-  /// **'{processed} / {total} entries ({embedded} embedded)'**
+  /// **'{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}'**
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded);
+
+  /// No description provided for @maintenanceDeleteAgentDb.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Agents Database'**
+  String get maintenanceDeleteAgentDb;
+
+  /// No description provided for @maintenanceDeleteAgentDbDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete agents database and restart app'**
+  String get maintenanceDeleteAgentDbDescription;
 
   /// No description provided for @maintenanceDeleteDatabaseConfirm.
   ///
@@ -8474,6 +8486,12 @@ abstract class AppLocalizations {
   /// **'Hide reasoning'**
   String get thinkingDisclosureHide;
 
+  /// No description provided for @thinkingDisclosureShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show reasoning'**
+  String get thinkingDisclosureShow;
+
   /// No description provided for @thinkingDisclosureStateCollapsed.
   ///
   /// In en, this message translates to:
@@ -8485,12 +8503,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'expanded'**
   String get thinkingDisclosureStateExpanded;
-
-  /// No description provided for @thinkingDisclosureShow.
-  ///
-  /// In en, this message translates to:
-  /// **'Show reasoning'**
-  String get thinkingDisclosureShow;
 
   /// No description provided for @timeByCategoryChartTitle.
   ///
@@ -8525,7 +8537,7 @@ abstract class AppLocalizations {
   /// No description provided for @vectorSearchTiming.
   ///
   /// In en, this message translates to:
-  /// **'{elapsed}ms, {count} results'**
+  /// **'{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}'**
   String vectorSearchTiming(int elapsed, int count);
 
   /// No description provided for @viewMenuTitle.

@@ -1223,7 +1223,7 @@
   "maintenanceBackfillEmbeddingsConfirm": "DA, ÎNCEPE",
   "maintenanceBackfillEmbeddingsDescription": "Generați embeddings pentru toate intrările dintr-o categorie",
   "maintenanceBackfillEmbeddingsMessage": "Selectați o categorie pentru a genera embeddings pentru toate intrările sale.",
-  "maintenanceBackfillEmbeddingsProgress": "{processed} / {total} intrări ({embedded} încorporate)",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} intrare ({embedded} încorporată)} other{{processed} / {total} intrări ({embedded} încorporate)}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -1922,7 +1922,7 @@
   "unlinkButton": "Dezleagă",
   "unlinkTaskConfirm": "Ești sigur că vrei să dezlegi această sarcină?",
   "unlinkTaskTitle": "Dezleagă sarcina",
-  "vectorSearchTiming": "{elapsed}ms, {count} rezultate",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} rezultat} other{{elapsed}ms, {count} rezultate}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

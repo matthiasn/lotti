@@ -470,11 +470,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'V této záložce nejsou žádné neutrální signály zpětné vazby';
 
   @override
-  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'V této záložce nejsou žádné pozitivní signály zpětné vazby';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitivní';
@@ -2840,8 +2840,22 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded) {
-    return '$processed / $total záznamů ($embedded vloženo)';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total záznamů ($embedded vloženo)',
+      few: '$processed / $total záznamy ($embedded vloženy)',
+      one: '$processed / $total záznam ($embedded vložen)',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Smazat databázi agentů a restartovat aplikaci';
 
   @override
   String get maintenanceDeleteDatabaseConfirm => 'ANO, SMAZAT DATABÁZI';
@@ -4667,13 +4681,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get thinkingDisclosureHide => 'Skrýt úvahu';
 
   @override
+  String get thinkingDisclosureShow => 'Zobrazit úvahu';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'sbaleno';
 
   @override
   String get thinkingDisclosureStateExpanded => 'rozbaleno';
-
-  @override
-  String get thinkingDisclosureShow => 'Zobrazit úvahu';
 
   @override
   String get timeByCategoryChartTitle => 'Čas podle kategorie';
@@ -4693,7 +4707,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String vectorSearchTiming(int elapsed, int count) {
-    return '${elapsed}ms, $count výsledků';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count výsledků',
+      few: '${elapsed}ms, $count výsledky',
+      one: '${elapsed}ms, $count výsledek',
+    );
+    return '$_temp0';
   }
 
   @override

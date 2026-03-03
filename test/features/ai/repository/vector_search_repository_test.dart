@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -23,6 +23,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(Float32List(1024));
     registerFallbackValue(<String>{});
+    registerFallbackValue(<String>[]);
   });
 
   setUp(() {
@@ -40,6 +41,12 @@ void main() {
 
     when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
         .thenAnswer((_) async => 'http://localhost:11434');
+
+    // Default stubs for batch-fetch methods used by _resolveToTasks.
+    when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+        .thenAnswer((_) async => []);
+    when(() => mockJournalDb.linksForIds(any()))
+        .thenReturn(MockSelectable(<LinkedDbEntry>[]));
   });
 
   group('VectorSearchRepository', () {
@@ -55,6 +62,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([
         const EmbeddingSearchResult(
@@ -87,6 +95,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([
         const EmbeddingSearchResult(
@@ -96,9 +105,22 @@ void main() {
         ),
       ]);
 
-      // The text entry links to a parent task
-      when(() => mockJournalDb.linkedToJournalEntities('text-entry-1'))
-          .thenReturn(MockSelectable([toDbEntity(testTask)]));
+      // The text entry links to a parent task via linked entries.
+      final taskId = testTask.meta.id;
+      when(() => mockJournalDb.linksForIds(any())).thenReturn(MockSelectable([
+        LinkedDbEntry(
+          id: 'link-1',
+          fromId: taskId,
+          toId: 'text-entry-1',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          hidden: false,
+          type: 'BasicLink',
+          serialized: '{}',
+        ),
+      ]));
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTask]);
 
       final result = await sut.searchRelatedTasks(query: 'semantic query');
 
@@ -119,6 +141,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([
         EmbeddingSearchResult(
@@ -135,8 +158,18 @@ void main() {
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTask]);
-      when(() => mockJournalDb.linkedToJournalEntities('chunk-2'))
-          .thenReturn(MockSelectable([toDbEntity(testTask)]));
+      when(() => mockJournalDb.linksForIds(any())).thenReturn(MockSelectable([
+        LinkedDbEntry(
+          id: 'link-1',
+          fromId: taskId,
+          toId: 'chunk-2',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          hidden: false,
+          type: 'BasicLink',
+          serialized: '{}',
+        ),
+      ]));
 
       final result = await sut.searchRelatedTasks(query: 'dup query');
 
@@ -173,6 +206,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       );
     });
@@ -189,6 +223,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([]);
 
@@ -209,6 +244,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([
         const EmbeddingSearchResult(
@@ -218,11 +254,22 @@ void main() {
         ),
       ]);
 
-      // The text entry links to another text entry, not a task
-      when(() => mockJournalDb.linkedToJournalEntities('text-entry-1'))
-          .thenReturn(
-        MockSelectable([toDbEntity(testTextEntry)]),
-      );
+      // The text entry links to another text entry, not a task.
+      final textEntryId = testTextEntry.meta.id;
+      when(() => mockJournalDb.linksForIds(any())).thenReturn(MockSelectable([
+        LinkedDbEntry(
+          id: 'link-1',
+          fromId: textEntryId,
+          toId: 'text-entry-1',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          hidden: false,
+          type: 'BasicLink',
+          serialized: '{}',
+        ),
+      ]));
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedTasks(query: 'orphan');
 
@@ -241,6 +288,7 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: 5,
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([]);
 
@@ -250,6 +298,37 @@ void main() {
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
           k: 5,
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).called(1);
+    });
+
+    test('passes categoryIds through to embeddings DB search', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([]);
+
+      await sut.searchRelatedTasks(
+        query: 'filter test',
+        categoryIds: {'cat-1'},
+      );
+
+      verify(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: {'cat-1'},
         ),
       ).called(1);
     });

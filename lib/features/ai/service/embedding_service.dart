@@ -102,10 +102,16 @@ class EmbeddingService {
       // Resolve config flag and base URL once per batch to avoid
       // redundant DB queries for each entity.
       final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
-      if (!enabled) return;
+      if (!enabled) {
+        _pendingEntityIds.clear();
+        return;
+      }
 
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null) return;
+      if (baseUrl == null) {
+        _pendingEntityIds.clear();
+        return;
+      }
 
       while (_pendingEntityIds.isNotEmpty && !_stopped) {
         final entityId = _pendingEntityIds.first;

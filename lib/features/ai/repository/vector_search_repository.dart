@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -50,6 +49,7 @@ class VectorSearchRepository {
   Future<VectorSearchResult> searchRelatedTasks({
     required String query,
     int k = 20,
+    Set<String>? categoryIds,
   }) async {
     final stopwatch = Stopwatch()..start();
 
@@ -77,6 +77,7 @@ class VectorSearchRepository {
     final searchResults = _embeddingsDb.search(
       queryVector: queryVector,
       k: k,
+      categoryIds: categoryIds,
     );
 
     final tasks = await _resolveToTasks(searchResults);
@@ -88,49 +89,60 @@ class VectorSearchRepository {
   /// Resolves search results to unique tasks, preserving distance ordering.
   ///
   /// If a result is already a Task, it is fetched directly. Otherwise, the
-  /// parent task is resolved via linked entries.
-  ///
-  /// Direct task IDs are bulk-fetched in a single query to avoid N+1.
+  /// parent task is resolved via linked entries. Both direct and linked
+  /// entities are bulk-fetched to avoid N+1 queries.
   Future<List<JournalEntity>> _resolveToTasks(
     List<EmbeddingSearchResult> results,
   ) async {
     final seenIds = <String>{};
     final tasks = <JournalEntity>[];
 
-    // Separate direct task results from non-task results.
-    final directTaskIds = <String>[];
-    final nonTaskResults = <EmbeddingSearchResult>[];
+    // 1. Bulk-fetch all direct task entities in one query.
+    final directTaskIds = results
+        .where((r) => r.entityType == kEntityTypeTask)
+        .map((r) => r.entityId)
+        .toSet();
+    final directEntities = <String, JournalEntity>{
+      for (final e in await _journalDb.getJournalEntitiesForIds(directTaskIds))
+        e.meta.id: e,
+    };
 
+    // 2. Batch-fetch linked entries for all non-task results.
+    final nonTaskIds =
+        results.where((r) => r.entityType != kEntityTypeTask).toList();
+    final childToParentIds = <String, List<String>>{};
+    if (nonTaskIds.isNotEmpty) {
+      final links = await _journalDb
+          .linksForIds(nonTaskIds.map((r) => r.entityId).toList())
+          .get();
+      for (final link in links) {
+        (childToParentIds[link.toId] ??= []).add(link.fromId);
+      }
+    }
+
+    // 3. Bulk-fetch all parent entities referenced by links.
+    final allParentIds = childToParentIds.values.expand((ids) => ids).toSet();
+    final parentEntities = allParentIds.isNotEmpty
+        ? <String, JournalEntity>{
+            for (final e
+                in await _journalDb.getJournalEntitiesForIds(allParentIds))
+              e.meta.id: e,
+          }
+        : <String, JournalEntity>{};
+
+    // 4. Iterate original ranked results to preserve global ordering.
     for (final result in results) {
       if (result.entityType == kEntityTypeTask) {
-        if (seenIds.add(result.entityId)) {
-          directTaskIds.add(result.entityId);
-        }
-      } else {
-        nonTaskResults.add(result);
-      }
-    }
-
-    // Bulk-fetch all direct task entities in one query.
-    if (directTaskIds.isNotEmpty) {
-      final entities =
-          await _journalDb.getJournalEntitiesForIds(directTaskIds.toSet());
-      final entityMap = {for (final e in entities) e.meta.id: e};
-      // Preserve distance ordering from results.
-      for (final id in directTaskIds) {
-        final entity = entityMap[id];
-        if (entity != null) {
+        final entity = directEntities[result.entityId];
+        if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
         }
+        continue;
       }
-    }
 
-    // Resolve non-task results to parent tasks via linked entries.
-    for (final result in nonTaskResults) {
-      final linkedEntities =
-          await _journalDb.linkedToJournalEntities(result.entityId).get();
-      for (final dbEntity in linkedEntities) {
-        final entity = fromDbEntity(dbEntity);
+      final parentIds = childToParentIds[result.entityId] ?? [];
+      for (final parentId in parentIds) {
+        final entity = parentEntities[parentId];
         if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
         }
