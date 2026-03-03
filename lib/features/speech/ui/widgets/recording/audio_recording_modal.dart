@@ -419,8 +419,6 @@ class _AudioRecordingModalContentState
     final visibility = ref.watch(
       checkboxVisibilityProvider(
         categoryId: widget.categoryId,
-        linkedId: widget.linkedId,
-        userSpeechPreference: state.enableSpeechRecognition,
       ),
     );
 
@@ -441,28 +439,6 @@ class _AudioRecordingModalContentState
                 controller.setEnableSpeechRecognition(enable: value);
               },
             ),
-          if (visibility.checklist) ...[
-            const SizedBox(height: 4),
-            LottiAnimatedCheckbox(
-              key: const Key('checklist_updates_checkbox'),
-              label: 'Checklist Updates',
-              value: state.enableChecklistUpdates ?? true,
-              onChanged: (value) {
-                controller.setEnableChecklistUpdates(enable: value);
-              },
-            ),
-          ],
-          if (visibility.summary) ...[
-            const SizedBox(height: 4),
-            LottiAnimatedCheckbox(
-              key: const Key('task_summary_checkbox'),
-              label: 'Task Summary',
-              value: state.enableTaskSummary ?? true,
-              onChanged: (value) {
-                controller.setEnableTaskSummary(enable: value);
-              },
-            ),
-          ],
         ],
       ),
     );

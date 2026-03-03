@@ -7,12 +7,9 @@ void main() {
     test('returns all false when automaticPrompts is null', () {
       final v = deriveAutomaticPromptVisibility(
         automaticPrompts: null,
-        hasLinkedTask: false,
       );
 
       expect(v.speech, isFalse);
-      expect(v.checklist, isFalse);
-      expect(v.summary, isFalse);
       expect(v.none, isTrue);
     });
 
@@ -21,61 +18,20 @@ void main() {
         automaticPrompts: {
           AiResponseType.audioTranscription: ['p1'],
         },
-        hasLinkedTask: false,
       );
 
       expect(v.speech, isTrue);
-      expect(v.checklist, isFalse);
-      expect(v.summary, isFalse);
     });
 
-    test('checklist/summary hidden without transcription prompts', () {
+    test('speech hidden when no transcription prompts', () {
       final v = deriveAutomaticPromptVisibility(
         automaticPrompts: {
           AiResponseType.checklistUpdates: ['c1'],
           AiResponseType.taskSummary: ['s1'],
         },
-        hasLinkedTask: true,
-        userSpeechPreference: true,
       );
 
-      // Speech not available -> dependent toggles hidden
       expect(v.speech, isFalse);
-      expect(v.checklist, isFalse);
-      expect(v.summary, isFalse);
-    });
-
-    test('all visible when prompts exist, linked to task, and speech enabled',
-        () {
-      final v = deriveAutomaticPromptVisibility(
-        automaticPrompts: {
-          AiResponseType.audioTranscription: ['p1'],
-          AiResponseType.checklistUpdates: ['c1'],
-          AiResponseType.taskSummary: ['s1'],
-        },
-        hasLinkedTask: true,
-        userSpeechPreference: true,
-      );
-
-      expect(v.speech, isTrue);
-      expect(v.checklist, isTrue);
-      expect(v.summary, isTrue);
-    });
-
-    test('dependent checkboxes hidden when user disabled speech', () {
-      final v = deriveAutomaticPromptVisibility(
-        automaticPrompts: {
-          AiResponseType.audioTranscription: ['p1'],
-          AiResponseType.checklistUpdates: ['c1'],
-          AiResponseType.taskSummary: ['s1'],
-        },
-        hasLinkedTask: true,
-        userSpeechPreference: false,
-      );
-
-      expect(v.speech, isTrue); // still visible to allow toggling back on
-      expect(v.checklist, isFalse);
-      expect(v.summary, isFalse);
     });
 
     test('returns false for types with empty prompt lists', () {
@@ -84,15 +40,9 @@ void main() {
           AiResponseType.audioTranscription: [], // empty list should not count
           AiResponseType.checklistUpdates: ['c1'],
         },
-        hasLinkedTask: true,
-        userSpeechPreference: true,
       );
 
-      // speech should be false because transcription list is empty
       expect(v.speech, isFalse);
-      // checklist depends on speech being effectively enabled, so it's false too
-      expect(v.checklist, isFalse);
-      expect(v.summary, isFalse);
     });
   });
 }

@@ -62,15 +62,15 @@ class AutomaticPromptTrigger {
                 .containsKey(AiResponseType.checklistUpdates) &&
             category
                 .automaticPrompts![AiResponseType.checklistUpdates]!.isNotEmpty;
-        final shouldTriggerChecklistUpdates = isLinkedToTask &&
-            (state.enableChecklistUpdates ?? hasAutomaticChecklistUpdates);
+        final shouldTriggerChecklistUpdates =
+            isLinkedToTask && hasAutomaticChecklistUpdates;
 
         // Determine if task summary should be triggered
         final hasAutomaticTaskSummary = category.automaticPrompts!
                 .containsKey(AiResponseType.taskSummary) &&
             category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
-        final shouldTriggerTaskSummary = isLinkedToTask &&
-            (state.enableTaskSummary ?? hasAutomaticTaskSummary);
+        final shouldTriggerTaskSummary =
+            isLinkedToTask && hasAutomaticTaskSummary;
 
         // Trigger audio transcription if enabled (skip if realtime already
         // produced a transcript, e.g. from live transcription mode)
@@ -212,7 +212,7 @@ class AutomaticPromptTrigger {
           final promptId = availablePrompt.id;
 
           loggingService.captureEvent(
-            'Triggering task summary for task $linkedTaskId (user preference: ${state.enableTaskSummary}, transcription pending: ${transcriptionFuture != null}, checklist updates pending: ${checklistUpdatesFuture != null})',
+            'Triggering task summary for task $linkedTaskId (transcription pending: ${transcriptionFuture != null}, checklist updates pending: ${checklistUpdatesFuture != null})',
             domain: 'automatic_prompt_trigger',
             subDomain: 'triggerAutomaticPrompts',
           );

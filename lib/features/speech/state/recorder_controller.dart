@@ -253,8 +253,6 @@ class AudioRecorderController extends _$AudioRecorderController {
 
       // Preserve the inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
-      final enableTaskSummary = state.enableTaskSummary;
-      final enableChecklistUpdates = state.enableChecklistUpdates;
 
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
@@ -265,8 +263,6 @@ class AudioRecorderController extends _$AudioRecorderController {
         modalVisible: false,
         // Preserve the inference preferences
         enableSpeechRecognition: enableSpeechRecognition,
-        enableTaskSummary: enableTaskSummary,
-        enableChecklistUpdates: enableChecklistUpdates,
       );
       if (_audioNote != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
@@ -345,18 +341,6 @@ class AudioRecorderController extends _$AudioRecorderController {
   /// If null, uses category default settings.
   void setEnableSpeechRecognition({required bool? enable}) {
     state = state.copyWith(enableSpeechRecognition: enable);
-  }
-
-  /// Sets whether to enable task summary for the recording.
-  /// If null, uses category default settings.
-  void setEnableTaskSummary({required bool? enable}) {
-    state = state.copyWith(enableTaskSummary: enable);
-  }
-
-  /// Sets whether to enable checklist updates for the recording.
-  /// If null, uses category default settings.
-  void setEnableChecklistUpdates({required bool? enable}) {
-    state = state.copyWith(enableChecklistUpdates: enable);
   }
 
   /// Starts a realtime recording session using PCM streaming + WebSocket
@@ -516,8 +500,6 @@ class AudioRecorderController extends _$AudioRecorderController {
 
       // Preserve inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
-      final enableTaskSummary = state.enableTaskSummary;
-      final enableChecklistUpdates = state.enableChecklistUpdates;
 
       _dbfsBuffer.clear();
       state = AudioRecorderState(
@@ -528,8 +510,6 @@ class AudioRecorderController extends _$AudioRecorderController {
         showIndicator: false,
         modalVisible: false,
         enableSpeechRecognition: enableSpeechRecognition,
-        enableTaskSummary: enableTaskSummary,
-        enableChecklistUpdates: enableChecklistUpdates,
       );
 
       // Create the journal audio entry (only when we have an actual audio file)

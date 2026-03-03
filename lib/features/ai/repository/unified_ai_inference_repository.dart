@@ -938,7 +938,7 @@ class UnifiedAiInferenceRepository {
             );
 
             // Note: Task summary for audio is handled by AutomaticPromptTrigger
-            // which respects the user's enableTaskSummary checkbox preference.
+            // using category defaults.
             // See lib/features/speech/helpers/automatic_prompt_trigger.dart
           } catch (e) {
             developer.log(

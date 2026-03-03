@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.895] - 2026-03-03
+### Changed
+- Simplified audio recording modal: removed Checklist Updates and Task Summary
+  checkboxes. These prompts now always use category defaults when configured,
+  with no per-recording user toggle.
+- New system FTUE setup no longer populates automatic checklist update and task
+  summary prompts on categories. Existing categories are unaffected.
+
 ## [0.9.894] - 2026-03-02
 ### Added
 - Vector search testing UI: toggle between full-text (FTS5) and vector

@@ -11,8 +11,6 @@ part of 'checkbox_visibility_provider.dart';
 /// Provider that computes which automatic prompt checkboxes should be visible
 /// in the audio recording modal based on:
 /// - Category configuration (automatic prompts)
-/// - Whether a Task is linked (not just any entity)
-/// - User's speech recognition preference
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
@@ -23,8 +21,6 @@ final checkboxVisibilityProvider = CheckboxVisibilityFamily._();
 /// Provider that computes which automatic prompt checkboxes should be visible
 /// in the audio recording modal based on:
 /// - Category configuration (automatic prompts)
-/// - Whether a Task is linked (not just any entity)
-/// - User's speech recognition preference
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
@@ -36,19 +32,12 @@ final class CheckboxVisibilityProvider extends $FunctionalProvider<
   /// Provider that computes which automatic prompt checkboxes should be visible
   /// in the audio recording modal based on:
   /// - Category configuration (automatic prompts)
-  /// - Whether a Task is linked (not just any entity)
-  /// - User's speech recognition preference
   ///
   /// This extracts the business logic from the widget, making it testable
   /// independently without widget build cycles or timing issues.
   CheckboxVisibilityProvider._(
       {required CheckboxVisibilityFamily super.from,
-      required ({
-        String? categoryId,
-        String? linkedId,
-        bool? userSpeechPreference,
-      })
-          super.argument})
+      required String? super.argument})
       : super(
           retry: null,
           name: r'checkboxVisibilityProvider',
@@ -64,7 +53,7 @@ final class CheckboxVisibilityProvider extends $FunctionalProvider<
   String toString() {
     return r'checkboxVisibilityProvider'
         ''
-        '$argument';
+        '($argument)';
   }
 
   @$internal
@@ -75,16 +64,10 @@ final class CheckboxVisibilityProvider extends $FunctionalProvider<
 
   @override
   AutomaticPromptVisibility create(Ref ref) {
-    final argument = this.argument as ({
-      String? categoryId,
-      String? linkedId,
-      bool? userSpeechPreference,
-    });
+    final argument = this.argument as String?;
     return checkboxVisibility(
       ref,
-      categoryId: argument.categoryId,
-      linkedId: argument.linkedId,
-      userSpeechPreference: argument.userSpeechPreference,
+      categoryId: argument,
     );
   }
 
@@ -108,26 +91,17 @@ final class CheckboxVisibilityProvider extends $FunctionalProvider<
 }
 
 String _$checkboxVisibilityHash() =>
-    r'9ff4db5a2e21b5517746b48e71687a621af0beb3';
+    r'52dcd2580910c6937a0047f2c0b9bf24e4e1d0eb';
 
 /// Provider that computes which automatic prompt checkboxes should be visible
 /// in the audio recording modal based on:
 /// - Category configuration (automatic prompts)
-/// - Whether a Task is linked (not just any entity)
-/// - User's speech recognition preference
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
 
 final class CheckboxVisibilityFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-            AutomaticPromptVisibility,
-            ({
-              String? categoryId,
-              String? linkedId,
-              bool? userSpeechPreference,
-            })> {
+    with $FunctionalFamilyOverride<AutomaticPromptVisibility, String?> {
   CheckboxVisibilityFamily._()
       : super(
           retry: null,
@@ -140,22 +114,14 @@ final class CheckboxVisibilityFamily extends $Family
   /// Provider that computes which automatic prompt checkboxes should be visible
   /// in the audio recording modal based on:
   /// - Category configuration (automatic prompts)
-  /// - Whether a Task is linked (not just any entity)
-  /// - User's speech recognition preference
   ///
   /// This extracts the business logic from the widget, making it testable
   /// independently without widget build cycles or timing issues.
 
   CheckboxVisibilityProvider call({
     required String? categoryId,
-    required String? linkedId,
-    required bool? userSpeechPreference,
   }) =>
-      CheckboxVisibilityProvider._(argument: (
-        categoryId: categoryId,
-        linkedId: linkedId,
-        userSpeechPreference: userSpeechPreference,
-      ), from: this);
+      CheckboxVisibilityProvider._(argument: categoryId, from: this);
 
   @override
   String toString() => r'checkboxVisibilityProvider';
