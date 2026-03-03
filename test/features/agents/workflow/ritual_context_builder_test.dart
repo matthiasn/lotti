@@ -353,6 +353,8 @@ void main() {
       final msg = ctx.initialUserMessage;
       final highPriorityIndex = msg.indexOf('HIGH-PRIORITY FEEDBACK');
       final feedbackSummaryIndex = msg.indexOf('Classified Feedback Summary');
+      expect(highPriorityIndex, greaterThanOrEqualTo(0));
+      expect(feedbackSummaryIndex, greaterThanOrEqualTo(0));
       expect(highPriorityIndex, lessThan(feedbackSummaryIndex));
     });
 

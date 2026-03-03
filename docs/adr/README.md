@@ -41,5 +41,4 @@ Each ADR should contain:
 - [`0011-feedback-classification-strategy.md`](./0011-feedback-classification-strategy.md)
 - [`0012-recursive-self-improvement-depth-policy.md`](./0012-recursive-self-improvement-depth-policy.md)
 - [`0013-outbox-priority-queue.md`](./0013-outbox-priority-queue.md)
-- [`0014-cross-wake-critical-observation-injection.md`](.
-  /0014-cross-wake-critical-observation-injection.md)
+- [`0014-cross-wake-critical-observation-injection.md`](./0014-cross-wake-critical-observation-injection.md)

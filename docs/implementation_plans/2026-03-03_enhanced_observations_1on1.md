@@ -27,7 +27,7 @@
 9. [Data Flow Architecture](#9-data-flow-architecture)
 10. [Implementation Phases](#10-implementation-phases)
 11. [Testing Strategy](#11-testing-strategy)
-12. [Open Questions](#12-open-questions)
+12. [Design Decisions (Resolved)](#12-design-decisions-resolved)
 
 ---
 
@@ -321,7 +321,7 @@ AgentMessagePayloadEntity(
 
 Add to `TaskAgentWorkflow.taskAgentScaffoldLeading` (or a new dedicated section):
 
-```
+```text
 ## Observation Recording Guidelines
 
 When recording observations, you MUST distinguish between routine operational
@@ -365,7 +365,7 @@ requests as authoritative."
 
 Add to the trailing scaffold section:
 
-```
+```text
 ## Recognizing Grievances & Excellence
 
 You MUST be vigilant about detecting user feedback signals in conversation:
@@ -405,9 +405,7 @@ ClassifiedFeedbackItem? _classifyObservation(
       ? (category == ObservationCategory.excellence
           ? FeedbackSentiment.positive
           : FeedbackSentiment.negative)
-      : priority == ObservationPriority.notable
-          ? _classifyTextSentiment(detail)
-          : _classifyTextSentiment(detail);
+      : _classifyTextSentiment(detail);
 
   final feedbackCategory = _mapObservationCategory(category);
 
@@ -548,7 +546,7 @@ void _writeHighPrioritySection(
 Update the ritual system prompt to instruct the improver agent to address high-priority
 items first:
 
-```
+```text
 ## High-Priority Feedback Protocol
 
 When the user context contains a "HIGH-PRIORITY FEEDBACK" section:
@@ -571,7 +569,7 @@ relationship.
 
 A new GenUI widget for the evolution chat, rendered via `render_surface`:
 
-```
+```json
 Widget: HighPriorityFeedbackCard
 Data: {
   "grievances": [
@@ -581,7 +579,7 @@ Data: {
       "timestamp": "2026-03-02T14:30:00Z"
     }
   ],
-  "excellence": [
+  "excellenceNotes": [
     {
       "agentId": "def67890",
       "detail": "Full excellence note...",
@@ -768,7 +766,7 @@ next session effectively?**
 
 The answer follows the existing pattern but with priority-aware ordering:
 
-```
+```text
 ┌──────────────────────────────────────────────┐
 │  Ritual Context Assembly                      │
 │                                               │
@@ -909,7 +907,7 @@ without waiting for the ritual.
   observations with `priority: critical` from the current feedback window.
 - Inject a section like:
 
-```
+```text
 ## Prior Critical Observations (Self-Review)
 The following critical observations were recorded in your previous wakes.
 Review them and adjust your behavior accordingly:

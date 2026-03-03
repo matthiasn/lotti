@@ -30,6 +30,7 @@ abstract class ClassifiedFeedbackItem with _$ClassifiedFeedbackItem {
     /// Original observation priority, if this item originated from a
     /// structured observation. Null for non-observation sources (decisions,
     /// metrics, ratings).
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
     ObservationPriority? observationPriority,
   }) = _ClassifiedFeedbackItem;
 

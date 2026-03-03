@@ -292,8 +292,9 @@ class FeedbackExtractionService {
     if (payload == null) return ObservationPriority.routine;
     final raw = payload.content['priority'];
     if (raw is String) {
+      final normalized = raw.trim().toLowerCase();
       for (final value in ObservationPriority.values) {
-        if (value.name == raw) return value;
+        if (value.name.toLowerCase() == normalized) return value;
       }
     }
     return ObservationPriority.routine;
@@ -307,8 +308,9 @@ class FeedbackExtractionService {
     if (payload == null) return ObservationCategory.operational;
     final raw = payload.content['category'];
     if (raw is String) {
+      final normalized = raw.trim().replaceAll('_', '').toLowerCase();
       for (final value in ObservationCategory.values) {
-        if (value.name == raw) return value;
+        if (value.name.toLowerCase() == normalized) return value;
       }
     }
     return ObservationCategory.operational;

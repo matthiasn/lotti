@@ -17,7 +17,8 @@ _ClassifiedFeedbackItem _$ClassifiedFeedbackItemFromJson(
       sourceEntityId: json['sourceEntityId'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
       observationPriority: $enumDecodeNullable(
-          _$ObservationPriorityEnumMap, json['observationPriority']),
+          _$ObservationPriorityEnumMap, json['observationPriority'],
+          unknownValue: JsonKey.nullForUndefinedEnumValue),
     );
 
 Map<String, dynamic> _$ClassifiedFeedbackItemToJson(

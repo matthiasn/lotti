@@ -35,6 +35,7 @@ mixin _$ClassifiedFeedbackItem {
   /// Original observation priority, if this item originated from a
   /// structured observation. Null for non-observation sources (decisions,
   /// metrics, ratings).
+  @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
   ObservationPriority? get observationPriority;
 
   /// Create a copy of ClassifiedFeedbackItem
@@ -93,6 +94,7 @@ abstract mixin class $ClassifiedFeedbackItemCopyWith<$Res> {
       String agentId,
       String? sourceEntityId,
       double? confidence,
+      @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
       ObservationPriority? observationPriority});
 }
 
@@ -256,6 +258,7 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             String agentId,
             String? sourceEntityId,
             double? confidence,
+            @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
             ObservationPriority? observationPriority)?
         $default, {
     required TResult orElse(),
@@ -300,6 +303,7 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             String agentId,
             String? sourceEntityId,
             double? confidence,
+            @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
             ObservationPriority? observationPriority)
         $default,
   ) {
@@ -342,6 +346,7 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             String agentId,
             String? sourceEntityId,
             double? confidence,
+            @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
             ObservationPriority? observationPriority)?
         $default,
   ) {
@@ -374,6 +379,7 @@ class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
       required this.agentId,
       this.sourceEntityId,
       this.confidence,
+      @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
       this.observationPriority});
   factory _ClassifiedFeedbackItem.fromJson(Map<String, dynamic> json) =>
       _$ClassifiedFeedbackItemFromJson(json);
@@ -407,6 +413,7 @@ class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
   /// structured observation. Null for non-observation sources (decisions,
   /// metrics, ratings).
   @override
+  @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
   final ObservationPriority? observationPriority;
 
   /// Create a copy of ClassifiedFeedbackItem
@@ -472,6 +479,7 @@ abstract mixin class _$ClassifiedFeedbackItemCopyWith<$Res>
       String agentId,
       String? sourceEntityId,
       double? confidence,
+      @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
       ObservationPriority? observationPriority});
 }
 

@@ -1150,10 +1150,8 @@ and never shown to the user. They persist as your memory across wakes.''';
   Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
     List<AgentMessageEntity> observations,
   ) async {
-    final payloadIds = observations
-        .map((o) => o.contentEntryId)
-        .whereType<String>()
-        .toSet();
+    final payloadIds =
+        observations.map((o) => o.contentEntryId).whereType<String>().toSet();
 
     final entries = await Future.wait(
       payloadIds.map((id) async {
@@ -1170,8 +1168,8 @@ and never shown to the user. They persist as your memory across wakes.''';
     );
 
     return {
-      for (final entry in entries
-          .whereType<MapEntry<String, AgentMessagePayloadEntity>>())
+      for (final entry
+          in entries.whereType<MapEntry<String, AgentMessagePayloadEntity>>())
         entry.key: entry.value,
     };
   }
@@ -1195,19 +1193,24 @@ and never shown to the user. They persist as your memory across wakes.''';
     final excellence = <(DateTime, String)>[];
 
     for (final obs in observations) {
-      final payload = obs.contentEntryId != null
-          ? payloads[obs.contentEntryId]
-          : null;
+      final payload =
+          obs.contentEntryId != null ? payloads[obs.contentEntryId] : null;
       if (payload == null) continue;
 
-      final priority = payload.content['priority'];
-      if (priority != 'critical') continue;
+      final rawPriority = payload.content['priority'];
+      if (rawPriority is! String ||
+          rawPriority.toLowerCase() !=
+              ObservationPriority.critical.name.toLowerCase()) {
+        continue;
+      }
 
       final text = payload.content['text'];
       if (text is! String || text.trim().isEmpty) continue;
 
-      final category = payload.content['category'];
-      if (category == 'excellence') {
+      final rawCategory = payload.content['category'];
+      if (rawCategory is String &&
+          rawCategory.toLowerCase() ==
+              ObservationCategory.excellence.name.toLowerCase()) {
         excellence.add((obs.createdAt, text));
       } else {
         // grievance, template_improvement, or unrecognized critical

@@ -400,16 +400,18 @@ class TaskAgentStrategy extends ConversationStrategy {
     if (item is Map<String, dynamic>) {
       final text = item['text'];
       if (text is String && text.trim().isNotEmpty) {
+        final rawPriority = item['priority'];
+        final rawCategory = item['category'];
         return ObservationRecord(
           text: text,
           priority: _parseEnumByName(
                 ObservationPriority.values,
-                item['priority'] as String?,
+                rawPriority is String ? rawPriority : null,
               ) ??
               ObservationPriority.routine,
           category: _parseEnumByName(
                 ObservationCategory.values,
-                item['category'] as String?,
+                rawCategory is String ? rawCategory : null,
               ) ??
               ObservationCategory.operational,
         );

@@ -51,12 +51,15 @@ class RitualContextBuilder extends EvolutionContextBuilder {
 
     // Extend the user message with ritual-specific sections.
     final buf = StringBuffer(baseContext.initialUserMessage)..writeln();
-    final cappedItems =
-        classifiedFeedback.items.take(maxFeedbackItems).toList();
-
     // High-priority items first — grievances and excellence notes must be
     // reviewed before general feedback.
-    _writeHighPrioritySection(buf, classifiedFeedback);
+    final highPriorityCount =
+        _writeHighPrioritySection(buf, classifiedFeedback);
+
+    final remainingSlots = maxFeedbackItems - highPriorityCount;
+    final cappedItems = remainingSlots > 0
+        ? classifiedFeedback.items.take(remainingSlots).toList()
+        : <ClassifiedFeedbackItem>[];
 
     _writeFeedbackSummary(buf, classifiedFeedback, cappedItems);
     _writeFeedbackByCategory(buf, cappedItems);
@@ -282,14 +285,15 @@ $highPriorityProtocol''';
   /// Grievances and excellence notes are shown at full length (no truncation)
   /// and placed before the general feedback summary so the improver agent
   /// addresses them first.
-  static void _writeHighPrioritySection(
+  /// Writes the high-priority section and returns the number of items written.
+  static int _writeHighPrioritySection(
     StringBuffer buf,
     ClassifiedFeedback feedback,
   ) {
     final grievances = feedback.grievances;
     final excellence = feedback.excellenceNotes;
 
-    if (grievances.isEmpty && excellence.isEmpty) return;
+    if (grievances.isEmpty && excellence.isEmpty) return 0;
 
     buf
       ..writeln('## HIGH-PRIORITY FEEDBACK — REVIEW FIRST')
@@ -322,6 +326,8 @@ $highPriorityProtocol''';
       }
       buf.writeln();
     }
+
+    return grievances.length + excellence.length;
   }
 
   void _writeSessionContinuity(StringBuffer buf, int sessionNumber) {
