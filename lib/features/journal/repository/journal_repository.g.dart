@@ -50,4 +50,4 @@ final class JournalRepositoryProvider extends $FunctionalProvider<
   }
 }
 
-String _$journalRepositoryHash() => r'd90bb9234e52f4de0c635ea9f0f9acf903a5a589';
+String _$journalRepositoryHash() => r'3ababcc2f3b598fe79f2fc142bc691b44e3d370f';

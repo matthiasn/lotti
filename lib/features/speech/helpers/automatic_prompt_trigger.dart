@@ -132,6 +132,11 @@ class AutomaticPromptTrigger {
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );
+            // Ensure deferred transcription is still awaited even when no
+            // checklist prompt is available.
+            if (transcriptionFuture != null) {
+              await transcriptionFuture;
+            }
           } else {
             final promptId = availablePrompt.id;
 

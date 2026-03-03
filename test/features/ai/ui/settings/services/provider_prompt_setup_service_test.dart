@@ -1387,7 +1387,7 @@ void main() {
           userMessage: 'user',
           defaultModelId: 'existing-reasoning',
           modelIds: ['existing-reasoning'],
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.checklistUpdates,
           preconfiguredPromptId: 'checklist_updates',
@@ -1821,7 +1821,7 @@ void main() {
           userMessage: 'user',
           defaultModelId: 'existing-reasoning',
           modelIds: ['existing-reasoning'],
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.checklistUpdates,
           preconfiguredPromptId: 'checklist_updates',
@@ -2414,7 +2414,7 @@ void main() {
       expect(result, isNull);
     });
 
-    testWidgets('should create 5 models and 9 prompts when none exist',
+    testWidgets('should create 5 models and 8 prompts when none exist',
         (WidgetTester tester) async {
       when(() => mockRepository.getConfigsByType(AiConfigType.model))
           .thenAnswer((_) async => <AiConfig>[]);

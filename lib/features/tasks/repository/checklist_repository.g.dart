@@ -51,4 +51,4 @@ final class ChecklistRepositoryProvider extends $FunctionalProvider<
 }
 
 String _$checklistRepositoryHash() =>
-    r'01da903b25b6648bc4f1b17cbb3915e03c09c5bd';
+    r'bf0b8995053d85b225b59db163a2e555658dfc48';

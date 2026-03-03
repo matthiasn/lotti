@@ -358,4 +358,4 @@ class JournalRepository {
 }
 
 @riverpod
-JournalRepository journalRepository(Ref ref) => JournalRepository();
+JournalRepository journalRepository(Ref _) => JournalRepository();

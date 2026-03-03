@@ -13,7 +13,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'checklist_repository.g.dart';
 
 @Riverpod(keepAlive: true)
-ChecklistRepository checklistRepository(Ref ref) {
+ChecklistRepository checklistRepository(Ref _) {
   return ChecklistRepository();
 }
 

@@ -851,6 +851,8 @@ void main() {
 
         // Assert - should use template message, not custom message
         expect(prompt, isNotNull);
+        expect(prompt, contains(mockTaskJson));
+        expect(prompt, isNot(contains('{{task}}')));
         // Verify it doesn't contain the custom message (template was used instead)
         expect(prompt, isNot(contains('Custom user message')));
       });
