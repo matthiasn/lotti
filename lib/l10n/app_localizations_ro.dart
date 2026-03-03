@@ -326,6 +326,16 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get agentFeedbackHighPriorityTitle =>
+      'Feedback de prioritate ridicată';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Nemulțumiri';
+
+  @override
+  String get agentFeedbackExcellenceTitle => 'Note de excelență';
+
+  @override
   String get agentFeedbackSourceDecision => 'Decizie';
 
   @override

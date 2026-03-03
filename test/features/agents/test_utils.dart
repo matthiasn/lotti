@@ -594,6 +594,7 @@ ClassifiedFeedbackItem makeTestClassifiedFeedbackItem({
   String agentId = kTestAgentId,
   String? sourceEntityId,
   double? confidence,
+  ObservationPriority? observationPriority,
 }) {
   return ClassifiedFeedbackItem(
     sentiment: sentiment,
@@ -603,6 +604,7 @@ ClassifiedFeedbackItem makeTestClassifiedFeedbackItem({
     agentId: agentId,
     sourceEntityId: sourceEntityId,
     confidence: confidence,
+    observationPriority: observationPriority,
   );
 }
 

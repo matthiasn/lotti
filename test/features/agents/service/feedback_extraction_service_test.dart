@@ -333,6 +333,123 @@ void main() {
       expect(result.totalObservationsScanned, 1);
     });
 
+    test(
+        'classifies critical grievance observation as negative '
+        'with full confidence', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-grievance',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-grievance',
+        content: {
+          'text': 'User asked me to change priority to P0 but I kept P1.',
+          'priority': 'critical',
+          'category': 'grievance',
+        },
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-grievance'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      final item = result.items.first;
+      expect(item.sentiment, FeedbackSentiment.negative);
+      expect(item.observationPriority, ObservationPriority.critical);
+      expect(item.confidence, 1.0);
+      expect(item.category, FeedbackCategory.prioritization);
+    });
+
+    test(
+        'classifies critical excellence observation as positive '
+        'with full confidence', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-excellence',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-excellence',
+        content: {
+          'text': 'User praised the report quality.',
+          'priority': 'critical',
+          'category': 'excellence',
+        },
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-excellence'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      final item = result.items.first;
+      expect(item.sentiment, FeedbackSentiment.positive);
+      expect(item.observationPriority, ObservationPriority.critical);
+      expect(item.confidence, 1.0);
+    });
+
+    test('routine observations fall back to keyword heuristic', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-routine',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-routine',
+        content: {
+          'text': 'Task completed successfully.',
+          'priority': 'routine',
+          'category': 'operational',
+        },
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(() => mockRepo.getEntity('payload-routine'))
+          .thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      final item = result.items.first;
+      // "completed" and "successfully" are positive keywords.
+      expect(item.sentiment, FeedbackSentiment.positive);
+      expect(item.observationPriority, ObservationPriority.routine);
+      expect(item.confidence, isNull);
+    });
+
     test('enriches observation detail with payload text', () async {
       stubEmptyData();
       final observation = makeTestMessage(
@@ -803,6 +920,77 @@ void main() {
       expect(feedback.positive, isEmpty);
       expect(feedback.negative, isEmpty);
       expect(feedback.byCategory, isEmpty);
+    });
+
+    test('critical getter filters items with critical observation priority',
+        () {
+      final feedback = makeTestClassifiedFeedback(
+        items: [
+          makeTestClassifiedFeedbackItem(
+            detail: 'grievance',
+            sentiment: FeedbackSentiment.negative,
+            observationPriority: ObservationPriority.critical,
+          ),
+          makeTestClassifiedFeedbackItem(
+            detail: 'routine observation',
+            observationPriority: ObservationPriority.routine,
+          ),
+          makeTestClassifiedFeedbackItem(
+            detail: 'excellence note',
+            observationPriority: ObservationPriority.critical,
+          ),
+        ],
+      );
+
+      expect(feedback.critical, hasLength(2));
+      expect(
+        feedback.critical.map((i) => i.detail),
+        containsAll(['grievance', 'excellence note']),
+      );
+    });
+
+    test('grievances filters critical + negative items', () {
+      final feedback = makeTestClassifiedFeedback(
+        items: [
+          makeTestClassifiedFeedbackItem(
+            detail: 'real grievance',
+            sentiment: FeedbackSentiment.negative,
+            observationPriority: ObservationPriority.critical,
+          ),
+          makeTestClassifiedFeedbackItem(
+            detail: 'excellence',
+            sentiment: FeedbackSentiment.positive,
+            observationPriority: ObservationPriority.critical,
+          ),
+          makeTestClassifiedFeedbackItem(
+            detail: 'routine negative',
+            sentiment: FeedbackSentiment.negative,
+          ),
+        ],
+      );
+
+      expect(feedback.grievances, hasLength(1));
+      expect(feedback.grievances.single.detail, 'real grievance');
+    });
+
+    test('excellenceNotes filters critical + positive items', () {
+      final feedback = makeTestClassifiedFeedback(
+        items: [
+          makeTestClassifiedFeedbackItem(
+            detail: 'great work',
+            sentiment: FeedbackSentiment.positive,
+            observationPriority: ObservationPriority.critical,
+          ),
+          makeTestClassifiedFeedbackItem(
+            detail: 'grievance',
+            sentiment: FeedbackSentiment.negative,
+            observationPriority: ObservationPriority.critical,
+          ),
+        ],
+      );
+
+      expect(feedback.excellenceNotes, hasLength(1));
+      expect(feedback.excellenceNotes.single.detail, 'great work');
     });
   });
 

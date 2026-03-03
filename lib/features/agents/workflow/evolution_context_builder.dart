@@ -264,7 +264,7 @@ again. The conversation should always be driving toward an approved proposal.
     buf.writeln('## Recent Instance Reports (${capped.length})');
     for (final report in capped) {
       buf
-        ..writeln('### Agent ${_shortId(report.agentId)}')
+        ..writeln('### Agent ${shortId(report.agentId)}')
         ..writeln(truncateAgentText(report.content, 500))
         ..writeln();
     }
@@ -278,7 +278,7 @@ again. The conversation should always be driving toward an approved proposal.
     final capped = observations.take(maxInstanceObservations).toList();
     buf.writeln('## Recent Instance Observations (${capped.length})');
     for (final obs in capped) {
-      buf.writeln('### Agent ${_shortId(obs.agentId)} (${obs.kind.name})');
+      buf.writeln('### Agent ${shortId(obs.agentId)} (${obs.kind.name})');
 
       // Include payload content when available.
       final payloadId = obs.contentEntryId;
@@ -315,7 +315,7 @@ again. The conversation should always be driving toward an approved proposal.
   }
 
   /// Return the first 8 chars of an ID for display.
-  static String _shortId(String id) {
+  static String shortId(String id) {
     if (id.length <= 8) return id;
     return id.substring(0, 8);
   }

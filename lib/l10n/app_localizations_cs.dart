@@ -322,6 +322,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get agentFeedbackHighPriorityTitle => 'High-Priority Feedback';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Grievances';
+
+  @override
+  String get agentFeedbackExcellenceTitle => 'Notes of Excellence';
+
+  @override
   String get agentFeedbackSourceDecision => 'Decision';
 
   @override

@@ -327,6 +327,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get agentFeedbackHighPriorityTitle => 'Feedback de alta prioridad';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Quejas';
+
+  @override
+  String get agentFeedbackExcellenceTitle => 'Notas de excelencia';
+
+  @override
   String get agentFeedbackSourceDecision => 'Decisión';
 
   @override

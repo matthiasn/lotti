@@ -32,6 +32,11 @@ mixin _$ClassifiedFeedbackItem {
   /// Classification confidence (0.0–1.0) for LLM-classified items.
   double? get confidence;
 
+  /// Original observation priority, if this item originated from a
+  /// structured observation. Null for non-observation sources (decisions,
+  /// metrics, ratings).
+  ObservationPriority? get observationPriority;
+
   /// Create a copy of ClassifiedFeedbackItem
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -58,17 +63,19 @@ mixin _$ClassifiedFeedbackItem {
             (identical(other.sourceEntityId, sourceEntityId) ||
                 other.sourceEntityId == sourceEntityId) &&
             (identical(other.confidence, confidence) ||
-                other.confidence == confidence));
+                other.confidence == confidence) &&
+            (identical(other.observationPriority, observationPriority) ||
+                other.observationPriority == observationPriority));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, sentiment, category, source,
-      detail, agentId, sourceEntityId, confidence);
+      detail, agentId, sourceEntityId, confidence, observationPriority);
 
   @override
   String toString() {
-    return 'ClassifiedFeedbackItem(sentiment: $sentiment, category: $category, source: $source, detail: $detail, agentId: $agentId, sourceEntityId: $sourceEntityId, confidence: $confidence)';
+    return 'ClassifiedFeedbackItem(sentiment: $sentiment, category: $category, source: $source, detail: $detail, agentId: $agentId, sourceEntityId: $sourceEntityId, confidence: $confidence, observationPriority: $observationPriority)';
   }
 }
 
@@ -85,7 +92,8 @@ abstract mixin class $ClassifiedFeedbackItemCopyWith<$Res> {
       String detail,
       String agentId,
       String? sourceEntityId,
-      double? confidence});
+      double? confidence,
+      ObservationPriority? observationPriority});
 }
 
 /// @nodoc
@@ -108,6 +116,7 @@ class _$ClassifiedFeedbackItemCopyWithImpl<$Res>
     Object? agentId = null,
     Object? sourceEntityId = freezed,
     Object? confidence = freezed,
+    Object? observationPriority = freezed,
   }) {
     return _then(_self.copyWith(
       sentiment: null == sentiment
@@ -138,6 +147,10 @@ class _$ClassifiedFeedbackItemCopyWithImpl<$Res>
           ? _self.confidence
           : confidence // ignore: cast_nullable_to_non_nullable
               as double?,
+      observationPriority: freezed == observationPriority
+          ? _self.observationPriority
+          : observationPriority // ignore: cast_nullable_to_non_nullable
+              as ObservationPriority?,
     ));
   }
 }
@@ -242,7 +255,8 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             String detail,
             String agentId,
             String? sourceEntityId,
-            double? confidence)?
+            double? confidence,
+            ObservationPriority? observationPriority)?
         $default, {
     required TResult orElse(),
   }) {
@@ -256,7 +270,8 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             _that.detail,
             _that.agentId,
             _that.sourceEntityId,
-            _that.confidence);
+            _that.confidence,
+            _that.observationPriority);
       case _:
         return orElse();
     }
@@ -284,7 +299,8 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             String detail,
             String agentId,
             String? sourceEntityId,
-            double? confidence)
+            double? confidence,
+            ObservationPriority? observationPriority)
         $default,
   ) {
     final _that = this;
@@ -297,7 +313,8 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             _that.detail,
             _that.agentId,
             _that.sourceEntityId,
-            _that.confidence);
+            _that.confidence,
+            _that.observationPriority);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -324,7 +341,8 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             String detail,
             String agentId,
             String? sourceEntityId,
-            double? confidence)?
+            double? confidence,
+            ObservationPriority? observationPriority)?
         $default,
   ) {
     final _that = this;
@@ -337,7 +355,8 @@ extension ClassifiedFeedbackItemPatterns on ClassifiedFeedbackItem {
             _that.detail,
             _that.agentId,
             _that.sourceEntityId,
-            _that.confidence);
+            _that.confidence,
+            _that.observationPriority);
       case _:
         return null;
     }
@@ -354,7 +373,8 @@ class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
       required this.detail,
       required this.agentId,
       this.sourceEntityId,
-      this.confidence});
+      this.confidence,
+      this.observationPriority});
   factory _ClassifiedFeedbackItem.fromJson(Map<String, dynamic> json) =>
       _$ClassifiedFeedbackItemFromJson(json);
 
@@ -382,6 +402,12 @@ class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
   /// Classification confidence (0.0–1.0) for LLM-classified items.
   @override
   final double? confidence;
+
+  /// Original observation priority, if this item originated from a
+  /// structured observation. Null for non-observation sources (decisions,
+  /// metrics, ratings).
+  @override
+  final ObservationPriority? observationPriority;
 
   /// Create a copy of ClassifiedFeedbackItem
   /// with the given fields replaced by the non-null parameter values.
@@ -414,17 +440,19 @@ class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
             (identical(other.sourceEntityId, sourceEntityId) ||
                 other.sourceEntityId == sourceEntityId) &&
             (identical(other.confidence, confidence) ||
-                other.confidence == confidence));
+                other.confidence == confidence) &&
+            (identical(other.observationPriority, observationPriority) ||
+                other.observationPriority == observationPriority));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, sentiment, category, source,
-      detail, agentId, sourceEntityId, confidence);
+      detail, agentId, sourceEntityId, confidence, observationPriority);
 
   @override
   String toString() {
-    return 'ClassifiedFeedbackItem(sentiment: $sentiment, category: $category, source: $source, detail: $detail, agentId: $agentId, sourceEntityId: $sourceEntityId, confidence: $confidence)';
+    return 'ClassifiedFeedbackItem(sentiment: $sentiment, category: $category, source: $source, detail: $detail, agentId: $agentId, sourceEntityId: $sourceEntityId, confidence: $confidence, observationPriority: $observationPriority)';
   }
 }
 
@@ -443,7 +471,8 @@ abstract mixin class _$ClassifiedFeedbackItemCopyWith<$Res>
       String detail,
       String agentId,
       String? sourceEntityId,
-      double? confidence});
+      double? confidence,
+      ObservationPriority? observationPriority});
 }
 
 /// @nodoc
@@ -466,6 +495,7 @@ class __$ClassifiedFeedbackItemCopyWithImpl<$Res>
     Object? agentId = null,
     Object? sourceEntityId = freezed,
     Object? confidence = freezed,
+    Object? observationPriority = freezed,
   }) {
     return _then(_ClassifiedFeedbackItem(
       sentiment: null == sentiment
@@ -496,6 +526,10 @@ class __$ClassifiedFeedbackItemCopyWithImpl<$Res>
           ? _self.confidence
           : confidence // ignore: cast_nullable_to_non_nullable
               as double?,
+      observationPriority: freezed == observationPriority
+          ? _self.observationPriority
+          : observationPriority // ignore: cast_nullable_to_non_nullable
+              as ObservationPriority?,
     ));
   }
 }
