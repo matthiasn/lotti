@@ -900,8 +900,12 @@ final highPriorityFeedbackItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final grievances = _readMapList(json, 'grievances');
-    final excellenceNotes = _readMapList(json, 'excellenceNotes');
+    final grievances = _readMapList(json, 'grievances')
+        .where((item) => _readString(item, 'detail').trim().isNotEmpty)
+        .toList();
+    final excellenceNotes = _readMapList(json, 'excellenceNotes')
+        .where((item) => _readString(item, 'detail').trim().isNotEmpty)
+        .toList();
     if (grievances.isEmpty && excellenceNotes.isEmpty) {
       return const SizedBox.shrink();
     }

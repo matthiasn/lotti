@@ -866,29 +866,29 @@ and never shown to the user. They persist as your memory across wakes.''';
     }
 
     if (journalObservations.isNotEmpty) {
+      // Cap to most recent 20 to prevent unbounded context growth.
+      // journalObservations is ordered newest-first from the DB query.
+      final boundedObservations = journalObservations.length > 20
+          ? journalObservations.sublist(0, 20)
+          : journalObservations;
+
       // Batch-resolve all observation payloads in parallel to avoid N+1
       // queries. Used for both the critical section and the journal listing.
       final allPayloads = await _resolveObservationPayloads(
-        journalObservations,
+        boundedObservations,
       );
 
       // Inject prior critical observations first so the agent addresses
       // grievances and excellence notes before routine work.
       _writePriorCriticalObservations(
         buffer,
-        journalObservations,
+        boundedObservations,
         allPayloads,
       );
 
       buffer.writeln('## Agent Journal');
-      // Cap to most recent 20 to prevent unbounded context growth.
-      // journalObservations is ordered newest-first from the DB query;
-      // reverse so the LLM sees them in chronological order.
-      final recentObs = (journalObservations.length > 20
-              ? journalObservations.sublist(0, 20)
-              : journalObservations)
-          .reversed
-          .toList();
+      // Reverse so the LLM sees them in chronological order.
+      final recentObs = boundedObservations.reversed.toList();
 
       for (var i = 0; i < recentObs.length; i++) {
         final payload = recentObs[i].contentEntryId != null

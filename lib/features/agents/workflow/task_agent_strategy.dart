@@ -425,7 +425,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   static T? _parseEnumByName<T extends Enum>(List<T> values, String? name) {
     if (name == null) return null;
     // Handle snake_case from the tool schema (e.g., "template_improvement").
-    final normalized = name.replaceAll('_', '').toLowerCase();
+    final normalized = name.trim().replaceAll('_', '').toLowerCase();
     for (final value in values) {
       if (value.name.toLowerCase() == normalized) return value;
     }
