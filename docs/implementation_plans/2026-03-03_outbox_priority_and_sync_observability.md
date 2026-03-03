@@ -65,6 +65,6 @@ logging for diagnosability.
 ## Verification
 
 1. `make build_runner` — regenerate Drift code
-2. `dart-mcp.analyze_files` — zero warnings
-3. `dart-mcp.dart_format` — all formatted
+2. `dart-mcp.dart_format` — all formatted
+3. `dart-mcp.analyze_files` — zero warnings
 4. `dart-mcp.run_tests` — targeted tests green

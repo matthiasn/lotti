@@ -145,9 +145,10 @@ higher priority):
 | **Normal** | 1 | `SyncBackfillRequest/Response`, `SyncAgentEntity/Link`, `SyncThemingSelection` |
 | **Low** | 2 | `SyncEntityDefinition`, `SyncTagEntity`, `SyncAiConfig`, `SyncAiConfigDelete` |
 
-Queries (`oldestOutboxItems`, `claimNextOutboxItem`, `watchOutboxItems`) order by
-`priority ASC, createdAt ASC` so high-priority items are processed first. Within
-the same priority, oldest items go first.
+Queries `oldestOutboxItems` and `claimNextOutboxItem` order by
+`priority ASC, createdAt ASC` so high-priority items are processed first.
+`watchOutboxItems` orders by `priority ASC, createdAt DESC` for UI display
+(newest items first within each priority band).
 
 The `OutboxPriority` enum is defined in `outbox_state_controller.dart`. Priority
 assignment happens in `OutboxService.enqueueMessage()` via an exhaustive switch
@@ -429,7 +430,7 @@ and send events with sub-domains like `outbox.enqueue` and `outbox.send`.
 
 `SyncHealthReporter` emits a periodic health summary (every 5 min) with:
 - `outbox.pending` — items waiting to be sent
-- `outbox.sent5m` — items sent in the last interval
+- `outbox.sentRecent` — items sent in the last interval
 - `seq.missing` — missing sequence entries awaiting backfill
 - `seq.requested` — sequence entries with outstanding requests
 

@@ -891,6 +891,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -945,6 +946,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).called(1);
       verifyNever(() => syncDatabase.addOutboxItem(any()));
@@ -1013,6 +1015,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1118,6 +1121,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1235,6 +1239,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1278,6 +1283,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).called(1);
       verifyNever(() => syncDatabase.addOutboxItem(any()));
@@ -1339,6 +1345,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -1439,6 +1446,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -1558,6 +1566,7 @@ void main() {
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
           payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
         ),
       );
     });
@@ -4091,6 +4100,7 @@ void main() {
             newMessage: any(named: 'newMessage'),
             newSubject: any(named: 'newSubject'),
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).thenAnswer((_) async => 1);
 
       await service.enqueueMessage(message);
@@ -4100,6 +4110,7 @@ void main() {
             newMessage: any(named: 'newMessage'),
             newSubject: 'agentEntity:agent-xyz',
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).called(1);
       verifyNever(
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
@@ -4225,6 +4236,7 @@ void main() {
             newMessage: any(named: 'newMessage'),
             newSubject: any(named: 'newSubject'),
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).thenAnswer((_) async => 1);
 
       await service.enqueueMessage(message);
@@ -4234,6 +4246,7 @@ void main() {
             newMessage: any(named: 'newMessage'),
             newSubject: 'agentLink:link-abc',
             payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
           )).called(1);
       verifyNever(
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),

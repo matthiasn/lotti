@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
@@ -745,6 +746,10 @@ class OutboxService {
             newMessage: mergedJson,
             newSubject: '$hostHash:$localCounter',
             payloadSize: mergedPayloadSize,
+            priority: math.min(
+              existingItem.priority,
+              commonFields.priority.value,
+            ),
           );
 
           // Log covered clocks for debugging
@@ -875,6 +880,10 @@ class OutboxService {
             newMessage: mergedJson,
             newSubject: subject,
             payloadSize: utf8.encode(mergedJson).length,
+            priority: math.min(
+              existingItem.priority,
+              commonFields.priority.value,
+            ),
           );
 
           // Log covered clocks for debugging
@@ -1167,6 +1176,10 @@ class OutboxService {
         newMessage: enrichedJson,
         newSubject: subject,
         payloadSize: enrichedSize,
+        priority: math.min(
+          existingItem.priority,
+          commonFields.priority.value,
+        ),
       );
       _loggingService.captureEvent(
         'enqueue MERGED type=$typeName id=$id',

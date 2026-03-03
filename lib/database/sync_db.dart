@@ -628,6 +628,7 @@ class SyncDatabase extends _$SyncDatabase {
     required String newMessage,
     required String newSubject,
     int? payloadSize,
+    int? priority,
   }) {
     return (update(outbox)..where((t) => t.id.equals(itemId))).write(
       OutboxCompanion(
@@ -636,6 +637,7 @@ class SyncDatabase extends _$SyncDatabase {
         updatedAt: Value(DateTime.now()),
         payloadSize:
             payloadSize != null ? Value(payloadSize) : const Value.absent(),
+        priority: priority != null ? Value(priority) : const Value.absent(),
       ),
     );
   }

@@ -21,17 +21,21 @@ class SyncHealthReporter {
   final Duration _interval;
   Timer? _timer;
   bool _isDisposed = false;
+  bool _isReporting = false;
 
   /// Start the periodic health reporting timer.
   void start() {
     if (_isDisposed) return;
     _timer?.cancel();
-    _timer = Timer.periodic(_interval, (_) => _reportHealth());
+    _timer = Timer.periodic(_interval, (_) {
+      unawaited(_reportHealth());
+    });
   }
 
   Future<void> _reportHealth() async {
-    if (_isDisposed) return;
+    if (_isDisposed || _isReporting) return;
     if (!_domainLogger.enabledDomains.contains(LogDomains.sync)) return;
+    _isReporting = true;
 
     try {
       final results = await Future.wait([
@@ -40,6 +44,8 @@ class SyncHealthReporter {
         _syncDatabase.getRequestedSequenceCount(),
         _syncDatabase.getSentCountSince(DateTime.now().subtract(_interval)),
       ]);
+
+      if (_isDisposed) return;
 
       final pendingOutbox = results[0];
       final missingEntries = results[1];
@@ -62,6 +68,8 @@ class SyncHealthReporter {
         stackTrace: st,
         subDomain: 'health',
       );
+    } finally {
+      _isReporting = false;
     }
   }
 

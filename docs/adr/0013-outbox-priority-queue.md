@@ -90,7 +90,7 @@ sequenceDiagram
     participant DL as DomainLogger
 
     T->>HR: _reportHealth()
-    HR->>DB: watchOutboxCount()
+    HR->>DB: getPendingOutboxCount()
     HR->>DB: getMissingSequenceCount()
     HR->>DB: getRequestedSequenceCount()
     HR->>DB: getSentCountSince(5min ago)
@@ -111,8 +111,8 @@ sync components and instrument five sub-domains:
 A new `SyncHealthReporter` emits a compact health line every 5 minutes
 when sync domain logging is enabled:
 
-```
-health: outbox.pending=42 outbox.sent5m=128 seq.missing=3 seq.requested=7
+```text
+health: outbox.pending=42 outbox.sentRecent=128 seq.missing=3 seq.requested=7
 ```
 
 All logging gates on `LogDomains.sync` which is already wired to the
