@@ -331,15 +331,9 @@ void main() {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ProviderScope.containerOf(context)
                   .read(audioRecorderControllerProvider.notifier)
-                ..setEnableSpeechRecognition(
-                  enable: state.enableSpeechRecognition,
-                )
-                ..setEnableChecklistUpdates(
-                  enable: state.enableChecklistUpdates,
-                )
-                ..setEnableTaskSummary(
-                  enable: state.enableTaskSummary,
-                );
+                  .setEnableSpeechRecognition(
+                    enable: state.enableSpeechRecognition,
+                  );
             });
           }
 
@@ -387,509 +381,6 @@ void main() {
     });
   });
 
-  group('AudioRecordingModal - Checklist Updates Checkbox', () {
-    testWidgets(
-        'should show checklist updates checkbox when linked to task and speech recognition is enabled',
-        (tester) async {
-      // Enable speech recognition to make checklist updates visible
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Find the checklist updates checkbox by looking for the LottiAnimatedCheckbox
-      // with the 'Checklist Updates' label
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      expect(checkboxFinder, findsOneWidget);
-    });
-
-    testWidgets(
-        'should NOT show checklist updates checkbox when not linked to task',
-        (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Should not find the checklist updates checkbox
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      expect(checkboxFinder, findsNothing);
-    });
-
-    testWidgets(
-        'should NOT show checklist updates checkbox when speech recognition is disabled',
-        (tester) async {
-      // Disable speech recognition to hide checklist updates
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: false,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Should not find the checklist updates checkbox
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      expect(checkboxFinder, findsNothing);
-    });
-
-    testWidgets('should be enabled when category has automatic prompts',
-        (tester) async {
-      final category = FakeCategoryDefinition();
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-        category: category,
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Find the LottiAnimatedCheckbox for checklist updates
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      expect(checkboxFinder, findsOneWidget);
-
-      // The checkbox should be enabled
-      final checkboxWidget =
-          tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
-      expect(checkboxWidget.enabled, isTrue);
-    });
-
-    testWidgets('should be checked by default when preference is null',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Find the LottiAnimatedCheckbox
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      final checkboxWidget =
-          tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
-
-      // Should be checked (true) when category has automatic prompts
-      expect(checkboxWidget.value, isTrue);
-    });
-
-    testWidgets('should reflect user preference when set to false',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-        enableChecklistUpdates: false,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Find the LottiAnimatedCheckbox
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      final checkboxWidget =
-          tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
-
-      // Should be unchecked
-      expect(checkboxWidget.value, isFalse);
-    });
-
-    testWidgets(
-        'should not render when category lacks transcription prompts despite having checklist prompts',
-        (tester) async {
-      final category = FakeCategoryDefinition(
-        includeTranscriptionPrompts: false,
-      );
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-        category: category,
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-    });
-
-    testWidgets('should call setEnableChecklistUpdates when toggled',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-        enableChecklistUpdates: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Find and tap the checkbox
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      await tester.tap(checkboxFinder);
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Verify the state was updated (the checkbox toggles from true to false)
-      final updatedState = ProviderScope.containerOf(
-        tester.element(find.byType(MaterialApp)),
-      ).read(audioRecorderControllerProvider);
-      expect(updatedState.enableChecklistUpdates, isFalse);
-    });
-
-    testWidgets('should not render when category has no checklist prompts',
-        (tester) async {
-      // Create a category without checklist prompts
-      final category = FakeCategoryDefinition(includeChecklistPrompts: false);
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-        category: category,
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Checkbox should not be rendered without prompts
-      final checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      expect(checkboxFinder, findsNothing);
-    });
-
-    testWidgets('should show correct label text', (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Find the label
-      expect(find.text('Checklist Updates'), findsOneWidget);
-    });
-
-    testWidgets('should maintain state during recording lifecycle',
-        (tester) async {
-      // Start with recording state
-      var state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-        enableChecklistUpdates: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Verify initial state
-      var checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      var checkboxWidget = tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
-      expect(checkboxWidget.value, isTrue);
-
-      // Simulate state change to paused - rebuild widget with new state
-      state = state.copyWith(status: AudioRecorderStatus.paused);
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Checkbox should still be checked
-      checkboxFinder = find.widgetWithText(
-        LottiAnimatedCheckbox,
-        'Checklist Updates',
-      );
-      checkboxWidget = tester.widget<LottiAnimatedCheckbox>(checkboxFinder);
-      expect(checkboxWidget.value, isTrue);
-    });
-  });
-
-  group('AudioRecordingModal - Task Summary Checkbox', () {
-    testWidgets('shows checkbox when prompts exist and task is linked',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides checkbox when category has no task summary prompts',
-        (tester) async {
-      final category = FakeCategoryDefinition(
-        includeTaskSummaryPrompts: false,
-      );
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-        category: category,
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
-    });
-
-    testWidgets('hides checkbox when speech recognition is disabled',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: false,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
-    });
-
-    testWidgets('hides checkbox when not linked to task', (tester) async {
-      // Category has summary prompts but no linked task id provided
-      final category = FakeCategoryDefinition(
-        includeTaskSummaryPrompts: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        category: category,
-        linkedTaskId: null,
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
-    });
-
-    testWidgets(
-        'hides checkbox when summary prompts exist but no transcription',
-        (tester) async {
-      final category = FakeCategoryDefinition(
-        includeTranscriptionPrompts: false,
-        includeTaskSummaryPrompts: true,
-      );
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(createTestWidget(
-        state: state,
-        linkedTaskId: 'task-123',
-        category: category,
-      ));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
-    });
-  });
-
   group('AudioRecordingModal - Visibility Integration', () {
     testWidgets('hides entire section when no categoryId provided',
         (tester) async {
@@ -900,8 +391,6 @@ void main() {
 
       expect(
           find.byKey(const Key('speech_recognition_checkbox')), findsNothing);
-      expect(find.byKey(const Key('checklist_updates_checkbox')), findsNothing);
-      expect(find.byKey(const Key('task_summary_checkbox')), findsNothing);
       expect(find.byType(LottiAnimatedCheckbox), findsNothing);
     });
 
@@ -919,7 +408,7 @@ void main() {
       expect(find.byType(LottiAnimatedCheckbox), findsNothing);
     });
 
-    testWidgets('shows keys and hides dependents when Speech toggled off',
+    testWidgets('shows speech recognition checkbox when configured',
         (tester) async {
       final category = FakeCategoryDefinition();
       final state = AudioRecorderState(
@@ -931,8 +420,6 @@ void main() {
         modalVisible: true,
         linkedId: 'task-1',
         enableSpeechRecognition: true,
-        enableChecklistUpdates: true,
-        enableTaskSummary: true,
       );
 
       await tester.pumpWidget(
@@ -948,24 +435,9 @@ void main() {
       await tester.pump(); // Allow async providers to resolve
       await tester.pump(); // Rebuild with resolved provider data
 
-      // Initially all three should be present
+      // Speech checkbox should be present
       expect(
           find.byKey(const Key('speech_recognition_checkbox')), findsOneWidget);
-      expect(
-          find.byKey(const Key('checklist_updates_checkbox')), findsOneWidget);
-      expect(find.byKey(const Key('task_summary_checkbox')), findsOneWidget);
-
-      // Toggle speech off
-      await tester.tap(find.byKey(const Key('speech_recognition_checkbox')));
-      await tester.pumpAndSettle();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Speech remains (can re-enable), dependents are hidden
-      expect(
-          find.byKey(const Key('speech_recognition_checkbox')), findsOneWidget);
-      expect(find.byKey(const Key('checklist_updates_checkbox')), findsNothing);
-      expect(find.byKey(const Key('task_summary_checkbox')), findsNothing);
     });
 
     testWidgets('hides section when automaticPrompts is empty', (tester) async {
@@ -1076,17 +548,9 @@ void main() {
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
-      // All three checkboxes should be visible for a Task
+      // Speech recognition checkbox should be visible for a Task
       expect(
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
         findsOneWidget,
       );
     });
@@ -1165,14 +629,6 @@ void main() {
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
     });
 
     testWidgets('hides task checkboxes when linked entry is a JournalEntry',
@@ -1243,14 +699,6 @@ void main() {
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
     });
 
     testWidgets('hides task checkboxes when entry is null', (tester) async {
@@ -1316,14 +764,6 @@ void main() {
       expect(
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
       );
     });
 
@@ -1392,14 +832,6 @@ void main() {
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
-      );
     });
 
     testWidgets('shows task checkboxes optimistically during loading state',
@@ -1467,14 +899,6 @@ void main() {
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsOneWidget,
-      );
     });
 
     testWidgets('hides task checkboxes on error state', (tester) async {
@@ -1507,13 +931,9 @@ void main() {
             // so only speech checkbox is visible
             checkboxVisibilityProvider(
               categoryId: 'test-category',
-              linkedId: 'error-123',
-              userSpeechPreference: true,
             ).overrideWithValue(
               const AutomaticPromptVisibility(
                 speech: true,
-                checklist: false,
-                summary: false,
               ),
             ),
           ],
@@ -1552,14 +972,6 @@ void main() {
       expect(
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
       );
     });
 
@@ -1650,14 +1062,6 @@ void main() {
       expect(
         find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
         findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Checklist Updates'),
-        findsNothing,
-      );
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Task Summary'),
-        findsNothing,
       );
     });
   });

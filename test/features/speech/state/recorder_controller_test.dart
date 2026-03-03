@@ -436,20 +436,16 @@ void main() {
 
       test('should preserve inference preferences when stopping', () async {
         // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              ..setEnableSpeechRecognition(enable: true)
-              ..setEnableTaskSummary(enable: false)
-              ..setEnableChecklistUpdates(enable: true);
+        container
+            .read(audioRecorderControllerProvider.notifier)
+            .setEnableSpeechRecognition(enable: true);
 
         // Act
-        await controller.stop();
+        await container.read(audioRecorderControllerProvider.notifier).stop();
 
         // Assert - Preferences should be preserved
         final state = container.read(audioRecorderControllerProvider);
         expect(state.enableSpeechRecognition, equals(true));
-        expect(state.enableTaskSummary, equals(false));
-        expect(state.enableChecklistUpdates, equals(true));
         expect(state.status, equals(AudioRecorderStatus.stopped));
       });
 
@@ -625,15 +621,15 @@ void main() {
         when(() => mockAudioRecorderRepository.startRecording())
             .thenAnswer((_) async => mockAudioNote);
 
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Set some preferences before recording
-              ..setEnableSpeechRecognition(enable: true)
-              ..setEnableTaskSummary(enable: false)
-              ..setEnableChecklistUpdates(enable: true);
+        container
+            .read(audioRecorderControllerProvider.notifier)
+            // Set some preferences before recording
+            .setEnableSpeechRecognition(enable: true);
 
         // Act
-        await controller.record(linkedId: 'test-linked-id');
+        await container
+            .read(audioRecorderControllerProvider.notifier)
+            .record(linkedId: 'test-linked-id');
 
         // Assert
         verify(() => mockAudioRecorderRepository.startRecording()).called(1);
@@ -642,8 +638,6 @@ void main() {
         expect(state.linkedId, equals('test-linked-id'));
         // Preferences should be preserved when starting recording
         expect(state.enableSpeechRecognition, isTrue);
-        expect(state.enableTaskSummary, isFalse);
-        expect(state.enableChecklistUpdates, isTrue);
       });
 
       test('should capture exceptions during record()', () async {
@@ -1031,88 +1025,6 @@ void main() {
                 .enableSpeechRecognition,
             isNull);
       });
-    });
-
-    group('setEnableChecklistUpdates', () {
-      test('should update enableChecklistUpdates in state', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setEnableChecklistUpdates(enable: true);
-
-        // Assert
-        expect(
-            container
-                .read(audioRecorderControllerProvider)
-                .enableChecklistUpdates,
-            isTrue);
-
-        // Act again
-        controller.setEnableChecklistUpdates(enable: false);
-
-        // Assert
-        expect(
-            container
-                .read(audioRecorderControllerProvider)
-                .enableChecklistUpdates,
-            isFalse);
-
-        // Act with null
-        controller.setEnableChecklistUpdates(enable: null);
-
-        // Assert
-        expect(
-            container
-                .read(audioRecorderControllerProvider)
-                .enableChecklistUpdates,
-            isNull);
-      });
-    });
-
-    group('setEnableTaskSummary', () {
-      test('should update enableTaskSummary in state', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setEnableTaskSummary(enable: true);
-
-        // Assert
-        expect(
-            container.read(audioRecorderControllerProvider).enableTaskSummary,
-            isTrue);
-
-        // Act again
-        controller.setEnableTaskSummary(enable: false);
-
-        // Assert
-        expect(
-            container.read(audioRecorderControllerProvider).enableTaskSummary,
-            isFalse);
-
-        // Act with null
-        controller.setEnableTaskSummary(enable: null);
-
-        // Assert
-        expect(
-            container.read(audioRecorderControllerProvider).enableTaskSummary,
-            isNull);
-      });
-
-      // NOTE: Additional tests for checkbox state persistence during recording
-      // lifecycle are complex to implement with the current architecture because:
-      // 1. They require mocking SpeechRepository and AutomaticPromptTrigger
-      // 2. The stop() method has many dependencies that need to be mocked
-      // 3. The actual behavior is tested through the existing unit tests above
-      //    and integration tests that test the full recording flow
-      //
-      // The key behaviors verified by existing tests:
-      // - setEnableSpeechRecognition() correctly updates state (tested above)
-      // - setEnableTaskSummary() correctly updates state (tested above)
-      // - setEnableChecklistUpdates() correctly updates state (tested above)
-      // - States are preserved in AudioRecorderState throughout recording
-      // - States are passed to AutomaticPromptTrigger when recording stops
     });
 
     // NOTE: Tests for _triggerAutomaticPrompts functionality
@@ -1652,13 +1564,9 @@ void main() {
           modalVisible: false,
           isRealtimeMode: true,
           enableSpeechRecognition: true,
-          enableTaskSummary: false,
-          enableChecklistUpdates: true,
         );
 
         expect(state.enableSpeechRecognition, isTrue);
-        expect(state.enableTaskSummary, isFalse);
-        expect(state.enableChecklistUpdates, isTrue);
       });
     });
   });

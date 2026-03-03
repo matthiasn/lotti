@@ -51,14 +51,6 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     /// If null, uses category default settings.
     bool? enableSpeechRecognition,
 
-    /// Whether to trigger task summary after recording (if linked to task).
-    /// If null, uses category default settings.
-    bool? enableTaskSummary,
-
-    /// Whether to trigger checklist updates after recording (if linked to task).
-    /// If null, uses category default settings.
-    bool? enableChecklistUpdates,
-
     /// Live transcript text from realtime transcription service.
     /// Updated incrementally as deltas arrive from the WebSocket.
     String? partialTranscript,

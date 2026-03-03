@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.895" date="2026-03-03">
+      <description>
+          <p>Simplified audio recording modal: removed Checklist Updates and Task Summary checkboxes. These prompts now always use category defaults when configured. New system setup no longer populates these automatic prompts on categories.</p>
+      </description>
+    </release>
     <release version="0.9.894" date="2026-03-02">
       <description>
           <p>Agent template settings UX: sticky 1-on-1 review button in bottom bar when form is clean, Save/Cancel only when dirty. Full-height directive text areas, clearer profile selector label, and delete action moved to Stats tab. Restored the 1-on-1 review chat FAB so the interactive conversation is always reachable from the review page.</p>

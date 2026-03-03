@@ -7,21 +7,16 @@
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -38,7 +33,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../../mocks/mocks.dart';
 
@@ -122,71 +116,6 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
 
   @override
   List<ChecklistCorrectionExample>? get correctionExamples => null;
-}
-
-class FakeEntryController extends EntryController {
-  FakeEntryController({
-    this.mockEntry,
-    this.shouldError = false,
-    this.isLoading = false,
-  });
-
-  final JournalEntity? mockEntry;
-  final bool shouldError;
-  final bool isLoading;
-
-  @override
-  Future<EntryState?> build({required String id}) {
-    if (shouldError) {
-      throw Exception('Test error');
-    }
-
-    if (isLoading) {
-      return Completer<EntryState?>().future;
-    }
-
-    if (mockEntry == null) {
-      return SynchronousFuture(null);
-    }
-
-    return SynchronousFuture(
-      EntryState.saved(
-        entryId: mockEntry!.meta.id,
-        entry: mockEntry,
-        showMap: false,
-        isFocused: false,
-        shouldShowEditorToolBar: false,
-      ),
-    );
-  }
-}
-
-Task createMockTask(String id) {
-  final now = DateTime(2024);
-  const uuid = Uuid();
-  final openStatus = TaskStatus.open(
-    id: uuid.v1(),
-    createdAt: now,
-    utcOffset: 0,
-  );
-
-  return Task(
-    meta: Metadata(
-      id: id,
-      createdAt: now,
-      updatedAt: now,
-      dateFrom: now,
-      dateTo: now,
-      categoryId: 'test-category',
-    ),
-    data: TaskData(
-      title: 'Test Task',
-      status: openStatus,
-      dateFrom: now,
-      dateTo: now,
-      statusHistory: [openStatus],
-    ),
-  );
 }
 
 // Test helper controller that returns a fixed state
@@ -618,99 +547,6 @@ void main() {
 
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableSpeechRecognition, !initialValue);
-    });
-
-    testWidgets(
-        'should call setEnableChecklistUpdates when checklist checkbox toggled',
-        (tester) async {
-      _stubCategory(mockCategoryRepository);
-
-      await _pumpModalContent(
-        tester,
-        audioRecorderRepo: mockAudioRecorderRepository,
-        categoryRepo: mockCategoryRepository,
-        player: mockPlayer,
-        linkedId: 'task-123',
-        extraOverrides: [
-          entryControllerProvider(id: 'task-123').overrideWith(
-            () => FakeEntryController(
-              mockEntry: createMockTask('task-123'),
-            ),
-          ),
-        ],
-      );
-
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(Scaffold)),
-      );
-
-      // Enable speech recognition to reveal checklist checkbox
-      container
-          .read(audioRecorderControllerProvider.notifier)
-          .setEnableSpeechRecognition(enable: true);
-      await tester.pump();
-
-      final checklistCheckbox =
-          find.byKey(const Key('checklist_updates_checkbox'));
-      expect(checklistCheckbox, findsOneWidget);
-
-      var state = container.read(audioRecorderControllerProvider);
-      final initialValue = state.enableChecklistUpdates ?? true;
-
-      await tester.tap(checklistCheckbox);
-      await tester.pump();
-
-      state = container.read(audioRecorderControllerProvider);
-      expect(state.enableChecklistUpdates, !initialValue);
-    });
-
-    testWidgets(
-        'should call setEnableTaskSummary when task summary checkbox toggled',
-        (tester) async {
-      _stubCategory(mockCategoryRepository);
-
-      await _pumpModalContent(
-        tester,
-        audioRecorderRepo: mockAudioRecorderRepository,
-        categoryRepo: mockCategoryRepository,
-        player: mockPlayer,
-        linkedId: 'task-456',
-        extraOverrides: [
-          entryControllerProvider(id: 'task-456').overrideWith(
-            () => FakeEntryController(
-              mockEntry: createMockTask('task-456'),
-            ),
-          ),
-        ],
-      );
-
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(Scaffold)),
-      );
-
-      // Enable speech recognition to reveal task summary checkbox
-      container
-          .read(audioRecorderControllerProvider.notifier)
-          .setEnableSpeechRecognition(enable: true);
-      await tester.pump();
-
-      final summaryCheckbox = find.byKey(const Key('task_summary_checkbox'));
-      expect(summaryCheckbox, findsOneWidget);
-
-      var state = container.read(audioRecorderControllerProvider);
-      final initialValue = state.enableTaskSummary ?? true;
-
-      await tester.tap(summaryCheckbox);
-      await tester.pump();
-
-      state = container.read(audioRecorderControllerProvider);
-      expect(state.enableTaskSummary, !initialValue);
     });
   });
 

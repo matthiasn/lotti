@@ -1082,18 +1082,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       map[AiResponseType.imageAnalysis] = [imageFlash];
     }
 
-    // Task Summary -> Flash (fast processing)
-    final summaryFlash = findPromptId('task_summary', flashModelId);
-    if (summaryFlash != null) {
-      map[AiResponseType.taskSummary] = [summaryFlash];
-    }
-
-    // Checklist Updates -> Pro (complex reasoning needed)
-    final checklistPro = findPromptId('checklist_updates', proModelId);
-    if (checklistPro != null) {
-      map[AiResponseType.checklistUpdates] = [checklistPro];
-    }
-
     // Prompt Generation -> Pro (complex reasoning needed for code prompts)
     final promptGenPro = findPromptId('prompt_generation', proModelId);
     if (promptGenPro != null) {
@@ -1575,18 +1563,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       map[AiResponseType.imageAnalysis] = [imageAnalysis];
     }
 
-    // Task Summary -> Flash (fast processing)
-    final taskSummary = findPromptId('task_summary', flashModelId);
-    if (taskSummary != null) {
-      map[AiResponseType.taskSummary] = [taskSummary];
-    }
-
-    // Checklist Updates -> Reasoning (complex reasoning needed)
-    final checklist = findPromptId('checklist_updates', reasoningModelId);
-    if (checklist != null) {
-      map[AiResponseType.checklistUpdates] = [checklist];
-    }
-
     // Prompt Generation -> Reasoning (complex reasoning needed)
     final promptGen = findPromptId('prompt_generation', reasoningModelId);
     if (promptGen != null) {
@@ -2031,18 +2007,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
         findPromptId('image_analysis_task_context', flashModelId);
     if (imageAnalysis != null) {
       map[AiResponseType.imageAnalysis] = [imageAnalysis];
-    }
-
-    // Task Summary -> Flash (fast processing)
-    final taskSummary = findPromptId('task_summary', flashModelId);
-    if (taskSummary != null) {
-      map[AiResponseType.taskSummary] = [taskSummary];
-    }
-
-    // Checklist Updates -> Reasoning (Magistral)
-    final checklist = findPromptId('checklist_updates', reasoningModelId);
-    if (checklist != null) {
-      map[AiResponseType.checklistUpdates] = [checklist];
     }
 
     // Prompt Generation -> Reasoning (Magistral)
@@ -2524,18 +2488,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
         findPromptId('image_analysis_task_context', visionModelId);
     if (imageAnalysis != null) {
       map[AiResponseType.imageAnalysis] = [imageAnalysis];
-    }
-
-    // Task Summary -> Flash (fast processing)
-    final taskSummary = findPromptId('task_summary', flashModelId);
-    if (taskSummary != null) {
-      map[AiResponseType.taskSummary] = [taskSummary];
-    }
-
-    // Checklist Updates -> Reasoning (Qwen3 Max)
-    final checklist = findPromptId('checklist_updates', reasoningModelId);
-    if (checklist != null) {
-      map[AiResponseType.checklistUpdates] = [checklist];
     }
 
     // Prompt Generation -> Reasoning (Qwen3 Max)

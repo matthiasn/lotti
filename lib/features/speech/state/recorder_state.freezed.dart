@@ -40,14 +40,6 @@ mixin _$AudioRecorderState {
   /// If null, uses category default settings.
   bool? get enableSpeechRecognition;
 
-  /// Whether to trigger task summary after recording (if linked to task).
-  /// If null, uses category default settings.
-  bool? get enableTaskSummary;
-
-  /// Whether to trigger checklist updates after recording (if linked to task).
-  /// If null, uses category default settings.
-  bool? get enableChecklistUpdates;
-
   /// Live transcript text from realtime transcription service.
   /// Updated incrementally as deltas arrive from the WebSocket.
   String? get partialTranscript;
@@ -83,10 +75,6 @@ mixin _$AudioRecorderState {
             (identical(
                     other.enableSpeechRecognition, enableSpeechRecognition) ||
                 other.enableSpeechRecognition == enableSpeechRecognition) &&
-            (identical(other.enableTaskSummary, enableTaskSummary) ||
-                other.enableTaskSummary == enableTaskSummary) &&
-            (identical(other.enableChecklistUpdates, enableChecklistUpdates) ||
-                other.enableChecklistUpdates == enableChecklistUpdates) &&
             (identical(other.partialTranscript, partialTranscript) ||
                 other.partialTranscript == partialTranscript) &&
             (identical(other.isRealtimeMode, isRealtimeMode) ||
@@ -104,14 +92,12 @@ mixin _$AudioRecorderState {
       modalVisible,
       linkedId,
       enableSpeechRecognition,
-      enableTaskSummary,
-      enableChecklistUpdates,
       partialTranscript,
       isRealtimeMode);
 
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode)';
   }
 }
 
@@ -130,8 +116,6 @@ abstract mixin class $AudioRecorderStateCopyWith<$Res> {
       bool modalVisible,
       String? linkedId,
       bool? enableSpeechRecognition,
-      bool? enableTaskSummary,
-      bool? enableChecklistUpdates,
       String? partialTranscript,
       bool isRealtimeMode});
 }
@@ -157,8 +141,6 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
     Object? modalVisible = null,
     Object? linkedId = freezed,
     Object? enableSpeechRecognition = freezed,
-    Object? enableTaskSummary = freezed,
-    Object? enableChecklistUpdates = freezed,
     Object? partialTranscript = freezed,
     Object? isRealtimeMode = null,
   }) {
@@ -194,14 +176,6 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
       enableSpeechRecognition: freezed == enableSpeechRecognition
           ? _self.enableSpeechRecognition
           : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      enableTaskSummary: freezed == enableTaskSummary
-          ? _self.enableTaskSummary
-          : enableTaskSummary // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      enableChecklistUpdates: freezed == enableChecklistUpdates
-          ? _self.enableChecklistUpdates
-          : enableChecklistUpdates // ignore: cast_nullable_to_non_nullable
               as bool?,
       partialTranscript: freezed == partialTranscript
           ? _self.partialTranscript
@@ -317,8 +291,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             bool modalVisible,
             String? linkedId,
             bool? enableSpeechRecognition,
-            bool? enableTaskSummary,
-            bool? enableChecklistUpdates,
             String? partialTranscript,
             bool isRealtimeMode)?
         $default, {
@@ -336,8 +308,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             _that.modalVisible,
             _that.linkedId,
             _that.enableSpeechRecognition,
-            _that.enableTaskSummary,
-            _that.enableChecklistUpdates,
             _that.partialTranscript,
             _that.isRealtimeMode);
       case _:
@@ -369,8 +339,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             bool modalVisible,
             String? linkedId,
             bool? enableSpeechRecognition,
-            bool? enableTaskSummary,
-            bool? enableChecklistUpdates,
             String? partialTranscript,
             bool isRealtimeMode)
         $default,
@@ -387,8 +355,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             _that.modalVisible,
             _that.linkedId,
             _that.enableSpeechRecognition,
-            _that.enableTaskSummary,
-            _that.enableChecklistUpdates,
             _that.partialTranscript,
             _that.isRealtimeMode);
       case _:
@@ -419,8 +385,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             bool modalVisible,
             String? linkedId,
             bool? enableSpeechRecognition,
-            bool? enableTaskSummary,
-            bool? enableChecklistUpdates,
             String? partialTranscript,
             bool isRealtimeMode)?
         $default,
@@ -437,8 +401,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             _that.modalVisible,
             _that.linkedId,
             _that.enableSpeechRecognition,
-            _that.enableTaskSummary,
-            _that.enableChecklistUpdates,
             _that.partialTranscript,
             _that.isRealtimeMode);
       case _:
@@ -459,8 +421,6 @@ class _AudioRecorderState implements AudioRecorderState {
       required this.modalVisible,
       this.linkedId,
       this.enableSpeechRecognition,
-      this.enableTaskSummary,
-      this.enableChecklistUpdates,
       this.partialTranscript,
       this.isRealtimeMode = false});
 
@@ -497,16 +457,6 @@ class _AudioRecorderState implements AudioRecorderState {
   /// If null, uses category default settings.
   @override
   final bool? enableSpeechRecognition;
-
-  /// Whether to trigger task summary after recording (if linked to task).
-  /// If null, uses category default settings.
-  @override
-  final bool? enableTaskSummary;
-
-  /// Whether to trigger checklist updates after recording (if linked to task).
-  /// If null, uses category default settings.
-  @override
-  final bool? enableChecklistUpdates;
 
   /// Live transcript text from realtime transcription service.
   /// Updated incrementally as deltas arrive from the WebSocket.
@@ -546,10 +496,6 @@ class _AudioRecorderState implements AudioRecorderState {
             (identical(
                     other.enableSpeechRecognition, enableSpeechRecognition) ||
                 other.enableSpeechRecognition == enableSpeechRecognition) &&
-            (identical(other.enableTaskSummary, enableTaskSummary) ||
-                other.enableTaskSummary == enableTaskSummary) &&
-            (identical(other.enableChecklistUpdates, enableChecklistUpdates) ||
-                other.enableChecklistUpdates == enableChecklistUpdates) &&
             (identical(other.partialTranscript, partialTranscript) ||
                 other.partialTranscript == partialTranscript) &&
             (identical(other.isRealtimeMode, isRealtimeMode) ||
@@ -567,14 +513,12 @@ class _AudioRecorderState implements AudioRecorderState {
       modalVisible,
       linkedId,
       enableSpeechRecognition,
-      enableTaskSummary,
-      enableChecklistUpdates,
       partialTranscript,
       isRealtimeMode);
 
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode)';
   }
 }
 
@@ -595,8 +539,6 @@ abstract mixin class _$AudioRecorderStateCopyWith<$Res>
       bool modalVisible,
       String? linkedId,
       bool? enableSpeechRecognition,
-      bool? enableTaskSummary,
-      bool? enableChecklistUpdates,
       String? partialTranscript,
       bool isRealtimeMode});
 }
@@ -622,8 +564,6 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
     Object? modalVisible = null,
     Object? linkedId = freezed,
     Object? enableSpeechRecognition = freezed,
-    Object? enableTaskSummary = freezed,
-    Object? enableChecklistUpdates = freezed,
     Object? partialTranscript = freezed,
     Object? isRealtimeMode = null,
   }) {
@@ -659,14 +599,6 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
       enableSpeechRecognition: freezed == enableSpeechRecognition
           ? _self.enableSpeechRecognition
           : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      enableTaskSummary: freezed == enableTaskSummary
-          ? _self.enableTaskSummary
-          : enableTaskSummary // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      enableChecklistUpdates: freezed == enableChecklistUpdates
-          ? _self.enableChecklistUpdates
-          : enableChecklistUpdates // ignore: cast_nullable_to_non_nullable
               as bool?,
       partialTranscript: freezed == partialTranscript
           ? _self.partialTranscript

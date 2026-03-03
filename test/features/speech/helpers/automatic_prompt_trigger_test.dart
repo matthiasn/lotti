@@ -328,57 +328,6 @@ void main() {
           ));
     });
 
-    test('should not trigger task summary when user explicitly disables it',
-        () async {
-      // Arrange
-      const categoryId = 'test-category';
-      const entryId = 'test-entry';
-      const taskId = 'test-task';
-      const taskSummaryPromptId = 'task-summary-prompt';
-
-      final category = createTestCategory(
-        id: categoryId,
-        name: 'Test Category',
-        automaticPrompts: {
-          AiResponseType.taskSummary: [taskSummaryPromptId],
-        },
-      );
-
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
-
-      final trigger = container.read(automaticPromptTriggerProvider);
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.stopped,
-        enableTaskSummary: false, // User explicitly disabled
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: false,
-      );
-
-      // Act
-      await trigger.triggerAutomaticPrompts(
-        entryId,
-        categoryId,
-        state,
-        isLinkedToTask: true,
-        linkedTaskId: taskId,
-      );
-
-      // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      // Should not log task summary triggering
-      verifyNever(() => mockLoggingService.captureEvent(
-            any<String>(that: contains('Triggering task summary')),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          ));
-    });
-
     test('should handle empty prompt lists', () async {
       // Arrange
       const categoryId = 'test-category';
@@ -497,7 +446,7 @@ void main() {
         testContainer.dispose();
       });
 
-      test('should trigger checklist updates when user preference overrides',
+      test('should trigger checklist updates when category has them configured',
           () async {
         // Arrange
         const categoryId = 'test-category';
@@ -538,7 +487,6 @@ void main() {
 
         final state = AudioRecorderState(
           status: AudioRecorderStatus.stopped,
-          enableChecklistUpdates: true, // User wants checklist updates
           vu: 0,
           dBFS: -60,
           progress: Duration.zero,
@@ -624,7 +572,6 @@ void main() {
           final state = AudioRecorderState(
             status: AudioRecorderStatus.stopped,
             enableSpeechRecognition: true,
-            enableChecklistUpdates: true,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
@@ -716,8 +663,6 @@ void main() {
 
           final state = AudioRecorderState(
             status: AudioRecorderStatus.stopped,
-            enableChecklistUpdates: true,
-            enableTaskSummary: true,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
@@ -826,8 +771,6 @@ void main() {
           final state = AudioRecorderState(
             status: AudioRecorderStatus.stopped,
             enableSpeechRecognition: true,
-            enableChecklistUpdates: true,
-            enableTaskSummary: true,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
@@ -1017,63 +960,13 @@ void main() {
 
         // Also verify logging
         verify(() => mockLoggingService.captureEvent(
-              'Triggering task summary for task $taskId (user preference: null, transcription pending: false, checklist updates pending: false)',
+              'Triggering task summary for task $taskId (transcription pending: false, checklist updates pending: false)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             )).called(1);
 
         // Clean up
         testContainer.dispose();
-      });
-
-      test('should not trigger checklist when user disables it', () async {
-        // Arrange
-        const categoryId = 'test-category';
-        const entryId = 'test-entry';
-        const taskId = 'test-task';
-        const checklistPromptId = 'checklist-prompt';
-
-        final category = createTestCategory(
-          id: categoryId,
-          name: 'Test Category',
-          automaticPrompts: {
-            AiResponseType.checklistUpdates: [checklistPromptId],
-          },
-        );
-
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
-
-        final trigger = container.read(automaticPromptTriggerProvider);
-
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          enableChecklistUpdates: false, // User explicitly disabled
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: false,
-        );
-
-        // Act
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          categoryId,
-          state,
-          isLinkedToTask: true,
-          linkedTaskId: taskId,
-        );
-
-        // Assert
-        verify(() => mockCategoryRepository.getCategoryById(categoryId))
-            .called(1);
-        // Should not log checklist triggering
-        verifyNever(() => mockLoggingService.captureEvent(
-              any<String>(that: contains('Triggering checklist updates')),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-            ));
       });
 
       test('should properly log checklist updates without task summary',
@@ -1117,8 +1010,6 @@ void main() {
 
         final state = AudioRecorderState(
           status: AudioRecorderStatus.stopped,
-          enableChecklistUpdates: true,
-          enableTaskSummary: false, // No task summary
           vu: 0,
           dBFS: -60,
           progress: Duration.zero,
@@ -1364,7 +1255,6 @@ void main() {
           final state = AudioRecorderState(
             status: AudioRecorderStatus.stopped,
             enableSpeechRecognition: true,
-            enableChecklistUpdates: true,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
@@ -1506,8 +1396,6 @@ void main() {
           final state = AudioRecorderState(
             status: AudioRecorderStatus.stopped,
             enableSpeechRecognition: true,
-            enableChecklistUpdates: true,
-            enableTaskSummary: true,
             vu: 0,
             dBFS: -60,
             progress: Duration.zero,
