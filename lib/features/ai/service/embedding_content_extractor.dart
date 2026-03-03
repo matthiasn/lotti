@@ -17,6 +17,7 @@ const kEntityTypeJournalText = 'journal_text';
 const kEntityTypeTask = 'task';
 const kEntityTypeAudio = 'audio';
 const kEntityTypeAiResponse = 'ai_response';
+const kEntityTypeAgentReport = 'agent_report';
 
 /// Pure utility for extracting embeddable text from journal entities.
 ///
@@ -76,6 +77,39 @@ class EmbeddingContentExtractor {
       return '${data.title}\n$body';
     }
     return data.title;
+  }
+
+  /// Builds an enriched task text template including resolved label names.
+  ///
+  /// Produces a "tiny template" that gives tasks enough semantic content for
+  /// meaningful embeddings, even when they have no body text:
+  ///
+  /// ```
+  /// Fix login bug
+  /// Labels: authentication, security, backend
+  /// ```
+  ///
+  /// Falls back to [_taskText] format when [labelNames] is empty.
+  static String? extractTaskText({
+    required String title,
+    required List<String> labelNames,
+    String? bodyText,
+  }) {
+    final buffer = StringBuffer(title);
+    if (labelNames.isNotEmpty) {
+      buffer
+        ..write('\n')
+        ..write('Labels: ')
+        ..write(labelNames.join(', '));
+    }
+    if (bodyText != null && bodyText.isNotEmpty) {
+      buffer
+        ..write('\n')
+        ..write(bodyText);
+    }
+    final result = buffer.toString().trim();
+    if (result.length < kMinEmbeddingTextLength) return null;
+    return result;
   }
 
   /// Returns the first transcript text from audio data, or `null`.

@@ -113,6 +113,9 @@ class EmbeddingService {
         return;
       }
 
+      // Cache label definitions for the batch to avoid one DB query per entity.
+      final labelResolver = await _buildLabelResolver();
+
       while (_pendingEntityIds.isNotEmpty && !_stopped) {
         final entityId = _pendingEntityIds.first;
         _pendingEntityIds.remove(entityId);
@@ -124,6 +127,7 @@ class EmbeddingService {
             embeddingsDb: embeddingsDb,
             embeddingRepository: embeddingRepository,
             baseUrl: baseUrl,
+            labelNameResolver: labelResolver,
           );
         } catch (e, stackTrace) {
           developer.log(
@@ -158,4 +162,22 @@ class EmbeddingService {
   );
 
   static bool _isEntityId(String token) => _uuidPattern.hasMatch(token);
+
+  /// Builds a [LabelNameResolver] backed by a cached snapshot of all label
+  /// definitions. The snapshot is taken once per batch for efficiency.
+  Future<LabelNameResolver> _buildLabelResolver() async {
+    final allLabels = await journalDb.getAllLabelDefinitions();
+    final labelMap = <String, String>{};
+    for (final label in allLabels) {
+      if (label.deletedAt == null) {
+        labelMap[label.id] = label.name;
+      }
+    }
+    return (List<String> labelIds) async {
+      return labelIds
+          .map((id) => labelMap[id])
+          .whereType<String>()
+          .toList();
+    };
+  }
 }

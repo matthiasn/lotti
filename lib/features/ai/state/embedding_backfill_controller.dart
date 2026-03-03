@@ -111,6 +111,21 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         return;
       }
 
+      // Build label resolver for enriched task templates.
+      final allLabels = await db.getAllLabelDefinitions();
+      final labelMap = <String, String>{};
+      for (final label in allLabels) {
+        if (label.deletedAt == null) {
+          labelMap[label.id] = label.name;
+        }
+      }
+      Future<List<String>> labelResolver(List<String> labelIds) async {
+        return labelIds
+            .map((id) => labelMap[id])
+            .whereType<String>()
+            .toList();
+      }
+
       // Fetch all entity IDs in this category.
       final entityIds = await db.journalEntityIdsByCategory(categoryId).get();
       final total = entityIds.length;
@@ -134,6 +149,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
             embeddingsDb: embeddingsDb,
             embeddingRepository: embeddingRepository,
             baseUrl: baseUrl,
+            labelNameResolver: labelResolver,
           );
           if (didEmbed) embedded++;
         } catch (e, stackTrace) {
