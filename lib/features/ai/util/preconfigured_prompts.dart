@@ -1,7 +1,6 @@
 /// Preconfigured prompt templates for common AI tasks.
 ///
-/// This file contains the templates for the six main prompt types:
-/// - Task Summary
+/// This file contains the templates for the main prompt types:
 /// - Action Item Suggestions
 /// - Image Analysis
 /// - Image Analysis in Task Context
@@ -43,7 +42,6 @@ class PreconfiguredPrompt {
 
 /// Lookup map for finding preconfigured prompts by ID
 const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
-  'task_summary': taskSummaryPrompt,
   'checklist_updates': checklistUpdatesPrompt,
   'image_analysis': imageAnalysisPrompt,
   'image_analysis_task_context': imageAnalysisInTaskContextPrompt,
@@ -53,135 +51,6 @@ const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
   'image_prompt_generation': imagePromptGenerationPrompt,
   'cover_art_generation': coverArtGenerationPrompt,
 };
-
-/// Task Summary prompt template
-const taskSummaryPrompt = PreconfiguredPrompt(
-  id: 'task_summary',
-  name: 'Task Summary',
-  systemMessage: '''
-You are a helpful AI assistant that creates clear, concise task summaries.
-Your goal is to help users quickly understand the current state of their tasks,
-including what has been accomplished and what remains to be done.
-
-Focus on providing a comprehensive overview of the task that refreshes the user's memory
-and clearly outlines progress and next steps. Generate the summary in the language
-specified by the task's languageCode field, or default to English if not set.
-
-ARCHIVED ACTION ITEMS:
-Action items in the task JSON may have "isArchived": true. Archived items are NOT active
-work for this task — they were set aside because they are handled elsewhere, are no longer
-relevant, or are kept only for reference. They will not need to be created again.
-- Do NOT list archived items under "Remaining steps"
-- You may briefly mention them under "Achieved results" or in context if useful
-- Treat them as informational background, not actionable work
-
-RELATED TASKS CONTEXT:
-You may receive a `linked_tasks` object containing:
-- `linked_from`: Child tasks that reference this task (typically subtasks)
-- `linked_to`: Parent tasks that this task references (typically epics/parent tasks)
-
-Use this context to understand how this task fits into the broader project.
-If relevant, briefly mention related work in your summary.
-
-**IMPORTANT**: If any linked task's summary contains URLs to GitHub (PRs, Issues), Linear, Jira, or similar platforms, include these in your Links section as they provide valuable project context.''',
-  userMessage: '''
-Create a task summary for the provided task details and log entries.
-Imagine the user has not been involved in the task for a long time, and you want to refresh their memory.
-Talk to the user directly, instead of referring to them as "the user" or "they".
-
-Generate the summary in the language specified by the task's languageCode field.
-If no languageCode is set, default to English.
-
-Start with a single H1 header (# Title) that suggests a concise, descriptive title
-for this task. The title should be a single line, ideally under 80-100 characters.
-If the task already has a title, suggest an improved version that better captures
-the essence of the task based on the details and logs. Use only one H1 in the
-entire response. This H1 title is for internal suggestion purposes and will be
-processed separately; it will not appear directly in the summary text shown to
-the user.
-
-After the title, immediately provide a TLDR paragraph that MUST be exactly 3-4 lines maximum (approximately 50-80 words total).
-This paragraph must:
-- Start with "**TLDR:** " (with the entire paragraph in bold using double asterisks)
-- Be extremely concise - focus only on: current status (1 line) + immediate next step (1-2 lines)
-- Use short, punchy sentences without filler words
-- Be slightly motivational without being cheesy (e.g., "Almost there!" or "Great progress!")
-- Include 1-2 relevant emojis that match the task's current state
-- Prioritize clarity over completeness - it's better to be brief than comprehensive
-- End the paragraph with a line break
-
-Example TLDR format:
-**TLDR:** **Core auth system and database done. Next: email verification and password reset.
-Almost there - just these two features left! 🚀 Focus on the email flow first. 💪**
-
-After the TLDR, include a **Goal** section that succinctly describes the desired outcome
-or essential purpose of this task (1-3 sentences, rarely a short paragraph). This helps
-keep focus on the "why" behind the work.
-
-Example Goal format:
-**Goal:** Enable users to authenticate securely and manage their sessions across devices,
-so they can access their data from anywhere without compromising security.
-
-After the Goal, provide the detailed summary with:
-- Achieved results (use ✅ emoji for each completed item)
-- Remaining steps (numbered list)
-- Any learnings or insights (use 💡 emoji)
-- Any annoyances or blockers (use 🤯 emoji)
-
-Keep the detailed summary succinct while maintaining good structure and organization.
-If the task is done, include a brief concluding statement before the Links section.
-
-Example:
-**Goal:** [1-3 sentence description of the essential purpose of this task]
-
-**Achieved results:**
-✅ Completed step 1
-✅ Completed step 2
-✅ Completed step 3
-
-**Remaining steps:**
-1. Step 1
-2. Step 2
-3. Step 3
-
-**Learnings:**
-💡 Learned something interesting
-💡 Learned something else
-
-**Annoyances:**
-🤯 Annoyed by something
-
-Finally, at the very end of your response, include a **Links** section:
-- Scan ALL log entries in the task for URLs (http://, https://, or other valid URL schemes)
-- Extract every unique URL found across all entries
-- Also include relevant links from related tasks' summaries
-- For each link, generate a short, succinct title (2-5 words) that describes what the link is about
-- Format each link as Markdown: `[Succinct Title](URL)`
-- If no links are found, omit the Links section entirely
-
-Example Links section (these are format examples only - never copy these URLs, only use actual URLs found in the task):
-**Links:**
-- [Flutter Documentation](https://docs.flutter.dev)
-- [Linear: APP-123](https://linear.app/team/issue/APP-123)
-- [Lotti PR #456](https://github.com/matthiasn/lotti/pull/456)
-- [GitHub Issue #789](https://github.com/user/repo/issues/789)
-- [Stack Overflow Solution](https://stackoverflow.com/questions/12345)
-
-**Task Details:**
-```json
-{{task}}
-```
-
-**Related Tasks:**
-```json
-{{linked_tasks}}
-```''',
-  requiredInputData: [InputDataType.task],
-  aiResponseType: AiResponseType.taskSummary,
-  useReasoning: false,
-  description:
-      'Generate a comprehensive summary of a task including progress, remaining work, and insights',
-);
 
 /// Checklist Updates prompt template
 const checklistUpdatesPrompt = PreconfiguredPrompt(

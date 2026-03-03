@@ -1305,9 +1305,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSetupWizardTitle => 'Průvodce nastavením AI';
 
   @override
-  String get aiTaskSummaryCancelScheduled => 'Zrušit plánovaný souhrn';
-
-  @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1327,18 +1324,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiTaskSummaryDeleteTooltip => 'Smazat všechna shrnutí úkolů';
 
   @override
-  String get aiTaskSummaryRunning => 'Přemýšlím o shrnutí úkolu...';
-
-  @override
-  String aiTaskSummaryScheduled(String time) {
-    return 'Shrnutí za $time';
-  }
-
-  @override
   String get aiTaskSummaryTitle => 'Shrnutí úkolu AI';
-
-  @override
-  String get aiTaskSummaryTriggerNow => 'Vygenerovat shrnutí nyní';
 
   @override
   String get aiTranscribingAudio => 'Přepisování zvuku...';

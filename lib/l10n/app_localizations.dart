@@ -2400,12 +2400,6 @@ abstract class AppLocalizations {
   /// **'AI Setup Wizard'**
   String get aiSetupWizardTitle;
 
-  /// No description provided for @aiTaskSummaryCancelScheduled.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel scheduled summary'**
-  String get aiTaskSummaryCancelScheduled;
-
   /// No description provided for @aiTaskSummaryDeleteConfirmMessage.
   ///
   /// In en, this message translates to:
@@ -2424,29 +2418,11 @@ abstract class AppLocalizations {
   /// **'Delete all task summaries'**
   String get aiTaskSummaryDeleteTooltip;
 
-  /// No description provided for @aiTaskSummaryRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Thinking about summarizing task...'**
-  String get aiTaskSummaryRunning;
-
-  /// No description provided for @aiTaskSummaryScheduled.
-  ///
-  /// In en, this message translates to:
-  /// **'Summary in {time}'**
-  String aiTaskSummaryScheduled(String time);
-
   /// No description provided for @aiTaskSummaryTitle.
   ///
   /// In en, this message translates to:
   /// **'AI Task Summary'**
   String get aiTaskSummaryTitle;
-
-  /// No description provided for @aiTaskSummaryTriggerNow.
-  ///
-  /// In en, this message translates to:
-  /// **'Generate summary now'**
-  String get aiTaskSummaryTriggerNow;
 
   /// No description provided for @aiTranscribingAudio.
   ///

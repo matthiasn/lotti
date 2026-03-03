@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.895" date="2026-03-03">
       <description>
-          <p>Simplified audio recording modal: removed Checklist Updates and Task Summary checkboxes. These prompts now always use category defaults when configured. New system setup no longer populates these automatic prompts on categories.</p>
+          <p>Simplified audio recording modal: removed Checklist Updates and Task Summary checkboxes. These prompts now always use category defaults when configured. New system setup no longer populates these automatic prompts on categories. Removed automatic task summary infrastructure (scheduled refreshes, smart triggers, countdown UI); summaries are now agent-managed on demand.</p>
       </description>
     </release>
     <release version="0.9.894" date="2026-03-02">

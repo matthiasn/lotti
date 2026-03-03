@@ -4,7 +4,6 @@
   "aiAssistantAnalyzeImage": "Analyse image",
   "aiAssistantSummarizeTask": "Summarise task",
   "aiSetupWizardCreatesOptimized": "Creates optimised models, prompts, and a test category",
-  "aiTaskSummaryRunning": "Thinking about summarising task...",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorised.",
   "categoryFavoriteDescription": "Mark this category as a favourite",

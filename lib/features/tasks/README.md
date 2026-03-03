@@ -321,56 +321,6 @@ All 41 languages from Gemini Code Assist are supported:
 
 ## AI-Powered Features
 
-### Automatic Task Summary Updates with Countdown
-
-Task summaries are scheduled for automatic refresh when you interact with checklists. Instead of triggering immediately, the system uses a 5-minute countdown, reducing unnecessary API calls while you're actively working on a task. Summaries are most valuable when **returning** to a task to catch up, not while you're in the middle of checking items.
-
-#### How It Works
-
-1. **Triggered by Checklist Actions**:
-   - Adding new checklist items
-   - Checking or unchecking items
-   - Updating item text
-   - Reordering items
-   - Any modification to linked checklists
-
-2. **5-Minute Scheduled Delay**:
-   - First change starts a 5-minute countdown
-   - UI shows "Summary in 4:32" with countdown timer
-   - Additional changes are batched into the existing countdown (no reset)
-   - The countdown is a promise - it keeps ticking once started
-
-3. **User Control**:
-   - **Cancel (✕)**: Stop the scheduled refresh if you don't want a new summary
-   - **Trigger Now (▶)**: Bypass the countdown and generate immediately
-   - **Manual Refresh**: Always available when no refresh is scheduled
-
-4. **Status-Aware Updates**:
-   - If a summary is already being generated, shows spinner
-   - Automatically queues next refresh after current generation finishes
-   - No duplicate or conflicting requests
-
-#### UI States
-
-| State         | Header Text                      | Actions                         |
-|---------------|----------------------------------|---------------------------------|
-| **Idle**      | "AI Task Summary"                | Refresh button (manual trigger) |
-| **Scheduled** | "Summary in 4:32" (countdown)    | Cancel (✕), Trigger now (▶)     |
-| **Running**   | "Thinking about task summary..." | Spinner (no actions)            |
-
-#### Benefits
-
-- **Reduced API Costs**: 5-minute delay prevents excessive calls while actively working
-- **User Control**: Cancel or trigger immediately as needed
-- **Batched Updates**: Multiple changes roll into single refresh
-- **Always Current**: Summaries still update automatically, just with smart timing
-- **Context-Aware**: AI understands what items are completed vs. pending
-- **Visual Feedback**: Clear countdown shows exactly when summary will update
-
-#### Technical Implementation
-
-For detailed technical information about the scheduled refresh mechanism, see the [AI Feature README - Direct Task Summary Refresh with Countdown UX](../ai/README.md#5-direct-task-summary-refresh-with-countdown-ux).
-
 ### Checklist Completion Suggestions
 
 The system uses AI function calling to intelligently suggest when checklist items might be completed:

@@ -1294,9 +1294,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSetupWizardTitle => 'AI Setup Wizard';
 
   @override
-  String get aiTaskSummaryCancelScheduled => 'Cancel scheduled summary';
-
-  @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1316,18 +1313,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTaskSummaryDeleteTooltip => 'Delete all task summaries';
 
   @override
-  String get aiTaskSummaryRunning => 'Thinking about summarizing task...';
-
-  @override
-  String aiTaskSummaryScheduled(String time) {
-    return 'Summary in $time';
-  }
-
-  @override
   String get aiTaskSummaryTitle => 'AI Task Summary';
-
-  @override
-  String get aiTaskSummaryTriggerNow => 'Generate summary now';
 
   @override
   String get aiTranscribingAudio => 'Transcribing audio...';
@@ -4704,9 +4690,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get aiSetupWizardCreatesOptimized =>
       'Creates optimised models, prompts, and a test category';
-
-  @override
-  String get aiTaskSummaryRunning => 'Thinking about summarising task...';
 
   @override
   String get categoryCreationError =>

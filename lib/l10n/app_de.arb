@@ -590,7 +590,6 @@
   "aiSetupWizardRunningButton": "Wird ausgeführt...",
   "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
   "aiSetupWizardTitle": "KI-Einrichtungsassistent",
-  "aiTaskSummaryCancelScheduled": "Geplante Zusammenfassung abbrechen",
   "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Möchtest du wirklich diese Aufgabenzusammenfassung löschen? Dies kann nicht rückgängig gemacht werden.} other{Möchtest du wirklich {count} Aufgabenzusammenfassungen löschen? Dies kann nicht rückgängig gemacht werden.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
@@ -601,17 +600,7 @@
   },
   "aiTaskSummaryDeleteConfirmTitle": "Aufgabenzusammenfassungen löschen",
   "aiTaskSummaryDeleteTooltip": "Alle Aufgabenzusammenfassungen löschen",
-  "aiTaskSummaryRunning": "Denke über die Zusammenfassung der Aufgabe nach...",
-  "aiTaskSummaryScheduled": "Zusammenfassung in {time}",
-  "@aiTaskSummaryScheduled": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "aiTaskSummaryTitle": "KI-Aufgabenzusammenfassung",
-  "aiTaskSummaryTriggerNow": "Zusammenfassung jetzt erstellen",
   "aiTranscribingAudio": "Audio wird transkribiert...",
   "apiKeyAddPageTitle": "Anbieter hinzufügen",
   "apiKeyEditLoadError": "API-Schlüssel-Konfiguration konnte nicht geladen werden",

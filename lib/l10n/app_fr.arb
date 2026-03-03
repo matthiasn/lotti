@@ -590,7 +590,6 @@
   "aiSetupWizardRunningButton": "En cours...",
   "aiSetupWizardSafeToRunMultiple": "Peut être exécuté plusieurs fois - les éléments existants seront conservés",
   "aiSetupWizardTitle": "Assistant de configuration AI",
-  "aiTaskSummaryCancelScheduled": "Annuler le résumé programmé",
   "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Veux-tu vraiment supprimer ce résumé de tâche ? Cette action est irréversible.} other{Veux-tu vraiment supprimer {count} résumés de tâches ? Cette action est irréversible.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
@@ -601,17 +600,7 @@
   },
   "aiTaskSummaryDeleteConfirmTitle": "Supprimer les résumés de tâches",
   "aiTaskSummaryDeleteTooltip": "Supprimer tous les résumés de tâches",
-  "aiTaskSummaryRunning": "Réflexion sur le résumé de la tâche...",
-  "aiTaskSummaryScheduled": "Résumé dans {time}",
-  "@aiTaskSummaryScheduled": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "aiTaskSummaryTitle": "Résumé de la tâche IA",
-  "aiTaskSummaryTriggerNow": "Générer le résumé maintenant",
   "aiTranscribingAudio": "Transcription de l'audio...",
   "apiKeyAddPageTitle": "Ajouter un fournisseur",
   "apiKeyEditLoadError": "Échec du chargement de la configuration de la clé API",

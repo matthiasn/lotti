@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with no per-recording user toggle.
 - New system FTUE setup no longer populates automatic checklist update and task
   summary prompts on categories. Existing categories are unaffected.
+- Removed automatic task summary infrastructure (scheduled refreshes, smart
+  triggers, countdown UI). Task summaries are now generated on demand by agents.
+  Existing summaries remain viewable and deletable.
 
 ## [0.9.894] - 2026-03-02
 ### Added

@@ -490,7 +490,7 @@ void main() {
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.taskSummary,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
         );
 
         when(() => mockRepository.getConfigById('tracked-prompt-id'))
@@ -555,7 +555,7 @@ void main() {
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.taskSummary,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
         );
 
         when(() => mockRepository.getConfigById('tracked-prompt-id'))
@@ -583,7 +583,7 @@ void main() {
         expect(systemPromptField, findsOneWidget);
 
         // Get initial text (should be the preconfigured prompt's system message)
-        final preconfiguredPrompt = preconfiguredPrompts['task_summary']!;
+        final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
         final textField = tester.widget<TextFormField>(systemPromptField);
         expect(textField.controller?.text,
             equals(preconfiguredPrompt.systemMessage));
@@ -615,7 +615,7 @@ void main() {
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.taskSummary,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
         );
 
         when(() => mockRepository.getConfigById('tracked-prompt-id'))
@@ -695,7 +695,7 @@ void main() {
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.taskSummary,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
           description: 'Test description',
         );
 
@@ -725,7 +725,7 @@ void main() {
         expect(captured, isA<AiConfigPrompt>());
         final savedPrompt = captured as AiConfigPrompt;
         expect(savedPrompt.trackPreconfigured, isTrue);
-        expect(savedPrompt.preconfiguredPromptId, equals('task_summary'));
+        expect(savedPrompt.preconfiguredPromptId, equals('checklist_updates'));
         expect(savedPrompt.name, equals('Updated Tracked Prompt'));
       });
 

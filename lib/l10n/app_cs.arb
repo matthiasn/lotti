@@ -398,7 +398,6 @@
   "aiSetupWizardRunningButton": "Probíhá...",
   "aiSetupWizardSafeToRunMultiple": "Bezpečné spustit vícekrát - existující položky budou zachovány",
   "aiSetupWizardTitle": "Průvodce nastavením AI",
-  "aiTaskSummaryCancelScheduled": "Zrušit plánovaný souhrn",
   "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Opravdu chcete smazat toto shrnutí úkolu? Tuto akci nelze vrátit zpět.} other{Opravdu chcete smazat {count} shrnutí úkolů? Tuto akci nelze vrátit zpět.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
@@ -409,17 +408,7 @@
   },
   "aiTaskSummaryDeleteConfirmTitle": "Smazat shrnutí úkolů",
   "aiTaskSummaryDeleteTooltip": "Smazat všechna shrnutí úkolů",
-  "aiTaskSummaryRunning": "Přemýšlím o shrnutí úkolu...",
-  "aiTaskSummaryScheduled": "Shrnutí za {time}",
-  "@aiTaskSummaryScheduled": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "aiTaskSummaryTitle": "Shrnutí úkolu AI",
-  "aiTaskSummaryTriggerNow": "Vygenerovat shrnutí nyní",
   "aiTranscribingAudio": "Přepisování zvuku...",
   "apiKeyAddPageTitle": "Přidat poskytovatele",
   "apiKeyEditLoadError": "Nepodařilo se načíst konfiguraci API klíče",
