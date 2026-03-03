@@ -361,7 +361,7 @@ void main() {
     });
 
     group('Gemini - Prompt Creation', () {
-      testWidgets('should create 4 prompts for Gemini when user confirms',
+      testWidgets('should create 3 prompts for Gemini when user confirms',
           (WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -390,7 +390,7 @@ void main() {
         await tester.pump();
 
         expect(result, isTrue);
-        verify(() => mockRepository.saveConfig(any())).called(4);
+        verify(() => mockRepository.saveConfig(any())).called(3);
       });
 
       testWidgets('should create prompts with correct names for Gemini',
@@ -433,12 +433,11 @@ void main() {
         expect(promptNames,
             contains('Image Analysis in Task Context - Gemini 2.5 Pro'));
         expect(promptNames, contains('Checklist Updates - Gemini 2.5 Pro'));
-        expect(promptNames, contains('Task Summary - Gemini 2.5 Pro'));
       });
     });
 
     group('Ollama - Prompt Creation', () {
-      testWidgets('should create 3 prompts for Ollama when user confirms',
+      testWidgets('should create 2 prompts for Ollama when user confirms',
           (WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -467,7 +466,7 @@ void main() {
         await tester.pump();
 
         expect(result, isTrue);
-        verify(() => mockRepository.saveConfig(any())).called(3);
+        verify(() => mockRepository.saveConfig(any())).called(2);
       });
 
       testWidgets('should create prompts with correct names for Ollama',
@@ -511,7 +510,6 @@ void main() {
         expect(promptNames,
             contains('Image Analysis in Task Context - Gemma 3 12B'));
         expect(promptNames, contains('Checklist Updates - DeepSeek R1 8B'));
-        expect(promptNames, contains('Task Summary - DeepSeek R1 8B'));
       });
 
       testWidgets('should assign DeepSeek to reasoning prompts',
@@ -552,11 +550,6 @@ void main() {
             .whereType<AiConfigPrompt>()
             .firstWhere((p) => p.name.contains('Checklist'));
         expect(checklistPrompt.defaultModelId, deepSeekModelId);
-
-        final summaryPrompt = savedConfigs
-            .whereType<AiConfigPrompt>()
-            .firstWhere((p) => p.name.contains('Task Summary'));
-        expect(summaryPrompt.defaultModelId, deepSeekModelId);
       });
 
       testWidgets('should assign Gemma to image analysis prompt',
@@ -601,7 +594,7 @@ void main() {
     });
 
     group('Snackbar Feedback', () {
-      testWidgets('should show correct count for Gemini (4 prompts)',
+      testWidgets('should show correct count for Gemini (3 prompts)',
           (WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -628,10 +621,10 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
-        expect(find.text('4 prompts created successfully!'), findsOneWidget);
+        expect(find.text('3 prompts created successfully!'), findsOneWidget);
       });
 
-      testWidgets('should show correct count for Ollama (3 prompts)',
+      testWidgets('should show correct count for Ollama (2 prompts)',
           (WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -658,7 +651,7 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
-        expect(find.text('3 prompts created successfully!'), findsOneWidget);
+        expect(find.text('2 prompts created successfully!'), findsOneWidget);
       });
     });
 
@@ -894,10 +887,6 @@ void main() {
         final checklistPrompt =
             prompts.firstWhere((p) => p.name.contains('Checklist'));
         expect(checklistPrompt.aiResponseType, AiResponseType.checklistUpdates);
-
-        final summaryPrompt =
-            prompts.firstWhere((p) => p.name.contains('Summary'));
-        expect(summaryPrompt.aiResponseType, AiResponseType.taskSummary);
       });
     });
 
@@ -1287,11 +1276,11 @@ void main() {
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(4));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(9));
+      expect(result!.promptsCreated, equals(8));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      verify(() => mockRepository.saveConfig(any())).called(13);
+      verify(() => mockRepository.saveConfig(any())).called(12);
     });
 
     testWidgets('should verify existing models and skip creation',
@@ -1393,15 +1382,15 @@ void main() {
       final existingPrompts = <AiConfig>[
         AiConfig.prompt(
           id: 'existing-prompt-id',
-          name: 'Task Summary',
+          name: 'Checklist OpenAI GPT-5.2',
           systemMessage: 'system',
           userMessage: 'user',
-          defaultModelId: 'existing-flash',
-          modelIds: ['existing-flash'],
-          createdAt: DateTime.now(),
+          defaultModelId: 'existing-reasoning',
+          modelIds: ['existing-reasoning'],
+          createdAt: DateTime(2024, 3, 15),
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-          preconfiguredPromptId: 'task_summary',
+          aiResponseType: AiResponseType.checklistUpdates,
+          preconfiguredPromptId: 'checklist_updates',
           useReasoning: false,
         ),
       ];
@@ -1445,7 +1434,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsCreated, equals(7));
     });
 
     testWidgets('should update existing category instead of creating new one',
@@ -1731,12 +1720,12 @@ void main() {
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(3));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsCreated, equals(7));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      // 3 models + 8 prompts = 11 saves
-      verify(() => mockRepository.saveConfig(any())).called(11);
+      // 3 models + 7 prompts = 10 saves
+      verify(() => mockRepository.saveConfig(any())).called(10);
     });
 
     testWidgets('should verify existing models and skip creation',
@@ -1827,15 +1816,15 @@ void main() {
       final existingPrompts = <AiConfig>[
         AiConfig.prompt(
           id: 'existing-prompt-id',
-          name: 'Task Summary',
+          name: 'Checklist Mistral Magistral',
           systemMessage: 'system',
           userMessage: 'user',
-          defaultModelId: 'existing-flash',
-          modelIds: ['existing-flash'],
-          createdAt: DateTime.now(),
+          defaultModelId: 'existing-reasoning',
+          modelIds: ['existing-reasoning'],
+          createdAt: DateTime(2024, 3, 15),
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-          preconfiguredPromptId: 'task_summary',
+          aiResponseType: AiResponseType.checklistUpdates,
+          preconfiguredPromptId: 'checklist_updates',
           useReasoning: false,
         ),
       ];
@@ -1879,7 +1868,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(7));
+      expect(result!.promptsCreated, equals(6));
     });
 
     testWidgets('should update existing category instead of creating new one',
@@ -2206,7 +2195,7 @@ void main() {
       expect(find.byIcon(Icons.summarize), findsOneWidget);
     });
 
-    testWidgets('should create 4 prompts for Alibaba when user confirms',
+    testWidgets('should create 3 prompts for Alibaba when user confirms',
         (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -2235,7 +2224,7 @@ void main() {
       await tester.pump();
 
       expect(result, isTrue);
-      verify(() => mockRepository.saveConfig(any())).called(4);
+      verify(() => mockRepository.saveConfig(any())).called(3);
     });
 
     testWidgets('should create prompts with correct names for Alibaba',
@@ -2281,10 +2270,9 @@ void main() {
         contains('Image Analysis in Task Context - Qwen3 VL Flash'),
       );
       expect(promptNames, contains('Checklist Updates - Qwen3 Max'));
-      expect(promptNames, contains('Task Summary - Qwen3 Max'));
     });
 
-    testWidgets('should show correct snackbar count for Alibaba (4 prompts)',
+    testWidgets('should show correct snackbar count for Alibaba (3 prompts)',
         (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -2311,7 +2299,7 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.text('4 prompts created successfully!'), findsOneWidget);
+      expect(find.text('3 prompts created successfully!'), findsOneWidget);
     });
   });
 
@@ -2426,7 +2414,7 @@ void main() {
       expect(result, isNull);
     });
 
-    testWidgets('should create 5 models and 9 prompts when none exist',
+    testWidgets('should create 5 models and 8 prompts when none exist',
         (WidgetTester tester) async {
       when(() => mockRepository.getConfigsByType(AiConfigType.model))
           .thenAnswer((_) async => <AiConfig>[]);
@@ -2468,12 +2456,12 @@ void main() {
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(5));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(9));
+      expect(result!.promptsCreated, equals(8));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      // 5 models + 9 prompts = 14 saves
-      verify(() => mockRepository.saveConfig(any())).called(14);
+      // 5 models + 8 prompts = 13 saves
+      verify(() => mockRepository.saveConfig(any())).called(13);
     });
 
     testWidgets('should verify existing models and skip creation',
@@ -2586,15 +2574,15 @@ void main() {
       final existingPrompts = <AiConfig>[
         AiConfig.prompt(
           id: 'existing-prompt-id',
-          name: 'Task Summary',
+          name: 'Checklist Alibaba Qwen3 Max',
           systemMessage: 'system',
           userMessage: 'user',
-          defaultModelId: 'existing-flash',
-          modelIds: ['existing-flash'],
+          defaultModelId: 'existing-reasoning',
+          modelIds: ['existing-reasoning'],
           createdAt: DateTime(2024, 3, 15),
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-          preconfiguredPromptId: 'task_summary',
+          aiResponseType: AiResponseType.checklistUpdates,
+          preconfiguredPromptId: 'checklist_updates',
           useReasoning: false,
         ),
       ];
@@ -2638,7 +2626,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsCreated, equals(7));
     });
 
     testWidgets('should update existing category instead of creating new one',

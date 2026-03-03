@@ -1315,10 +1315,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSetupWizardTitle => 'KI-Einrichtungsassistent';
 
   @override
-  String get aiTaskSummaryCancelScheduled =>
-      'Geplante Zusammenfassung abbrechen';
-
-  @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1340,19 +1336,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Alle Aufgabenzusammenfassungen löschen';
 
   @override
-  String get aiTaskSummaryRunning =>
-      'Denke über die Zusammenfassung der Aufgabe nach...';
-
-  @override
-  String aiTaskSummaryScheduled(String time) {
-    return 'Zusammenfassung in $time';
-  }
-
-  @override
   String get aiTaskSummaryTitle => 'KI-Aufgabenzusammenfassung';
-
-  @override
-  String get aiTaskSummaryTriggerNow => 'Zusammenfassung jetzt erstellen';
 
   @override
   String get aiTranscribingAudio => 'Audio wird transkribiert...';

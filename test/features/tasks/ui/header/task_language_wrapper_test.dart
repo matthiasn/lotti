@@ -1,12 +1,8 @@
-import 'dart:async';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -25,9 +21,6 @@ import '../../../../test_helper.dart';
 
 class _MockJournalRepository extends Mock implements JournalRepository {}
 
-class _MockDirectTaskSummaryRefreshController extends Mock
-    implements DirectTaskSummaryRefreshController {}
-
 class _TestEntryController extends EntryController {
   _TestEntryController(this._task);
 
@@ -45,33 +38,10 @@ class _TestEntryController extends EntryController {
   }
 }
 
-class _DirectTaskSummaryRefreshControllerAdapter
-    extends Notifier<ScheduledRefreshState>
-    implements DirectTaskSummaryRefreshController {
-  _DirectTaskSummaryRefreshControllerAdapter(this._delegate);
-
-  final _MockDirectTaskSummaryRefreshController _delegate;
-
-  @override
-  ScheduledRefreshState build() => ScheduledRefreshState({});
-
-  @override
-  Future<void> requestTaskSummaryRefresh(String taskId) {
-    return _delegate.requestTaskSummaryRefresh(taskId);
-  }
-
-  @override
-  void cancelScheduledRefresh(String taskId) {}
-
-  @override
-  Future<void> triggerImmediately(String taskId) async {}
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _MockJournalRepository mockJournalRepository;
-  late _MockDirectTaskSummaryRefreshController mockSummaryController;
   late Task baseTask;
   late MockEditorStateService mockEditorStateService;
   late MockPersistenceLogic mockPersistenceLogic;
@@ -98,7 +68,6 @@ void main() {
 
   setUp(() {
     mockJournalRepository = _MockJournalRepository();
-    mockSummaryController = _MockDirectTaskSummaryRefreshController();
     baseTask = testTask;
   });
 
@@ -112,16 +81,10 @@ void main() {
   }) async {
     final overrides = <Override>[
       journalRepositoryProvider.overrideWith((ref) => mockJournalRepository),
-      directTaskSummaryRefreshControllerProvider.overrideWith(
-        () => _DirectTaskSummaryRefreshControllerAdapter(mockSummaryController),
-      ),
       entryControllerProvider(id: task.meta.id).overrideWith(
         () => _TestEntryController(task),
       ),
     ];
-
-    when(() => mockSummaryController.requestTaskSummaryRefresh(any()))
-        .thenAnswer((_) async {});
 
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
@@ -157,9 +120,6 @@ void main() {
             .single as Task;
 
     expect(updatedTask.data.languageCode, 'es');
-    verify(() =>
-            mockSummaryController.requestTaskSummaryRefresh(baseTask.meta.id))
-        .called(1);
   });
 
   testWidgets('does nothing when the selected language matches current value',
@@ -173,7 +133,6 @@ void main() {
     await callback(SupportedLanguage.es);
 
     verifyNever(() => mockJournalRepository.updateJournalEntity(any()));
-    verifyNever(() => mockSummaryController.requestTaskSummaryRefresh(any()));
   });
 
   testWidgets('skips summary refresh when task update fails', (tester) async {
@@ -185,6 +144,5 @@ void main() {
     await callback(SupportedLanguage.fr);
 
     verify(() => mockJournalRepository.updateJournalEntity(any())).called(1);
-    verifyNever(() => mockSummaryController.requestTaskSummaryRefresh(any()));
   });
 }

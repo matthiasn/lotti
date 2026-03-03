@@ -3,16 +3,13 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart' as drift;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -28,13 +25,6 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockTaskSummaryRefreshService extends Mock
-    implements TaskSummaryRefreshService {}
-
-/// Provider to capture a real Ref for testing.
-/// In Riverpod 3.x, Ref is sealed and cannot be mocked directly.
-final testRefProvider = Provider<Ref>((ref) => ref);
 
 class MockSelectableLinkedDbEntry extends Mock
     implements drift.Selectable<LinkedDbEntry> {}
@@ -54,7 +44,6 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockTimeService mockTimeService;
   late JournalRepository repository;
-  late ProviderContainer container;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
@@ -77,10 +66,7 @@ void main() {
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<TimeService>(mockTimeService);
 
-    // Create ProviderContainer and get a real Ref for testing
-    container = ProviderContainer();
-    final ref = container.read(testRefProvider);
-    repository = JournalRepository(ref);
+    repository = JournalRepository();
 
     // Register fallback values for any complex types
     registerFallbackValue(
@@ -153,10 +139,7 @@ void main() {
     registerFallbackValue(DateTime(2023));
   });
 
-  tearDown(() {
-    container.dispose();
-    getIt.reset();
-  });
+  tearDown(getIt.reset);
 
   group('JournalRepository', () {
     group('updateCategoryId', () {
@@ -1356,109 +1339,6 @@ void main() {
           () => mockJournalDb
               .journalEntityIdsByDateFromDesc(['to-id-1', 'to-id-2']),
         ).called(1);
-      });
-    });
-
-    group('deleteJournalEntity with ChecklistItem', () {
-      test('triggers task summary refresh when deleting a ChecklistItem',
-          () async {
-        // Arrange
-        const journalEntityId = 'checklist-item-id';
-        const checklistId1 = 'checklist-1';
-        const checklistId2 = 'checklist-2';
-
-        final checklistItem = JournalEntity.checklistItem(
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
-          data: const ChecklistItemData(
-            title: 'Test Checklist Item',
-            isChecked: false,
-            linkedChecklists: [checklistId1, checklistId2],
-          ),
-        );
-
-        final updatedMeta = checklistItem.meta.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        // Create mock for task summary refresh service
-        final mockTaskSummaryRefreshService = MockTaskSummaryRefreshService();
-
-        // Create a ProviderContainer with the mock service override
-        final testContainer = ProviderContainer(
-          overrides: [
-            taskSummaryRefreshServiceProvider
-                .overrideWithValue(mockTaskSummaryRefreshService),
-          ],
-        );
-        addTearDown(testContainer.dispose);
-        final testRef = testContainer.read(testRefProvider);
-        final testRepository = JournalRepository(testRef);
-
-        // Mock the journalEntityById call to return a ChecklistItem
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => checklistItem);
-
-        // Mock the updateMetadata call
-        when(
-          () => mockPersistenceLogic.updateMetadata(
-            checklistItem.meta,
-            deletedAt: any(named: 'deletedAt'),
-          ),
-        ).thenAnswer((_) async => updatedMeta);
-
-        // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
-
-        // Mock the updateBadge call
-        when(() => mockNotificationService.updateBadge())
-            .thenAnswer((_) async {});
-
-        // Mock the task summary refresh service call
-        when(() =>
-            mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
-              checklistId: any(named: 'checklistId'),
-              callingDomain: any(named: 'callingDomain'),
-            )).thenAnswer((_) async {});
-
-        // Act
-        final result =
-            await testRepository.deleteJournalEntity(journalEntityId);
-
-        // Assert
-        expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
-        verify(
-          () => mockPersistenceLogic.updateMetadata(
-            checklistItem.meta,
-            deletedAt: any(named: 'deletedAt'),
-          ),
-        ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
-        verify(() => mockNotificationService.updateBadge()).called(1);
-
-        // Verify task summary refresh was called for each linked checklist
-        verify(() =>
-            mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
-              checklistId: checklistId1,
-              callingDomain: 'JournalRepository',
-            )).called(1);
-        verify(() =>
-            mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
-              checklistId: checklistId2,
-              callingDomain: 'JournalRepository',
-            )).called(1);
       });
     });
 

@@ -47,8 +47,8 @@ void main() {
           promptFormControllerProvider(configId: null).future,
         );
 
-        // Get the task summary template
-        final template = preconfiguredPrompts['task_summary']!;
+        // Get the checklist updates template
+        final template = preconfiguredPrompts['checklist_updates']!;
 
         // Act
         controller.populateFromPreconfiguredPrompt(template);
@@ -69,7 +69,7 @@ void main() {
         expect(state.requiredInputData, equals(template.requiredInputData));
         expect(state.aiResponseType.value, equals(template.aiResponseType));
         expect(state.trackPreconfigured, isTrue);
-        expect(state.preconfiguredPromptId, equals('task_summary'));
+        expect(state.preconfiguredPromptId, equals('checklist_updates'));
 
         // Check that text controllers were updated
         expect(controller.nameController.text, equals(template.name));
@@ -103,7 +103,7 @@ void main() {
           systemMessage: 'System',
           userMessage: 'User',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          aiResponseType: AiResponseType.checklistUpdates,
           useReasoning: false,
           description: 'Description',
           defaultVariables: {'key1': 'value1', 'key2': 'value2'},
@@ -132,17 +132,17 @@ void main() {
         const testConfigId = 'test-prompt-id';
         final testConfig = AiConfigPrompt(
           id: testConfigId,
-          name: 'Modified Task Summary',
+          name: 'Modified Checklist Updates',
           systemMessage: 'Modified system message',
           userMessage: 'Modified user message',
           description: 'Modified description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: true,
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-          preconfiguredPromptId: 'task_summary', // But has the ID
+          aiResponseType: AiResponseType.checklistUpdates,
+          preconfiguredPromptId: 'checklist_updates', // But has the ID
         );
 
         when(() => mockAiConfigRepository.getConfigById(testConfigId))
@@ -167,10 +167,10 @@ void main() {
             .value;
 
         expect(state!.trackPreconfigured, isTrue);
-        expect(state.preconfiguredPromptId, equals('task_summary'));
+        expect(state.preconfiguredPromptId, equals('checklist_updates'));
 
         // Should update messages from the preconfigured prompt
-        final template = preconfiguredPrompts['task_summary']!;
+        final template = preconfiguredPrompts['checklist_updates']!;
         expect(state.systemMessage.value, equals(template.systemMessage));
         expect(state.userMessage.value, equals(template.userMessage));
 
@@ -191,18 +191,18 @@ void main() {
         const testConfigId = 'test-prompt-id';
         final testConfig = AiConfigPrompt(
           id: testConfigId,
-          name: 'Task Summary',
-          systemMessage: taskSummaryPrompt.systemMessage,
-          userMessage: taskSummaryPrompt.userMessage,
+          name: 'Checklist Updates',
+          systemMessage: checklistUpdatesPrompt.systemMessage,
+          userMessage: checklistUpdatesPrompt.userMessage,
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: true,
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          aiResponseType: AiResponseType.checklistUpdates,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
         );
 
         when(() => mockAiConfigRepository.getConfigById(testConfigId))
@@ -228,7 +228,7 @@ void main() {
 
         expect(state!.trackPreconfigured, isFalse);
         // preconfiguredPromptId should still be present
-        expect(state.preconfiguredPromptId, equals('task_summary'));
+        expect(state.preconfiguredPromptId, equals('checklist_updates'));
 
         // Messages should not change when disabling
         expect(state.systemMessage.value, equals(testConfig.systemMessage));
@@ -246,10 +246,10 @@ void main() {
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          aiResponseType: AiResponseType.checklistUpdates,
           preconfiguredPromptId: 'invalid_id', // This ID doesn't exist
         );
 
@@ -293,10 +293,10 @@ void main() {
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          aiResponseType: AiResponseType.checklistUpdates,
         );
 
         when(() => mockAiConfigRepository.getConfigById(testConfigId))
@@ -334,18 +334,18 @@ void main() {
         const testConfigId = 'test-prompt-id';
         final testConfig = AiConfigPrompt(
           id: testConfigId,
-          name: 'Task Summary',
-          systemMessage: taskSummaryPrompt.systemMessage,
-          userMessage: taskSummaryPrompt.userMessage,
+          name: 'Checklist Updates',
+          systemMessage: checklistUpdatesPrompt.systemMessage,
+          userMessage: checklistUpdatesPrompt.userMessage,
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: true,
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          aiResponseType: AiResponseType.checklistUpdates,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
         );
 
         when(() => mockAiConfigRepository.getConfigById(testConfigId))
@@ -398,7 +398,7 @@ void main() {
         );
 
         // Populate from template
-        final template = preconfiguredPrompts['task_summary']!;
+        final template = preconfiguredPrompts['checklist_updates']!;
         controller
           ..populateFromPreconfiguredPrompt(template)
 
@@ -422,7 +422,8 @@ void main() {
         ).captured.single as AiConfigPrompt;
 
         expect(capturedConfig.trackPreconfigured, isTrue);
-        expect(capturedConfig.preconfiguredPromptId, equals('task_summary'));
+        expect(
+            capturedConfig.preconfiguredPromptId, equals('checklist_updates'));
       });
 
       test('should preserve tracking state when updating existing config',
@@ -431,18 +432,18 @@ void main() {
         const testConfigId = 'test-prompt-id';
         final existingConfig = AiConfigPrompt(
           id: testConfigId,
-          name: 'Task Summary',
+          name: 'Checklist Updates',
           systemMessage: 'System',
           userMessage: 'User',
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          useReasoning: true,
+          createdAt: DateTime(2024, 3, 14),
+          useReasoning: false,
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          aiResponseType: AiResponseType.checklistUpdates,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'task_summary',
+          preconfiguredPromptId: 'checklist_updates',
         );
 
         when(() => mockAiConfigRepository.getConfigById(testConfigId))
@@ -475,7 +476,8 @@ void main() {
         ).captured.single as AiConfigPrompt;
 
         expect(capturedConfig.trackPreconfigured, isTrue);
-        expect(capturedConfig.preconfiguredPromptId, equals('task_summary'));
+        expect(
+            capturedConfig.preconfiguredPromptId, equals('checklist_updates'));
         expect(capturedConfig.name, equals('Updated Name'));
         expect(capturedConfig.id, equals(testConfigId));
         expect(capturedConfig.createdAt, equals(existingConfig.createdAt));

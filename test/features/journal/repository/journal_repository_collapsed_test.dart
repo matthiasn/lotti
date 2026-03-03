@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -20,15 +19,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-final testRefProvider = Provider<Ref>((ref) => ref);
-
 void main() {
   late MockJournalDb mockJournalDb;
   late MockVectorClockService mockVectorClockService;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockOutboxService mockOutboxService;
   late JournalRepository repository;
-  late ProviderContainer container;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
@@ -46,9 +42,7 @@ void main() {
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<TimeService>(MockTimeService());
 
-    container = ProviderContainer();
-    final ref = container.read(testRefProvider);
-    repository = JournalRepository(ref);
+    repository = JournalRepository();
 
     registerFallbackValue(
       Metadata(
@@ -116,7 +110,6 @@ void main() {
   });
 
   tearDown(() async {
-    container.dispose();
     await getIt.reset();
   });
 

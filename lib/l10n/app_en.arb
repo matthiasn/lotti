@@ -737,7 +737,6 @@
   "aiSetupWizardRunningButton": "Running...",
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardTitle": "AI Setup Wizard",
-  "aiTaskSummaryCancelScheduled": "Cancel scheduled summary",
   "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Do you really want to delete this task summary? This cannot be undone.} other{Do you really want to delete {count} task summaries? This cannot be undone.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
@@ -748,17 +747,7 @@
   },
   "aiTaskSummaryDeleteConfirmTitle": "Delete Task Summaries",
   "aiTaskSummaryDeleteTooltip": "Delete all task summaries",
-  "aiTaskSummaryRunning": "Thinking about summarizing task...",
-  "aiTaskSummaryScheduled": "Summary in {time}",
-  "@aiTaskSummaryScheduled": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "aiTaskSummaryTitle": "AI Task Summary",
-  "aiTaskSummaryTriggerNow": "Generate summary now",
   "aiTranscribingAudio": "Transcribing audio...",
   "apiKeyAddPageTitle": "Add Provider",
   "apiKeyEditLoadError": "Failed to load API key configuration",

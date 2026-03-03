@@ -901,9 +901,9 @@ void main() {
       await tester.pump();
 
       // Verify prompts were created
-      // FTUE creates: 3 models + 9 prompts (optimized assignment)
+      // FTUE creates: 3 models + 8 prompts (optimized assignment)
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-      expect(promptsCreated, equals(9));
+      expect(promptsCreated, equals(8));
     });
 
     testWidgets('skips prompt creation when user declines',
@@ -1694,7 +1694,7 @@ void main() {
 
       // Verify prompts were created for OpenAI
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-      expect(promptsCreated, equals(9));
+      expect(promptsCreated, equals(8));
     });
   });
 }

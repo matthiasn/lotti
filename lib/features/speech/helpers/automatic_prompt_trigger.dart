@@ -32,11 +32,6 @@ class AutomaticPromptTrigger {
   /// - Only triggers if linked to a task
   /// - Waits for transcription to complete first (if transcription is triggered)
   /// - Triggered if category has automatic checklist updates configured
-  ///
-  /// For task summary:
-  /// - Only triggers if linked to a task
-  /// - Waits for transcription and checklist updates to complete first
-  /// - Uses same preference logic as transcription
   Future<void> triggerAutomaticPrompts(
     String entryId,
     String categoryId,
@@ -64,13 +59,6 @@ class AutomaticPromptTrigger {
                 .automaticPrompts![AiResponseType.checklistUpdates]!.isNotEmpty;
         final shouldTriggerChecklistUpdates =
             isLinkedToTask && hasAutomaticChecklistUpdates;
-
-        // Determine if task summary should be triggered
-        final hasAutomaticTaskSummary = category.automaticPrompts!
-                .containsKey(AiResponseType.taskSummary) &&
-            category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
-        final shouldTriggerTaskSummary =
-            isLinkedToTask && hasAutomaticTaskSummary;
 
         // Trigger audio transcription if enabled (skip if realtime already
         // produced a transcript, e.g. from live transcription mode)
@@ -113,8 +101,8 @@ class AutomaticPromptTrigger {
               )).future,
             );
 
-            final shouldAwaitTranscriptionImmediately = linkedTaskId == null ||
-                (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary);
+            final shouldAwaitTranscriptionImmediately =
+                linkedTaskId == null || !shouldTriggerChecklistUpdates;
             // If no follow-up prompts require the transcript, await it now to
             // keep recorder state consistent. Otherwise subsequent steps will
             // await before firing.
@@ -125,7 +113,6 @@ class AutomaticPromptTrigger {
         }
 
         // Trigger checklist updates if enabled and linked to task
-        Future<void>? checklistUpdatesFuture;
         if (shouldTriggerChecklistUpdates &&
             linkedTaskId != null &&
             hasAutomaticChecklistUpdates) {
@@ -145,7 +132,11 @@ class AutomaticPromptTrigger {
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );
-            // Continue with other prompts
+            // Ensure deferred transcription is still awaited even when no
+            // checklist prompt is available.
+            if (transcriptionFuture != null) {
+              await transcriptionFuture;
+            }
           } else {
             final promptId = availablePrompt.id;
 
@@ -171,88 +162,14 @@ class AutomaticPromptTrigger {
             }
 
             // Trigger checklist updates on the task entity, but pass the audio entry as linkedEntityId
-            checklistUpdatesFuture = ref.read(
+            await ref.read(
               triggerNewInferenceProvider((
                 entityId: linkedTaskId,
                 promptId: promptId,
                 linkedEntityId: entryId,
               )).future,
             );
-
-            // If task summary is not needed, await checklist updates
-            if (!shouldTriggerTaskSummary) {
-              await checklistUpdatesFuture;
-            }
           }
-        }
-
-        // Trigger task summary if enabled and linked to task
-        if (shouldTriggerTaskSummary &&
-            linkedTaskId != null &&
-            hasAutomaticTaskSummary) {
-          final taskSummaryPromptIds =
-              category.automaticPrompts![AiResponseType.taskSummary]!;
-
-          // Get the first available prompt for the current platform
-          final capabilityFilter = ref.read(promptCapabilityFilterProvider);
-          final availablePrompt =
-              await capabilityFilter.getFirstAvailablePrompt(
-            taskSummaryPromptIds,
-          );
-
-          if (availablePrompt == null) {
-            loggingService.captureEvent(
-              'No available task summary prompts for current platform',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-            return;
-          }
-
-          final promptId = availablePrompt.id;
-
-          loggingService.captureEvent(
-            'Triggering task summary for task $linkedTaskId (transcription pending: ${transcriptionFuture != null}, checklist updates pending: ${checklistUpdatesFuture != null})',
-            domain: 'automatic_prompt_trigger',
-            subDomain: 'triggerAutomaticPrompts',
-          );
-
-          // Wait for any pending operations to complete
-          // This ensures the task summary includes all updates
-          if (transcriptionFuture != null && checklistUpdatesFuture == null) {
-            loggingService.captureEvent(
-              'Waiting for transcription to complete before task summary',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-            await transcriptionFuture;
-            loggingService.captureEvent(
-              'Transcription completed, now triggering task summary',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-          } else if (checklistUpdatesFuture != null) {
-            loggingService.captureEvent(
-              'Waiting for checklist updates to complete before task summary',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-            await checklistUpdatesFuture;
-            loggingService.captureEvent(
-              'Checklist updates completed, now triggering task summary',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-          }
-
-          // Trigger task summary on the task entity, not the audio entry
-          await ref.read(
-            triggerNewInferenceProvider((
-              entityId: linkedTaskId,
-              promptId: promptId,
-              linkedEntityId: null,
-            )).future,
-          );
         }
       }
     } catch (exception, stackTrace) {

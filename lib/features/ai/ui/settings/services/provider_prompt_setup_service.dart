@@ -255,10 +255,6 @@ class ProviderPromptSetupService {
             template: checklistUpdatesPrompt,
             model: modelSelection.reasoningModel,
           ),
-          PromptConfig(
-            template: taskSummaryPrompt,
-            model: modelSelection.reasoningModel,
-          ),
         ],
       InferenceProviderType.gemini => [
           if (modelSelection.audioModel != null)
@@ -275,10 +271,6 @@ class ProviderPromptSetupService {
             template: checklistUpdatesPrompt,
             model: modelSelection.reasoningModel,
           ),
-          PromptConfig(
-            template: taskSummaryPrompt,
-            model: modelSelection.reasoningModel,
-          ),
         ],
       InferenceProviderType.ollama => [
           if (modelSelection.imageModel != null)
@@ -288,10 +280,6 @@ class ProviderPromptSetupService {
             ),
           PromptConfig(
             template: checklistUpdatesPrompt,
-            model: modelSelection.reasoningModel,
-          ),
-          PromptConfig(
-            template: taskSummaryPrompt,
             model: modelSelection.reasoningModel,
           ),
         ],
@@ -930,13 +918,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
         promptName: 'Audio Transcription (Task Context) Gemini Flash',
       ),
 
-      // Task Summary -> Flash (fast processing)
-      FtuePromptConfig(
-        template: taskSummaryPrompt,
-        modelVariant: 'flash',
-        promptName: 'Task Summary Gemini Flash',
-      ),
-
       // Checklist Updates -> Pro (complex reasoning needed)
       FtuePromptConfig(
         template: checklistUpdatesPrompt,
@@ -1422,13 +1403,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
         promptName: 'Audio Transcription (Task Context) OpenAI',
       ),
 
-      // Task Summary -> Flash (fast processing)
-      FtuePromptConfig(
-        template: taskSummaryPrompt,
-        modelVariant: 'flash',
-        promptName: 'Task Summary OpenAI GPT-5 Nano',
-      ),
-
       // Checklist Updates -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: checklistUpdatesPrompt,
@@ -1874,13 +1848,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
         template: audioTranscriptionWithTaskContextPrompt,
         modelVariant: 'audio',
         promptName: 'Audio Transcription (Task Context) Mistral Voxtral',
-      ),
-
-      // Task Summary -> Flash (fast processing)
-      FtuePromptConfig(
-        template: taskSummaryPrompt,
-        modelVariant: 'flash',
-        promptName: 'Task Summary Mistral Small',
       ),
 
       // Checklist Updates -> Reasoning (complex reasoning needed)
@@ -2344,13 +2311,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
         template: audioTranscriptionWithTaskContextPrompt,
         modelVariant: 'audio',
         promptName: 'Audio Transcription (Task Context) Alibaba Qwen3 Omni',
-      ),
-
-      // Task Summary -> Flash (fast processing)
-      FtuePromptConfig(
-        template: taskSummaryPrompt,
-        modelVariant: 'flash',
-        promptName: 'Task Summary Alibaba Qwen Flash',
       ),
 
       // Checklist Updates -> Reasoning (complex reasoning needed)

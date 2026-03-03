@@ -1314,9 +1314,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSetupWizardTitle => 'Asistent de configurare AI';
 
   @override
-  String get aiTaskSummaryCancelScheduled => 'Anulează rezumatul programat';
-
-  @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1336,18 +1333,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiTaskSummaryDeleteTooltip => 'Șterge toate rezumatele sarcinilor';
 
   @override
-  String get aiTaskSummaryRunning => 'Se gândește la rezumarea sarcinii...';
-
-  @override
-  String aiTaskSummaryScheduled(String time) {
-    return 'Rezumat în $time';
-  }
-
-  @override
   String get aiTaskSummaryTitle => 'Rezumatul sarcinii AI';
-
-  @override
-  String get aiTaskSummaryTriggerNow => 'Generează rezumatul acum';
 
   @override
   String get aiTranscribingAudio => 'Se transcrie audio...';

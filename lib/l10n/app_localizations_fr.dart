@@ -1333,9 +1333,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSetupWizardTitle => 'Assistant de configuration AI';
 
   @override
-  String get aiTaskSummaryCancelScheduled => 'Annuler le résumé programmé';
-
-  @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1357,18 +1354,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Supprimer tous les résumés de tâches';
 
   @override
-  String get aiTaskSummaryRunning => 'Réflexion sur le résumé de la tâche...';
-
-  @override
-  String aiTaskSummaryScheduled(String time) {
-    return 'Résumé dans $time';
-  }
-
-  @override
   String get aiTaskSummaryTitle => 'Résumé de la tâche IA';
-
-  @override
-  String get aiTaskSummaryTriggerNow => 'Générer le résumé maintenant';
 
   @override
   String get aiTranscribingAudio => 'Transcription de l\'audio...';

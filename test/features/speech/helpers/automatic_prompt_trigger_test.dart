@@ -281,53 +281,6 @@ void main() {
           ));
     });
 
-    test('should not trigger task summary when not linked to task', () async {
-      // Arrange
-      const categoryId = 'test-category';
-      const entryId = 'test-entry';
-      const taskSummaryPromptId = 'task-summary-prompt';
-
-      final category = createTestCategory(
-        id: categoryId,
-        name: 'Test Category',
-        automaticPrompts: {
-          AiResponseType.taskSummary: [taskSummaryPromptId],
-        },
-      );
-
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
-
-      final trigger = container.read(automaticPromptTriggerProvider);
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.stopped,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: false,
-      );
-
-      // Act
-      await trigger.triggerAutomaticPrompts(
-        entryId,
-        categoryId,
-        state,
-        isLinkedToTask: false, // Not linked to task
-      );
-
-      // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      // Should not log task summary triggering
-      verifyNever(() => mockLoggingService.captureEvent(
-            any<String>(that: contains('Triggering task summary')),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          ));
-    });
-
     test('should handle empty prompt lists', () async {
       // Arrange
       const categoryId = 'test-category';
@@ -338,7 +291,7 @@ void main() {
         name: 'Test Category',
         automaticPrompts: {
           AiResponseType.audioTranscription: [], // Empty list
-          AiResponseType.taskSummary: [], // Empty list
+          AiResponseType.checklistUpdates: [], // Empty list
         },
       );
 
@@ -609,98 +562,8 @@ void main() {
         });
       });
 
-      test('should wait for checklist updates before task summary', () {
-        fakeAsync((async) {
-          // Arrange
-          const categoryId = 'test-category';
-          const entryId = 'test-entry';
-          const taskId = 'test-task';
-          const checklistPromptId = 'checklist-prompt';
-          const taskSummaryPromptId = 'task-summary-prompt';
-
-          final category = createTestCategory(
-            id: categoryId,
-            name: 'Test Category',
-            automaticPrompts: {
-              AiResponseType.checklistUpdates: [checklistPromptId],
-              AiResponseType.taskSummary: [taskSummaryPromptId],
-            },
-          );
-
-          when(() => mockCategoryRepository.getCategoryById(categoryId))
-              .thenAnswer((_) async => category);
-
-          var checklistCompleted = false;
-          var taskSummaryTriggered = false;
-
-          final testContainer = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider
-                  .overrideWithValue(mockCategoryRepository),
-              promptCapabilityFilterProvider
-                  .overrideWithValue(mockPromptCapabilityFilter),
-              triggerNewInferenceProvider((
-                entityId: taskId,
-                promptId: checklistPromptId,
-                linkedEntityId: entryId,
-              )).overrideWith((ref) async {
-                checklistCompleted = true;
-              }),
-              triggerNewInferenceProvider((
-                entityId: taskId,
-                promptId: taskSummaryPromptId,
-                linkedEntityId: null,
-              )).overrideWith((ref) async {
-                // Verify checklist completed before task summary
-                expect(checklistCompleted, isTrue,
-                    reason: 'Task summary should wait for checklist updates');
-                taskSummaryTriggered = true;
-              }),
-            ],
-          );
-
-          final trigger = testContainer.read(automaticPromptTriggerProvider);
-
-          final state = AudioRecorderState(
-            status: AudioRecorderStatus.stopped,
-            vu: 0,
-            dBFS: -60,
-            progress: Duration.zero,
-            showIndicator: false,
-            modalVisible: false,
-          );
-
-          // Act
-          unawaited(trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          ));
-          async.flushMicrotasks();
-
-          // Assert
-          expect(checklistCompleted, isTrue);
-          expect(taskSummaryTriggered, isTrue);
-
-          verify(() => mockLoggingService.captureEvent(
-                'Waiting for checklist updates to complete before task summary',
-                domain: 'automatic_prompt_trigger',
-                subDomain: 'triggerAutomaticPrompts',
-              )).called(1);
-
-          verify(() => mockLoggingService.captureEvent(
-                'Checklist updates completed, now triggering task summary',
-                domain: 'automatic_prompt_trigger',
-                subDomain: 'triggerAutomaticPrompts',
-              )).called(1);
-
-          testContainer.dispose();
-        });
-      });
-
-      test('should execute all three prompts in correct sequence', () {
+      test('should execute transcription and checklist in correct sequence',
+          () {
         fakeAsync((async) {
           // Arrange
           const categoryId = 'test-category';
@@ -708,7 +571,6 @@ void main() {
           const taskId = 'test-task';
           const transcriptionPromptId = 'transcription-prompt';
           const checklistPromptId = 'checklist-prompt';
-          const taskSummaryPromptId = 'task-summary-prompt';
 
           final category = createTestCategory(
             id: categoryId,
@@ -716,7 +578,6 @@ void main() {
             automaticPrompts: {
               AiResponseType.audioTranscription: [transcriptionPromptId],
               AiResponseType.checklistUpdates: [checklistPromptId],
-              AiResponseType.taskSummary: [taskSummaryPromptId],
             },
           );
 
@@ -725,7 +586,6 @@ void main() {
 
           var transcriptionCompleted = false;
           var checklistCompleted = false;
-          var taskSummaryCompleted = false;
           final executionOrder = <String>[];
 
           final testContainer = ProviderContainer(
@@ -752,16 +612,6 @@ void main() {
                 expect(transcriptionCompleted, isTrue);
                 checklistCompleted = true;
                 executionOrder.add('checklist-end');
-              }),
-              triggerNewInferenceProvider((
-                entityId: taskId,
-                promptId: taskSummaryPromptId,
-                linkedEntityId: null,
-              )).overrideWith((ref) async {
-                executionOrder.add('summary-start');
-                expect(checklistCompleted, isTrue);
-                taskSummaryCompleted = true;
-                executionOrder.add('summary-end');
               }),
             ],
           );
@@ -791,7 +641,6 @@ void main() {
           // Assert
           expect(transcriptionCompleted, isTrue);
           expect(checklistCompleted, isTrue);
-          expect(taskSummaryCompleted, isTrue);
 
           // Verify execution order
           expect(executionOrder, [
@@ -799,8 +648,6 @@ void main() {
             'transcription-end',
             'checklist-start',
             'checklist-end',
-            'summary-start',
-            'summary-end',
           ]);
 
           testContainer.dispose();
@@ -882,85 +729,6 @@ void main() {
         // Also verify logging
         verify(() => mockLoggingService.captureEvent(
               'Triggering audio transcription (user preference: null)',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            )).called(1);
-
-        // Clean up
-        testContainer.dispose();
-      });
-
-      test('should trigger task summary for linked tasks', () async {
-        // Arrange
-        const categoryId = 'test-category';
-        const entryId = 'test-entry';
-        const taskId = 'test-task';
-        const taskSummaryPromptId = 'task-summary-prompt';
-
-        final category = createTestCategory(
-          id: categoryId,
-          name: 'Test Category',
-          automaticPrompts: {
-            AiResponseType.taskSummary: [taskSummaryPromptId],
-          },
-        );
-
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
-
-        var inferenceTriggered = false;
-        String? capturedEntityId;
-        String? capturedPromptId;
-
-        // Override the triggerNewInferenceProvider for this specific test
-        // Note: Task summary is triggered WITHOUT linkedEntityId parameter
-        final testContainer = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            promptCapabilityFilterProvider
-                .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider((
-              entityId: taskId,
-              promptId: taskSummaryPromptId,
-              linkedEntityId: null,
-            )).overrideWith((ref) async {
-              inferenceTriggered = true;
-              capturedEntityId = taskId;
-              capturedPromptId = taskSummaryPromptId;
-            }),
-          ],
-        );
-
-        final trigger = testContainer.read(automaticPromptTriggerProvider);
-
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          enableSpeechRecognition: false, // No transcription
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: false,
-        );
-
-        // Act
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          categoryId,
-          state,
-          isLinkedToTask: true,
-          linkedTaskId: taskId,
-        );
-
-        // Assert
-        expect(inferenceTriggered, isTrue);
-        expect(capturedEntityId, equals(taskId));
-        expect(capturedPromptId, equals(taskSummaryPromptId));
-
-        // Also verify logging
-        verify(() => mockLoggingService.captureEvent(
-              'Triggering task summary for task $taskId (transcription pending: false, checklist updates pending: false)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             )).called(1);
@@ -1279,145 +1047,6 @@ void main() {
           verify(
             () => mockLoggingService.captureEvent(
               'Waiting for transcription to complete before checklist updates',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            ),
-          ).called(1);
-
-          testContainer.dispose();
-        });
-      });
-
-      test('waits for checklist before task summary', () {
-        fakeAsync((async) {
-          const categoryId = 'test-category';
-          const entryId = 'test-entry';
-          const taskId = 'test-task';
-          const transcriptionPromptId = 'transcription-prompt-id';
-          const checklistPromptId = 'checklist-prompt-id';
-          const taskSummaryPromptId = 'task-summary-prompt-id';
-
-          final category = createTestCategory(
-            id: categoryId,
-            name: 'Test Category',
-            automaticPrompts: {
-              AiResponseType.audioTranscription: [transcriptionPromptId],
-              AiResponseType.checklistUpdates: [checklistPromptId],
-              AiResponseType.taskSummary: [taskSummaryPromptId],
-            },
-          );
-
-          when(() => mockCategoryRepository.getCategoryById(categoryId))
-              .thenAnswer((_) async => category);
-
-          when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()))
-              .thenAnswer((invocation) async {
-            final promptIds = invocation.positionalArguments[0] as List<String>;
-            if (promptIds.contains(transcriptionPromptId)) {
-              return AiConfigPrompt(
-                id: transcriptionPromptId,
-                name: 'Transcription',
-                defaultModelId: 'test-model',
-                modelIds: const [],
-                systemMessage: 'Test',
-                userMessage: 'Test',
-                requiredInputData: const [],
-                useReasoning: false,
-                createdAt: DateTime(2024, 3, 15),
-                aiResponseType: AiResponseType.audioTranscription,
-              );
-            }
-            if (promptIds.contains(checklistPromptId)) {
-              return AiConfigPrompt(
-                id: checklistPromptId,
-                name: 'Checklist',
-                defaultModelId: 'test-model',
-                modelIds: const [],
-                systemMessage: 'Test',
-                userMessage: 'Test',
-                requiredInputData: const [],
-                useReasoning: false,
-                createdAt: DateTime(2024, 3, 15),
-                aiResponseType: AiResponseType.checklistUpdates,
-              );
-            }
-            if (promptIds.contains(taskSummaryPromptId)) {
-              return AiConfigPrompt(
-                id: taskSummaryPromptId,
-                name: 'Task Summary',
-                defaultModelId: 'test-model',
-                modelIds: const [],
-                systemMessage: 'Test',
-                userMessage: 'Test',
-                requiredInputData: const [],
-                useReasoning: false,
-                createdAt: DateTime(2024, 3, 15),
-                aiResponseType: AiResponseType.taskSummary,
-              );
-            }
-            return null;
-          });
-
-          var checklistCompleted = false;
-          var taskSummaryStarted = false;
-
-          final testContainer = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider
-                  .overrideWithValue(mockCategoryRepository),
-              promptCapabilityFilterProvider
-                  .overrideWithValue(mockPromptCapabilityFilter),
-              triggerNewInferenceProvider((
-                entityId: entryId,
-                promptId: transcriptionPromptId,
-                linkedEntityId: taskId,
-              )).overrideWith((ref) async {}),
-              triggerNewInferenceProvider((
-                entityId: taskId,
-                promptId: checklistPromptId,
-                linkedEntityId: entryId,
-              )).overrideWith((ref) async {
-                checklistCompleted = true;
-              }),
-              triggerNewInferenceProvider((
-                entityId: taskId,
-                promptId: taskSummaryPromptId,
-                linkedEntityId: null,
-              )).overrideWith((ref) async {
-                // Task summary should only start after checklist completes
-                expect(checklistCompleted, isTrue);
-                taskSummaryStarted = true;
-              }),
-            ],
-          );
-
-          final trigger = testContainer.read(automaticPromptTriggerProvider);
-
-          final state = AudioRecorderState(
-            status: AudioRecorderStatus.stopped,
-            enableSpeechRecognition: true,
-            vu: 0,
-            dBFS: -60,
-            progress: Duration.zero,
-            showIndicator: false,
-            modalVisible: false,
-          );
-
-          unawaited(trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          ));
-          async.flushMicrotasks();
-
-          expect(taskSummaryStarted, isTrue);
-
-          // Verify logging
-          verify(
-            () => mockLoggingService.captureEvent(
-              'Waiting for checklist updates to complete before task summary',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             ),

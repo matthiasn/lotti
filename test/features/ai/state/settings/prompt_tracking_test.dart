@@ -36,12 +36,12 @@ void main() {
         userMessage: 'Old user message',
         defaultModelId: 'model1',
         modelIds: ['model1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
+        aiResponseType: AiResponseType.checklistUpdates,
         trackPreconfigured: true,
-        preconfiguredPromptId: 'task_summary',
+        preconfiguredPromptId: 'checklist_updates',
       );
 
       when(() => mockRepository.getConfigById('test-prompt'))
@@ -55,7 +55,7 @@ void main() {
           .read(promptFormControllerProvider(configId: 'test-prompt').future);
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['task_summary']!;
+      final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
 
       // Toggle tracking off
       controller.toggleTrackPreconfigured(false);
@@ -86,12 +86,12 @@ void main() {
         userMessage: 'Old user message',
         defaultModelId: 'model1',
         modelIds: ['model1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
+        aiResponseType: AiResponseType.checklistUpdates,
         trackPreconfigured: true,
-        preconfiguredPromptId: 'task_summary',
+        preconfiguredPromptId: 'checklist_updates',
       );
 
       when(() => mockRepository.getConfigById('test-prompt'))
@@ -105,7 +105,7 @@ void main() {
           .read(promptFormControllerProvider(configId: 'test-prompt').future);
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['task_summary']!;
+      final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
 
       // Verify the controllers loaded the preconfigured values
       expect(controller.systemMessageController.text,
@@ -123,11 +123,11 @@ void main() {
         userMessage: 'Custom user message',
         defaultModelId: 'model1',
         modelIds: ['model1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-        preconfiguredPromptId: 'task_summary',
+        aiResponseType: AiResponseType.checklistUpdates,
+        preconfiguredPromptId: 'checklist_updates',
       );
 
       when(() => mockRepository.getConfigById('test-prompt'))
@@ -150,7 +150,7 @@ void main() {
       controller.toggleTrackPreconfigured(true);
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['task_summary']!;
+      final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
 
       // Should now have preconfigured values
       expect(controller.systemMessageController.text,

@@ -12,8 +12,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/helpers/smart_task_summary_trigger.dart';
-import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -224,11 +222,6 @@ class EntryController extends _$EntryController {
           due: clearDueDate ? null : (dueDate ?? task.data.due),
         ),
       );
-
-      // Always trigger task summary update on save
-      await ref
-          .read(directTaskSummaryRefreshControllerProvider.notifier)
-          .requestTaskSummaryRefresh(id);
     }
     if (entry is JournalEvent) {
       final event = entry;
@@ -254,13 +247,6 @@ class EntryController extends _$EntryController {
         entryText,
         running?.id == id ? DateTime.now() : entry.meta.dateTo,
       );
-
-      // Trigger smart task summary if this entry is linked to a task
-      // and has meaningful (non-empty) content
-      final hasNonEmptyText = entryText.plainText.trim().isNotEmpty;
-      if (hasNonEmptyText) {
-        unawaited(_triggerLinkedTaskSummary(entry));
-      }
 
       if (stopRecording) {
         await Future<void>.delayed(stopRecordingDelay).then((_) {
@@ -310,11 +296,6 @@ class EntryController extends _$EntryController {
       );
 
       await HapticFeedback.heavyImpact();
-
-      // Trigger task summary update
-      await ref
-          .read(directTaskSummaryRefreshControllerProvider.notifier)
-          .requestTaskSummaryRefresh(id);
     }
   }
 
@@ -585,34 +566,5 @@ class EntryController extends _$EntryController {
     );
 
     await HapticFeedback.selectionClick();
-  }
-
-  /// Looks up if this entry is linked to a task and triggers smart
-  /// task summary if so. This is called after saving non-task entries
-  /// that have meaningful content.
-  Future<void> _triggerLinkedTaskSummary(JournalEntity entry) async {
-    try {
-      final journalRepository = ref.read(journalRepositoryProvider);
-      final links = await journalRepository.getLinksFromId(entry.id);
-
-      // Find a link where the target is a task
-      for (final link in links) {
-        final targetEntity =
-            await journalRepository.getJournalEntityById(link.toId);
-        if (targetEntity is Task) {
-          final trigger = ref.read(smartTaskSummaryTriggerProvider);
-          await trigger.triggerTaskSummary(
-            taskId: targetEntity.id,
-            // Use the task's category, not the entry's - the task's category
-            // determines if automatic summaries are enabled
-            categoryId: targetEntity.meta.categoryId,
-          );
-          // Only trigger for first linked task (avoid multiple triggers)
-          return;
-        }
-      }
-    } catch (_) {
-      // Silently fail - this is a fire-and-forget enhancement
-    }
   }
 }
