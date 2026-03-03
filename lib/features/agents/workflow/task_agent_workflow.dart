@@ -406,6 +406,15 @@ class TaskAgentWorkflow {
         taskId: taskId,
       );
 
+      // Collects report details inside the transaction for post-commit
+      // embedding. Declared outside so it survives the transaction scope.
+      ({
+        String reportId,
+        String reportContent,
+        String taskId,
+        String? previousReportId,
+      })? reportToEmbed;
+
       await syncService.runInTransaction(() async {
         // 8. Persist the final assistant response as a thought message.
         final thoughtText = strategy.finalResponse;
@@ -469,15 +478,12 @@ class TaskAgentWorkflow {
             ),
           );
 
-          // 9b. Embed the report for vector search (fire-and-forget).
-          // Supersede the old report's embedding if one exists.
-          unawaited(
-            _embedAgentReport(
-              reportId: reportId,
-              reportContent: reportContent,
-              taskId: taskId,
-              previousReportId: existingHead?.reportId,
-            ),
+          // Capture report details for post-transaction embedding.
+          reportToEmbed = (
+            reportId: reportId,
+            reportContent: reportContent,
+            taskId: taskId,
+            previousReportId: existingHead?.reportId,
           );
         }
 
@@ -527,6 +533,20 @@ class TaskAgentWorkflow {
           ),
         );
       });
+
+      // 9b. Embed the report for vector search (fire-and-forget).
+      // Runs after the transaction commits so we never embed rolled-back data.
+      final embed = reportToEmbed;
+      if (embed != null) {
+        unawaited(
+          _embedAgentReport(
+            reportId: embed.reportId,
+            reportContent: embed.reportContent,
+            taskId: embed.taskId,
+            previousReportId: embed.previousReportId,
+          ),
+        );
+      }
 
       developer.log(
         'Wake completed for agent $agentId: '
@@ -629,7 +649,7 @@ class TaskAgentWorkflow {
       final taskEntity = await journalDb.journalEntityById(taskId);
       final categoryId = taskEntity?.meta.categoryId ?? '';
 
-      await EmbeddingProcessor.processAgentReport(
+      final didEmbed = await EmbeddingProcessor.processAgentReport(
         reportId: reportId,
         reportContent: reportContent,
         taskId: taskId,
@@ -641,8 +661,9 @@ class TaskAgentWorkflow {
       );
 
       // Delete the old report's embedding only after the new one succeeds,
-      // so we don't lose search coverage if the embedding call fails.
-      if (previousReportId != null) {
+      // so we don't lose search coverage if the embedding call fails or
+      // the content is too short.
+      if (didEmbed && previousReportId != null) {
         db.deleteEmbedding(previousReportId);
       }
     } catch (e, s) {

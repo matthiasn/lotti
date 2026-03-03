@@ -114,8 +114,18 @@ class EmbeddingService {
       }
 
       // Cache label definitions for the batch to avoid one DB query per entity.
-      final labelResolver =
-          await EmbeddingProcessor.buildLabelResolver(journalDb);
+      // Best-effort: label resolution failures should not block core embeddings.
+      LabelNameResolver? labelResolver;
+      try {
+        labelResolver = await EmbeddingProcessor.buildLabelResolver(journalDb);
+      } on Object catch (e, stackTrace) {
+        developer.log(
+          'Failed to build label resolver; continuing without labels: $e',
+          error: e,
+          stackTrace: stackTrace,
+          name: 'EmbeddingService',
+        );
+      }
 
       while (_pendingEntityIds.isNotEmpty && !_stopped) {
         final entityId = _pendingEntityIds.first;

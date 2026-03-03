@@ -22,7 +22,7 @@ Meanwhile, AI agents write rich markdown reports about tasks via the `update_rep
 
 ### Current Embedding Pipeline
 
-```
+```text
 Entity change → UpdateNotifications.localUpdateStream
   → EmbeddingService._onBatch()
     → EmbeddingProcessor.processEntity()
@@ -377,6 +377,7 @@ No explicit migration code needed — the next backfill run will automatically p
 | `lib/services/db_notification.dart` | (Optional) Add `agentReportNotification` constant if using notification-based approach |
 
 **Test files (mirror source paths):**
+
 | Test File | Coverage |
 |-----------|----------|
 | `test/features/ai/database/embeddings_db_test.dart` | Schema migration, new columns, search results |
@@ -391,7 +392,7 @@ No explicit migration code needed — the next backfill run will automatically p
 
 ## Execution Order
 
-```
+```text
 Step 1: Schema migration (task_id, subtype)     ← Foundation, unblocks everything
   ↓
 Step 2: Tiny template (title + labels)           ← Independent of agent reports
