@@ -49,6 +49,7 @@ import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/health_service.dart';
@@ -197,6 +198,8 @@ Future<void> registerSingletons() async {
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
   final secureStorage = getIt<SecureStorage>();
+  final domainLogger = DomainLogger(loggingService: loggingService);
+  getIt.registerSingleton<DomainLogger>(domainLogger);
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(
     client: client,
@@ -289,6 +292,7 @@ Future<void> registerSingletons() async {
         activityGate: userActivityGate,
         matrixService: matrixService,
         sequenceLogService: syncSequenceLogService,
+        domainLogger: domainLogger,
       ),
     );
 

@@ -96,6 +96,7 @@ void main() {
               retries: 0,
               message: 'jsonString',
               subject: 'subject',
+              priority: OutboxPriority.low.index,
             ),
           ],
         );
@@ -111,6 +112,7 @@ void main() {
               retries: 0,
               message: 'jsonString',
               subject: 'subject',
+              priority: OutboxPriority.low.index,
             ),
           ],
         );
@@ -147,6 +149,7 @@ void main() {
               retries: 0,
               message: 'jsonString',
               subject: 'subject',
+              priority: OutboxPriority.low.index,
             ),
           ],
         );
@@ -162,6 +165,7 @@ void main() {
               retries: 0,
               message: 'jsonString',
               subject: 'subject',
+              priority: OutboxPriority.low.index,
             ),
           ],
         );
@@ -184,6 +188,7 @@ void main() {
               retries: 1,
               message: 'jsonString',
               subject: 'subject',
+              priority: OutboxPriority.low.index,
             ),
           ],
         );
@@ -443,6 +448,30 @@ void main() {
       );
 
       expect(await database.watchOutboxCount().first, 1);
+    });
+
+    test('getPendingOutboxCount returns count of pending items', () async {
+      final database = db!;
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.error,
+          createdAt: DateTime(2024, 5, 2),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 5, 3),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 5, 4),
+        ),
+      );
+
+      expect(await database.getPendingOutboxCount(), 2);
     });
 
     test('updateOutboxItem increments retry count', () async {
@@ -2732,8 +2761,255 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 5', () {
-      expect(db.schemaVersion, 5);
+    test('schema version is 6', () {
+      expect(db.schemaVersion, 6);
+    });
+  });
+
+  group('Outbox Priority Ordering - ', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+        'oldestOutboxItems returns high-priority before low even if low is older',
+        () async {
+      // Insert low-priority item first (older)
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('low-old'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 10)),
+          updatedAt: Value(DateTime(2024, 1, 1, 10)),
+          priority: Value(OutboxPriority.low.index),
+        ),
+      );
+
+      // Insert high-priority item second (newer)
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('high-new'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 12)),
+          updatedAt: Value(DateTime(2024, 1, 1, 12)),
+          priority: Value(OutboxPriority.high.index),
+        ),
+      );
+
+      // Insert normal-priority item (middle time)
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('normal-mid'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 11)),
+          updatedAt: Value(DateTime(2024, 1, 1, 11)),
+          priority: Value(OutboxPriority.normal.index),
+        ),
+      );
+
+      final items = await database.oldestOutboxItems(10);
+      expect(items, hasLength(3));
+      expect(items[0].subject, 'high-new');
+      expect(items[0].priority, OutboxPriority.high.index);
+      expect(items[1].subject, 'normal-mid');
+      expect(items[1].priority, OutboxPriority.normal.index);
+      expect(items[2].subject, 'low-old');
+      expect(items[2].priority, OutboxPriority.low.index);
+    });
+
+    test('claimNextOutboxItem claims highest-priority item first', () async {
+      // Insert low-priority item first (older)
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('low-old'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 10)),
+          updatedAt: Value(DateTime(2024, 1, 1, 10)),
+          priority: Value(OutboxPriority.low.index),
+        ),
+      );
+
+      // Insert high-priority item second (newer)
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('high-new'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 12)),
+          updatedAt: Value(DateTime(2024, 1, 1, 12)),
+          priority: Value(OutboxPriority.high.index),
+        ),
+      );
+
+      final claimed = await database.claimNextOutboxItem(
+        now: DateTime(2024, 1, 1, 13),
+      );
+
+      expect(claimed, isNotNull);
+      expect(claimed!.subject, 'high-new');
+      expect(claimed.priority, OutboxPriority.high.index);
+    });
+
+    test('within same priority, oldest item is processed first', () async {
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('normal-newer'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 12)),
+          updatedAt: Value(DateTime(2024, 1, 1, 12)),
+          priority: Value(OutboxPriority.normal.index),
+        ),
+      );
+
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('normal-older'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 10)),
+          updatedAt: Value(DateTime(2024, 1, 1, 10)),
+          priority: Value(OutboxPriority.normal.index),
+        ),
+      );
+
+      final items = await database.oldestOutboxItems(10);
+      expect(items, hasLength(2));
+      expect(items[0].subject, 'normal-older');
+      expect(items[1].subject, 'normal-newer');
+    });
+
+    test('default priority is low when not specified', () async {
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('default-priority'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      final items = await database.oldestOutboxItems(10);
+      expect(items, hasLength(1));
+      expect(items.first.priority, OutboxPriority.low.index);
+    });
+
+    test('watchOutboxItems sorts by priority then newest within priority',
+        () async {
+      // Add items in mixed order
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('low-1'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 10)),
+          updatedAt: Value(DateTime(2024, 1, 1, 10)),
+          priority: Value(OutboxPriority.low.index),
+        ),
+      );
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('high-1'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 11)),
+          updatedAt: Value(DateTime(2024, 1, 1, 11)),
+          priority: Value(OutboxPriority.high.index),
+        ),
+      );
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('high-2'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 12)),
+          updatedAt: Value(DateTime(2024, 1, 1, 12)),
+          priority: Value(OutboxPriority.high.index),
+        ),
+      );
+
+      final items = await database.watchOutboxItems().first;
+      expect(items, hasLength(3));
+      // High priority first, newest within priority (DESC)
+      expect(items[0].subject, 'high-2');
+      expect(items[1].subject, 'high-1');
+      expect(items[2].subject, 'low-1');
+    });
+
+    test('health query helpers return correct counts', () async {
+      // Add sequence log entries with various statuses
+      final now = DateTime(2024, 1, 1, 12);
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(3),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(4),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      expect(await database.getMissingSequenceCount(), 2);
+      expect(await database.getRequestedSequenceCount(), 1);
+
+      // Add sent outbox item
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('sent-item'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime(2024, 1, 1, 11)),
+          updatedAt: Value(DateTime(2024, 1, 1, 11, 30)),
+        ),
+      );
+
+      final sentCount = await database.getSentCountSince(
+        DateTime(2024, 1, 1, 11),
+      );
+      expect(sentCount, 1);
+
+      final sentCountNone = await database.getSentCountSince(
+        DateTime(2024, 1, 1, 12),
+      );
+      expect(sentCountNone, 0);
     });
   });
 }

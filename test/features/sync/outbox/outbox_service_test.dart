@@ -874,6 +874,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       // Return existing item for this entry
@@ -999,6 +1000,7 @@ void main() {
         subject: 'hhash:6',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1103,6 +1105,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1217,6 +1220,7 @@ void main() {
         subject: 'hhash:link:3',
         filePath: null,
         outboxEntryId: 'link-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('link-id'))
@@ -1324,6 +1328,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1423,6 +1428,7 @@ void main() {
         subject: 'hhash:link:3',
         filePath: null,
         outboxEntryId: 'link-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('link-id'))
@@ -1498,6 +1504,7 @@ void main() {
         subject: 'hhash:5',
         filePath: null,
         outboxEntryId: 'entry-id',
+        priority: OutboxPriority.low.index,
       );
 
       when(() => syncDatabase.findPendingByEntryId('entry-id'))
@@ -1739,6 +1746,7 @@ void main() {
                   message: '{}',
                   subject: 'test',
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -1982,6 +1990,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -2204,6 +2213,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -2293,6 +2303,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       final gate = createGate();
@@ -2358,6 +2369,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       final gate = createGate();
@@ -2434,6 +2446,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       when(() => syncDatabase.watchOutboxCount())
@@ -2528,6 +2541,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       final gate = createGate();
@@ -2768,6 +2782,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
 
@@ -2855,6 +2870,7 @@ void main() {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                   filePath: null,
+                  priority: OutboxPriority.low.index,
                 )
               ]);
       when(() => processor.processQueue())
@@ -2952,6 +2968,7 @@ void main() {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
             filePath: null,
+            priority: OutboxPriority.low.index,
           )
         ];
       });
@@ -4067,6 +4084,7 @@ void main() {
                 createdAt: DateTime(2024, 3, 15),
                 updatedAt: DateTime(2024, 3, 15),
                 subject: 'agentEntity:agent-xyz',
+                priority: OutboxPriority.low.index,
               ));
       when(() => syncDatabase.updateOutboxMessage(
             itemId: any(named: 'itemId'),
@@ -4200,6 +4218,7 @@ void main() {
                 createdAt: DateTime(2024, 3, 15),
                 updatedAt: DateTime(2024, 3, 15),
                 subject: 'agentLink:link-abc',
+                priority: OutboxPriority.low.index,
               ));
       when(() => syncDatabase.updateOutboxMessage(
             itemId: any(named: 'itemId'),

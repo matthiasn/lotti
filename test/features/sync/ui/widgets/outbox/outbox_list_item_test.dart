@@ -30,6 +30,7 @@ void main() {
         subject: 'test-subject',
         filePath: filePath,
         payloadSize: payloadSize,
+        priority: OutboxPriority.low.index,
       );
 
   group('OutboxListItem', () {
