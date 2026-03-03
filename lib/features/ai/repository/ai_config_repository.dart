@@ -168,6 +168,20 @@ class AiConfigRepository {
     );
   }
 
+  /// Resolves the base URL of the first configured Ollama provider.
+  ///
+  /// Returns `null` if no Ollama provider is configured.
+  Future<String?> resolveOllamaBaseUrl() async {
+    final providers = await getConfigsByType(AiConfigType.inferenceProvider);
+    final ollamaProvider = providers
+        .whereType<AiConfigInferenceProvider>()
+        .where(
+          (p) => p.inferenceProviderType == InferenceProviderType.ollama,
+        )
+        .firstOrNull;
+    return ollamaProvider?.baseUrl;
+  }
+
   /// Helper method to decode JSON
   Map<String, dynamic> _jsonDecode(String serialized) {
     final map = Map<String, dynamic>.from(

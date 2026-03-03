@@ -63,7 +63,7 @@ class OllamaEmbeddingRepository {
 
     if (response.statusCode == httpStatusNotFound) {
       final body = response.body.toLowerCase();
-      if (body.contains('not found') || body.contains('model')) {
+      if (body.contains('not found') && body.contains('model')) {
         throw ModelNotInstalledException(model);
       }
     }

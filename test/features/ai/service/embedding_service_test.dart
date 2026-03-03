@@ -7,7 +7,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -65,20 +64,8 @@ void main() {
         .thenAnswer((_) async => true);
 
     // Default: Ollama provider configured
-    when(() =>
-            mockAiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider))
-        .thenAnswer(
-      (_) async => [
-        AiConfigInferenceProvider(
-          id: 'ollama-1',
-          name: 'Ollama',
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          createdAt: DateTime(2024, 3, 15),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ),
-      ],
-    );
+    when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
+        .thenAnswer((_) async => 'http://localhost:11434');
 
     // Default: no existing content hash
     when(() => mockEmbeddingsDb.getContentHash(any())).thenReturn(null);
@@ -91,6 +78,7 @@ void main() {
         modelId: any(named: 'modelId'),
         embedding: any(named: 'embedding'),
         contentHash: any(named: 'contentHash'),
+        categoryId: any(named: 'categoryId'),
       ),
     ).thenReturn(null);
   });
@@ -160,6 +148,7 @@ void main() {
             modelId: ollamaEmbedDefaultModel,
             embedding: any(named: 'embedding'),
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
+            categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
 
@@ -267,9 +256,8 @@ void main() {
 
     test('skips when no Ollama provider is configured', () {
       fakeAsync((async) {
-        when(() => mockAiConfigRepo
-                .getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => <AiConfig>[]);
+        when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
+            .thenAnswer((_) async => null);
 
         final entry = JournalEntry(
           meta: _meta(),
@@ -373,6 +361,7 @@ void main() {
             modelId: any(named: 'modelId'),
             embedding: any(named: 'embedding'),
             contentHash: any(named: 'contentHash'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
 
@@ -410,6 +399,7 @@ void main() {
             modelId: any(named: 'modelId'),
             embedding: any(named: 'embedding'),
             contentHash: any(named: 'contentHash'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
 

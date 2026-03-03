@@ -119,7 +119,7 @@ void main() {
           ),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -139,7 +139,7 @@ void main() {
           (_) async => http.Response('Internal Server Error', 500),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -165,7 +165,7 @@ void main() {
           (_) async => http.Response('not json at all', 200),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -194,7 +194,7 @@ void main() {
           ),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -223,7 +223,7 @@ void main() {
           ),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -239,7 +239,7 @@ void main() {
       });
 
       test('throws ArgumentError on empty input', () async {
-        expect(
+        await expectLater(
           () => repository.embed(
             input: '',
             baseUrl: baseUrl,
@@ -295,7 +295,7 @@ void main() {
           ),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -324,7 +324,7 @@ void main() {
           ),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test',
             baseUrl: baseUrl,
@@ -351,7 +351,7 @@ void main() {
           ),
         ).thenThrow(TimeoutException('timed out'));
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test text',
             baseUrl: baseUrl,
@@ -380,7 +380,7 @@ void main() {
           const SocketException('Connection refused'),
         );
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test text',
             baseUrl: baseUrl,
@@ -463,7 +463,7 @@ void main() {
           ),
         ).thenThrow(Exception('Something unexpected'));
 
-        expect(
+        await expectLater(
           () => repository.embed(
             input: 'test text',
             baseUrl: baseUrl,

@@ -12,6 +12,15 @@ enum DisplayFilter {
   privateEntriesOnly,
 }
 
+/// Search mode for the journal/tasks page.
+enum SearchMode {
+  /// Traditional FTS5 full-text search.
+  fullText,
+
+  /// Vector-based semantic search via Ollama embeddings.
+  vector,
+}
+
 /// Sort order options for task lists.
 enum TaskSortOption {
   /// Sort by priority first (P0 > P1 > P2 > P3), then by date within each priority
@@ -46,6 +55,11 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(false) bool showCreationDate,
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
+    @Default(SearchMode.fullText) SearchMode searchMode,
+    @Default(false) bool enableVectorSearch,
+    @Default(false) bool vectorSearchInFlight,
+    Duration? vectorSearchElapsed,
+    @Default(0) int vectorSearchResultCount,
   }) = _JournalPageState;
 }
 

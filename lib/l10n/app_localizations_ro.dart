@@ -1853,6 +1853,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Căutare vectorială';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Afișează un comutator de căutare vectorială pe pagina de sarcini. Necesită încorporări activate și Ollama în execuție.';
+
+  @override
   String get configFlagPrivate => 'Arată articolele private?';
 
   @override
@@ -2846,6 +2853,44 @@ class AppLocalizationsRo extends AppLocalizations {
   String get logsSearchHint => 'Caută în toate jurnalele...';
 
   @override
+  String get maintenanceBackfillEmbeddings => 'Completare încorporări';
+
+  @override
+  String get maintenanceBackfillEmbeddingsConfirm => 'DA, ÎNCEPE';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Generează încorporări pentru toate intrările dintr-o categorie';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Selectează o categorie pentru a genera încorporări pentru toate intrările sale.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded încorporate',
+      one: '1 încorporată',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded încorporate',
+      one: '1 încorporată',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total intrări ($_temp0)',
+      one: '$processed / $total intrare ($_temp1)',
+    );
+    return '$_temp2';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Șterge baza de date a agenților';
 
   @override
@@ -3408,6 +3453,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get searchHint => 'Căutare...';
+
+  @override
+  String get searchModeFullText => 'Text integral';
+
+  @override
+  String get searchModeVector => 'Vector';
 
   @override
   String get searchTasksHint => 'Caută sarcini...';
@@ -4701,6 +4752,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Dezleagă sarcina';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count rezultate',
+      one: '${elapsed}ms, $count rezultat',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get viewMenuTitle => 'Vizualizare';

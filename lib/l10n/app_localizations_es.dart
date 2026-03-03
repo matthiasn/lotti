@@ -1887,6 +1887,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar información sobre herramientas útil en toda la aplicación para guiarte a través de las funciones.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Búsqueda vectorial';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Muestra un botón de búsqueda vectorial en la página de tareas. Requiere incrustaciones activadas y Ollama en ejecución.';
+
+  @override
   String get configFlagPrivate => '¿Mostrar entradas privadas?';
 
   @override
@@ -2884,6 +2891,44 @@ class AppLocalizationsEs extends AppLocalizations {
   String get logsSearchHint => 'Buscar todos los logs...';
 
   @override
+  String get maintenanceBackfillEmbeddings => 'Rellenar embeddings';
+
+  @override
+  String get maintenanceBackfillEmbeddingsConfirm => 'SÍ, INICIAR';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Generar embeddings para todas las entradas de una categoría';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Selecciona una categoría para generar embeddings de todas sus entradas.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded incrustadas',
+      one: '1 incrustada',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded incrustadas',
+      one: '1 incrustada',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total entradas ($_temp0)',
+      one: '$processed / $total entrada ($_temp1)',
+    );
+    return '$_temp2';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Eliminar la base de datos de agentes';
 
   @override
@@ -3464,6 +3509,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get searchHint => 'Buscar...';
+
+  @override
+  String get searchModeFullText => 'Texto completo';
+
+  @override
+  String get searchModeVector => 'Vector';
 
   @override
   String get searchTasksHint => 'Buscar tareas...';
@@ -4763,6 +4814,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Desvincular tarea';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count resultados',
+      one: '${elapsed}ms, $count resultado',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get viewMenuTitle => 'Vista';

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -249,6 +250,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('YES, RECREATE INDEX'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('backfill embeddings card hidden when pipeline not registered',
+        (tester) async {
+      // EmbeddingsDb is NOT registered in this test group's setUp
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Backfill Embeddings'), findsNothing);
+    });
+
+    testWidgets('backfill embeddings card visible when pipeline is registered',
+        (tester) async {
+      getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
+
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Backfill Embeddings'), findsOneWidget);
+      expect(
+        find.text('Generate embeddings for all entries in a category'),
+        findsOneWidget,
+      );
     });
   });
 }

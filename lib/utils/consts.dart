@@ -15,6 +15,7 @@ const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';
 const enableAgentsFlag = 'enable_agents';
 const enableEmbeddingsFlag = 'enable_embeddings';
+const enableVectorSearchFlag = 'enable_vector_search';
 
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';

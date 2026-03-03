@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.894] - 2026-03-02
+### Added
+- Vector search testing UI: toggle between full-text (FTS5) and vector
+  (Ollama embedding) search on the tasks page. Shows timing and result
+  count for evaluating search quality. Controlled by a new feature flag
+  in Settings > Flags.
+
 ### Improved
 - Agent template settings tab UX: the 1-on-1 review button is now prominently
   placed in the sticky bottom bar when no edits have been made. Save/Cancel

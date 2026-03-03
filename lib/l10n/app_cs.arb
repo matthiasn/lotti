@@ -598,6 +598,8 @@
   "configFlagEnableSessionRatingsDescription": "Po zastavení časovače zobrazit rychlé hodnocení relace.",
   "configFlagEnableTooltip": "Povolit nápovědy",
   "configFlagEnableTooltipDescription": "Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.",
+  "configFlagEnableVectorSearch": "Vektorové vyhledávání",
+  "configFlagEnableVectorSearchDescription": "Zobrazí přepínač vektorového vyhledávání na stránce úkolů. Vyžaduje povolené vektory a běžící Ollama.",
   "configFlagPrivate": "Zobrazit soukromé záznamy?",
   "configFlagPrivateDescription": "Povolte to, aby vaše záznamy byly ve výchozím nastavení soukromé. Soukromé záznamy jsou viditelné jen pro vás.",
   "configFlagRecordLocation": "Zaznamenat polohu",
@@ -993,6 +995,24 @@
   "loggingFailedToLoadMore": "Nepodařilo se načíst další výsledky. Prosím, zkuste to znovu.",
   "loggingSearchFailed": "Vyhledávání neúspěšné. Prosím, zkuste to znovu.",
   "logsSearchHint": "Prohledat všechny logy...",
+  "maintenanceBackfillEmbeddings": "Doplnit embeddings",
+  "maintenanceBackfillEmbeddingsConfirm": "ANO, SPUSTIT",
+  "maintenanceBackfillEmbeddingsDescription": "Vygenerovat embeddings pro všechny záznamy v kategorii",
+  "maintenanceBackfillEmbeddingsMessage": "Vyberte kategorii pro vygenerování embeddings všech jejích záznamů.",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} záznam ({embedded, plural, =1{1 vložen} few{{embedded} vloženy} other{{embedded} vloženo}})} few{{processed} / {total} záznamy ({embedded, plural, =1{1 vložen} few{{embedded} vloženy} other{{embedded} vloženo}})} other{{processed} / {total} záznamů ({embedded, plural, =1{1 vložen} few{{embedded} vloženy} other{{embedded} vloženo}})}}",
+  "@maintenanceBackfillEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Smazat databázi agentů",
   "maintenanceDeleteAgentDbDescription": "Smazat databázi agentů a restartovat aplikaci",
   "maintenanceDeleteDatabaseConfirm": "ANO, SMAZAT DATABÁZI",
@@ -1203,6 +1223,8 @@
   "saveLabel": "Uložit",
   "saveSuccessful": "Úspěšně uloženo",
   "searchHint": "Hledat...",
+  "searchModeFullText": "Plný text",
+  "searchModeVector": "Vektor",
   "searchTasksHint": "Hledat úkoly...",
   "selectAllowedPrompts": "Vyberte, které výzvy jsou povoleny pro tuto kategorii",
   "selectButton": "Vybrat",
@@ -1660,6 +1682,17 @@
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
   "unlinkTaskTitle": "Zrušit propojení úkolu",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} výsledek} few{{elapsed}ms, {count} výsledky} other{{elapsed}ms, {count} výsledků}}",
+  "@vectorSearchTiming": {
+    "placeholders": {
+      "elapsed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewMenuTitle": "Zobrazit",
   "whatsNewDoneButton": "Hotovo",
   "whatsNewSkipButton": "Přeskočit"

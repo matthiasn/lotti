@@ -143,6 +143,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Generate embeddings for entries?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableVectorSearchFlag,
+    description: 'Enable vector search UI?',
+    status: false,
+  ),
 };
 
 void main() {

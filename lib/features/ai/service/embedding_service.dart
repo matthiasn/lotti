@@ -3,11 +3,9 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
-import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -87,8 +85,13 @@ class EmbeddingService {
     if (entityIds.isEmpty) return;
 
     _pendingEntityIds.addAll(entityIds);
-    _inFlightProcessing = _processNext();
-    unawaited(_inFlightProcessing);
+    // Only start a new processing future if one isn't already running.
+    // Overwriting _inFlightProcessing while _isProcessing is true would
+    // cause stop() to await a completed no-op instead of the real work.
+    if (!_isProcessing) {
+      _inFlightProcessing = _processNext();
+      unawaited(_inFlightProcessing);
+    }
   }
 
   Future<void> _processNext() async {
@@ -96,88 +99,53 @@ class EmbeddingService {
     _isProcessing = true;
 
     try {
+      // Resolve config flag and base URL once per batch to avoid
+      // redundant DB queries for each entity.
+      final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
+      if (!enabled) {
+        _pendingEntityIds.clear();
+        return;
+      }
+
+      final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
+      if (baseUrl == null) {
+        _pendingEntityIds.clear();
+        return;
+      }
+
       while (_pendingEntityIds.isNotEmpty && !_stopped) {
         final entityId = _pendingEntityIds.first;
         _pendingEntityIds.remove(entityId);
 
-        await _processEntity(entityId);
+        try {
+          await EmbeddingProcessor.processEntity(
+            entityId: entityId,
+            journalDb: journalDb,
+            embeddingsDb: embeddingsDb,
+            embeddingRepository: embeddingRepository,
+            baseUrl: baseUrl,
+          );
+        } catch (e, stackTrace) {
+          developer.log(
+            'Failed to generate embedding for $entityId: $e',
+            error: e,
+            stackTrace: stackTrace,
+            name: 'EmbeddingService',
+          );
+          // Swallow error — don't block other entities.
+        }
       }
-    } finally {
-      _isProcessing = false;
-    }
-  }
-
-  Future<void> _processEntity(String entityId) async {
-    try {
-      // Check config flag before each entity (user may toggle mid-processing).
-      final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
-      if (!enabled) return;
-
-      // Load entity from DB.
-      final entity = await journalDb.journalEntityById(entityId);
-      if (entity == null) return;
-
-      // Extract embeddable text.
-      final text = EmbeddingContentExtractor.extractText(entity);
-      if (text == null) return;
-
-      // Determine entity type.
-      final type = EmbeddingContentExtractor.entityType(entity);
-      if (type == null) return;
-
-      // Check content hash — skip if unchanged.
-      final hash = EmbeddingContentExtractor.contentHash(text);
-      final existingHash = embeddingsDb.getContentHash(entityId);
-      if (existingHash == hash) return;
-
-      // Resolve Ollama base URL.
-      final baseUrl = await _resolveOllamaBaseUrl();
-      if (baseUrl == null) {
-        developer.log(
-          'No Ollama provider configured — skipping embedding for $entityId',
-          name: 'EmbeddingService',
-        );
-        return;
-      }
-
-      // Generate embedding via Ollama.
-      final embedding = await embeddingRepository.embed(
-        input: text,
-        baseUrl: baseUrl,
-      );
-
-      // Store in embeddings DB.
-      embeddingsDb.upsertEmbedding(
-        entityId: entityId,
-        entityType: type,
-        modelId: ollamaEmbedDefaultModel,
-        embedding: embedding,
-        contentHash: hash,
-      );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       developer.log(
-        'Failed to generate embedding for $entityId: $e',
+        'Embedding batch preflight failed: $e',
         error: e,
         stackTrace: stackTrace,
         name: 'EmbeddingService',
       );
-      // Swallow error — don't block other entities.
+      _pendingEntityIds.clear();
+    } finally {
+      _isProcessing = false;
     }
-  }
-
-  /// Resolves the base URL of the first configured Ollama provider.
-  ///
-  /// Returns `null` if no Ollama provider is configured.
-  Future<String?> _resolveOllamaBaseUrl() async {
-    final providers = await aiConfigRepository
-        .getConfigsByType(AiConfigType.inferenceProvider);
-    final ollamaProvider = providers
-        .whereType<AiConfigInferenceProvider>()
-        .where(
-          (p) => p.inferenceProviderType == InferenceProviderType.ollama,
-        )
-        .firstOrNull;
-    return ollamaProvider?.baseUrl;
   }
 
   /// Matches UUID format (8-4-4-4-12 hex digits) used for entity IDs.

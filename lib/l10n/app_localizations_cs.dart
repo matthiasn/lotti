@@ -1835,6 +1835,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Vektorové vyhledávání';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Zobrazí přepínač vektorového vyhledávání na stránce úkolů. Vyžaduje povolené vektory a běžící Ollama.';
+
+  @override
   String get configFlagPrivate => 'Zobrazit soukromé záznamy?';
 
   @override
@@ -2817,6 +2824,54 @@ class AppLocalizationsCs extends AppLocalizations {
   String get logsSearchHint => 'Prohledat všechny logy...';
 
   @override
+  String get maintenanceBackfillEmbeddings => 'Doplnit embeddings';
+
+  @override
+  String get maintenanceBackfillEmbeddingsConfirm => 'ANO, SPUSTIT';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Vygenerovat embeddings pro všechny záznamy v kategorii';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Vyberte kategorii pro vygenerování embeddings všech jejích záznamů.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded vloženo',
+      few: '$embedded vloženy',
+      one: '1 vložen',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded vloženo',
+      few: '$embedded vloženy',
+      one: '1 vložen',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded vloženo',
+      few: '$embedded vloženy',
+      one: '1 vložen',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total záznamů ($_temp0)',
+      few: '$processed / $total záznamy ($_temp1)',
+      one: '$processed / $total záznam ($_temp2)',
+    );
+    return '$_temp3';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
 
   @override
@@ -3377,6 +3432,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get searchHint => 'Hledat...';
+
+  @override
+  String get searchModeFullText => 'Plný text';
+
+  @override
+  String get searchModeVector => 'Vektor';
 
   @override
   String get searchTasksHint => 'Hledat úkoly...';
@@ -4664,6 +4725,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Zrušit propojení úkolu';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count výsledků',
+      few: '${elapsed}ms, $count výsledky',
+      one: '${elapsed}ms, $count výsledek',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get viewMenuTitle => 'Zobrazit';

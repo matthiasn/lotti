@@ -147,5 +147,13 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableVectorSearchFlag,
+      description: 'Enable vector search UI?',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }

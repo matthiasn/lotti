@@ -952,6 +952,8 @@
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
+  "configFlagEnableVectorSearch": "Vector Search",
+  "configFlagEnableVectorSearchDescription": "Show a vector search toggle on the tasks page. Requires embeddings to be enabled and Ollama running.",
   "configFlagPrivate": "Show private entries?",
   "configFlagPrivateDescription": "Enable this to make your entries private by default. Private entries are only visible to you.",
   "configFlagRecordLocation": "Record location",
@@ -1364,6 +1366,24 @@
   "loggingFailedToLoadMore": "Failed to load more results. Please try again.",
   "loggingSearchFailed": "Search failed. Please try again.",
   "logsSearchHint": "Search all logs...",
+  "maintenanceBackfillEmbeddings": "Backfill Embeddings",
+  "maintenanceBackfillEmbeddingsConfirm": "YES, START BACKFILL",
+  "maintenanceBackfillEmbeddingsDescription": "Generate embeddings for all entries in a category",
+  "maintenanceBackfillEmbeddingsMessage": "Select a category to generate embeddings for all its entries.",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}",
+  "@maintenanceBackfillEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Delete Agents Database",
   "maintenanceDeleteAgentDbDescription": "Delete agents database and restart app",
   "maintenanceDeleteDatabaseConfirm": "YES, DELETE DATABASE",
@@ -1574,6 +1594,8 @@
   "saveLabel": "Save",
   "saveSuccessful": "Saved successfully",
   "searchHint": "Search...",
+  "searchModeFullText": "Full Text",
+  "searchModeVector": "Vector",
   "searchTasksHint": "Search tasks...",
   "selectAllowedPrompts": "Select which prompts are allowed for this category",
   "selectButton": "Select",
@@ -2047,6 +2069,17 @@
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
   "unlinkTaskTitle": "Unlink Task",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
+  "@vectorSearchTiming": {
+    "placeholders": {
+      "elapsed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewMenuTitle": "View",
   "whatsNewDoneButton": "Done",
   "whatsNewSkipButton": "Skip"

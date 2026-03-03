@@ -1821,6 +1821,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show helpful tooltips throughout the app to guide you through features.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Vector Search';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Show a vector search toggle on the tasks page. Requires embeddings to be enabled and Ollama running.';
+
+  @override
   String get configFlagPrivate => 'Show private entries?';
 
   @override
@@ -2801,6 +2808,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logsSearchHint => 'Search all logs...';
 
   @override
+  String get maintenanceBackfillEmbeddings => 'Backfill Embeddings';
+
+  @override
+  String get maintenanceBackfillEmbeddingsConfirm => 'YES, START BACKFILL';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Generate embeddings for all entries in a category';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Select a category to generate embeddings for all its entries.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total entries ($embedded embedded)',
+      one: '$processed / $total entry ($embedded embedded)',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Delete Agents Database';
 
   @override
@@ -3351,6 +3384,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchHint => 'Search...';
+
+  @override
+  String get searchModeFullText => 'Full Text';
+
+  @override
+  String get searchModeVector => 'Vector';
 
   @override
   String get searchTasksHint => 'Search tasks...';
@@ -4627,6 +4666,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Unlink Task';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count results',
+      one: '${elapsed}ms, $count result',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get viewMenuTitle => 'View';

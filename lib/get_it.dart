@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/database/embeddings_init.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -406,8 +407,17 @@ Future<void> registerSingletons() async {
           aiConfigRepository: getIt<AiConfigRepository>(),
         ),
         dispose: (svc) async => svc.stop(),
+      )
+      ..registerSingleton<VectorSearchRepository>(
+        VectorSearchRepository(
+          embeddingsDb: embeddingsDb,
+          embeddingRepository: getIt<OllamaEmbeddingRepository>(),
+          journalDb: getIt<JournalDb>(),
+          aiConfigRepository: getIt<AiConfigRepository>(),
+        ),
       );
     getIt<EmbeddingService>().start();
+    _safeLog('Embedding pipeline initialized successfully', isError: false);
   } catch (e) {
     _safeLog(
       'Embedding pipeline unavailable: $e',

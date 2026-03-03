@@ -39,6 +39,7 @@
     <release version="0.9.893" date="2026-03-02">
       <description>
           <p>Voice transcription in evolution chat: mic button with batch and realtime recording modes. Transcript populates the text field for editing before sending.</p>
+          <p>Vector search testing UI: toggle between full-text and vector search on the tasks page with timing feedback. Controlled by a feature flag.</p>
       </description>
     </release>
     <release version="0.9.892" date="2026-03-02">

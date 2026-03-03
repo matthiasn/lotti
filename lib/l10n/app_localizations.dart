@@ -3336,6 +3336,18 @@ abstract class AppLocalizations {
   /// **'Show helpful tooltips throughout the app to guide you through features.'**
   String get configFlagEnableTooltipDescription;
 
+  /// No description provided for @configFlagEnableVectorSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Vector Search'**
+  String get configFlagEnableVectorSearch;
+
+  /// No description provided for @configFlagEnableVectorSearchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a vector search toggle on the tasks page. Requires embeddings to be enabled and Ollama running.'**
+  String get configFlagEnableVectorSearchDescription;
+
   /// No description provided for @configFlagPrivate.
   ///
   /// In en, this message translates to:
@@ -5124,6 +5136,37 @@ abstract class AppLocalizations {
   /// **'Search all logs...'**
   String get logsSearchHint;
 
+  /// No description provided for @maintenanceBackfillEmbeddings.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill Embeddings'**
+  String get maintenanceBackfillEmbeddings;
+
+  /// No description provided for @maintenanceBackfillEmbeddingsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'YES, START BACKFILL'**
+  String get maintenanceBackfillEmbeddingsConfirm;
+
+  /// No description provided for @maintenanceBackfillEmbeddingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate embeddings for all entries in a category'**
+  String get maintenanceBackfillEmbeddingsDescription;
+
+  /// No description provided for @maintenanceBackfillEmbeddingsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a category to generate embeddings for all its entries.'**
+  String get maintenanceBackfillEmbeddingsMessage;
+
+  /// No description provided for @maintenanceBackfillEmbeddingsProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}'**
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded);
+
   /// No description provided for @maintenanceDeleteAgentDb.
   ///
   /// In en, this message translates to:
@@ -6131,6 +6174,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search...'**
   String get searchHint;
+
+  /// No description provided for @searchModeFullText.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Text'**
+  String get searchModeFullText;
+
+  /// No description provided for @searchModeVector.
+  ///
+  /// In en, this message translates to:
+  /// **'Vector'**
+  String get searchModeVector;
 
   /// No description provided for @searchTasksHint.
   ///
@@ -8478,6 +8533,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlink Task'**
   String get unlinkTaskTitle;
+
+  /// No description provided for @vectorSearchTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}'**
+  String vectorSearchTiming(int elapsed, int count);
 
   /// No description provided for @viewMenuTitle.
   ///

@@ -1852,6 +1852,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt hilfreiche Tooltips in der gesamten App an, um dich durch die Funktionen zu führen.';
 
   @override
+  String get configFlagEnableVectorSearch => 'Vektorsuche';
+
+  @override
+  String get configFlagEnableVectorSearchDescription =>
+      'Zeigt einen Vektorsuche-Umschalter auf der Aufgabenseite. Erfordert aktivierte Einbettungen und laufendes Ollama.';
+
+  @override
   String get configFlagPrivate => 'Private Einträge anzeigen?';
 
   @override
@@ -2849,6 +2856,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get logsSearchHint => 'Alle Logs durchsuchen...';
 
   @override
+  String get maintenanceBackfillEmbeddings => 'Embeddings nachgenerieren';
+
+  @override
+  String get maintenanceBackfillEmbeddingsConfirm => 'JA, STARTEN';
+
+  @override
+  String get maintenanceBackfillEmbeddingsDescription =>
+      'Embeddings für alle Einträge einer Kategorie generieren';
+
+  @override
+  String get maintenanceBackfillEmbeddingsMessage =>
+      'Wähle eine Kategorie, um Embeddings für alle enthaltenen Einträge zu generieren.';
+
+  @override
+  String maintenanceBackfillEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total Einträge ($embedded eingebettet)',
+      one: '$processed / $total Eintrag ($embedded eingebettet)',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Agenten-Datenbank löschen';
 
   @override
@@ -3412,6 +3445,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get searchHint => 'Suchen...';
+
+  @override
+  String get searchModeFullText => 'Volltext';
+
+  @override
+  String get searchModeVector => 'Vektor';
 
   @override
   String get searchTasksHint => 'Aufgaben suchen...';
@@ -4704,6 +4743,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Verknüpfung aufheben';
+
+  @override
+  String vectorSearchTiming(int elapsed, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${elapsed}ms, $count Ergebnisse',
+      one: '${elapsed}ms, $count Ergebnis',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get viewMenuTitle => 'Ansicht';

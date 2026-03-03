@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
@@ -57,6 +58,8 @@ class JournalPageController extends _$JournalPageController {
   bool _enableEvents = false;
   bool _enableHabits = false;
   bool _enableDashboards = false;
+  bool _enableVectorSearch = false;
+  SearchMode _searchMode = SearchMode.fullText;
   String _query = '';
   bool _showPrivateEntries = false;
   late bool _showTasks;
@@ -195,6 +198,12 @@ class JournalPageController extends _$JournalPageController {
       _enableEvents = configFlags.contains(enableEventsFlag);
       _enableHabits = configFlags.contains(enableHabitsPageFlag);
       _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
+      _enableVectorSearch = configFlags.contains(enableVectorSearchFlag);
+      var shouldRefreshAfterModeFallback = false;
+      if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
+        _searchMode = SearchMode.fullText;
+        shouldRefreshAfterModeFallback = true;
+      }
 
       // Compute newly allowed types based on updated flags
       final newAllowed = computeAllowedEntryTypes(
@@ -221,6 +230,10 @@ class JournalPageController extends _$JournalPageController {
 
       // Always emit state to update UI
       _emitState();
+
+      if (shouldRefreshAfterModeFallback) {
+        unawaited(refreshQuery());
+      }
 
       // Only persist if selection actually changed
       if (!setEquals(prevSelection, _selectedEntryTypes)) {
@@ -281,7 +294,7 @@ class JournalPageController extends _$JournalPageController {
   }
 
   void _emitState() {
-    state = JournalPageState(
+    state = state.copyWith(
       match: _query,
       tagIds: <String>{},
       filters: _filters,
@@ -289,8 +302,6 @@ class JournalPageController extends _$JournalPageController {
       showTasks: _showTasks,
       selectedEntryTypes: _selectedEntryTypes.toList(),
       fullTextMatches: _fullTextMatches,
-      pagingController: state.pagingController,
-      taskStatuses: state.taskStatuses,
       selectedTaskStatuses: _selectedTaskStatuses,
       selectedCategoryIds: _selectedCategoryIds,
       selectedLabelIds: _selectedLabelIds,
@@ -299,6 +310,8 @@ class JournalPageController extends _$JournalPageController {
       showCreationDate: _showCreationDate,
       showDueDate: _showDueDate,
       showCoverArt: _showCoverArt,
+      searchMode: _searchMode,
+      enableVectorSearch: _enableVectorSearch,
     );
   }
 
@@ -416,6 +429,12 @@ class JournalPageController extends _$JournalPageController {
   Future<void> setSortOption(TaskSortOption option) async {
     _sortOption = option;
     await persistTasksFilter();
+  }
+
+  /// Switches between full-text and vector search modes.
+  void setSearchMode(SearchMode mode) {
+    _searchMode = _enableVectorSearch ? mode : SearchMode.fullText;
+    refreshQuery();
   }
 
   // Creation date display toggle (visual only, no query refresh needed)
@@ -592,6 +611,15 @@ class JournalPageController extends _$JournalPageController {
   }
 
   Future<List<JournalEntity>> _runQuery(int pageKey) async {
+    // Vector search: bypass FTS5 and DB pagination entirely.
+    if (_showTasks &&
+        _enableVectorSearch &&
+        _searchMode == SearchMode.vector &&
+        _query.isNotEmpty &&
+        pageKey == 0) {
+      return _runVectorSearch();
+    }
+
     // Intersect selected types with allowed based on feature flags
     final allowed = computeAllowedEntryTypes(
       events: _enableEvents,
@@ -666,6 +694,58 @@ class JournalPageController extends _$JournalPageController {
     }
   }
 
+  /// Executes a vector search and returns the results.
+  ///
+  /// Updates state with timing information for the UI indicator.
+  Future<List<JournalEntity>> _runVectorSearch() async {
+    if (!getIt.isRegistered<VectorSearchRepository>()) {
+      DevLogger.warning(
+        name: 'JournalPageController',
+        message: 'VectorSearchRepository not registered — '
+            'is the embedding pipeline available?',
+      );
+      state = state.copyWith(
+        vectorSearchInFlight: false,
+        vectorSearchElapsed: Duration.zero,
+        vectorSearchResultCount: 0,
+      );
+      return [];
+    }
+
+    state = state.copyWith(
+      vectorSearchInFlight: true,
+      vectorSearchElapsed: Duration.zero,
+      vectorSearchResultCount: 0,
+    );
+
+    try {
+      final result = await getIt<VectorSearchRepository>().searchRelatedTasks(
+        query: _query,
+        categoryIds:
+            _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
+      );
+
+      state = state.copyWith(
+        vectorSearchInFlight: false,
+        vectorSearchElapsed: result.elapsed,
+        vectorSearchResultCount: result.tasks.length,
+      );
+
+      return result.tasks;
+    } on Exception catch (e) {
+      DevLogger.warning(
+        name: 'JournalPageController',
+        message: 'Vector search failed: $e',
+      );
+      state = state.copyWith(
+        vectorSearchInFlight: false,
+        vectorSearchElapsed: Duration.zero,
+        vectorSearchResultCount: 0,
+      );
+      return [];
+    }
+  }
+
   /// Sorts tasks by due date (soonest first, tasks without due dates at end).
   /// Preserves creation date order for tasks with the same due date or no due date.
   ///
@@ -702,4 +782,6 @@ class JournalPageController extends _$JournalPageController {
   bool get enableEvents => _enableEvents;
   bool get enableHabits => _enableHabits;
   bool get enableDashboards => _enableDashboards;
+  bool get enableVectorSearchInternal => _enableVectorSearch;
+  SearchMode get searchModeInternal => _searchMode;
 }

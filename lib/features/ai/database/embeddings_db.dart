@@ -71,6 +71,16 @@ class EmbeddingsDb {
   }
 
   void _createSchema() {
+    // Check if the vec_embeddings table already exists with wrong dimensions,
+    // or if embedding_metadata is missing the category_id column. Since
+    // embeddings are derived data that can be regenerated, we drop and
+    // recreate both tables on schema mismatch.
+    if (_hasDimensionMismatch() || _hasMissingCategoryColumn()) {
+      db
+        ..execute('DROP TABLE IF EXISTS vec_embeddings')
+        ..execute('DROP TABLE IF EXISTS embedding_metadata');
+    }
+
     db
       ..execute('''
         CREATE TABLE IF NOT EXISTS embedding_metadata (
@@ -78,12 +88,17 @@ class EmbeddingsDb {
           entity_type TEXT NOT NULL,
           model_id TEXT NOT NULL,
           content_hash TEXT NOT NULL,
-          created_at TEXT NOT NULL
+          created_at TEXT NOT NULL,
+          category_id TEXT NOT NULL DEFAULT ''
         );
       ''')
       ..execute('''
         CREATE INDEX IF NOT EXISTS idx_entity_type
           ON embedding_metadata(entity_type);
+      ''')
+      ..execute('''
+        CREATE INDEX IF NOT EXISTS idx_category_id
+          ON embedding_metadata(category_id);
       ''')
       ..execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
@@ -92,6 +107,36 @@ class EmbeddingsDb {
             embedding float[$kEmbeddingDimensions]
           );
       ''');
+  }
+
+  /// Checks whether the existing vec_embeddings table has a different
+  /// dimension than [kEmbeddingDimensions].
+  ///
+  /// Returns `false` if the table doesn't exist yet (nothing to migrate).
+  bool _hasDimensionMismatch() {
+    // Virtual tables are stored with type='table' in sqlite_master.
+    final schema = db.select(
+      "SELECT sql FROM sqlite_master WHERE name='vec_embeddings'",
+    );
+    if (schema.isEmpty) return false;
+
+    final sql = schema.first['sql'] as String? ?? '';
+    // The CREATE VIRTUAL TABLE statement contains "float[N]".
+    final match = RegExp(r'float\[(\d+)\]').firstMatch(sql);
+    if (match == null) return false;
+
+    final existingDims = int.tryParse(match.group(1)!);
+    return existingDims != null && existingDims != kEmbeddingDimensions;
+  }
+
+  /// Checks whether the existing embedding_metadata table is missing the
+  /// `category_id` column added for category-scoped vector search.
+  ///
+  /// Returns `false` if the table doesn't exist yet (nothing to migrate).
+  bool _hasMissingCategoryColumn() {
+    final info = db.select('PRAGMA table_info(embedding_metadata)');
+    if (info.isEmpty) return false;
+    return !info.any((row) => row['name'] == 'category_id');
   }
 
   /// Closes the database. Safe to call multiple times.
@@ -112,6 +157,7 @@ class EmbeddingsDb {
     required String modelId,
     required Float32List embedding,
     required String contentHash,
+    String categoryId = '',
   }) {
     if (embedding.length != kEmbeddingDimensions) {
       throw ArgumentError(
@@ -138,10 +184,11 @@ class EmbeddingsDb {
         ..execute(
           '''
           INSERT OR REPLACE INTO embedding_metadata
-            (entity_id, entity_type, model_id, content_hash, created_at)
-          VALUES (?, ?, ?, ?, ?)
+            (entity_id, entity_type, model_id, content_hash, created_at,
+             category_id)
+          VALUES (?, ?, ?, ?, ?, ?)
           ''',
-          [entityId, entityType, modelId, contentHash, now],
+          [entityId, entityType, modelId, contentHash, now, categoryId],
         )
         // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
         ..execute(
@@ -182,16 +229,17 @@ class EmbeddingsDb {
   /// Performs k-nearest-neighbor search.
   ///
   /// Returns up to [k] results ordered by ascending distance (most similar
-  /// first). Optionally filter by [entityTypeFilter].
+  /// first). Optionally filter by [entityTypeFilter] and/or [categoryIds].
   ///
-  /// Note: [entityTypeFilter] is applied as a post-KNN filter via a JOIN on
+  /// Note: Filters are applied as post-KNN predicates via a JOIN on
   /// embedding_metadata. This means the result may contain fewer than [k]
   /// items when filtering is active, since vec0 selects the top-k candidates
-  /// before the entity_type predicate is evaluated.
+  /// before the predicates are evaluated.
   List<EmbeddingSearchResult> search({
     required Float32List queryVector,
     int k = 10,
     String? entityTypeFilter,
+    Set<String>? categoryIds,
   }) {
     if (queryVector.length != kEmbeddingDimensions) {
       throw ArgumentError(
@@ -207,7 +255,15 @@ class EmbeddingsDb {
     );
 
     final typeClause = entityTypeFilter != null ? 'AND m.entity_type = ?' : '';
-    final params = [blob, k, if (entityTypeFilter != null) entityTypeFilter];
+    final categoryClause = categoryIds != null && categoryIds.isNotEmpty
+        ? 'AND m.category_id IN (${List.filled(categoryIds.length, '?').join(', ')})'
+        : '';
+    final params = [
+      blob,
+      k,
+      if (entityTypeFilter != null) entityTypeFilter,
+      if (categoryIds != null && categoryIds.isNotEmpty) ...categoryIds,
+    ];
 
     final rows = db.select(
       '''
@@ -217,6 +273,7 @@ class EmbeddingsDb {
       WHERE v.embedding MATCH ?
         AND k = ?
         $typeClause
+        $categoryClause
       ORDER BY v.distance
       ''',
       params,
