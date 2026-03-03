@@ -250,26 +250,83 @@ class FeedbackExtractionService {
     return decision.toolName;
   }
 
-  /// Heuristic classification for observations.
+  /// Classification for observations.
   ///
-  /// Uses keyword-based sentiment analysis on the observation payload text.
-  /// When a [payload] is provided, extracts text content to use as the
-  /// detail string. Falls back to "Observation recorded" when no payload
-  /// text is available.
+  /// For structured observations (with priority/category in the payload),
+  /// uses the encoded fields directly. For legacy bare-string observations,
+  /// falls back to keyword-based sentiment analysis.
   ClassifiedFeedbackItem? _classifyObservation(
     AgentMessageEntity observation, {
     AgentMessagePayloadEntity? payload,
   }) {
     final detail = _observationDetailText(payload);
-    final sentiment = _classifyTextSentiment(detail);
+    final priority = _extractObservationPriority(payload);
+    final obsCategory = _extractObservationCategory(payload);
+
+    // For critical observations with an explicit category, derive sentiment
+    // directly: excellence → positive, grievance/templateImprovement → negative.
+    // When the category is operational (default for missing/invalid category),
+    // fall back to text heuristics to avoid misclassifying praise as negative.
+    final sentiment = priority == ObservationPriority.critical
+        ? switch (obsCategory) {
+            ObservationCategory.excellence => FeedbackSentiment.positive,
+            ObservationCategory.grievance => FeedbackSentiment.negative,
+            ObservationCategory.templateImprovement =>
+              FeedbackSentiment.negative,
+            ObservationCategory.operational => _classifyTextSentiment(detail),
+          }
+        : _classifyTextSentiment(detail);
+
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
-      category: FeedbackCategory.general,
+      category: _mapObservationToFeedbackCategory(obsCategory),
       source: FeedbackSources.observation,
       detail: detail,
       agentId: observation.agentId,
       sourceEntityId: observation.id,
+      confidence: priority == ObservationPriority.critical ? 1.0 : null,
+      observationPriority: priority,
     );
+  }
+
+  /// Extracts [ObservationPriority] from a structured payload, defaulting
+  /// to [ObservationPriority.routine] for legacy payloads.
+  static ObservationPriority _extractObservationPriority(
+    AgentMessagePayloadEntity? payload,
+  ) {
+    if (payload == null) return ObservationPriority.routine;
+    final raw = payload.content['priority'];
+    if (raw is String) {
+      return parseEnumByName(ObservationPriority.values, raw) ??
+          ObservationPriority.routine;
+    }
+    return ObservationPriority.routine;
+  }
+
+  /// Extracts [ObservationCategory] from a structured payload, defaulting
+  /// to [ObservationCategory.operational] for legacy payloads.
+  static ObservationCategory _extractObservationCategory(
+    AgentMessagePayloadEntity? payload,
+  ) {
+    if (payload == null) return ObservationCategory.operational;
+    final raw = payload.content['category'];
+    if (raw is String) {
+      return parseEnumByName(ObservationCategory.values, raw) ??
+          ObservationCategory.operational;
+    }
+    return ObservationCategory.operational;
+  }
+
+  /// Maps an observation category to the appropriate feedback category.
+  static FeedbackCategory _mapObservationToFeedbackCategory(
+    ObservationCategory obsCategory,
+  ) {
+    return switch (obsCategory) {
+      ObservationCategory.grievance => FeedbackCategory.prioritization,
+      ObservationCategory.excellence => FeedbackCategory.general,
+      ObservationCategory.templateImprovement => FeedbackCategory.general,
+      ObservationCategory.operational => FeedbackCategory.general,
+    };
   }
 
   /// Keyword-based heuristic for classifying text sentiment.

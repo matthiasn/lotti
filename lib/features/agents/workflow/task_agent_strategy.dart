@@ -15,6 +15,24 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
+/// A structured observation record with optional priority and category.
+///
+/// The [text] field holds the observation content. The [priority] and
+/// [category] fields are populated when the agent uses the structured
+/// observation format; for legacy bare-string observations they default
+/// to [ObservationPriority.routine] and [ObservationCategory.operational].
+class ObservationRecord {
+  const ObservationRecord({
+    required this.text,
+    this.priority = ObservationPriority.routine,
+    this.category = ObservationCategory.operational,
+  });
+
+  final String text;
+  final ObservationPriority priority;
+  final ObservationCategory category;
+}
+
 /// Callback that resolves a journal entity's category ID from its entity ID.
 typedef ResolveCategoryId = Future<String?> Function(String entityId);
 
@@ -111,7 +129,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   String? _reportContent;
   String? _reportTldr;
   String? _finalResponse;
-  final _observations = <String>[];
+  final _observations = <ObservationRecord>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
   bool _taskMetadataResolved = false;
   static const _uuid = Uuid();
@@ -259,8 +277,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   ///
   /// The LLM calls the `record_observations` tool during the conversation
   /// to record private notes for future wakes. Each call may contain
-  /// multiple observation strings, all of which are accumulated here.
-  List<String> extractObservations() => List.unmodifiable(_observations);
+  /// multiple observation items (structured or bare strings), all of which
+  /// are accumulated here as [ObservationRecord] instances.
+  List<ObservationRecord> extractObservations() =>
+      List.unmodifiable(_observations);
 
   // ── Internal handlers ──────────────────────────────────────────────────
 
@@ -322,6 +342,10 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Handles the `record_observations` tool call by accumulating observations
   /// and sending an acknowledgement back to the conversation.
+  ///
+  /// Accepts both legacy bare-string items and new structured items with
+  /// `text`, `priority`, and `category` fields. Legacy items default to
+  /// [ObservationPriority.routine] / [ObservationCategory.operational].
   Future<void> _handleRecordObservations(
     Map<String, dynamic> args,
     String callId,
@@ -329,23 +353,28 @@ class TaskAgentStrategy extends ConversationStrategy {
   ) async {
     final rawList = args['observations'];
     if (rawList is List) {
-      final notes =
-          rawList.whereType<String>().where((s) => s.trim().isNotEmpty);
-      _observations.addAll(notes);
+      var count = 0;
+      for (final item in rawList) {
+        final record = _parseObservationItem(item);
+        if (record != null) {
+          _observations.add(record);
+          count++;
+        }
+      }
 
       developer.log(
-        'Recorded ${notes.length} observations',
+        'Recorded $count observations',
         name: 'TaskAgentStrategy',
       );
 
       manager.addToolResponse(
         toolCallId: callId,
-        response: 'Recorded ${notes.length} observation(s).',
+        response: 'Recorded $count observation(s).',
       );
 
       await _recordToolResultMessage(toolName: observationToolName);
     } else {
-      const errorMsg = 'Error: "observations" must be an array of strings.';
+      const errorMsg = 'Error: "observations" must be an array.';
       manager.addToolResponse(
         toolCallId: callId,
         response: errorMsg,
@@ -356,6 +385,45 @@ class TaskAgentStrategy extends ConversationStrategy {
         errorMessage: errorMsg,
       );
     }
+  }
+
+  /// Parses a single observation item from the tool call arguments.
+  ///
+  /// Handles both legacy bare strings and new structured objects.
+  static ObservationRecord? _parseObservationItem(Object? item) {
+    // Legacy format: bare string.
+    if (item is String) {
+      final trimmed = item.trim();
+      if (trimmed.isNotEmpty) {
+        return ObservationRecord(text: trimmed);
+      }
+    }
+
+    // New structured format: {text, priority?, category?}.
+    if (item is Map<String, dynamic>) {
+      final rawText = item['text'];
+      if (rawText is String) {
+        final text = rawText.trim();
+        if (text.isEmpty) return null;
+        final rawPriority = item['priority'];
+        final rawCategory = item['category'];
+        return ObservationRecord(
+          text: text,
+          priority: parseEnumByName(
+                ObservationPriority.values,
+                rawPriority is String ? rawPriority : null,
+              ) ??
+              ObservationPriority.routine,
+          category: parseEnumByName(
+                ObservationCategory.values,
+                rawCategory is String ? rawCategory : null,
+              ) ??
+              ObservationCategory.operational,
+        );
+      }
+    }
+
+    return null;
   }
 
   // ── Change set helpers ──────────────────────────────────────────────────

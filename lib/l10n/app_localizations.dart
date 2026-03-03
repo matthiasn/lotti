@@ -666,6 +666,24 @@ abstract class AppLocalizations {
   /// **'Feedback Classification'**
   String get agentFeedbackClassificationTitle;
 
+  /// No description provided for @agentFeedbackExcellenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes of Excellence'**
+  String get agentFeedbackExcellenceTitle;
+
+  /// No description provided for @agentFeedbackGrievancesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grievances'**
+  String get agentFeedbackGrievancesTitle;
+
+  /// No description provided for @agentFeedbackHighPriorityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'High-Priority Feedback'**
+  String get agentFeedbackHighPriorityTitle;
+
   /// No description provided for @agentFeedbackItemCount.
   ///
   /// In en, this message translates to:

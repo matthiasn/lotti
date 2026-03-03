@@ -311,6 +311,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentFeedbackClassificationTitle => 'Feedback Classification';
 
   @override
+  String get agentFeedbackExcellenceTitle => 'Notes of Excellence';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Grievances';
+
+  @override
+  String get agentFeedbackHighPriorityTitle => 'High-Priority Feedback';
+
+  @override
   String agentFeedbackItemCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

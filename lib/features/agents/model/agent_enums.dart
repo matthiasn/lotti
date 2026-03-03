@@ -193,6 +193,43 @@ enum FeedbackCategory {
   general,
 }
 
+/// Priority level for agent observations.
+///
+/// Allows agents to encode urgency when recording observations, ensuring
+/// that grievances and excellence notes surface prominently in rituals.
+enum ObservationPriority {
+  /// Routine observation — patterns, insights, process notes.
+  routine,
+
+  /// Notable observation — worth reviewing but not urgent.
+  notable,
+
+  /// Critical observation — user grievance or excellence note that MUST
+  /// be reviewed in the next one-on-one session.
+  critical,
+}
+
+/// Category of an agent observation, assigned at recording time.
+///
+/// This is distinct from [FeedbackCategory] (which is for aggregated
+/// feedback classification). Observation categories encode the agent's
+/// intent when writing the observation.
+enum ObservationCategory {
+  /// A user-reported grievance — something went wrong, a request was
+  /// ignored, or behavior was unsatisfactory.
+  grievance,
+
+  /// A note of excellence — something the agent or template did
+  /// particularly well, or explicit user praise.
+  excellence,
+
+  /// A suggestion for template or process improvement from the user.
+  templateImprovement,
+
+  /// A routine operational note (patterns, insights, failure notes).
+  operational,
+}
+
 /// Kind of message in the agent's message log.
 enum AgentMessageKind {
   /// Agent's private working notes (agentJournal entries).
@@ -215,4 +252,18 @@ enum AgentMessageKind {
 
   /// System-generated message (e.g., lifecycle events).
   system,
+}
+
+/// Safely looks up an enum value by name, returning `null` on mismatch.
+///
+/// Normalizes the input by trimming whitespace, stripping underscores, and
+/// lowercasing — so both `camelCase` enum names and `snake_case` schema
+/// values (e.g., `template_improvement` → `templateimprovement`) match.
+T? parseEnumByName<T extends Enum>(List<T> values, String? name) {
+  if (name == null) return null;
+  final normalized = name.trim().replaceAll('_', '').toLowerCase();
+  for (final value in values) {
+    if (value.name.toLowerCase() == normalized) return value;
+  }
+  return null;
 }

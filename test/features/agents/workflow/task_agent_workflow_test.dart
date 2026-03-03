@@ -761,6 +761,68 @@ void main() {
             .called(greaterThanOrEqualTo(6));
       });
 
+      test('persists observation payloads with priority and category fields',
+          () async {
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          if (strategy is TaskAgentStrategy) {
+            await strategy.processToolCalls(
+              toolCalls: [
+                const ChatCompletionMessageToolCall(
+                  id: 'obs-structured',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: 'record_observations',
+                    arguments: '{"observations":[{"text":"User is frustrated",'
+                        ' "priority":"critical","category":"grievance"}]}',
+                  ),
+                ),
+              ],
+              manager: mockConversationManager,
+            );
+          }
+          return null;
+        };
+
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        // Find the persisted observation payload entity (has priority key).
+        final payloads = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
+            )
+            .cast<AgentMessagePayloadEntity>()
+            .where((p) => p.content.containsKey('priority'))
+            .toList();
+
+        expect(payloads, hasLength(1));
+        final payload = payloads.first;
+        expect(payload.content['text'], 'User is frustrated');
+        expect(payload.content['priority'], 'critical');
+        expect(payload.content['category'], 'grievance');
+      });
+
       test('persists wakeTokenUsage entity when usage data is returned',
           () async {
         // Return non-null usage from sendMessage.
@@ -2020,6 +2082,314 @@ void main() {
         // Oldest observations (hours 0-4) should NOT appear.
         expect(message, isNot(contains('Obs 0')));
         expect(message, isNot(contains('Obs 4')));
+      });
+
+      test(
+          'includes prior critical observations section '
+          'with grievances and excellence', () async {
+        final grievanceObs = AgentDomainEntity.agentMessage(
+          id: 'obs-grievance',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          contentEntryId: 'pay-grievance',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        final excellenceObs = AgentDomainEntity.agentMessage(
+          id: 'obs-excellence',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 9),
+          vectorClock: null,
+          contentEntryId: 'pay-excellence',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        final routineObs = AgentDomainEntity.agentMessage(
+          id: 'obs-routine',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 10),
+          vectorClock: null,
+          contentEntryId: 'pay-routine',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-grievance'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-grievance',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 8),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': 'User frustrated with wrong priority',
+              'priority': 'critical',
+              'category': 'grievance',
+            },
+          );
+        });
+
+        when(() => mockAgentRepository.getEntity('pay-excellence'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-excellence',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 9),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': 'User praised report quality',
+              'priority': 'critical',
+              'category': 'excellence',
+            },
+          );
+        });
+
+        when(() => mockAgentRepository.getEntity('pay-routine'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-routine',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 10),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': 'Routine observation note',
+              'priority': 'routine',
+              'category': 'operational',
+            },
+          );
+        });
+
+        final message = await executeAndCaptureMessage(
+          observations: [grievanceObs, excellenceObs, routineObs],
+        );
+
+        expect(message, isNotNull);
+        // Critical section should appear.
+        expect(
+          message,
+          contains('## Prior Critical Observations (Self-Review)'),
+        );
+        expect(message, contains('### Grievances'));
+        expect(
+          message,
+          contains('User frustrated with wrong priority'),
+        );
+        expect(message, contains('### Excellence (keep doing this)'));
+        expect(message, contains('User praised report quality'));
+        // Routine observation should NOT appear in critical section.
+        final criticalSection = message!.substring(
+          message.indexOf('## Prior Critical Observations'),
+          message.indexOf('## Agent Journal'),
+        );
+        expect(
+          criticalSection,
+          isNot(contains('Routine observation note')),
+        );
+        // But routine observation should appear in the journal.
+        expect(message, contains('## Agent Journal'));
+        expect(message, contains('Routine observation note'));
+      });
+
+      test('omits critical section when no critical observations exist',
+          () async {
+        final routineObs = AgentDomainEntity.agentMessage(
+          id: 'obs-routine',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 10),
+          vectorClock: null,
+          contentEntryId: 'pay-routine',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-routine'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-routine',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 10),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': 'Just a routine note',
+              'priority': 'routine',
+              'category': 'operational',
+            },
+          );
+        });
+
+        final message = await executeAndCaptureMessage(
+          observations: [routineObs],
+        );
+
+        expect(message, isNotNull);
+        expect(
+          message,
+          isNot(contains('Prior Critical Observations')),
+        );
+        expect(message, contains('## Agent Journal'));
+        expect(message, contains('Just a routine note'));
+      });
+
+      test(
+          'critical section appears before Agent Journal '
+          'in message order', () async {
+        final critObs = AgentDomainEntity.agentMessage(
+          id: 'obs-crit',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          contentEntryId: 'pay-crit',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-crit'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-crit',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 8),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': 'Critical grievance item',
+              'priority': 'critical',
+              'category': 'grievance',
+            },
+          );
+        });
+
+        final message = await executeAndCaptureMessage(
+          observations: [critObs],
+        );
+
+        expect(message, isNotNull);
+        final criticalIdx = message!.indexOf('Prior Critical Observations');
+        final journalIdx = message.indexOf('## Agent Journal');
+        expect(criticalIdx, lessThan(journalIdx));
+      });
+
+      test(
+          'handles payload resolution errors gracefully '
+          'in critical observation filtering', () async {
+        final obs = AgentDomainEntity.agentMessage(
+          id: 'obs-err',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          contentEntryId: 'pay-err',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-err'))
+            .thenThrow(Exception('DB error'));
+
+        final message = await executeAndCaptureMessage(
+          observations: [obs],
+        );
+
+        expect(message, isNotNull);
+        // Should not crash; observation renders with fallback text.
+        expect(message, contains('## Agent Journal'));
+        expect(message, contains('(no content)'));
+        // No critical section since payload resolution failed.
+        expect(
+          message,
+          isNot(contains('Prior Critical Observations')),
+        );
+      });
+
+      test('treats template_improvement as grievance in critical section',
+          () async {
+        final obs = AgentDomainEntity.agentMessage(
+          id: 'obs-tmpl',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          contentEntryId: 'pay-tmpl',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-tmpl'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-tmpl',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 8),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': 'User wants different behavior',
+              'priority': 'critical',
+              'category': 'template_improvement',
+            },
+          );
+        });
+
+        final message = await executeAndCaptureMessage(
+          observations: [obs],
+        );
+
+        expect(message, isNotNull);
+        expect(message, contains('### Grievances'));
+        expect(
+          message,
+          contains('User wants different behavior'),
+        );
+        // Should not appear in excellence.
+        expect(
+          message,
+          isNot(contains('### Excellence')),
+        );
+      });
+
+      test('skips critical observations with empty text', () async {
+        final obs = AgentDomainEntity.agentMessage(
+          id: 'obs-empty',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          contentEntryId: 'pay-empty',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-empty'))
+            .thenAnswer((_) async {
+          return AgentDomainEntity.agentMessagePayload(
+            id: 'pay-empty',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 14, 8),
+            vectorClock: null,
+            content: <String, Object?>{
+              'text': '',
+              'priority': 'critical',
+              'category': 'grievance',
+            },
+          );
+        });
+
+        final message = await executeAndCaptureMessage(
+          observations: [obs],
+        );
+
+        expect(message, isNotNull);
+        // Empty text should be skipped from critical section.
+        expect(
+          message,
+          isNot(contains('Prior Critical Observations')),
+        );
       });
     });
 

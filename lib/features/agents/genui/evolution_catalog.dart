@@ -25,6 +25,7 @@ Catalog buildEvolutionCatalog() => Catalog(
         feedbackCategoryBreakdownItem,
         sessionProgressItem,
         categoryRatingsItem,
+        highPriorityFeedbackItem,
       ],
       catalogId: evolutionCatalogId,
     );
@@ -169,6 +170,32 @@ final _categoryRatingsSchema = S.object(
     ),
   },
   required: ['categories'],
+);
+
+final _highPriorityFeedbackSchema = S.object(
+  properties: {
+    'grievances': S.list(
+      items: S.object(
+        properties: {
+          'agentId': S.string(description: 'Short agent ID'),
+          'detail': S.string(description: 'Full grievance text'),
+        },
+        required: ['detail'],
+      ),
+      description: 'Negative critical observations (grievances)',
+    ),
+    'excellenceNotes': S.list(
+      items: S.object(
+        properties: {
+          'agentId': S.string(description: 'Short agent ID'),
+          'detail': S.string(description: 'Full excellence note text'),
+        },
+        required: ['detail'],
+      ),
+      description: 'Positive critical observations (excellence notes)',
+    ),
+  },
+  required: ['grievances', 'excellenceNotes'],
 );
 
 // ── JSON Parsing Helpers ────────────────────────────────────────────────────
@@ -865,6 +892,91 @@ final categoryRatingsItem = CatalogItem(
   },
 );
 
+/// High-priority feedback card showing grievances (red) and excellence notes
+/// (green) with full untruncated text.
+final highPriorityFeedbackItem = CatalogItem(
+  name: 'HighPriorityFeedback',
+  dataSchema: _highPriorityFeedbackSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final grievances = _readMapList(json, 'grievances')
+        .where((item) => _readString(item, 'detail').trim().isNotEmpty)
+        .toList();
+    final excellenceNotes = _readMapList(json, 'excellenceNotes')
+        .where((item) => _readString(item, 'detail').trim().isNotEmpty)
+        .toList();
+    if (grievances.isEmpty && excellenceNotes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final context = itemContext.buildContext;
+    final messages = context.messages;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(GameyColors.primaryRed),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.priority_high,
+                  size: 18,
+                  color: GameyColors.primaryRed,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  messages.agentFeedbackHighPriorityTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            if (grievances.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _highPrioritySectionHeader(
+                messages.agentFeedbackGrievancesTitle,
+                grievances.length,
+                GameyColors.primaryRed,
+              ),
+              const SizedBox(height: 4),
+              ...grievances.map(
+                (item) => _highPriorityItemTile(
+                  agentId: _readString(item, 'agentId'),
+                  detail: _readString(item, 'detail'),
+                  accentColor: GameyColors.primaryRed,
+                ),
+              ),
+            ],
+            if (excellenceNotes.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _highPrioritySectionHeader(
+                messages.agentFeedbackExcellenceTitle,
+                excellenceNotes.length,
+                GameyColors.primaryGreen,
+              ),
+              const SizedBox(height: 4),
+              ...excellenceNotes.map(
+                (item) => _highPriorityItemTile(
+                  agentId: _readString(item, 'agentId'),
+                  detail: _readString(item, 'detail'),
+                  accentColor: GameyColors.primaryGreen,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  },
+);
+
 /// Stateful card that renders star ratings for each feedback category.
 class _CategoryRatingsCard extends StatefulWidget {
   const _CategoryRatingsCard({
@@ -1171,6 +1283,80 @@ Widget _feedbackLine({required String detail, required String sentiment}) {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _highPrioritySectionHeader(String label, int count, Color color) {
+  return Row(
+    children: [
+      Container(
+        width: 4,
+        height: 14,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(
+        '$label ($count)',
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _highPriorityItemTile({
+  required String agentId,
+  required String detail,
+  required Color accentColor,
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: accentColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        if (agentId.isNotEmpty) ...[
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: Text(
+              '[$agentId]',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        Expanded(
+          child: Text(
+            detail,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 12,
+            ),
           ),
         ),
       ],

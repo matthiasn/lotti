@@ -287,51 +287,61 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionVersionProposed => 'Version proposed';
 
   @override
-  String get agentFeedbackCategoryAccuracy => 'Accuracy';
+  String get agentFeedbackCategoryAccuracy => 'Přesnost';
 
   @override
-  String get agentFeedbackCategoryBreakdownTitle => 'Category Breakdown';
+  String get agentFeedbackCategoryBreakdownTitle => 'Rozložení podle kategorií';
 
   @override
-  String get agentFeedbackCategoryCommunication => 'Communication';
+  String get agentFeedbackCategoryCommunication => 'Komunikace';
 
   @override
-  String get agentFeedbackCategoryGeneral => 'General';
+  String get agentFeedbackCategoryGeneral => 'Obecné';
 
   @override
-  String get agentFeedbackCategoryPrioritization => 'Prioritization';
+  String get agentFeedbackCategoryPrioritization => 'Prioritizace';
 
   @override
-  String get agentFeedbackCategoryTimeliness => 'Timeliness';
+  String get agentFeedbackCategoryTimeliness => 'Včasnost';
 
   @override
-  String get agentFeedbackCategoryTooling => 'Tooling';
+  String get agentFeedbackCategoryTooling => 'Nástroje';
 
   @override
-  String get agentFeedbackClassificationTitle => 'Feedback Classification';
+  String get agentFeedbackClassificationTitle => 'Klasifikace zpětné vazby';
+
+  @override
+  String get agentFeedbackExcellenceTitle => 'Vynikající výkony';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Stížnosti';
+
+  @override
+  String get agentFeedbackHighPriorityTitle => 'Vysoce prioritní zpětná vazba';
 
   @override
   String agentFeedbackItemCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items',
-      one: '1 item',
+      other: '$count položek',
+      few: '$count položky',
+      one: '1 položka',
     );
     return '$_temp0';
   }
 
   @override
-  String get agentFeedbackSourceDecision => 'Decision';
+  String get agentFeedbackSourceDecision => 'Rozhodnutí';
 
   @override
-  String get agentFeedbackSourceMetric => 'Metric';
+  String get agentFeedbackSourceMetric => 'Metrika';
 
   @override
-  String get agentFeedbackSourceObservation => 'Observation';
+  String get agentFeedbackSourceObservation => 'Pozorování';
 
   @override
-  String get agentFeedbackSourceRating => 'Rating';
+  String get agentFeedbackSourceRating => 'Hodnocení';
 
   @override
   String get agentInstancesEmptyList => 'No agent instances found';

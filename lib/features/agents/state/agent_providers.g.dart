@@ -217,7 +217,7 @@ final class DomainLoggerProvider
   }
 }
 
-String _$domainLoggerHash() => r'6949d0352b94c32e639d9ddf46aa260be65dcaeb';
+String _$domainLoggerHash() => r'e203383757041025f853dec58f2f6c2a47af2693';
 
 /// The agent database instance (lazy singleton).
 

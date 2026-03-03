@@ -64,6 +64,29 @@
   },
   "agentDetailNotFound": "Agent nebyl nalezen.",
   "agentDetailUnexpectedType": "Neočekávaný typ entity.",
+  "agentFeedbackCategoryAccuracy": "Přesnost",
+  "agentFeedbackCategoryBreakdownTitle": "Rozložení podle kategorií",
+  "agentFeedbackCategoryCommunication": "Komunikace",
+  "agentFeedbackCategoryGeneral": "Obecné",
+  "agentFeedbackCategoryPrioritization": "Prioritizace",
+  "agentFeedbackCategoryTimeliness": "Včasnost",
+  "agentFeedbackCategoryTooling": "Nástroje",
+  "agentFeedbackClassificationTitle": "Klasifikace zpětné vazby",
+  "agentFeedbackExcellenceTitle": "Vynikající výkony",
+  "agentFeedbackGrievancesTitle": "Stížnosti",
+  "agentFeedbackHighPriorityTitle": "Vysoce prioritní zpětná vazba",
+  "agentFeedbackItemCount": "{count, plural, =1{1 položka} few{{count} položky} other{{count} položek}}",
+  "@agentFeedbackItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentFeedbackSourceDecision": "Rozhodnutí",
+  "agentFeedbackSourceMetric": "Metrika",
+  "agentFeedbackSourceObservation": "Pozorování",
+  "agentFeedbackSourceRating": "Hodnocení",
   "agentLifecycleActive": "Aktivní",
   "agentLifecycleCreated": "Vytvořen",
   "agentLifecycleDestroyed": "Zničen",

@@ -151,6 +151,9 @@
   "agentFeedbackCategoryTimeliness": "Puntualidad",
   "agentFeedbackCategoryTooling": "Herramientas",
   "agentFeedbackClassificationTitle": "Clasificación de retroalimentación",
+  "agentFeedbackExcellenceTitle": "Notas de excelencia",
+  "agentFeedbackGrievancesTitle": "Quejas",
+  "agentFeedbackHighPriorityTitle": "Feedback de alta prioridad",
   "agentFeedbackItemCount": "{count, plural, =1{1 elemento} other{{count} elementos}}",
   "@agentFeedbackItemCount": {
     "placeholders": {

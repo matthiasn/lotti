@@ -264,5 +264,112 @@ void main() {
       expect(ctx.initialUserMessage, contains('ritual session #3'));
       expect(ctx.initialUserMessage, contains('Session abandoned'));
     });
+
+    test('includes high-priority section when grievances exist', () {
+      final ctx = buildCtx(
+        feedbackItems: [
+          makeTestClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            detail: 'User asked for P0 but agent kept P1',
+            source: 'observation',
+            observationPriority: ObservationPriority.critical,
+          ),
+          makeTestClassifiedFeedbackItem(
+            // ignore: avoid_redundant_argument_values
+            sentiment: FeedbackSentiment.positive,
+            detail: 'Routine positive feedback',
+          ),
+        ],
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('HIGH-PRIORITY FEEDBACK'),
+      );
+      expect(ctx.initialUserMessage, contains('Grievances (1)'));
+      expect(
+        ctx.initialUserMessage,
+        contains('User asked for P0 but agent kept P1'),
+      );
+    });
+
+    test('includes high-priority section when excellence notes exist', () {
+      final ctx = buildCtx(
+        feedbackItems: [
+          makeTestClassifiedFeedbackItem(
+            // ignore: avoid_redundant_argument_values
+            sentiment: FeedbackSentiment.positive,
+            detail: 'User praised report quality',
+            source: 'observation',
+            observationPriority: ObservationPriority.critical,
+          ),
+        ],
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('HIGH-PRIORITY FEEDBACK'),
+      );
+      expect(ctx.initialUserMessage, contains('Notes of Excellence (1)'));
+      expect(
+        ctx.initialUserMessage,
+        contains('User praised report quality'),
+      );
+    });
+
+    test('omits high-priority section when no critical items exist', () {
+      final ctx = buildCtx(
+        feedbackItems: [
+          makeTestClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            detail: 'Routine negative feedback',
+          ),
+        ],
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('HIGH-PRIORITY FEEDBACK')),
+      );
+    });
+
+    test('high-priority section appears before general feedback', () {
+      final ctx = buildCtx(
+        feedbackItems: [
+          makeTestClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            detail: 'critical grievance',
+            source: 'observation',
+            observationPriority: ObservationPriority.critical,
+          ),
+          makeTestClassifiedFeedbackItem(
+            // ignore: avoid_redundant_argument_values
+            sentiment: FeedbackSentiment.positive,
+            detail: 'general feedback',
+          ),
+        ],
+      );
+
+      final msg = ctx.initialUserMessage;
+      final highPriorityIndex = msg.indexOf('HIGH-PRIORITY FEEDBACK');
+      final feedbackSummaryIndex = msg.indexOf('Classified Feedback Summary');
+      expect(highPriorityIndex, greaterThanOrEqualTo(0));
+      expect(feedbackSummaryIndex, greaterThanOrEqualTo(0));
+      expect(highPriorityIndex, lessThan(feedbackSummaryIndex));
+    });
+
+    test('system prompts include high-priority feedback protocol', () {
+      final standardCtx = buildCtx();
+      final metaCtx = buildCtx(isMetaLevel: true);
+
+      expect(
+        standardCtx.systemPrompt,
+        contains('High-Priority Feedback Protocol'),
+      );
+      expect(
+        metaCtx.systemPrompt,
+        contains('High-Priority Feedback Protocol'),
+      );
+    });
   });
 }

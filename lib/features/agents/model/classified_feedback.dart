@@ -26,6 +26,12 @@ abstract class ClassifiedFeedbackItem with _$ClassifiedFeedbackItem {
 
     /// Classification confidence (0.0–1.0) for LLM-classified items.
     double? confidence,
+
+    /// Original observation priority, if this item originated from a
+    /// structured observation. Null for non-observation sources (decisions,
+    /// metrics, ratings).
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    ObservationPriority? observationPriority,
   }) = _ClassifiedFeedbackItem;
 
   factory ClassifiedFeedbackItem.fromJson(Map<String, dynamic> json) =>
@@ -64,4 +70,18 @@ extension ClassifiedFeedbackX on ClassifiedFeedback {
   /// Group items by category.
   Map<FeedbackCategory, List<ClassifiedFeedbackItem>> get byCategory =>
       items.groupListsBy((i) => i.category);
+
+  /// All critical-priority items (grievances, excellence, template
+  /// improvements).
+  List<ClassifiedFeedbackItem> get critical => items
+      .where((i) => i.observationPriority == ObservationPriority.critical)
+      .toList();
+
+  /// Critical-priority grievances (negative sentiment).
+  List<ClassifiedFeedbackItem> get grievances =>
+      critical.where((i) => i.sentiment == FeedbackSentiment.negative).toList();
+
+  /// Critical-priority excellence notes (positive sentiment).
+  List<ClassifiedFeedbackItem> get excellenceNotes =>
+      critical.where((i) => i.sentiment == FeedbackSentiment.positive).toList();
 }

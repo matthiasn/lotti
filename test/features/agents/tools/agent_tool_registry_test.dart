@@ -260,14 +260,33 @@ void main() {
         expect(tool.description, contains('observations'));
       });
 
-      test('requires an array observations parameter with string items', () {
+      test('requires an array observations parameter with object items', () {
         final properties = tool.parameters['properties'] as Map;
         final obsProp = properties['observations'] as Map;
         expect(obsProp['type'], equals('array'));
+
+        final items = obsProp['items'] as Map;
+        expect(items['type'], equals('object'));
+        expect(items['required'], contains('text'));
+
+        final itemProps = items['properties'] as Map;
+        expect((itemProps['text'] as Map)['type'], equals('string'));
+        expect((itemProps['priority'] as Map)['type'], equals('string'));
         expect(
-          (obsProp['items'] as Map)['type'],
-          equals('string'),
+          (itemProps['priority'] as Map)['enum'],
+          containsAll(['routine', 'notable', 'critical']),
         );
+        expect((itemProps['category'] as Map)['type'], equals('string'));
+        expect(
+          (itemProps['category'] as Map)['enum'],
+          containsAll([
+            'grievance',
+            'excellence',
+            'template_improvement',
+            'operational',
+          ]),
+        );
+
         expect(tool.parameters['required'], contains('observations'));
       });
     });

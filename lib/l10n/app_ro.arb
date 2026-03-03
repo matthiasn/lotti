@@ -151,6 +151,9 @@
   "agentFeedbackCategoryTimeliness": "Promptitudine",
   "agentFeedbackCategoryTooling": "Instrumente",
   "agentFeedbackClassificationTitle": "Clasificare feedback",
+  "agentFeedbackExcellenceTitle": "Note de excelență",
+  "agentFeedbackGrievancesTitle": "Nemulțumiri",
+  "agentFeedbackHighPriorityTitle": "Feedback de prioritate ridicată",
   "agentFeedbackItemCount": "{count, plural, one{1 element} few{{count} elemente} other{{count} de elemente}}",
   "@agentFeedbackItemCount": {
     "placeholders": {

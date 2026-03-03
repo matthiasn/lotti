@@ -34,7 +34,7 @@ void main() {
       final catalog = buildEvolutionCatalog();
       final items = catalog.items;
 
-      expect(items, hasLength(8));
+      expect(items, hasLength(9));
       expect(
           items.map((i) => i.name),
           containsAll([
@@ -46,6 +46,7 @@ void main() {
             'FeedbackCategoryBreakdown',
             'SessionProgress',
             'CategoryRatings',
+            'HighPriorityFeedback',
           ]));
     });
 
@@ -976,6 +977,143 @@ void main() {
         'accuracy_1': 5,
         'category_2': 3,
       });
+    });
+  });
+
+  group('HighPriorityFeedback', () {
+    testWidgets('renders priority icon and title', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[
+              {'agentId': 'abc12345', 'detail': 'User asked P0 but got P1'},
+            ],
+            'excellenceNotes': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.priority_high), findsOneWidget);
+      final context = tester.element(find.byIcon(Icons.priority_high));
+      expect(
+        find.text(context.messages.agentFeedbackHighPriorityTitle),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders grievances with red accent', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[
+              {'agentId': 'abc12345', 'detail': 'Missed critical deadline'},
+              {'agentId': 'def67890', 'detail': 'Wrong priority assignment'},
+            ],
+            'excellenceNotes': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byIcon(Icons.priority_high));
+      expect(
+        find.textContaining(context.messages.agentFeedbackGrievancesTitle),
+        findsOneWidget,
+      );
+      expect(find.text('Missed critical deadline'), findsOneWidget);
+      expect(find.text('Wrong priority assignment'), findsOneWidget);
+      expect(find.text('[abc12345]'), findsOneWidget);
+      expect(find.text('[def67890]'), findsOneWidget);
+    });
+
+    testWidgets('renders excellence notes with green accent', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[],
+            'excellenceNotes': <Map<String, Object?>>[
+              {'agentId': 'xyz99999', 'detail': 'Outstanding report quality'},
+            ],
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byIcon(Icons.priority_high));
+      expect(
+        find.textContaining(context.messages.agentFeedbackExcellenceTitle),
+        findsOneWidget,
+      );
+      expect(find.text('Outstanding report quality'), findsOneWidget);
+      expect(find.text('[xyz99999]'), findsOneWidget);
+    });
+
+    testWidgets('renders both grievances and excellence notes', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[
+              {'agentId': 'aaa', 'detail': 'Grievance item'},
+            ],
+            'excellenceNotes': <Map<String, Object?>>[
+              {'agentId': 'bbb', 'detail': 'Excellence item'},
+            ],
+          }),
+        ),
+      );
+
+      expect(find.text('Grievance item'), findsOneWidget);
+      expect(find.text('Excellence item'), findsOneWidget);
+    });
+
+    testWidgets('returns shrink widget when both lists are empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[],
+            'excellenceNotes': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.priority_high), findsNothing);
+    });
+
+    testWidgets('renders item without agentId gracefully', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[
+              {'agentId': '', 'detail': 'Anonymous grievance'},
+            ],
+            'excellenceNotes': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      expect(find.text('Anonymous grievance'), findsOneWidget);
+      // Should not render empty brackets.
+      expect(find.text('[]'), findsNothing);
+    });
+
+    testWidgets('shows grievance count in section header', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(highPriorityFeedbackItem, {
+            'grievances': <Map<String, Object?>>[
+              {'agentId': 'a', 'detail': 'One'},
+              {'agentId': 'b', 'detail': 'Two'},
+              {'agentId': 'c', 'detail': 'Three'},
+            ],
+            'excellenceNotes': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byIcon(Icons.priority_high));
+      expect(
+        find.text('${context.messages.agentFeedbackGrievancesTitle} (3)'),
+        findsOneWidget,
+      );
     });
   });
 }

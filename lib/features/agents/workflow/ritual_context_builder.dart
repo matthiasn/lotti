@@ -51,8 +51,18 @@ class RitualContextBuilder extends EvolutionContextBuilder {
 
     // Extend the user message with ritual-specific sections.
     final buf = StringBuffer(baseContext.initialUserMessage)..writeln();
-    final cappedItems =
-        classifiedFeedback.items.take(maxFeedbackItems).toList();
+    // High-priority items first — grievances and excellence notes must be
+    // reviewed before general feedback.
+    final highPriorityCount =
+        _writeHighPrioritySection(buf, classifiedFeedback);
+
+    final remainingSlots = maxFeedbackItems - highPriorityCount;
+    final nonCriticalItems = classifiedFeedback.items
+        .where((i) => i.observationPriority != ObservationPriority.critical)
+        .toList();
+    final cappedItems = remainingSlots > 0
+        ? nonCriticalItems.take(remainingSlots).toList()
+        : <ClassifiedFeedbackItem>[];
 
     _writeFeedbackSummary(buf, classifiedFeedback, cappedItems);
     _writeFeedbackByCategory(buf, cappedItems);
@@ -132,7 +142,8 @@ After receiving the user's category ratings:
 - Use evolution notes from past sessions to maintain continuity.
 - When proposing directives, output the COMPLETE new directives text.
 - Record evolution notes to build institutional memory across sessions.
-- Always request category ratings in Phase 1 before proposing in Phase 2.''';
+- Always request category ratings in Phase 1 before proposing in Phase 2.
+$highPriorityProtocol''';
   }
 
   static String _buildRitualSystemPrompt() {
@@ -189,7 +200,8 @@ again. The conversation should always be driving toward an approved proposal.
 - Use evolution notes from past sessions to maintain continuity.
 - When proposing directives, output the COMPLETE new directives text, not a diff.
 - Record evolution notes to build institutional memory across sessions.
-- Always request category ratings in Phase 1 before proposing in Phase 2.''';
+- Always request category ratings in Phase 1 before proposing in Phase 2.
+$highPriorityProtocol''';
   }
 
   void _writeFeedbackSummary(
@@ -199,9 +211,19 @@ again. The conversation should always be driving toward an approved proposal.
   ) {
     buf.writeln('## Classified Feedback Summary');
 
-    if (items.isEmpty) {
+    if (feedback.items.isEmpty) {
       buf
         ..writeln('No classified feedback items in this window.')
+        ..writeln();
+      return;
+    }
+
+    if (items.isEmpty) {
+      buf
+        ..writeln(
+          'All feedback items in this window are high-priority and shown '
+          'in the section above.',
+        )
         ..writeln();
       return;
     }
@@ -271,6 +293,56 @@ again. The conversation should always be driving toward an approved proposal.
     }
   }
 
+  /// Writes a dedicated section for critical-priority observations.
+  ///
+  /// Grievances and excellence notes are shown at full length (no truncation)
+  /// and placed before the general feedback summary so the improver agent
+  /// addresses them first.
+  /// Writes the high-priority section and returns the number of items written.
+  static int _writeHighPrioritySection(
+    StringBuffer buf,
+    ClassifiedFeedback feedback,
+  ) {
+    final grievances = feedback.grievances;
+    final excellence = feedback.excellenceNotes;
+
+    if (grievances.isEmpty && excellence.isEmpty) return 0;
+
+    buf
+      ..writeln('## HIGH-PRIORITY FEEDBACK — REVIEW FIRST')
+      ..writeln()
+      ..writeln(
+        'The following items were flagged as critical by task agents. '
+        'Address these BEFORE discussing general feedback.',
+      )
+      ..writeln();
+
+    if (grievances.isNotEmpty) {
+      buf.writeln('### Grievances (${grievances.length})');
+      for (final item in grievances) {
+        // Full detail — no truncation for critical items.
+        buf.writeln(
+          '- **[${EvolutionContextBuilder.shortId(item.agentId)}]** '
+          '${item.detail}',
+        );
+      }
+      buf.writeln();
+    }
+
+    if (excellence.isNotEmpty) {
+      buf.writeln('### Notes of Excellence (${excellence.length})');
+      for (final item in excellence) {
+        buf.writeln(
+          '- **[${EvolutionContextBuilder.shortId(item.agentId)}]** '
+          '${item.detail}',
+        );
+      }
+      buf.writeln();
+    }
+
+    return grievances.length + excellence.length;
+  }
+
   void _writeSessionContinuity(StringBuffer buf, int sessionNumber) {
     buf
       ..writeln('## Session Continuity')
@@ -280,4 +352,21 @@ again. The conversation should always be driving toward an approved proposal.
       )
       ..writeln();
   }
+
+  /// Protocol section added to ritual system prompts when high-priority
+  /// feedback may be present.
+  static const highPriorityProtocol = '''
+
+## High-Priority Feedback Protocol
+
+When the user context contains a "HIGH-PRIORITY FEEDBACK" section:
+1. Address grievances FIRST in your analysis — acknowledge each one explicitly.
+2. For each grievance, explain what likely went wrong and propose a concrete
+   directive change to prevent recurrence.
+3. Address excellence notes — identify what behavior to preserve or reinforce.
+4. Only then proceed to general feedback analysis.
+
+Grievances represent moments where the user's trust was damaged. Treating them
+with the highest urgency is essential for maintaining a healthy human-agent
+relationship.''';
 }

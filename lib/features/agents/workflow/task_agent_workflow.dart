@@ -459,7 +459,7 @@ class TaskAgentWorkflow {
         }
 
         // 10. Persist new observation notes (agentJournal entries).
-        for (final note in observations) {
+        for (final observation in observations) {
           final payloadId = _uuid.v4();
           await syncService.upsertEntity(
             AgentDomainEntity.agentMessagePayload(
@@ -467,7 +467,11 @@ class TaskAgentWorkflow {
               agentId: agentId,
               createdAt: now,
               vectorClock: null,
-              content: <String, Object?>{'text': note},
+              content: <String, Object?>{
+                'text': observation.text,
+                'priority': observation.priority.name,
+                'category': observation.category.name,
+              },
             ),
           );
 
@@ -777,6 +781,21 @@ and never shown to the user. They persist as your memory across wakes.''';
   - Blockers or scope changes not obvious from individual tool calls
   Skip routine progress that the report already captures.
   Do NOT embed observations in the report text — always use the tool.
+- **Observation priority and category**: When recording observations, assign
+  the appropriate priority and category:
+  - Use priority "critical" + category "grievance" for ANY expression of user
+    frustration, disappointment, or dissatisfaction — even mild complaints.
+    Write a full paragraph (3-5 sentences) capturing what happened, what went
+    wrong, why it matters, and what should change.
+  - Use priority "critical" + category "excellence" when the user explicitly
+    praises a specific behavior or outcome.
+  - Use priority "critical" + category "template_improvement" when the user
+    suggests how you should behave differently.
+  - Use priority "notable" for recurring patterns or anomalies.
+  - Default to priority "routine" + category "operational" for standard notes.
+  When you detect a grievance signal (frustration, "you should have...",
+  "why didn't you...", corrections, re-stating requests), record it
+  IMMEDIATELY as a critical observation before continuing with other work.
 - **Title**: Only set the title when the task has no title yet. Do not
   change an existing title unless the user explicitly asks for it.
 - **Estimates**: Only set or update an estimate when the user explicitly
@@ -847,24 +866,37 @@ and never shown to the user. They persist as your memory across wakes.''';
     }
 
     if (journalObservations.isNotEmpty) {
-      buffer.writeln('## Agent Journal');
       // Cap to most recent 20 to prevent unbounded context growth.
-      // journalObservations is ordered newest-first from the DB query;
-      // reverse so the LLM sees them in chronological order.
-      final recentObs = (journalObservations.length > 20
-              ? journalObservations.sublist(0, 20)
-              : journalObservations)
-          .reversed
-          .toList();
+      // journalObservations is ordered newest-first from the DB query.
+      final boundedObservations = journalObservations.length > 20
+          ? journalObservations.sublist(0, 20)
+          : journalObservations;
 
-      // Batch-resolve all observation texts in parallel to avoid N+1 queries.
-      final texts = await Future.wait(
-        recentObs.map(_resolveObservationText),
+      // Batch-resolve all observation payloads in parallel to avoid N+1
+      // queries. Used for both the critical section and the journal listing.
+      final allPayloads = await _resolveObservationPayloads(
+        boundedObservations,
       );
 
+      // Inject prior critical observations first so the agent addresses
+      // grievances and excellence notes before routine work.
+      _writePriorCriticalObservations(
+        buffer,
+        boundedObservations,
+        allPayloads,
+      );
+
+      buffer.writeln('## Agent Journal');
+      // Reverse so the LLM sees them in chronological order.
+      final recentObs = boundedObservations.reversed.toList();
+
       for (var i = 0; i < recentObs.length; i++) {
+        final payload = recentObs[i].contentEntryId != null
+            ? allPayloads[recentObs[i].contentEntryId]
+            : null;
+        final text = _extractPayloadText(payload);
         buffer.writeln(
-          '- [${recentObs[i].createdAt.toIso8601String()}] ${texts[i]}',
+          '- [${recentObs[i].createdAt.toIso8601String()}] $text',
         );
       }
       buffer.writeln();
@@ -1114,21 +1146,103 @@ and never shown to the user. They persist as your memory across wakes.''';
     }
   }
 
-  /// Resolves the text content of an observation message.
-  ///
-  /// Looks up the [AgentMessagePayloadEntity] via the message's
-  /// `contentEntryId` and extracts the `text` field from its content map.
-  /// Falls back to a placeholder when the payload is missing or malformed.
-  Future<String> _resolveObservationText(AgentMessageEntity obs) async {
-    final payloadId = obs.contentEntryId;
-    if (payloadId == null) return '(no content)';
+  /// Batch-resolves all observation payloads into a map keyed by payload ID.
+  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
+    List<AgentMessageEntity> observations,
+  ) async {
+    final payloadIds =
+        observations.map((o) => o.contentEntryId).whereType<String>().toSet();
 
-    final payload = await agentRepository.getEntity(payloadId);
-    if (payload is AgentMessagePayloadEntity) {
-      final text = payload.content['text'];
-      if (text is String && text.isNotEmpty) return text;
-    }
+    final entries = await Future.wait(
+      payloadIds.map((id) async {
+        try {
+          final entity = await agentRepository.getEntity(id);
+          if (entity is AgentMessagePayloadEntity) {
+            return MapEntry(id, entity);
+          }
+        } catch (e) {
+          // Non-fatal — observation will render with placeholder text.
+        }
+        return null;
+      }),
+    );
+
+    return {
+      for (final entry
+          in entries.whereType<MapEntry<String, AgentMessagePayloadEntity>>())
+        entry.key: entry.value,
+    };
+  }
+
+  /// Extracts the text content from an observation payload.
+  static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
+    if (payload == null) return '(no content)';
+    final text = payload.content['text'];
+    if (text is String && text.isNotEmpty) return text;
     return '(no content)';
+  }
+
+  /// Writes a dedicated section for prior critical observations so the
+  /// task agent can self-correct on grievances and reinforce excellence.
+  static void _writePriorCriticalObservations(
+    StringBuffer buffer,
+    List<AgentMessageEntity> observations,
+    Map<String, AgentMessagePayloadEntity> payloads,
+  ) {
+    final grievances = <(DateTime, String)>[];
+    final excellence = <(DateTime, String)>[];
+
+    for (final obs in observations) {
+      final payload =
+          obs.contentEntryId != null ? payloads[obs.contentEntryId] : null;
+      if (payload == null) continue;
+
+      final rawPriority = payload.content['priority'];
+      final priority = rawPriority is String
+          ? parseEnumByName(ObservationPriority.values, rawPriority)
+          : null;
+      if (priority != ObservationPriority.critical) continue;
+
+      final text = payload.content['text'];
+      if (text is! String || text.trim().isEmpty) continue;
+
+      final rawCategory = payload.content['category'];
+      final category = rawCategory is String
+          ? parseEnumByName(ObservationCategory.values, rawCategory)
+          : null;
+      if (category == ObservationCategory.excellence) {
+        excellence.add((obs.createdAt, text));
+      } else {
+        // grievance, template_improvement, or unrecognized critical
+        grievances.add((obs.createdAt, text));
+      }
+    }
+
+    if (grievances.isEmpty && excellence.isEmpty) return;
+
+    buffer
+      ..writeln('## Prior Critical Observations (Self-Review)')
+      ..writeln(
+        'The following critical observations were recorded in your previous '
+        'wakes. Review them and adjust your behavior accordingly.',
+      )
+      ..writeln();
+
+    if (grievances.isNotEmpty) {
+      buffer.writeln('### Grievances');
+      for (final (timestamp, text) in grievances) {
+        buffer.writeln('- [${timestamp.toIso8601String()}] $text');
+      }
+      buffer.writeln();
+    }
+
+    if (excellence.isNotEmpty) {
+      buffer.writeln('### Excellence (keep doing this)');
+      for (final (timestamp, text) in excellence) {
+        buffer.writeln('- [${timestamp.toIso8601String()}] $text');
+      }
+      buffer.writeln();
+    }
   }
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
@@ -350,7 +351,11 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractObservations(), ['Pattern A', 'Pattern B']);
+        final obs = strategy.extractObservations();
+        expect(obs.map((o) => o.text).toList(), ['Pattern A', 'Pattern B']);
+        // Legacy bare strings default to routine/operational.
+        expect(obs[0].priority, ObservationPriority.routine);
+        expect(obs[0].category, ObservationCategory.operational);
 
         verify(
           () => mockManager.addToolResponse(
@@ -397,7 +402,7 @@ void main() {
         );
 
         expect(
-          strategy.extractObservations(),
+          strategy.extractObservations().map((o) => o.text).toList(),
           ['Note 1', 'Note 2', 'Note 3'],
         );
       });
@@ -421,7 +426,10 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractObservations(), ['Valid', 'Also valid']);
+        expect(
+          strategy.extractObservations().map((o) => o.text).toList(),
+          ['Valid', 'Also valid'],
+        );
       });
 
       test('filters non-string values from observations', () async {
@@ -443,7 +451,10 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractObservations(), ['Valid', 'Also valid']);
+        expect(
+          strategy.extractObservations().map((o) => o.text).toList(),
+          ['Valid', 'Also valid'],
+        );
       });
 
       test('records zero observations from empty array', () async {
@@ -528,7 +539,7 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-obs',
-            response: 'Error: "observations" must be an array of strings.',
+            response: 'Error: "observations" must be an array.',
           ),
         ).called(1);
       });
@@ -858,9 +869,179 @@ void main() {
 
       test('returns unmodifiable list', () {
         expect(
-          () => strategy.extractObservations().add('should fail'),
+          () => strategy.extractObservations().add(
+                const ObservationRecord(text: 'should fail'),
+              ),
           throwsA(isA<UnsupportedError>()),
         );
+      });
+    });
+
+    group('structured observations', () {
+      test('parses structured observation items', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-structured',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': [
+                  {
+                    'text': 'User requested P0 but I kept P1.',
+                    'priority': 'critical',
+                    'category': 'grievance',
+                  },
+                  {
+                    'text': 'Routine check completed.',
+                  },
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs, hasLength(2));
+
+        expect(obs[0].text, 'User requested P0 but I kept P1.');
+        expect(obs[0].priority, ObservationPriority.critical);
+        expect(obs[0].category, ObservationCategory.grievance);
+
+        expect(obs[1].text, 'Routine check completed.');
+        expect(obs[1].priority, ObservationPriority.routine);
+        expect(obs[1].category, ObservationCategory.operational);
+      });
+
+      test('parses excellence category', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-exc',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': [
+                  {
+                    'text': 'User praised the report quality.',
+                    'priority': 'critical',
+                    'category': 'excellence',
+                  },
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs.single.priority, ObservationPriority.critical);
+        expect(obs.single.category, ObservationCategory.excellence);
+      });
+
+      test('handles snake_case category from tool schema', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-snake',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': [
+                  {
+                    'text': 'User suggested a prompt change.',
+                    'priority': 'notable',
+                    'category': 'template_improvement',
+                  },
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs.single.priority, ObservationPriority.notable);
+        expect(obs.single.category, ObservationCategory.templateImprovement);
+      });
+
+      test('handles mixed legacy and structured items', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-mixed',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': [
+                  'Legacy bare string',
+                  {
+                    'text': 'Structured item',
+                    'priority': 'critical',
+                    'category': 'grievance',
+                  },
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs, hasLength(2));
+        expect(obs[0].text, 'Legacy bare string');
+        expect(obs[0].priority, ObservationPriority.routine);
+        expect(obs[1].text, 'Structured item');
+        expect(obs[1].priority, ObservationPriority.critical);
+        expect(obs[1].category, ObservationCategory.grievance);
+      });
+
+      test('ignores unknown priority/category values gracefully', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-unknown',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': [
+                  {
+                    'text': 'Unknown values',
+                    'priority': 'super_urgent',
+                    'category': 'banana',
+                  },
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs.single.text, 'Unknown values');
+        expect(obs.single.priority, ObservationPriority.routine);
+        expect(obs.single.category, ObservationCategory.operational);
       });
     });
 

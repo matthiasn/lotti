@@ -274,14 +274,46 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.recordObservations,
       description:
           'Record private observations for future wakes. Use this to note '
-          'patterns, insights, failure notes, or anything worth remembering.',
+          'patterns, insights, failure notes, or anything worth remembering. '
+          'For grievances and excellence notes, set priority to "critical" '
+          'and include a full paragraph of context explaining the situation.',
       parameters: {
         'type': 'object',
         'properties': {
           'observations': {
             'type': 'array',
-            'items': {'type': 'string'},
-            'description': 'List of observation strings to persist.',
+            'items': {
+              'type': 'object',
+              'properties': {
+                'text': {
+                  'type': 'string',
+                  'description': 'The observation text. For critical '
+                      'priority, write a full paragraph explaining the '
+                      'situation, what went wrong (or right), and why '
+                      'it matters.',
+                },
+                'priority': {
+                  'type': 'string',
+                  'enum': ['routine', 'notable', 'critical'],
+                  'description': 'Priority level. Use "critical" for user '
+                      'grievances, excellence notes, and template '
+                      'improvement requests. Default: "routine".',
+                },
+                'category': {
+                  'type': 'string',
+                  'enum': [
+                    'grievance',
+                    'excellence',
+                    'template_improvement',
+                    'operational',
+                  ],
+                  'description': 'Category of observation. Required for '
+                      '"critical" and "notable" priorities.',
+                },
+              },
+              'required': ['text'],
+            },
+            'description': 'List of observations to persist.',
           },
         },
         'required': ['observations'],

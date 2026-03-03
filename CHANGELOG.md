@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.897] - 2026-03-03
+### Added
+- Enhanced agent observations with priority and category fields. Task agents
+  can now flag observations as critical grievances or excellence notes, enabling
+  targeted self-correction across wakes and prominent surfacing in 1-on-1
+  ritual sessions.
+- High-priority feedback card (GenUI): dedicated widget rendering grievances
+  (red accent) and excellence notes (green accent) inline in evolution chat.
+- Ritual context builder injects a HIGH-PRIORITY FEEDBACK section before
+  general feedback so improver agents address critical items first.
+- Task agents review their own prior critical observations at the start of
+  each wake for self-correction.
+
 ## [0.9.896] - 2026-03-03
 ### Added
 - Outbox priority queue: user-initiated actions (journal entries, entry links)

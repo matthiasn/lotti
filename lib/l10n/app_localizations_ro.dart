@@ -314,6 +314,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentFeedbackClassificationTitle => 'Clasificare feedback';
 
   @override
+  String get agentFeedbackExcellenceTitle => 'Note de excelență';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Nemulțumiri';
+
+  @override
+  String get agentFeedbackHighPriorityTitle =>
+      'Feedback de prioritate ridicată';
+
+  @override
   String agentFeedbackItemCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

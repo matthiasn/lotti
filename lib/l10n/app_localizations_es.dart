@@ -316,6 +316,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Clasificación de retroalimentación';
 
   @override
+  String get agentFeedbackExcellenceTitle => 'Notas de excelencia';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Quejas';
+
+  @override
+  String get agentFeedbackHighPriorityTitle => 'Feedback de alta prioridad';
+
+  @override
   String agentFeedbackItemCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
