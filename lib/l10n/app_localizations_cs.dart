@@ -2841,13 +2841,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded) {
     String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded vloženo',
+      few: '$embedded vloženy',
+      one: '1 vložen',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded vloženo',
+      few: '$embedded vloženy',
+      one: '1 vložen',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded vloženo',
+      few: '$embedded vloženy',
+      one: '1 vložen',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$processed / $total záznamů ($embedded vloženo)',
-      few: '$processed / $total záznamy ($embedded vloženy)',
-      one: '$processed / $total záznam ($embedded vložen)',
+      other: '$processed / $total záznamů ($_temp0)',
+      few: '$processed / $total záznamy ($_temp1)',
+      one: '$processed / $total záznam ($_temp2)',
     );
-    return '$_temp0';
+    return '$_temp3';
   }
 
   @override

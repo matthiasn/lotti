@@ -80,6 +80,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       isRunning: true,
       progress: 0,
       processedCount: 0,
+      totalCount: 0,
       embeddedCount: 0,
       clearError: true,
     );

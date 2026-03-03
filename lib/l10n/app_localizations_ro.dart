@@ -2853,29 +2853,41 @@ class AppLocalizationsRo extends AppLocalizations {
   String get logsSearchHint => 'Caută în toate jurnalele...';
 
   @override
-  String get maintenanceBackfillEmbeddings => 'Completare embeddings';
+  String get maintenanceBackfillEmbeddings => 'Completare încorporări';
 
   @override
   String get maintenanceBackfillEmbeddingsConfirm => 'DA, ÎNCEPE';
 
   @override
   String get maintenanceBackfillEmbeddingsDescription =>
-      'Generați embeddings pentru toate intrările dintr-o categorie';
+      'Generează încorporări pentru toate intrările dintr-o categorie';
 
   @override
   String get maintenanceBackfillEmbeddingsMessage =>
-      'Selectați o categorie pentru a genera embeddings pentru toate intrările sale.';
+      'Selectează o categorie pentru a genera încorporări pentru toate intrările sale.';
 
   @override
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded) {
     String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded încorporate',
+      one: '1 încorporată',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded încorporate',
+      one: '1 încorporată',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$processed / $total intrări ($embedded încorporate)',
-      one: '$processed / $total intrare ($embedded încorporată)',
+      other: '$processed / $total intrări ($_temp0)',
+      one: '$processed / $total intrare ($_temp1)',
     );
-    return '$_temp0';
+    return '$_temp2';
   }
 
   @override

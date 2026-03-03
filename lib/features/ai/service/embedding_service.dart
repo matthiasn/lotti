@@ -135,6 +135,14 @@ class EmbeddingService {
           // Swallow error — don't block other entities.
         }
       }
+    } on Object catch (e, stackTrace) {
+      developer.log(
+        'Embedding batch preflight failed: $e',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'EmbeddingService',
+      );
+      _pendingEntityIds.clear();
     } finally {
       _isProcessing = false;
     }

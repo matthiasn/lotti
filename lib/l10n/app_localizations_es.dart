@@ -2908,12 +2908,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String maintenanceBackfillEmbeddingsProgress(
       int processed, int total, int embedded) {
     String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded incrustadas',
+      one: '1 incrustada',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded incrustadas',
+      one: '1 incrustada',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$processed / $total entradas ($embedded incrustadas)',
-      one: '$processed / $total entrada ($embedded incrustada)',
+      other: '$processed / $total entradas ($_temp0)',
+      one: '$processed / $total entrada ($_temp1)',
     );
-    return '$_temp0';
+    return '$_temp2';
   }
 
   @override

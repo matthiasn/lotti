@@ -199,8 +199,10 @@ class JournalPageController extends _$JournalPageController {
       _enableHabits = configFlags.contains(enableHabitsPageFlag);
       _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
       _enableVectorSearch = configFlags.contains(enableVectorSearchFlag);
+      var shouldRefreshAfterModeFallback = false;
       if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
         _searchMode = SearchMode.fullText;
+        shouldRefreshAfterModeFallback = true;
       }
 
       // Compute newly allowed types based on updated flags
@@ -228,6 +230,10 @@ class JournalPageController extends _$JournalPageController {
 
       // Always emit state to update UI
       _emitState();
+
+      if (shouldRefreshAfterModeFallback) {
+        unawaited(refreshQuery());
+      }
 
       // Only persist if selection actually changed
       if (!setEquals(prevSelection, _selectedEntryTypes)) {

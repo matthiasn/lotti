@@ -14,30 +14,32 @@ class EmbeddingBackfillModal {
     final container = ProviderScope.containerOf(context);
     final selectedCategoryNotifier = ValueNotifier<CategoryDefinition?>(null);
 
-    await ConfirmationProgressModal.show(
-      context: context,
-      message: context.messages.maintenanceBackfillEmbeddingsMessage,
-      confirmLabel: context.messages.maintenanceBackfillEmbeddingsConfirm,
-      isDestructive: false,
-      closeOnComplete: false,
-      confirmEnabledListenable: selectedCategoryNotifier,
-      isConfirmEnabled: () => selectedCategoryNotifier.value != null,
-      confirmationContent: _CategoryPicker(
-        selectedCategoryNotifier: selectedCategoryNotifier,
-      ),
-      operation: () {
-        final categoryId = selectedCategoryNotifier.value?.id;
-        if (categoryId == null) return Future<void>.value();
-        return container
-            .read(embeddingBackfillControllerProvider.notifier)
-            .backfillCategory(categoryId);
-      },
-      progressBuilder: (context) => _BackfillProgress(
-        selectedCategoryNotifier: selectedCategoryNotifier,
-      ),
-    );
-
-    selectedCategoryNotifier.dispose();
+    try {
+      await ConfirmationProgressModal.show(
+        context: context,
+        message: context.messages.maintenanceBackfillEmbeddingsMessage,
+        confirmLabel: context.messages.maintenanceBackfillEmbeddingsConfirm,
+        isDestructive: false,
+        closeOnComplete: false,
+        confirmEnabledListenable: selectedCategoryNotifier,
+        isConfirmEnabled: () => selectedCategoryNotifier.value != null,
+        confirmationContent: _CategoryPicker(
+          selectedCategoryNotifier: selectedCategoryNotifier,
+        ),
+        operation: () {
+          final categoryId = selectedCategoryNotifier.value?.id;
+          if (categoryId == null) return Future<void>.value();
+          return container
+              .read(embeddingBackfillControllerProvider.notifier)
+              .backfillCategory(categoryId);
+        },
+        progressBuilder: (context) => _BackfillProgress(
+          selectedCategoryNotifier: selectedCategoryNotifier,
+        ),
+      );
+    } finally {
+      selectedCategoryNotifier.dispose();
+    }
   }
 }
 

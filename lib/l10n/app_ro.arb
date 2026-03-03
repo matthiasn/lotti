@@ -1219,11 +1219,11 @@
   "loggingFailedToLoadMore": "Eșec la încărcarea mai multor rezultate. Vă rugăm să încercați din nou.",
   "loggingSearchFailed": "Căutarea a eșuat. Vă rugăm să încercați din nou.",
   "logsSearchHint": "Caută în toate jurnalele...",
-  "maintenanceBackfillEmbeddings": "Completare embeddings",
+  "maintenanceBackfillEmbeddings": "Completare încorporări",
   "maintenanceBackfillEmbeddingsConfirm": "DA, ÎNCEPE",
-  "maintenanceBackfillEmbeddingsDescription": "Generați embeddings pentru toate intrările dintr-o categorie",
-  "maintenanceBackfillEmbeddingsMessage": "Selectați o categorie pentru a genera embeddings pentru toate intrările sale.",
-  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} intrare ({embedded} încorporată)} other{{processed} / {total} intrări ({embedded} încorporate)}}",
+  "maintenanceBackfillEmbeddingsDescription": "Generează încorporări pentru toate intrările dintr-o categorie",
+  "maintenanceBackfillEmbeddingsMessage": "Selectează o categorie pentru a genera încorporări pentru toate intrările sale.",
+  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} intrare ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})} other{{processed} / {total} intrări ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})}}",
   "@maintenanceBackfillEmbeddingsProgress": {
     "placeholders": {
       "processed": {

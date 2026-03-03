@@ -53,6 +53,11 @@ class VectorSearchRepository {
   }) async {
     final stopwatch = Stopwatch()..start();
 
+    if (k <= 0) {
+      stopwatch.stop();
+      return VectorSearchResult(tasks: [], elapsed: stopwatch.elapsed);
+    }
+
     final baseUrl = await _aiConfigRepository.resolveOllamaBaseUrl();
     if (baseUrl == null) {
       stopwatch.stop();
