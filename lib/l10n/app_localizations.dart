@@ -666,17 +666,11 @@ abstract class AppLocalizations {
   /// **'Feedback Classification'**
   String get agentFeedbackClassificationTitle;
 
-  /// No description provided for @agentFeedbackItemCount.
+  /// No description provided for @agentFeedbackExcellenceTitle.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 item} other{{count} items}}'**
-  String agentFeedbackItemCount(int count);
-
-  /// No description provided for @agentFeedbackHighPriorityTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'High-Priority Feedback'**
-  String get agentFeedbackHighPriorityTitle;
+  /// **'Notes of Excellence'**
+  String get agentFeedbackExcellenceTitle;
 
   /// No description provided for @agentFeedbackGrievancesTitle.
   ///
@@ -684,11 +678,17 @@ abstract class AppLocalizations {
   /// **'Grievances'**
   String get agentFeedbackGrievancesTitle;
 
-  /// No description provided for @agentFeedbackExcellenceTitle.
+  /// No description provided for @agentFeedbackHighPriorityTitle.
   ///
   /// In en, this message translates to:
-  /// **'Notes of Excellence'**
-  String get agentFeedbackExcellenceTitle;
+  /// **'High-Priority Feedback'**
+  String get agentFeedbackHighPriorityTitle;
+
+  /// No description provided for @agentFeedbackItemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String agentFeedbackItemCount(int count);
 
   /// No description provided for @agentFeedbackSourceDecision.
   ///

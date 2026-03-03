@@ -109,7 +109,7 @@
 ## Localization (l10n)
 - All user-visible label texts MUST be localized using arb files in `lib/l10n/`.
 - Never hardcode strings that users will see — add them to the arb files instead.
-- Add new labels to all arb files: `app_en.arb` (primary), `app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_ro.arb`.
+- Add new labels to all arb files: `app_en.arb` (primary), `app_cs.arb`, `app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_ro.arb`.
 - Only add to `app_en_GB.arb` if the spelling differs from US English.
 - Access localized strings via `context.messages.labelName` (import `app_localizations_context.dart`).
 - After adding labels, run `make l10n` to generate the Dart files.

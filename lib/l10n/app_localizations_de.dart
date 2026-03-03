@@ -316,6 +316,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentFeedbackClassificationTitle => 'Feedback-Klassifizierung';
 
   @override
+  String get agentFeedbackExcellenceTitle => 'Herausragendes';
+
+  @override
+  String get agentFeedbackGrievancesTitle => 'Beschwerden';
+
+  @override
+  String get agentFeedbackHighPriorityTitle => 'Hochprioritäres Feedback';
+
+  @override
   String agentFeedbackItemCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -325,15 +334,6 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get agentFeedbackHighPriorityTitle => 'Hochprioritäres Feedback';
-
-  @override
-  String get agentFeedbackGrievancesTitle => 'Beschwerden';
-
-  @override
-  String get agentFeedbackExcellenceTitle => 'Herausragendes';
 
   @override
   String get agentFeedbackSourceDecision => 'Entscheidung';
