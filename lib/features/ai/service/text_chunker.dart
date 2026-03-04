@@ -50,14 +50,33 @@ class TextChunker {
     return _buildOverlappingChunks(sentences);
   }
 
+  /// Regex matching CJK Unified Ideographs, Hiragana, Katakana, and
+  /// Korean Hangul syllables — scripts that use no word-separating spaces.
+  static final _cjkPattern =
+      RegExp(r'[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]');
+
   /// Estimates the token count for [text] using a word-based heuristic.
   ///
   /// Assumes ~1.3 tokens per whitespace-delimited word, which is a
   /// reasonable approximation for English text with WordPiece tokenization.
+  ///
+  /// For CJK and other whitespace-free scripts, falls back to character
+  /// counting (one token per character) to avoid severe under-estimation
+  /// that would bypass chunking entirely.
   static int estimateTokens(String text) {
-    if (text.trim().isEmpty) return 0;
-    final wordCount = text.trim().split(RegExp(r'\s+')).length;
-    return (wordCount * kTokensPerWord).ceil();
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return 0;
+
+    final words = trimmed.split(RegExp(r'\s+'));
+
+    // When whitespace splitting yields a single "word" that contains CJK
+    // characters, the word-based heuristic drastically undercounts tokens.
+    // Fall back to character (rune) counting for safety.
+    if (words.length <= 1 && _cjkPattern.hasMatch(trimmed)) {
+      return trimmed.runes.length;
+    }
+
+    return (words.length * kTokensPerWord).ceil();
   }
 
   /// Splits text into sentences, preserving sentence-ending punctuation.
@@ -68,7 +87,7 @@ class TextChunker {
     // Split on sentence-ending punctuation followed by whitespace,
     // or on paragraph breaks. Keep the delimiter with the preceding sentence.
     final parts = <String>[];
-    final pattern = RegExp(r'(?<=[.!?])\s+|\n\n+');
+    final pattern = RegExp(r'(?<=[.!?。！？])\s+|\n\n+');
     var lastEnd = 0;
 
     for (final match in pattern.allMatches(text)) {
@@ -94,8 +113,24 @@ class TextChunker {
   /// This is a fallback for content like markdown lists or code blocks that
   /// lack sentence-ending punctuation. Each segment becomes a "sentence" for
   /// the overlapping chunk builder.
+  ///
+  /// For CJK text with no whitespace, falls back to character-based splitting
+  /// using [kChunkTargetTokens] as the character window.
   static List<String> _splitOnWordBoundaries(String text) {
     final words = text.split(RegExp(r'\s+'));
+
+    // CJK / whitespace-free text: split by character (rune) windows.
+    if (words.length <= 1 && _cjkPattern.hasMatch(text)) {
+      final runes = text.runes.toList();
+      if (runes.length <= kChunkTargetTokens) return [text];
+      final segments = <String>[];
+      for (var i = 0; i < runes.length; i += kChunkStrideTokens) {
+        final end = (i + kChunkTargetTokens).clamp(0, runes.length);
+        segments.add(String.fromCharCodes(runes.sublist(i, end)));
+      }
+      return segments;
+    }
+
     if (words.length <= kChunkTargetWords) return [text];
 
     final segments = <String>[];

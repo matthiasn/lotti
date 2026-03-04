@@ -145,11 +145,13 @@ void main() {
         final chunks = TextChunker.chunk(longSentence);
         // Should produce multiple chunks via word-boundary fallback
         expect(chunks.length, greaterThan(1));
-        // Every word should appear in at least one chunk
+        // Every word should appear in at least one chunk (use word-boundary
+        // matching to avoid false positives like 'word1' matching 'word10').
         for (var i = 0; i < 500; i++) {
           final marker = 'word$i';
+          final pattern = RegExp('(^|\\s)${RegExp.escape(marker)}(\\s|\$)');
           expect(
-            chunks.any((chunk) => chunk.contains(marker)),
+            chunks.any(pattern.hasMatch),
             isTrue,
             reason: 'Word "$marker" not found in any chunk',
           );
@@ -192,16 +194,41 @@ void main() {
         final text = sentences.join(' ');
         final chunks = TextChunker.chunk(text);
 
-        // Every sentence marker should appear in at least one chunk
+        // Every sentence marker should appear in at least one chunk (use
+        // word-boundary matching to avoid false positives like
+        // 'Sentence_1' matching 'Sentence_10').
         for (var i = 0; i < sentences.length; i++) {
           final marker = 'Sentence_$i';
-          final found = chunks.any((chunk) => chunk.contains(marker));
+          final pattern = RegExp('(^|\\s)${RegExp.escape(marker)}(\\s|\$)');
+          final found = chunks.any(pattern.hasMatch);
           expect(
             found,
             isTrue,
             reason: 'Sentence marker "$marker" not found in any chunk',
           );
         }
+      });
+
+      test('handles CJK text without whitespace', () {
+        // Build a long string of CJK characters (no word-separating spaces).
+        // 500 characters exceeds kChunkTargetTokens (384) when estimated as
+        // 1 token per character.
+        final cjkText = List.generate(500, (i) => '字').join();
+        final chunks = TextChunker.chunk(cjkText);
+        expect(chunks.length, greaterThan(1),
+            reason: 'CJK text should be chunked by character count');
+
+        // All characters should be covered
+        final rejoined = chunks.join();
+        expect(rejoined.runes.length, greaterThanOrEqualTo(500));
+      });
+
+      test('estimates CJK tokens by character count', () {
+        // A single "word" of 100 CJK characters
+        final cjk = List.generate(100, (i) => '漢').join();
+        final tokens = TextChunker.estimateTokens(cjk);
+        // Should use character count (100), not word count (1 × 1.3 = 2)
+        expect(tokens, 100);
       });
 
       test('trims leading and trailing whitespace', () {

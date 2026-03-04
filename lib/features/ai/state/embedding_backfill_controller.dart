@@ -24,6 +24,7 @@ class EmbeddingBackfillState {
     this.processedCount = 0,
     this.totalCount = 0,
     this.embeddedCount = 0,
+    this.failedCount = 0,
   });
 
   final double progress;
@@ -33,6 +34,9 @@ class EmbeddingBackfillState {
   final int totalCount;
   final int embeddedCount;
 
+  /// Number of entities that failed to embed during the current run.
+  final int failedCount;
+
   EmbeddingBackfillState copyWith({
     double? progress,
     bool? isRunning,
@@ -41,6 +45,7 @@ class EmbeddingBackfillState {
     int? processedCount,
     int? totalCount,
     int? embeddedCount,
+    int? failedCount,
   }) {
     return EmbeddingBackfillState(
       progress: progress ?? this.progress,
@@ -49,6 +54,7 @@ class EmbeddingBackfillState {
       processedCount: processedCount ?? this.processedCount,
       totalCount: totalCount ?? this.totalCount,
       embeddedCount: embeddedCount ?? this.embeddedCount,
+      failedCount: failedCount ?? this.failedCount,
     );
   }
 }
@@ -110,6 +116,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       processedCount: 0,
       totalCount: 0,
       embeddedCount: 0,
+      failedCount: 0,
       clearError: true,
     );
 
@@ -166,11 +173,13 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     required LabelNameResolver labelResolver,
     int processedOffset = 0,
     int embeddedOffset = 0,
+    int failedOffset = 0,
     int totalOverride = 0,
   }) async {
     final total = totalOverride > 0 ? totalOverride : entityIds.length;
     var processed = processedOffset;
     var embedded = embeddedOffset;
+    var failed = failedOffset;
 
     for (final entityId in entityIds) {
       if (_cancelled) break;
@@ -186,6 +195,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         );
         if (didEmbed) embedded++;
       } catch (e, stackTrace) {
+        failed++;
         developer.log(
           'Backfill failed for $entityId: $e',
           error: e,
@@ -198,11 +208,16 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       state = state.copyWith(
         processedCount: processed,
         embeddedCount: embedded,
+        failedCount: failed,
         progress: processed / total,
       );
     }
 
-    return _EmbedResult(processed: processed, embedded: embedded);
+    return _EmbedResult(
+      processed: processed,
+      embedded: embedded,
+      failed: failed,
+    );
   }
 
   Future<void> backfillCategory(String categoryId) async {
@@ -276,6 +291,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           services: services,
           processedOffset: result.processed,
           embeddedOffset: result.embedded,
+          failedOffset: result.failed,
           total: total,
         );
       }
@@ -286,11 +302,13 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     required _BackfillServices services,
     int processedOffset = 0,
     int embeddedOffset = 0,
+    int failedOffset = 0,
     int total = 0,
   }) async {
     final agentRepository = getIt<AgentRepository>();
     var processed = processedOffset;
     var embedded = embeddedOffset;
+    var failed = failedOffset;
 
     final agents = await agentRepository.getAllAgentIdentities();
     for (final agent in agents) {
@@ -338,6 +356,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         );
         if (didEmbed) embedded++;
       } catch (e, stackTrace) {
+        failed++;
         developer.log(
           'Reindex agent report failed for ${agent.id}: $e',
           error: e,
@@ -350,6 +369,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       state = state.copyWith(
         processedCount: processed,
         embeddedCount: embedded,
+        failedCount: failed,
         progress: total > 0 ? processed / total : 1,
       );
     }
@@ -377,6 +397,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
 
         var processed = 0;
         var embedded = 0;
+        var failed = 0;
 
         for (final agent in agents) {
           if (_cancelled) break;
@@ -428,6 +449,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
             );
             if (didEmbed) embedded++;
           } catch (e, stackTrace) {
+            failed++;
             developer.log(
               'Agent report backfill failed for ${agent.id}: $e',
               error: e,
@@ -440,6 +462,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           state = state.copyWith(
             processedCount: processed,
             embeddedCount: embedded,
+            failedCount: failed,
             progress: processed / total,
           );
         }
@@ -450,7 +473,12 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
 }
 
 class _EmbedResult {
-  _EmbedResult({required this.processed, required this.embedded});
+  _EmbedResult({
+    required this.processed,
+    required this.embedded,
+    required this.failed,
+  });
   final int processed;
   final int embedded;
+  final int failed;
 }

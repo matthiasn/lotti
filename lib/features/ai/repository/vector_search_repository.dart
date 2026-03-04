@@ -101,9 +101,11 @@ class VectorSearchRepository {
     final searchResults = bestByEntity.values.toList()
       ..sort((a, b) => a.distance.compareTo(b.distance));
 
-    final tasks = await _resolveToTasks(
-      searchResults.take(k).toList(),
-    );
+    // Resolve all deduplicated results, then trim to k — resolution can
+    // collapse multiple entities to the same task, so trimming before
+    // resolution would lose unique results.
+    final resolvedTasks = await _resolveToTasks(searchResults);
+    final tasks = resolvedTasks.take(k).toList();
 
     stopwatch.stop();
     return VectorSearchResult(tasks: tasks, elapsed: stopwatch.elapsed);
