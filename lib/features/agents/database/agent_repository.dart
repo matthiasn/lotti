@@ -445,6 +445,13 @@ class AgentRepository {
 
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
+  /// Fetch a single link by its [id], or `null` if not found.
+  Future<model.AgentLink?> getLinkById(String id) async {
+    final rows = await _db.getAgentLinkById(id).get();
+    if (rows.isEmpty) return null;
+    return AgentDbConversions.fromLinkRow(rows.first);
+  }
+
   /// Insert or update a link using on-conflict update semantics against the
   /// primary key (`id`).
   Future<void> upsertLink(model.AgentLink link) async {

@@ -604,11 +604,19 @@ extension SyncMessagePatterns on SyncMessage {
             SyncSequencePayloadType? payloadType,
             String? payloadId)?
         backfillResponse,
-    TResult Function(SyncEntryStatus status, AgentDomainEntity? agentEntity,
-            String? jsonPath)?
+    TResult Function(
+            SyncEntryStatus status,
+            AgentDomainEntity? agentEntity,
+            String? jsonPath,
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)?
         agentEntity,
     TResult Function(
-            SyncEntryStatus status, AgentLink? agentLink, String? jsonPath)?
+            SyncEntryStatus status,
+            AgentLink? agentLink,
+            String? jsonPath,
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)?
         agentLink,
     required TResult orElse(),
   }) {
@@ -649,9 +657,11 @@ extension SyncMessagePatterns on SyncMessage {
             _that.payloadType,
             _that.payloadId);
       case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath);
+        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath,
+            _that.originatingHostId, _that.coveredVectorClocks);
       case SyncAgentLink() when agentLink != null:
-        return agentLink(_that.status, _that.agentLink, _that.jsonPath);
+        return agentLink(_that.status, _that.agentLink, _that.jsonPath,
+            _that.originatingHostId, _that.coveredVectorClocks);
       case _:
         return orElse();
     }
@@ -707,11 +717,19 @@ extension SyncMessagePatterns on SyncMessage {
             SyncSequencePayloadType? payloadType,
             String? payloadId)
         backfillResponse,
-    required TResult Function(SyncEntryStatus status,
-            AgentDomainEntity? agentEntity, String? jsonPath)
+    required TResult Function(
+            SyncEntryStatus status,
+            AgentDomainEntity? agentEntity,
+            String? jsonPath,
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)
         agentEntity,
     required TResult Function(
-            SyncEntryStatus status, AgentLink? agentLink, String? jsonPath)
+            SyncEntryStatus status,
+            AgentLink? agentLink,
+            String? jsonPath,
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)
         agentLink,
   }) {
     final _that = this;
@@ -751,9 +769,11 @@ extension SyncMessagePatterns on SyncMessage {
             _that.payloadType,
             _that.payloadId);
       case SyncAgentEntity():
-        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath);
+        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath,
+            _that.originatingHostId, _that.coveredVectorClocks);
       case SyncAgentLink():
-        return agentLink(_that.status, _that.agentLink, _that.jsonPath);
+        return agentLink(_that.status, _that.agentLink, _that.jsonPath,
+            _that.originatingHostId, _that.coveredVectorClocks);
     }
   }
 
@@ -803,11 +823,19 @@ extension SyncMessagePatterns on SyncMessage {
             SyncSequencePayloadType? payloadType,
             String? payloadId)?
         backfillResponse,
-    TResult? Function(SyncEntryStatus status, AgentDomainEntity? agentEntity,
-            String? jsonPath)?
+    TResult? Function(
+            SyncEntryStatus status,
+            AgentDomainEntity? agentEntity,
+            String? jsonPath,
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)?
         agentEntity,
     TResult? Function(
-            SyncEntryStatus status, AgentLink? agentLink, String? jsonPath)?
+            SyncEntryStatus status,
+            AgentLink? agentLink,
+            String? jsonPath,
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)?
         agentLink,
   }) {
     final _that = this;
@@ -847,9 +875,11 @@ extension SyncMessagePatterns on SyncMessage {
             _that.payloadType,
             _that.payloadId);
       case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath);
+        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath,
+            _that.originatingHostId, _that.coveredVectorClocks);
       case SyncAgentLink() when agentLink != null:
-        return agentLink(_that.status, _that.agentLink, _that.jsonPath);
+        return agentLink(_that.status, _that.agentLink, _that.jsonPath,
+            _that.originatingHostId, _that.coveredVectorClocks);
       case _:
         return null;
     }
@@ -1952,14 +1982,36 @@ class SyncAgentEntity implements SyncMessage {
       {required this.status,
       this.agentEntity,
       this.jsonPath,
+      this.originatingHostId,
+      final List<VectorClock>? coveredVectorClocks,
       final String? $type})
-      : $type = $type ?? 'agentEntity';
+      : _coveredVectorClocks = coveredVectorClocks,
+        $type = $type ?? 'agentEntity';
   factory SyncAgentEntity.fromJson(Map<String, dynamic> json) =>
       _$SyncAgentEntityFromJson(json);
 
   final SyncEntryStatus status;
   final AgentDomainEntity? agentEntity;
   final String? jsonPath;
+
+  /// The host UUID that created/modified this agent entity version.
+  /// Used for sequence tracking to detect gaps in sync.
+  final String? originatingHostId;
+
+  /// Vector clocks covered by this payload, including the current vector
+  /// clock and superseded outbox entries.
+  final List<VectorClock>? _coveredVectorClocks;
+
+  /// Vector clocks covered by this payload, including the current vector
+  /// clock and superseded outbox entries.
+  List<VectorClock>? get coveredVectorClocks {
+    final value = _coveredVectorClocks;
+    if (value == null) return null;
+    if (_coveredVectorClocks is EqualUnmodifiableListView)
+      return _coveredVectorClocks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -1987,16 +2039,26 @@ class SyncAgentEntity implements SyncMessage {
             (identical(other.agentEntity, agentEntity) ||
                 other.agentEntity == agentEntity) &&
             (identical(other.jsonPath, jsonPath) ||
-                other.jsonPath == jsonPath));
+                other.jsonPath == jsonPath) &&
+            (identical(other.originatingHostId, originatingHostId) ||
+                other.originatingHostId == originatingHostId) &&
+            const DeepCollectionEquality()
+                .equals(other._coveredVectorClocks, _coveredVectorClocks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, status, agentEntity, jsonPath);
+  int get hashCode => Object.hash(
+      runtimeType,
+      status,
+      agentEntity,
+      jsonPath,
+      originatingHostId,
+      const DeepCollectionEquality().hash(_coveredVectorClocks));
 
   @override
   String toString() {
-    return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath)';
+    return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
   }
 }
 
@@ -2010,7 +2072,9 @@ abstract mixin class $SyncAgentEntityCopyWith<$Res>
   $Res call(
       {SyncEntryStatus status,
       AgentDomainEntity? agentEntity,
-      String? jsonPath});
+      String? jsonPath,
+      String? originatingHostId,
+      List<VectorClock>? coveredVectorClocks});
 
   $AgentDomainEntityCopyWith<$Res>? get agentEntity;
 }
@@ -2030,6 +2094,8 @@ class _$SyncAgentEntityCopyWithImpl<$Res>
     Object? status = null,
     Object? agentEntity = freezed,
     Object? jsonPath = freezed,
+    Object? originatingHostId = freezed,
+    Object? coveredVectorClocks = freezed,
   }) {
     return _then(SyncAgentEntity(
       status: null == status
@@ -2044,6 +2110,14 @@ class _$SyncAgentEntityCopyWithImpl<$Res>
           ? _self.jsonPath
           : jsonPath // ignore: cast_nullable_to_non_nullable
               as String?,
+      originatingHostId: freezed == originatingHostId
+          ? _self.originatingHostId
+          : originatingHostId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coveredVectorClocks: freezed == coveredVectorClocks
+          ? _self._coveredVectorClocks
+          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+              as List<VectorClock>?,
     ));
   }
 
@@ -2069,14 +2143,36 @@ class SyncAgentLink implements SyncMessage {
       {required this.status,
       this.agentLink,
       this.jsonPath,
+      this.originatingHostId,
+      final List<VectorClock>? coveredVectorClocks,
       final String? $type})
-      : $type = $type ?? 'agentLink';
+      : _coveredVectorClocks = coveredVectorClocks,
+        $type = $type ?? 'agentLink';
   factory SyncAgentLink.fromJson(Map<String, dynamic> json) =>
       _$SyncAgentLinkFromJson(json);
 
   final SyncEntryStatus status;
   final AgentLink? agentLink;
   final String? jsonPath;
+
+  /// The host UUID that created/modified this agent link version.
+  /// Used for sequence tracking to detect gaps in sync.
+  final String? originatingHostId;
+
+  /// Vector clocks covered by this payload, including the current vector
+  /// clock and superseded outbox entries.
+  final List<VectorClock>? _coveredVectorClocks;
+
+  /// Vector clocks covered by this payload, including the current vector
+  /// clock and superseded outbox entries.
+  List<VectorClock>? get coveredVectorClocks {
+    final value = _coveredVectorClocks;
+    if (value == null) return null;
+    if (_coveredVectorClocks is EqualUnmodifiableListView)
+      return _coveredVectorClocks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -2104,16 +2200,26 @@ class SyncAgentLink implements SyncMessage {
             (identical(other.agentLink, agentLink) ||
                 other.agentLink == agentLink) &&
             (identical(other.jsonPath, jsonPath) ||
-                other.jsonPath == jsonPath));
+                other.jsonPath == jsonPath) &&
+            (identical(other.originatingHostId, originatingHostId) ||
+                other.originatingHostId == originatingHostId) &&
+            const DeepCollectionEquality()
+                .equals(other._coveredVectorClocks, _coveredVectorClocks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, status, agentLink, jsonPath);
+  int get hashCode => Object.hash(
+      runtimeType,
+      status,
+      agentLink,
+      jsonPath,
+      originatingHostId,
+      const DeepCollectionEquality().hash(_coveredVectorClocks));
 
   @override
   String toString() {
-    return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath)';
+    return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
   }
 }
 
@@ -2124,7 +2230,12 @@ abstract mixin class $SyncAgentLinkCopyWith<$Res>
           SyncAgentLink value, $Res Function(SyncAgentLink) _then) =
       _$SyncAgentLinkCopyWithImpl;
   @useResult
-  $Res call({SyncEntryStatus status, AgentLink? agentLink, String? jsonPath});
+  $Res call(
+      {SyncEntryStatus status,
+      AgentLink? agentLink,
+      String? jsonPath,
+      String? originatingHostId,
+      List<VectorClock>? coveredVectorClocks});
 
   $AgentLinkCopyWith<$Res>? get agentLink;
 }
@@ -2144,6 +2255,8 @@ class _$SyncAgentLinkCopyWithImpl<$Res>
     Object? status = null,
     Object? agentLink = freezed,
     Object? jsonPath = freezed,
+    Object? originatingHostId = freezed,
+    Object? coveredVectorClocks = freezed,
   }) {
     return _then(SyncAgentLink(
       status: null == status
@@ -2158,6 +2271,14 @@ class _$SyncAgentLinkCopyWithImpl<$Res>
           ? _self.jsonPath
           : jsonPath // ignore: cast_nullable_to_non_nullable
               as String?,
+      originatingHostId: freezed == originatingHostId
+          ? _self.originatingHostId
+          : originatingHostId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coveredVectorClocks: freezed == coveredVectorClocks
+          ? _self._coveredVectorClocks
+          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+              as List<VectorClock>?,
     ));
   }
 

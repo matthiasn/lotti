@@ -3,4 +3,6 @@
 enum SyncSequencePayloadType {
   journalEntity,
   entryLink,
+  agentEntity,
+  agentLink,
 }

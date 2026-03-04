@@ -959,10 +959,14 @@ void _wireSyncEventProcessor(
   processor
     ..agentRepository = repository
     ..wakeOrchestrator = orchestrator;
+  // Also wire the agent repository into the backfill handler so it can
+  // look up agent entities and links when responding to backfill requests.
+  processor.backfillResponseHandler?.agentRepository = repository;
   ref.onDispose(() {
     processor
       ..agentRepository = null
       ..wakeOrchestrator = null;
+    processor.backfillResponseHandler?.agentRepository = null;
   });
 }
 

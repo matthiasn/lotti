@@ -1,4 +1,7 @@
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -40,6 +43,10 @@ class BackfillResponseHandler {
   final LoggingService _loggingService;
   final VectorClockService _vectorClockService;
   final Duration _responseCooldown;
+
+  /// Agent repository, injected after construction to avoid circular
+  /// dependency. When set, backfill can look up agent entities and links.
+  AgentRepository? agentRepository;
 
   /// Tracks recently-responded (hostId, counter) pairs with their timestamp
   /// to prevent duplicate responses across request cycles.
@@ -411,7 +418,92 @@ class BackfillResponseHandler {
         }
 
         return true;
+      case SyncSequencePayloadType.agentEntity:
+        if (agentRepository == null) return false;
+        return _processAgentBackfillEntry<AgentDomainEntity>(
+          hostId: hostId,
+          counter: counter,
+          payloadId: payloadId,
+          payloadType: payloadType,
+          originatingHostId: originatingHostId,
+          sentPayloads: sentPayloads,
+          loadPayload: () => agentRepository!.getEntity(payloadId),
+          getVectorClock: (entity) => entity.vectorClock,
+          buildSyncMessage: (entity) => SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            agentEntity: entity,
+            originatingHostId: originatingHostId,
+          ),
+          typeName: 'agentEntity',
+        );
+      case SyncSequencePayloadType.agentLink:
+        if (agentRepository == null) return false;
+        return _processAgentBackfillEntry<AgentLink>(
+          hostId: hostId,
+          counter: counter,
+          payloadId: payloadId,
+          payloadType: payloadType,
+          originatingHostId: originatingHostId,
+          sentPayloads: sentPayloads,
+          loadPayload: () => agentRepository!.getLinkById(payloadId),
+          getVectorClock: (link) => link.vectorClock,
+          buildSyncMessage: (link) => SyncMessage.agentLink(
+            status: SyncEntryStatus.update,
+            agentLink: link,
+            originatingHostId: originatingHostId,
+          ),
+          typeName: 'agentLink',
+        );
     }
+  }
+
+  /// Shared helper for processing agent entity/link backfill entries.
+  /// Follows the same pattern as journalEntity/entryLink cases.
+  Future<bool> _processAgentBackfillEntry<T>({
+    required String hostId,
+    required int counter,
+    required String payloadId,
+    required SyncSequencePayloadType payloadType,
+    required String originatingHostId,
+    required Set<String> sentPayloads,
+    required Future<T?> Function() loadPayload,
+    required VectorClock? Function(T) getVectorClock,
+    required SyncMessage Function(T) buildSyncMessage,
+    required String typeName,
+  }) async {
+    final payload = await loadPayload();
+
+    if (payload == null) {
+      await _sendDeletedResponse(
+        hostId: hostId,
+        counter: counter,
+        payloadType: payloadType,
+      );
+      return true;
+    }
+
+    if (!sentPayloads.contains(payloadId)) {
+      sentPayloads.add(payloadId);
+      await _outboxService.enqueueMessage(buildSyncMessage(payload));
+    }
+
+    final vc = getVectorClock(payload);
+    final vcCounter = vc?.vclock[hostId];
+    final vcContainsCounter = vcCounter != null && vcCounter == counter;
+
+    if (!vcContainsCounter) {
+      await _outboxService.enqueueMessage(
+        SyncMessage.backfillResponse(
+          hostId: hostId,
+          counter: counter,
+          deleted: false,
+          payloadType: payloadType,
+          payloadId: payloadId,
+        ),
+      );
+    }
+
+    return true;
   }
 
   /// Handle an incoming backfill response from another device.
@@ -470,6 +562,30 @@ class BackfillResponseHandler {
               getVectorClock: (link) => link.vectorClock,
               payloadTypeName: 'entryLink',
             );
+          case SyncSequencePayloadType.agentEntity:
+            if (agentRepository != null) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => agentRepository!.getEntity(payloadId),
+                getVectorClock: (entity) => entity.vectorClock,
+                payloadTypeName: 'agentEntity',
+              );
+            }
+          case SyncSequencePayloadType.agentLink:
+            if (agentRepository != null) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => agentRepository!.getLinkById(payloadId),
+                getVectorClock: (link) => link.vectorClock,
+                payloadTypeName: 'agentLink',
+              );
+            }
         }
       }
     } catch (e, st) {

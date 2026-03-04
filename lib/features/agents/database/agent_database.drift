@@ -86,6 +86,8 @@ getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id AND deleted_at I
 
 getAgentMessagesByThread: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'agentMessage' AND thread_id = :threadId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
+getAgentLinkById: SELECT * FROM agent_links WHERE id = :id AND deleted_at IS NULL;
+
 getAgentLinksByFromId: SELECT * FROM agent_links WHERE from_id = :fromId AND deleted_at IS NULL;
 
 getAgentLinksByFromIdAndType: SELECT * FROM agent_links WHERE from_id = :fromId AND type = :type AND deleted_at IS NULL;

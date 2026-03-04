@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -629,11 +630,49 @@ class OutboxService {
     return linkMsg;
   }
 
+  /// Prepares a SyncAgentEntity by adding originatingHostId and merging covered
+  /// vector clocks.
+  SyncAgentEntity _prepareAgentEntity(SyncAgentEntity msg, String? host) {
+    var agentMsg = msg;
+    if (agentMsg.originatingHostId == null && host != null) {
+      agentMsg = agentMsg.copyWith(originatingHostId: host);
+    }
+    final vc = agentMsg.agentEntity?.vectorClock;
+    final coveredClocks = VectorClock.mergeUniqueClocks([
+      ...?agentMsg.coveredVectorClocks,
+      vc,
+    ]);
+    if (coveredClocks != agentMsg.coveredVectorClocks) {
+      agentMsg = agentMsg.copyWith(coveredVectorClocks: coveredClocks);
+    }
+    return agentMsg;
+  }
+
+  /// Prepares a SyncAgentLink by adding originatingHostId and merging covered
+  /// vector clocks.
+  SyncAgentLink _prepareAgentLink(SyncAgentLink msg, String? host) {
+    var linkMsg = msg;
+    if (linkMsg.originatingHostId == null && host != null) {
+      linkMsg = linkMsg.copyWith(originatingHostId: host);
+    }
+    final vc = linkMsg.agentLink?.vectorClock;
+    final coveredClocks = VectorClock.mergeUniqueClocks([
+      ...?linkMsg.coveredVectorClocks,
+      vc,
+    ]);
+    if (coveredClocks != linkMsg.coveredVectorClocks) {
+      linkMsg = linkMsg.copyWith(coveredVectorClocks: coveredClocks);
+    }
+    return linkMsg;
+  }
+
   /// Routes message preparation based on type.
   Future<SyncMessage> _prepareMessage(SyncMessage message, String? host) async {
     return switch (message) {
       final SyncJournalEntity msg => await _prepareJournalEntity(msg, host),
       final SyncEntryLink msg => await _prepareEntryLink(msg, host),
+      final SyncAgentEntity msg => _prepareAgentEntity(msg, host),
+      final SyncAgentLink msg => _prepareAgentLink(msg, host),
       _ => message,
     };
   }
@@ -1089,6 +1128,8 @@ class OutboxService {
       subjectPrefix: 'agentEntity',
       typeName: 'SyncAgentEntity',
       commonFields: commonFields,
+      vectorClock: entity.vectorClock,
+      payloadType: SyncSequencePayloadType.agentEntity,
     );
   }
 
@@ -1113,13 +1154,16 @@ class OutboxService {
       subjectPrefix: 'agentLink',
       typeName: 'SyncAgentLink',
       commonFields: commonFields,
+      vectorClock: link.vectorClock,
+      payloadType: SyncSequencePayloadType.agentLink,
     );
   }
 
   /// Shared implementation for enqueuing agent entities and links.
   /// Saves [payloadJson] to disk, builds an enriched outbox message from
   /// [enrichedMessage], and either merges into an existing pending item or
-  /// creates a new one.
+  /// creates a new one. Records sent entries in the sequence log when a
+  /// [vectorClock] is provided.
   Future<bool> _enqueueAgentPayload({
     required String id,
     required String payloadJson,
@@ -1128,6 +1172,8 @@ class OutboxService {
     required String subjectPrefix,
     required String typeName,
     required OutboxCompanion commonFields,
+    required VectorClock? vectorClock,
+    required SyncSequencePayloadType payloadType,
   }) async {
     final relativeJoined = p.joinAll(
       relativePath.split('/').where((part) => part.isNotEmpty),
@@ -1186,6 +1232,14 @@ class OutboxService {
         domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
+
+      // Still record in sequence log for the new counter
+      await _recordAgentSent(
+        entryId: id,
+        vectorClock: vectorClock,
+        payloadType: payloadType,
+      );
+
       unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
       return true;
     }
@@ -1203,7 +1257,39 @@ class OutboxService {
       domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );
+
+    // Record in sequence log for backfill support (self-healing sync)
+    await _recordAgentSent(
+      entryId: id,
+      vectorClock: vectorClock,
+      payloadType: payloadType,
+    );
+
     return false;
+  }
+
+  /// Records an agent entity or link in the sequence log.
+  Future<void> _recordAgentSent({
+    required String entryId,
+    required VectorClock? vectorClock,
+    required SyncSequencePayloadType payloadType,
+  }) async {
+    if (_sequenceLogService != null && vectorClock != null) {
+      try {
+        await _sequenceLogService!.recordSentEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          payloadType: payloadType,
+        );
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'recordSent',
+          stackTrace: st,
+        );
+      }
+    }
   }
 
   Future<void> dispose() async {

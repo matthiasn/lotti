@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.899" date="2026-03-04">
+      <description>
+          <p>Sync stability fixes: break backfill amplification loop by responding with hints instead of unresolvable flags for superseded counters. Agent entities and links now properly record vector clock counters in the sequence log, eliminating phantom gaps that triggered endless backfill requests and outbox spikes.</p>
+      </description>
+    </release>
     <release version="0.9.898" date="2026-03-04">
       <description>
           <p>Overlapping document chunking for vector search: long transcripts and agent reports are split into overlapping chunks so every part is semantically searchable. New Re-index All maintenance action rebuilds embeddings with the improved chunking strategy.</p>

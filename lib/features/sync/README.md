@@ -172,9 +172,12 @@ host was N-2, the system detects counter N-1 is missing. Periodically, missing
 entries are requested via broadcast. Any device with the entry can respond.
 
 **Payload Types:** The `SyncSequencePayloadType` enum distinguishes between
-message types: `journalEntity` for journal entries and `entryLink` for entry
-links. Both types are tracked independently in the sequence log, enabling
-complete reconstruction of sync state.
+message types: `journalEntity` for journal entries, `entryLink` for entry
+links, `agentEntity` for agent domain entities, and `agentLink` for agent
+links. All four types are tracked independently in the sequence log, enabling
+complete reconstruction of sync state. Agent payloads carry `originatingHostId`
+and `coveredVectorClocks` fields in their sync messages, just like journal
+entities and entry links.
 
 **Components:**
 - `SyncSequenceLog` table in `sync_db.dart` — stores sequence entries with

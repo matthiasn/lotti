@@ -2360,6 +2360,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentLink> getAgentLinkById(String id) {
+    return customSelect(
+        'SELECT * FROM agent_links WHERE id = ?1 AND deleted_at IS NULL',
+        variables: [
+          Variable<String>(id)
+        ],
+        readsFrom: {
+          agentLinks,
+        }).asyncMap(agentLinks.mapFromRow);
+  }
+
   Selectable<AgentLink> getAgentLinksByFromId(String fromId) {
     return customSelect(
         'SELECT * FROM agent_links WHERE from_id = ?1 AND deleted_at IS NULL',

@@ -200,6 +200,8 @@ Map<String, dynamic> _$SyncBackfillResponseToJson(
 const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.journalEntity: 'journalEntity',
   SyncSequencePayloadType.entryLink: 'entryLink',
+  SyncSequencePayloadType.agentEntity: 'agentEntity',
+  SyncSequencePayloadType.agentLink: 'agentLink',
 };
 
 SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
@@ -210,6 +212,10 @@ SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
           : AgentDomainEntity.fromJson(
               json['agentEntity'] as Map<String, dynamic>),
       jsonPath: json['jsonPath'] as String?,
+      originatingHostId: json['originatingHostId'] as String?,
+      coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+          ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -218,6 +224,8 @@ Map<String, dynamic> _$SyncAgentEntityToJson(SyncAgentEntity instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'agentEntity': instance.agentEntity,
       'jsonPath': instance.jsonPath,
+      'originatingHostId': instance.originatingHostId,
+      'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };
 
@@ -228,6 +236,10 @@ SyncAgentLink _$SyncAgentLinkFromJson(Map<String, dynamic> json) =>
           ? null
           : AgentLink.fromJson(json['agentLink'] as Map<String, dynamic>),
       jsonPath: json['jsonPath'] as String?,
+      originatingHostId: json['originatingHostId'] as String?,
+      coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+          ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -236,5 +248,7 @@ Map<String, dynamic> _$SyncAgentLinkToJson(SyncAgentLink instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'agentLink': instance.agentLink,
       'jsonPath': instance.jsonPath,
+      'originatingHostId': instance.originatingHostId,
+      'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };

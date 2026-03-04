@@ -3630,7 +3630,7 @@ final class TaskAgentWorkflowProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentWorkflowHash() => r'e1f5c289dcf8d7e0fbefe6580a89770b88a9ce36';
+String _$taskAgentWorkflowHash() => r'8a305573ce2354d90a755c5dbe070b15e48fb370';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
