@@ -14,6 +14,7 @@ class EmbeddingSearchResult {
     required this.entityId,
     required this.distance,
     required this.entityType,
+    this.chunkIndex = 0,
     this.taskId = '',
     this.subtype = '',
   });
@@ -21,6 +22,12 @@ class EmbeddingSearchResult {
   final String entityId;
   final double distance;
   final String entityType;
+
+  /// The zero-based chunk index within the source entity.
+  ///
+  /// For short content that fits in a single chunk this is 0.
+  /// For chunked content this identifies which segment matched.
+  final int chunkIndex;
 
   /// The task ID this embedding relates to, for direct lookup.
   ///
@@ -86,13 +93,16 @@ class EmbeddingsDb {
 
   void _createSchema() {
     // Check if the vec_embeddings table already exists with wrong dimensions,
-    // or if embedding_metadata is missing the category_id column. Since
-    // embeddings are derived data that can be regenerated, we drop and
-    // recreate both tables on schema mismatch.
+    // or if embedding_metadata is missing required columns. Since embeddings
+    // are derived data that can be regenerated, we drop and recreate both
+    // tables on schema mismatch.
     if (_hasDimensionMismatch() ||
-        _hasMissingCategoryColumn() ||
+        _hasMissingColumn('category_id') ||
         _hasMissingColumn('task_id') ||
-        _hasMissingColumn('subtype')) {
+        _hasMissingColumn('subtype') ||
+        _hasMissingColumn('chunk_index') ||
+        _hasMissingColumn('embedding_id') ||
+        _hasWrongPrimaryKey()) {
       db
         ..execute('DROP TABLE IF EXISTS vec_embeddings')
         ..execute('DROP TABLE IF EXISTS embedding_metadata');
@@ -101,14 +111,17 @@ class EmbeddingsDb {
     db
       ..execute('''
         CREATE TABLE IF NOT EXISTS embedding_metadata (
-          entity_id TEXT PRIMARY KEY,
+          entity_id TEXT NOT NULL,
+          chunk_index INTEGER NOT NULL DEFAULT 0,
+          embedding_id TEXT NOT NULL,
           entity_type TEXT NOT NULL,
           model_id TEXT NOT NULL,
           content_hash TEXT NOT NULL,
           created_at TEXT NOT NULL,
           category_id TEXT NOT NULL DEFAULT '',
           task_id TEXT NOT NULL DEFAULT '',
-          subtype TEXT NOT NULL DEFAULT ''
+          subtype TEXT NOT NULL DEFAULT '',
+          PRIMARY KEY (entity_id, chunk_index)
         );
       ''')
       ..execute('''
@@ -124,9 +137,17 @@ class EmbeddingsDb {
           ON embedding_metadata(task_id);
       ''')
       ..execute('''
+        CREATE INDEX IF NOT EXISTS idx_entity_id
+          ON embedding_metadata(entity_id);
+      ''')
+      ..execute('''
+        CREATE INDEX IF NOT EXISTS idx_embedding_id
+          ON embedding_metadata(embedding_id);
+      ''')
+      ..execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
           USING vec0(
-            entity_id TEXT PRIMARY KEY,
+            embedding_id TEXT PRIMARY KEY,
             embedding float[$kEmbeddingDimensions]
           );
       ''');
@@ -152,14 +173,6 @@ class EmbeddingsDb {
     return existingDims != null && existingDims != kEmbeddingDimensions;
   }
 
-  /// Checks whether the existing embedding_metadata table is missing the
-  /// `category_id` column added for category-scoped vector search.
-  ///
-  /// Returns `false` if the table doesn't exist yet (nothing to migrate).
-  bool _hasMissingCategoryColumn() {
-    return _hasMissingColumn('category_id');
-  }
-
   /// Checks whether the existing embedding_metadata table is missing a
   /// [columnName].
   ///
@@ -169,6 +182,28 @@ class EmbeddingsDb {
     if (info.isEmpty) return false;
     return !info.any((row) => row['name'] == columnName);
   }
+
+  /// Checks whether the existing embedding_metadata table still uses the
+  /// old single-column primary key (entity_id only) instead of the new
+  /// composite (entity_id, chunk_index).
+  ///
+  /// Returns `false` if the table doesn't exist yet.
+  bool _hasWrongPrimaryKey() {
+    final info = db.select('PRAGMA table_info(embedding_metadata)');
+    if (info.isEmpty) return false;
+
+    // In PRAGMA table_info, `pk` is nonzero for PK columns.
+    // The new schema has pk=1 for entity_id and pk=2 for chunk_index.
+    final pkColumns =
+        info.where((row) => (row['pk'] as int) > 0).map((row) => row['name']);
+    return !pkColumns.contains('chunk_index');
+  }
+
+  /// Builds the composite embedding ID used as the vec0 primary key.
+  ///
+  /// Format: `{entityId}:{chunkIndex}` (e.g. `abc-123:0`, `abc-123:3`).
+  static String embeddingId(String entityId, int chunkIndex) =>
+      '$entityId:$chunkIndex';
 
   /// Closes the database. Safe to call multiple times.
   void close() {
@@ -181,13 +216,15 @@ class EmbeddingsDb {
   /// Inserts or updates an embedding and its metadata.
   ///
   /// The [embedding] must have exactly [kEmbeddingDimensions] elements to
-  /// match the vec0 table schema.
+  /// match the vec0 table schema. The [chunkIndex] identifies the chunk
+  /// within the source entity (0 for single-chunk entities).
   void upsertEmbedding({
     required String entityId,
     required String entityType,
     required String modelId,
     required Float32List embedding,
     required String contentHash,
+    int chunkIndex = 0,
     String categoryId = '',
     String taskId = '',
     String subtype = '',
@@ -202,6 +239,7 @@ class EmbeddingsDb {
     }
 
     final now = clock.now().toUtc().toIso8601String();
+    final vecId = embeddingId(entityId, chunkIndex);
 
     // sqlite-vec expects the vector as a raw blob of float32 bytes.
     final blob = embedding.buffer.asUint8List(
@@ -217,12 +255,14 @@ class EmbeddingsDb {
         ..execute(
           '''
           INSERT OR REPLACE INTO embedding_metadata
-            (entity_id, entity_type, model_id, content_hash, created_at,
-             category_id, task_id, subtype)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (entity_id, chunk_index, embedding_id, entity_type, model_id,
+             content_hash, created_at, category_id, task_id, subtype)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ''',
           [
             entityId,
+            chunkIndex,
+            vecId,
             entityType,
             modelId,
             contentHash,
@@ -234,12 +274,12 @@ class EmbeddingsDb {
         )
         // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
         ..execute(
-          'DELETE FROM vec_embeddings WHERE entity_id = ?',
-          [entityId],
+          'DELETE FROM vec_embeddings WHERE embedding_id = ?',
+          [vecId],
         )
         ..execute(
-          'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
-          [entityId, blob],
+          'INSERT INTO vec_embeddings (embedding_id, embedding) VALUES (?, ?)',
+          [vecId, blob],
         )
         ..execute('COMMIT');
     } on Object {
@@ -248,15 +288,49 @@ class EmbeddingsDb {
     }
   }
 
-  /// Deletes an embedding and its metadata by entity ID.
-  void deleteEmbedding(String entityId) {
+  /// Deletes a single chunk embedding by entity ID and chunk index.
+  void deleteEmbedding(String entityId, {int chunkIndex = 0}) {
+    final vecId = embeddingId(entityId, chunkIndex);
     db.execute('BEGIN');
     try {
       db
         ..execute(
-          'DELETE FROM vec_embeddings WHERE entity_id = ?',
-          [entityId],
+          'DELETE FROM vec_embeddings WHERE embedding_id = ?',
+          [vecId],
         )
+        ..execute(
+          'DELETE FROM embedding_metadata '
+          'WHERE entity_id = ? AND chunk_index = ?',
+          [entityId, chunkIndex],
+        )
+        ..execute('COMMIT');
+    } on Object {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  /// Deletes all chunk embeddings for a given entity ID.
+  void deleteEntityEmbeddings(String entityId) {
+    // First, find all chunk indices so we can delete from vec_embeddings
+    // (which uses composite embedding_id, not entity_id).
+    final rows = db.select(
+      'SELECT chunk_index FROM embedding_metadata WHERE entity_id = ?',
+      [entityId],
+    );
+
+    if (rows.isEmpty) return;
+
+    db.execute('BEGIN');
+    try {
+      for (final row in rows) {
+        final idx = row['chunk_index'] as int;
+        db.execute(
+          'DELETE FROM vec_embeddings WHERE embedding_id = ?',
+          [embeddingId(entityId, idx)],
+        );
+      }
+      db
         ..execute(
           'DELETE FROM embedding_metadata WHERE entity_id = ?',
           [entityId],
@@ -309,9 +383,11 @@ class EmbeddingsDb {
 
     final rows = db.select(
       '''
-      SELECT v.entity_id, v.distance, m.entity_type, m.task_id, m.subtype
+      SELECT v.embedding_id, v.distance,
+             m.entity_id, m.chunk_index, m.entity_type, m.task_id, m.subtype
       FROM vec_embeddings v
-      JOIN embedding_metadata m ON v.entity_id = m.entity_id
+      JOIN embedding_metadata m
+        ON m.embedding_id = v.embedding_id
       WHERE v.embedding MATCH ?
         AND k = ?
         $typeClause
@@ -326,13 +402,14 @@ class EmbeddingsDb {
         entityId: row['entity_id'] as String,
         distance: (row['distance'] as num).toDouble(),
         entityType: row['entity_type'] as String,
+        chunkIndex: row['chunk_index'] as int? ?? 0,
         taskId: row['task_id'] as String? ?? '',
         subtype: row['subtype'] as String? ?? '',
       );
     }).toList();
   }
 
-  /// Whether an embedding exists for [entityId].
+  /// Whether any embedding exists for [entityId] (any chunk).
   bool hasEmbedding(String entityId) {
     final rows = db.select(
       'SELECT 1 FROM embedding_metadata WHERE entity_id = ? LIMIT 1',
@@ -341,14 +418,27 @@ class EmbeddingsDb {
     return rows.isNotEmpty;
   }
 
-  /// Returns the stored content hash for [entityId], or null if absent.
+  /// Returns the stored content hash for [entityId] (from chunk 0), or null.
+  ///
+  /// The content hash is the same across all chunks for a given entity
+  /// (it hashes the full source text, not individual chunks).
   String? getContentHash(String entityId) {
     final rows = db.select(
-      'SELECT content_hash FROM embedding_metadata WHERE entity_id = ? LIMIT 1',
+      'SELECT content_hash FROM embedding_metadata '
+      'WHERE entity_id = ? AND chunk_index = 0 LIMIT 1',
       [entityId],
     );
     if (rows.isEmpty) return null;
     return rows.first['content_hash'] as String;
+  }
+
+  /// Returns the number of chunks stored for [entityId].
+  int getChunkCount(String entityId) {
+    final rows = db.select(
+      'SELECT COUNT(*) AS cnt FROM embedding_metadata WHERE entity_id = ?',
+      [entityId],
+    );
+    return rows.first['cnt'] as int;
   }
 
   /// The total number of embeddings stored.

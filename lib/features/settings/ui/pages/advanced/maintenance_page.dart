@@ -140,7 +140,7 @@ class MaintenancePage extends ConsumerWidget {
                 icon: Icons.search_rounded,
                 onTap: () => Fts5RecreateModal.show(context),
               ),
-              if (getIt.isRegistered<EmbeddingsDb>())
+              if (getIt.isRegistered<EmbeddingsDb>()) ...[
                 AdaptiveSettingsCard(
                   title: context.messages.maintenanceBackfillEmbeddings,
                   subtitle:
@@ -148,6 +148,13 @@ class MaintenancePage extends ConsumerWidget {
                   icon: Icons.hub_outlined,
                   onTap: () => EmbeddingBackfillModal.show(context),
                 ),
+                AdaptiveSettingsCard(
+                  title: context.messages.embeddingReindexAllButton,
+                  subtitle: context.messages.embeddingReindexAllDescription,
+                  icon: Icons.refresh_rounded,
+                  onTap: () => EmbeddingBackfillModal.showReindexAll(context),
+                ),
+              ],
             ],
           ),
         );

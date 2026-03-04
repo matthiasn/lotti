@@ -2320,6 +2320,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorPlaceholder => 'Enter notes...';
 
   @override
+  String get embeddingReindexAllButton => 'Re-index All Embeddings';
+
+  @override
+  String get embeddingReindexAllDescription =>
+      'Rebuild all embeddings with improved chunking for long documents';
+
+  @override
+  String get embeddingReindexAllWarning =>
+      'This will delete and rebuild all embeddings with improved chunking. Existing search data will be temporarily unavailable. This may take a while for large datasets.';
+
+  @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
 
   @override

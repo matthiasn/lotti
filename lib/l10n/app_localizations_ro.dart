@@ -2359,6 +2359,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editorPlaceholder => 'Introduceți notițe...';
 
   @override
+  String get embeddingReindexAllButton => 'Reindexează toate embedding-urile';
+
+  @override
+  String get embeddingReindexAllDescription =>
+      'Reconstruiește toate embedding-urile cu chunking îmbunătățit pentru documente lungi';
+
+  @override
+  String get embeddingReindexAllWarning =>
+      'Toate embedding-urile vor fi șterse și reconstruite cu chunking îmbunătățit. Datele de căutare existente vor fi temporar indisponibile. Acest lucru poate dura ceva timp pentru seturi mari de date.';
+
+  @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Detalii suplimentare';
 
   @override

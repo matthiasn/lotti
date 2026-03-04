@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.898] - 2026-03-04
+### Added
+- Overlapping document chunking for vector search embeddings. Long transcripts
+  and agent reports are now split into overlapping chunks (~384 tokens each,
+  64-token overlap) so every part of a long recording is semantically
+  searchable, not just the first ~400 words.
+- Composite embedding index (entity_id + chunk_index) supporting multiple
+  vectors per source document.
+- Re-index All Embeddings maintenance action to rebuild all embeddings with
+  the new chunking strategy.
+
 ## [0.9.897] - 2026-03-03
 ### Added
 - Enhanced agent observations with priority and category fields. Task agents

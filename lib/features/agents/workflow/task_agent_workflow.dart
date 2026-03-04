@@ -668,7 +668,7 @@ class TaskAgentWorkflow {
       // so we don't lose search coverage if the embedding call fails or
       // the content is too short.
       if (didEmbed && previousReportId != null) {
-        db.deleteEmbedding(previousReportId);
+        db.deleteEntityEmbeddings(previousReportId);
       }
     } catch (e, s) {
       _logError('failed to embed agent report', error: e, stackTrace: s);

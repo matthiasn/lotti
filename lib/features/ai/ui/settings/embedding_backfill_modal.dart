@@ -33,12 +33,37 @@ class EmbeddingBackfillModal {
               .read(embeddingBackfillControllerProvider.notifier)
               .backfillCategory(categoryId);
         },
-        progressBuilder: (context) => _BackfillProgress(
-          selectedCategoryNotifier: selectedCategoryNotifier,
+        progressBuilder: (context) => _BackfillProgressContent(
+          title: selectedCategoryNotifier.value?.name,
         ),
       );
     } finally {
       selectedCategoryNotifier.dispose();
+    }
+  }
+
+  /// Shows a confirmation dialog to re-index all embeddings with the
+  /// current chunking strategy.
+  static Future<void> showReindexAll(BuildContext context) async {
+    final container = ProviderScope.containerOf(context);
+    // Use a trivially-always-enabled notifier.
+    final alwaysEnabled = ValueNotifier<bool>(true);
+
+    try {
+      await ConfirmationProgressModal.show(
+        context: context,
+        message: context.messages.embeddingReindexAllWarning,
+        confirmLabel: context.messages.embeddingReindexAllButton,
+        closeOnComplete: false,
+        confirmEnabledListenable: alwaysEnabled,
+        isConfirmEnabled: () => true,
+        operation: () => container
+            .read(embeddingBackfillControllerProvider.notifier)
+            .reindexAll(),
+        progressBuilder: (context) => const _BackfillProgressContent(),
+      );
+    } finally {
+      alwaysEnabled.dispose();
     }
   }
 }
@@ -61,10 +86,15 @@ class _CategoryPicker extends StatelessWidget {
   }
 }
 
-class _BackfillProgress extends ConsumerWidget {
-  const _BackfillProgress({required this.selectedCategoryNotifier});
+/// Shared progress content for both category backfill and full reindex.
+///
+/// Shows a progress bar while running, a checkmark on completion, and an
+/// error icon with message on failure. An optional [title] is displayed
+/// above the progress stats (e.g. the selected category name).
+class _BackfillProgressContent extends ConsumerWidget {
+  const _BackfillProgressContent({this.title});
 
-  final ValueNotifier<CategoryDefinition?> selectedCategoryNotifier;
+  final String? title;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,7 +102,6 @@ class _BackfillProgress extends ConsumerWidget {
     final progress = backfillState.progress;
     final isRunning = backfillState.isRunning;
     final error = backfillState.error;
-    final categoryName = selectedCategoryNotifier.value?.name ?? '';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -141,13 +170,16 @@ class _BackfillProgress extends ConsumerWidget {
             textAlign: TextAlign.center,
           )
         else ...[
-          Text(
-            categoryName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-          ),
-          const SizedBox(height: 8),
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                title!,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+              ),
+            ),
           Text(
             context.messages.maintenanceBackfillEmbeddingsProgress(
               backfillState.processedCount,

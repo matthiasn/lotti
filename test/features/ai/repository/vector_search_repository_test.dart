@@ -276,7 +276,7 @@ void main() {
       expect(result.tasks, isEmpty);
     });
 
-    test('passes custom k parameter to search', () async {
+    test('inflates k parameter to account for chunk deduplication', () async {
       when(
         () => mockEmbeddingRepo.embed(
           input: any(named: 'input'),
@@ -287,17 +287,18 @@ void main() {
       when(
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
-          k: 5,
+          k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
       ).thenReturn([]);
 
       await sut.searchRelatedTasks(query: 'test', k: 5);
 
+      // k is inflated by 3× to account for multiple chunks per entity
       verify(
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
-          k: 5,
+          k: 15,
           categoryIds: any(named: 'categoryIds'),
         ),
       ).called(1);
