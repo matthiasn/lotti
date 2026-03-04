@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -79,8 +80,14 @@ void main() {
         embedding: any(named: 'embedding'),
         contentHash: any(named: 'contentHash'),
         categoryId: any(named: 'categoryId'),
+        taskId: any(named: 'taskId'),
+        subtype: any(named: 'subtype'),
       ),
     ).thenReturn(null);
+
+    // Default: no labels (needed for label resolver)
+    when(() => mockJournalDb.getAllLabelDefinitions())
+        .thenAnswer((_) async => []);
   });
 
   tearDown(() async {
@@ -480,6 +487,166 @@ void main() {
         verifyNever(
           () => mockJournalDb.journalEntityById(any()),
         );
+
+        stopInZone(async);
+      });
+    });
+  });
+
+  group('EmbeddingService label resolver', () {
+    final fixedDate = DateTime(2024, 3, 15);
+
+    test('builds label resolver from getAllLabelDefinitions', () {
+      fakeAsync((async) {
+        // Stub labels
+        when(() => mockJournalDb.getAllLabelDefinitions())
+            .thenAnswer((_) async => [
+                  LabelDefinition(
+                    id: 'label-1',
+                    name: 'security',
+                    color: '#FF0000',
+                    createdAt: fixedDate,
+                    updatedAt: fixedDate,
+                    vectorClock: null,
+                  ),
+                  LabelDefinition(
+                    id: 'label-2',
+                    name: 'backend',
+                    color: '#00FF00',
+                    createdAt: fixedDate,
+                    updatedAt: fixedDate,
+                    vectorClock: null,
+                  ),
+                ]);
+
+        final task = Task(
+          meta: Metadata(
+            id: _entityId,
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+            labelIds: ['label-1', 'label-2'],
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: fixedDate,
+              utcOffset: 0,
+            ),
+            title: 'Fix auth bug',
+            statusHistory: [],
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          entryText: const EntryText(plainText: _longText),
+        );
+        stubEntity(task);
+        stubEmbedding();
+
+        service.start();
+        sendAndProcess(async, {_entityId, taskNotification});
+
+        // Verify that the enriched template (with labels) was used
+        final captured = verify(
+          () => mockEmbeddingRepo.embed(
+            input: captureAny(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).captured;
+
+        final embeddedText = captured.first as String;
+        expect(embeddedText, contains('Labels: security, backend'));
+        expect(embeddedText, startsWith('Fix auth bug'));
+
+        stopInZone(async);
+      });
+    });
+
+    test('excludes deleted labels from resolver', () {
+      fakeAsync((async) {
+        when(() => mockJournalDb.getAllLabelDefinitions())
+            .thenAnswer((_) async => [
+                  LabelDefinition(
+                    id: 'label-1',
+                    name: 'active-label',
+                    color: '#FF0000',
+                    createdAt: fixedDate,
+                    updatedAt: fixedDate,
+                    vectorClock: null,
+                  ),
+                  LabelDefinition(
+                    id: 'label-deleted',
+                    name: 'deleted-label',
+                    color: '#999999',
+                    createdAt: fixedDate,
+                    updatedAt: fixedDate,
+                    vectorClock: null,
+                    deletedAt: fixedDate,
+                  ),
+                ]);
+
+        final task = Task(
+          meta: Metadata(
+            id: _entityId,
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+            labelIds: ['label-1', 'label-deleted'],
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: fixedDate,
+              utcOffset: 0,
+            ),
+            title: 'A task with labels that is long enough',
+            statusHistory: [],
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+        );
+        stubEntity(task);
+        stubEmbedding();
+
+        service.start();
+        sendAndProcess(async, {_entityId, taskNotification});
+
+        final captured = verify(
+          () => mockEmbeddingRepo.embed(
+            input: captureAny(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).captured;
+
+        final embeddedText = captured.first as String;
+        expect(embeddedText, contains('Labels: active-label'));
+        expect(embeddedText, isNot(contains('deleted-label')));
+
+        stopInZone(async);
+      });
+    });
+
+    test('non-task entities skip label resolver entirely', () {
+      fakeAsync((async) {
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        stubEntity(entry);
+        stubEmbedding();
+
+        service.start();
+        sendAndProcess(async, {_entityId, textEntryNotification});
+
+        // For non-task entities, the plain text should be used directly
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: _longText,
+            baseUrl: 'http://localhost:11434',
+          ),
+        ).called(1);
 
         stopInZone(async);
       });

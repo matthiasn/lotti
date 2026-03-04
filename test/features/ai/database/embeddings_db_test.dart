@@ -146,6 +146,50 @@ void main() {
       expect(rows.first['created_at'], fixedTime.toIso8601String());
     });
 
+    test('stores task_id and subtype', () {
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
+
+      db.upsertEmbedding(
+        entityId: 'report-1',
+        entityType: 'agent_report',
+        modelId: 'test-model',
+        embedding: vec,
+        contentHash: 'hash-r1',
+        categoryId: 'cat-1',
+        taskId: 'task-42',
+        subtype: 'lotti',
+      );
+
+      expect(db.count, 1);
+
+      // Verify via raw SQL that values are stored.
+      final rows = db.db.select(
+        'SELECT task_id, subtype FROM embedding_metadata '
+        "WHERE entity_id = 'report-1'",
+      );
+      expect(rows.first['task_id'], 'task-42');
+      expect(rows.first['subtype'], 'lotti');
+    });
+
+    test('defaults task_id and subtype to empty string', () {
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
+
+      db.upsertEmbedding(
+        entityId: 'entity-1',
+        entityType: 'task',
+        modelId: 'test-model',
+        embedding: vec,
+        contentHash: 'hash-1',
+      );
+
+      final rows = db.db.select(
+        'SELECT task_id, subtype FROM embedding_metadata '
+        "WHERE entity_id = 'entity-1'",
+      );
+      expect(rows.first['task_id'], '');
+      expect(rows.first['subtype'], '');
+    });
+
     test('throws on dimension mismatch', () {
       expect(
         () => db.upsertEmbedding(
@@ -342,6 +386,43 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('returns task_id and subtype in search results', () {
+      db
+        ..upsertEmbedding(
+          entityId: 'report-1',
+          entityType: 'agent_report',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
+          contentHash: 'hash-r1',
+          taskId: 'task-42',
+          subtype: 'lotti',
+        )
+        ..upsertEmbedding(
+          entityId: 'task-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 2),
+          contentHash: 'hash-t1',
+        );
+
+      final results = db.search(
+        queryVector: _makeVector(kEmbeddingDimensions, value: 1),
+        k: 2,
+      );
+
+      expect(results, hasLength(2));
+
+      // First result (closest) should be the report with task_id/subtype.
+      expect(results[0].entityId, 'report-1');
+      expect(results[0].taskId, 'task-42');
+      expect(results[0].subtype, 'lotti');
+
+      // Second result should have empty defaults.
+      expect(results[1].entityId, 'task-1');
+      expect(results[1].taskId, '');
+      expect(results[1].subtype, '');
     });
 
     test('returns zero distance for identical vectors', () {
@@ -765,6 +846,76 @@ void main() {
       );
       expect(results, hasLength(1));
       expect(results[0].entityId, 'new-entity');
+
+      embeddingsDb.close();
+    });
+
+    test('recreates tables when task_id column is missing', () {
+      final dbPath = '${tempDir.path}/embeddings_no_task_id.sqlite';
+
+      // Create a DB with the old schema (has category_id but no task_id).
+      final rawDb = raw.sqlite3.open(dbPath)
+        ..execute('''
+          CREATE TABLE IF NOT EXISTS embedding_metadata (
+            entity_id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            model_id TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            category_id TEXT NOT NULL DEFAULT ''
+          )
+        ''')
+        ..execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
+            USING vec0(
+              entity_id TEXT PRIMARY KEY,
+              embedding float[$kEmbeddingDimensions]
+            )
+        ''')
+        ..execute('''
+          INSERT INTO embedding_metadata
+            (entity_id, entity_type, model_id, content_hash, created_at,
+             category_id)
+          VALUES ('old-entity', 'task', 'model', 'hash', '2024-01-01',
+                  'cat-1')
+        ''');
+      final oldVec = Float32List(kEmbeddingDimensions);
+      final oldBlob = oldVec.buffer.asUint8List();
+      rawDb
+        ..execute(
+          'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
+          ['old-entity', oldBlob],
+        )
+        ..dispose();
+
+      // Now open via EmbeddingsDb — should detect missing column and recreate.
+      final embeddingsDb = EmbeddingsDb(path: dbPath)..open();
+
+      // Old data should be gone.
+      expect(embeddingsDb.count, 0);
+
+      // Should be able to insert with task_id and subtype now.
+      embeddingsDb.upsertEmbedding(
+        entityId: 'new-entity',
+        entityType: 'agent_report',
+        modelId: 'test-model',
+        embedding: _makeVector(kEmbeddingDimensions, value: 1),
+        contentHash: 'hash-new',
+        categoryId: 'my-category',
+        taskId: 'task-123',
+        subtype: 'lotti',
+      );
+
+      expect(embeddingsDb.count, 1);
+
+      // Search should return task_id and subtype.
+      final results = embeddingsDb.search(
+        queryVector: _makeVector(kEmbeddingDimensions, value: 1),
+      );
+      expect(results, hasLength(1));
+      expect(results[0].entityId, 'new-entity');
+      expect(results[0].taskId, 'task-123');
+      expect(results[0].subtype, 'lotti');
 
       embeddingsDb.close();
     });

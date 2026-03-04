@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
@@ -22,11 +23,14 @@ import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -71,6 +75,8 @@ class TaskAgentWorkflow {
     required this.syncService,
     required this.templateService,
     this.domainLogger,
+    this.embeddingsDb,
+    this.embeddingRepository,
   });
 
   final AgentRepository agentRepository;
@@ -90,6 +96,12 @@ class TaskAgentWorkflow {
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
+
+  /// Optional embedding dependencies. When both are provided, agent reports
+  /// are embedded for vector search after persistence. The pipeline is
+  /// non-essential — if unavailable, reports are still persisted normally.
+  final EmbeddingsDb? embeddingsDb;
+  final OllamaEmbeddingRepository? embeddingRepository;
 
   static const _uuid = Uuid();
 
@@ -394,6 +406,15 @@ class TaskAgentWorkflow {
         taskId: taskId,
       );
 
+      // Collects report details inside the transaction for post-commit
+      // embedding. Declared outside so it survives the transaction scope.
+      ({
+        String reportId,
+        String reportContent,
+        String taskId,
+        String? previousReportId,
+      })? reportToEmbed;
+
       await syncService.runInTransaction(() async {
         // 8. Persist the final assistant response as a thought message.
         final thoughtText = strategy.finalResponse;
@@ -456,6 +477,14 @@ class TaskAgentWorkflow {
               vectorClock: null,
             ),
           );
+
+          // Capture report details for post-transaction embedding.
+          reportToEmbed = (
+            reportId: reportId,
+            reportContent: reportContent,
+            taskId: taskId,
+            previousReportId: existingHead?.reportId,
+          );
         }
 
         // 10. Persist new observation notes (agentJournal entries).
@@ -508,6 +537,20 @@ class TaskAgentWorkflow {
           ),
         );
       });
+
+      // 9b. Embed the report for vector search (fire-and-forget).
+      // Runs after the transaction commits so we never embed rolled-back data.
+      final embed = reportToEmbed;
+      if (embed != null) {
+        unawaited(
+          _embedAgentReport(
+            reportId: embed.reportId,
+            reportContent: embed.reportContent,
+            taskId: embed.taskId,
+            previousReportId: embed.previousReportId,
+          ),
+        );
+      }
 
       developer.log(
         'Wake completed for agent $agentId: '
@@ -584,6 +627,51 @@ class TaskAgentWorkflow {
       );
     } catch (e, s) {
       _logError('failed to persist token usage', error: e, stackTrace: s);
+    }
+  }
+
+  /// Embeds an agent report for vector search and supersedes the previous
+  /// report's embedding if one exists.
+  ///
+  /// Non-fatal: failures are logged but do not affect the wake cycle.
+  /// Called as fire-and-forget via [unawaited] after report persistence.
+  Future<void> _embedAgentReport({
+    required String reportId,
+    required String reportContent,
+    required String taskId,
+    String? previousReportId,
+  }) async {
+    final db = embeddingsDb;
+    final repo = embeddingRepository;
+    if (db == null || repo == null) return;
+
+    try {
+      final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
+      if (baseUrl == null) return;
+
+      // Resolve the task's category for category-scoped search.
+      final taskEntity = await journalDb.journalEntityById(taskId);
+      final categoryId = taskEntity?.meta.categoryId ?? '';
+
+      final didEmbed = await EmbeddingProcessor.processAgentReport(
+        reportId: reportId,
+        reportContent: reportContent,
+        taskId: taskId,
+        categoryId: categoryId,
+        subtype: AgentReportScopes.current,
+        embeddingsDb: db,
+        embeddingRepository: repo,
+        baseUrl: baseUrl,
+      );
+
+      // Delete the old report's embedding only after the new one succeeds,
+      // so we don't lose search coverage if the embedding call fails or
+      // the content is too short.
+      if (didEmbed && previousReportId != null) {
+        db.deleteEmbedding(previousReportId);
+      }
+    } catch (e, s) {
+      _logError('failed to embed agent report', error: e, stackTrace: s);
     }
   }
 

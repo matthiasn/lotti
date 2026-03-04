@@ -14,11 +14,25 @@ class EmbeddingSearchResult {
     required this.entityId,
     required this.distance,
     required this.entityType,
+    this.taskId = '',
+    this.subtype = '',
   });
 
   final String entityId;
   final double distance;
   final String entityType;
+
+  /// The task ID this embedding relates to, for direct lookup.
+  ///
+  /// Populated for agent report embeddings to link back to the parent task.
+  /// Empty string when not applicable.
+  final String taskId;
+
+  /// The subtype of the embedding, e.g. agent template name.
+  ///
+  /// Used to distinguish between multiple agent reports for the same task.
+  /// Empty string when not applicable.
+  final String subtype;
 }
 
 /// Standalone vector-embedding database backed by sqlite-vec.
@@ -75,7 +89,10 @@ class EmbeddingsDb {
     // or if embedding_metadata is missing the category_id column. Since
     // embeddings are derived data that can be regenerated, we drop and
     // recreate both tables on schema mismatch.
-    if (_hasDimensionMismatch() || _hasMissingCategoryColumn()) {
+    if (_hasDimensionMismatch() ||
+        _hasMissingCategoryColumn() ||
+        _hasMissingColumn('task_id') ||
+        _hasMissingColumn('subtype')) {
       db
         ..execute('DROP TABLE IF EXISTS vec_embeddings')
         ..execute('DROP TABLE IF EXISTS embedding_metadata');
@@ -89,7 +106,9 @@ class EmbeddingsDb {
           model_id TEXT NOT NULL,
           content_hash TEXT NOT NULL,
           created_at TEXT NOT NULL,
-          category_id TEXT NOT NULL DEFAULT ''
+          category_id TEXT NOT NULL DEFAULT '',
+          task_id TEXT NOT NULL DEFAULT '',
+          subtype TEXT NOT NULL DEFAULT ''
         );
       ''')
       ..execute('''
@@ -99,6 +118,10 @@ class EmbeddingsDb {
       ..execute('''
         CREATE INDEX IF NOT EXISTS idx_category_id
           ON embedding_metadata(category_id);
+      ''')
+      ..execute('''
+        CREATE INDEX IF NOT EXISTS idx_task_id
+          ON embedding_metadata(task_id);
       ''')
       ..execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
@@ -134,9 +157,17 @@ class EmbeddingsDb {
   ///
   /// Returns `false` if the table doesn't exist yet (nothing to migrate).
   bool _hasMissingCategoryColumn() {
+    return _hasMissingColumn('category_id');
+  }
+
+  /// Checks whether the existing embedding_metadata table is missing a
+  /// [columnName].
+  ///
+  /// Returns `false` if the table doesn't exist yet (nothing to migrate).
+  bool _hasMissingColumn(String columnName) {
     final info = db.select('PRAGMA table_info(embedding_metadata)');
     if (info.isEmpty) return false;
-    return !info.any((row) => row['name'] == 'category_id');
+    return !info.any((row) => row['name'] == columnName);
   }
 
   /// Closes the database. Safe to call multiple times.
@@ -158,6 +189,8 @@ class EmbeddingsDb {
     required Float32List embedding,
     required String contentHash,
     String categoryId = '',
+    String taskId = '',
+    String subtype = '',
   }) {
     if (embedding.length != kEmbeddingDimensions) {
       throw ArgumentError(
@@ -185,10 +218,19 @@ class EmbeddingsDb {
           '''
           INSERT OR REPLACE INTO embedding_metadata
             (entity_id, entity_type, model_id, content_hash, created_at,
-             category_id)
-          VALUES (?, ?, ?, ?, ?, ?)
+             category_id, task_id, subtype)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ''',
-          [entityId, entityType, modelId, contentHash, now, categoryId],
+          [
+            entityId,
+            entityType,
+            modelId,
+            contentHash,
+            now,
+            categoryId,
+            taskId,
+            subtype,
+          ],
         )
         // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
         ..execute(
@@ -267,7 +309,7 @@ class EmbeddingsDb {
 
     final rows = db.select(
       '''
-      SELECT v.entity_id, v.distance, m.entity_type
+      SELECT v.entity_id, v.distance, m.entity_type, m.task_id, m.subtype
       FROM vec_embeddings v
       JOIN embedding_metadata m ON v.entity_id = m.entity_id
       WHERE v.embedding MATCH ?
@@ -284,6 +326,8 @@ class EmbeddingsDb {
         entityId: row['entity_id'] as String,
         distance: (row['distance'] as num).toDouble(),
         entityType: row['entity_type'] as String,
+        taskId: row['task_id'] as String? ?? '',
+        subtype: row['subtype'] as String? ?? '',
       );
     }).toList();
   }

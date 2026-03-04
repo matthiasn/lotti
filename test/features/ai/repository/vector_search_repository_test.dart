@@ -303,6 +303,106 @@ void main() {
       ).called(1);
     });
 
+    test('resolves agent report results to tasks via taskId metadata',
+        () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      final taskId = testTask.meta.id;
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        EmbeddingSearchResult(
+          entityId: 'report-1',
+          distance: 0.3,
+          entityType: kEntityTypeAgentReport,
+          taskId: taskId,
+        ),
+      ]);
+
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTask]);
+
+      final result = await sut.searchRelatedTasks(query: 'agent report query');
+
+      expect(result.tasks, hasLength(1));
+      expect(result.tasks.first, isA<Task>());
+    });
+
+    test('skips agent report results with empty taskId', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        const EmbeddingSearchResult(
+          entityId: 'report-1',
+          distance: 0.3,
+          entityType: kEntityTypeAgentReport,
+          // taskId defaults to '' (empty)
+        ),
+      ]);
+
+      final result = await sut.searchRelatedTasks(query: 'orphan report');
+
+      expect(result.tasks, isEmpty);
+    });
+
+    test('deduplicates when task and agent report map to same task', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      final taskId = testTask.meta.id;
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        EmbeddingSearchResult(
+          entityId: taskId,
+          distance: 0.2,
+          entityType: kEntityTypeTask,
+        ),
+        EmbeddingSearchResult(
+          entityId: 'report-1',
+          distance: 0.4,
+          entityType: kEntityTypeAgentReport,
+          taskId: taskId,
+        ),
+      ]);
+
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTask]);
+
+      final result = await sut.searchRelatedTasks(query: 'dedup query');
+
+      // Both results map to the same task — should be deduplicated
+      expect(result.tasks, hasLength(1));
+    });
+
     test('passes categoryIds through to embeddings DB search', () async {
       when(
         () => mockEmbeddingRepo.embed(
