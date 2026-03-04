@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -341,7 +342,7 @@ void main() {
       expect(syncEntity.status, SyncEntryStatus.update);
     });
 
-    test('sends unresolvable when own counter not in entry VC', () async {
+    test('sends hint when own counter not in entry VC', () async {
       const request = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -369,13 +370,16 @@ void main() {
 
       expect(captured.length, 2);
       expect(captured[0], isA<SyncJournalEntity>());
+      // Should send a hint with payloadId (not unresolvable) so receivers
+      // can map (hostId, counter) → payloadId and resolve the gap.
       expect(
         captured[1],
         isA<SyncBackfillResponse>()
             .having((r) => r.hostId, 'hostId', aliceHostId)
             .having((r) => r.counter, 'counter', 3)
             .having((r) => r.deleted, 'deleted', false)
-            .having((r) => r.unresolvable, 'unresolvable', true)
+            .having((r) => r.unresolvable, 'unresolvable', isNull)
+            .having((r) => r.payloadId, 'payloadId', entryId)
             .having((r) => r.payloadType, 'payloadType',
                 SyncSequencePayloadType.journalEntity),
       );
@@ -404,6 +408,134 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
+    });
+
+    test('skips entries within cooldown period', () async {
+      // Pre-populate the cooldown cache with a recent response
+      handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should not call any sequence log or outbox methods
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+      );
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+      // Verify cooldownSkipped was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('cooldownSkipped=1')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'handleRequest',
+        ),
+      ).called(1);
+    });
+
+    test('records response in cooldown cache after responding', () async {
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(() => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3))
+          .thenAnswer((_) async => null);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await handler.handleBackfillRequest(request);
+
+      // Verify the response was recorded in the cooldown cache
+      expect(
+        handler.recentlyResponded.containsKey('$aliceHostId:3'),
+        isTrue,
+      );
+    });
+
+    test('stops processing when rate limit is reached', () {
+      fakeAsync((async) {
+        // Use a handler with a very short cooldown so cooldowns don't interfere
+        handler = BackfillResponseHandler(
+          journalDb: mockJournalDb,
+          sequenceLogService: mockSequenceService,
+          outboxService: mockOutboxService,
+          loggingService: mockLogging,
+          vectorClockService: mockVcService,
+          responseCooldown: Duration.zero,
+        )
+          // Set window to the fakeAsync clock's "now" so the rate window
+          // is still active when _isRateLimited checks.
+          ..windowStart = DateTime.now()
+          ..responsesInWindow = 100; // At the limit
+
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 1),
+            BackfillRequestEntry(hostId: aliceHostId, counter: 2),
+          ],
+          requesterId: requesterId,
+        );
+
+        handler.handleBackfillRequest(request);
+        async.flushMicrotasks();
+
+        // Should be rate limited - no processing
+        verifyNever(
+          () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+        );
+
+        // Verify rate limiting was logged
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('rate limited')),
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'rateLimited',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('cleans expired cooldown entries at batch start', () async {
+      // Add an expired entry (well past cooldown)
+      handler.recentlyResponded['$aliceHostId:99'] =
+          DateTime.now().subtract(const Duration(hours: 1));
+
+      // Add a non-expired entry
+      handler.recentlyResponded['$bobHostId:5'] = DateTime.now();
+
+      // Request for a different counter so processing is independent
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: bobHostId, counter: 10),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
+      ).thenAnswer((_) async => null);
+
+      await handler.handleBackfillRequest(request);
+
+      // Expired entry should be cleaned
+      expect(
+        handler.recentlyResponded.containsKey('$aliceHostId:99'),
+        isFalse,
+      );
+      // Non-expired entry should remain
+      expect(
+        handler.recentlyResponded.containsKey('$bobHostId:5'),
+        isTrue,
+      );
     });
   });
 
@@ -707,8 +839,7 @@ void main() {
       expect(captured[0], isA<SyncEntryLink>());
     });
 
-    test('sends unresolvable for entry link when own counter not in VC',
-        () async {
+    test('sends hint for entry link when own counter not in VC', () async {
       final logItem = _createEntryLinkLogItem(
         aliceHostId,
         20,
@@ -741,11 +872,13 @@ void main() {
 
       expect(captured.length, 2);
       expect(captured[0], isA<SyncEntryLink>());
+      // Should send a hint with payloadId (not unresolvable)
       expect(
         captured[1],
         isA<SyncBackfillResponse>()
             .having((r) => r.deleted, 'deleted', false)
-            .having((r) => r.unresolvable, 'unresolvable', true)
+            .having((r) => r.unresolvable, 'unresolvable', isNull)
+            .having((r) => r.payloadId, 'payloadId', 'existing-link-id')
             .having((r) => r.payloadType, 'payloadType',
                 SyncSequencePayloadType.entryLink),
       );

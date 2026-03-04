@@ -9,10 +9,15 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:meta/meta.dart';
 
 /// Handler for incoming backfill requests and responses.
 /// Responds to backfill requests from other devices by looking up entries
 /// in the sequence log and sending them (or a "deleted" response if purged).
+///
+/// Includes a per-counter response cooldown to prevent the same counter from
+/// being responded to repeatedly across multiple request cycles (N-device
+/// amplification prevention).
 class BackfillResponseHandler {
   BackfillResponseHandler({
     required JournalDb journalDb,
@@ -20,17 +25,70 @@ class BackfillResponseHandler {
     required OutboxService outboxService,
     required LoggingService loggingService,
     required VectorClockService vectorClockService,
+    @visibleForTesting Duration? responseCooldown,
   })  : _journalDb = journalDb,
         _sequenceLogService = sequenceLogService,
         _outboxService = outboxService,
         _loggingService = loggingService,
-        _vectorClockService = vectorClockService;
+        _vectorClockService = vectorClockService,
+        _responseCooldown =
+            responseCooldown ?? SyncTuning.backfillResponseCooldown;
 
   final JournalDb _journalDb;
   final SyncSequenceLogService _sequenceLogService;
   final OutboxService _outboxService;
   final LoggingService _loggingService;
   final VectorClockService _vectorClockService;
+  final Duration _responseCooldown;
+
+  /// Tracks recently-responded (hostId, counter) pairs with their timestamp
+  /// to prevent duplicate responses across request cycles.
+  @visibleForTesting
+  final recentlyResponded = <String, DateTime>{};
+
+  /// Track total responses in the current time window for rate limiting.
+  @visibleForTesting
+  int responsesInWindow = 0;
+  @visibleForTesting
+  DateTime? windowStart;
+
+  /// Build the cooldown cache key for a (hostId, counter) pair.
+  static String _cooldownKey(String hostId, int counter) => '$hostId:$counter';
+
+  /// Check if a (hostId, counter) pair was recently responded to.
+  /// Returns true if the pair is within the cooldown period.
+  bool _isRecentlyResponded(String hostId, int counter) {
+    final lastResponse = recentlyResponded[_cooldownKey(hostId, counter)];
+    if (lastResponse == null) return false;
+    return DateTime.now().difference(lastResponse) < _responseCooldown;
+  }
+
+  /// Record that a (hostId, counter) pair was responded to.
+  void _recordResponse(String hostId, int counter) {
+    recentlyResponded[_cooldownKey(hostId, counter)] = DateTime.now();
+  }
+
+  /// Periodically clean expired entries from the cooldown cache.
+  /// Called at the start of each request batch.
+  void _cleanExpiredCooldowns() {
+    final now = DateTime.now();
+    recentlyResponded.removeWhere(
+      (_, timestamp) => now.difference(timestamp) >= _responseCooldown,
+    );
+  }
+
+  /// Check if the rate limit has been reached for the current time window.
+  bool _isRateLimited() {
+    final now = DateTime.now();
+    if (windowStart == null ||
+        now.difference(windowStart!) >= SyncTuning.backfillResponseRateWindow) {
+      // Start a new window
+      windowStart = now;
+      responsesInWindow = 0;
+      return false;
+    }
+    return responsesInWindow >= SyncTuning.backfillResponseRateLimit;
+  }
 
   /// Send a "deleted" backfill response indicating the payload no longer exists.
   Future<void> _sendDeletedResponse({
@@ -127,6 +185,19 @@ class BackfillResponseHandler {
         return;
       }
 
+      // Clean expired cooldown entries at the start of each batch
+      _cleanExpiredCooldowns();
+
+      // Check rate limit before processing
+      if (_isRateLimited()) {
+        _loggingService.captureEvent(
+          'handleBackfillRequest: rate limited, ignoring ${request.entries.length} entries from=${request.requesterId} ($responsesInWindow responses in current window)',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'rateLimited',
+        );
+        return;
+      }
+
       // Limit entries to process to prevent outbox flooding
       final entriesToProcess =
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize
@@ -139,18 +210,33 @@ class BackfillResponseHandler {
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize;
 
       _loggingService.captureEvent(
-        'handleBackfillRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''}',
+        'handleBackfillRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''} cooldownCache=${recentlyResponded.length}',
         domain: 'SYNC_BACKFILL',
         subDomain: 'handleRequest',
       );
 
       var responded = 0;
       var skipped = 0;
+      var cooldownSkipped = 0;
+      var rateLimitSkipped = 0;
       // Track payloads already sent in this batch to avoid sending the same
       // entry multiple times when multiple counters map to the same payload.
       final sentPayloads = <String>{};
 
       for (final entry in entriesToProcess) {
+        // Skip if recently responded to this (hostId, counter)
+        if (_isRecentlyResponded(entry.hostId, entry.counter)) {
+          cooldownSkipped++;
+          continue;
+        }
+
+        // Stop if rate limit reached mid-batch
+        if (_isRateLimited()) {
+          rateLimitSkipped =
+              entriesToProcess.length - responded - skipped - cooldownSkipped;
+          break;
+        }
+
         final result = await _processBackfillEntry(
           hostId: entry.hostId,
           counter: entry.counter,
@@ -158,13 +244,15 @@ class BackfillResponseHandler {
         );
         if (result) {
           responded++;
+          _recordResponse(entry.hostId, entry.counter);
+          responsesInWindow++;
         } else {
           skipped++;
         }
       }
 
       _loggingService.captureEvent(
-        'handleBackfillRequest: responded=$responded skipped=$skipped of ${request.entries.length} dedupedPayloads=${sentPayloads.length}',
+        'handleBackfillRequest: responded=$responded skipped=$skipped cooldownSkipped=$cooldownSkipped rateLimitSkipped=$rateLimitSkipped of ${request.entries.length} dedupedPayloads=${sentPayloads.length}',
         domain: 'SYNC_BACKFILL',
         subDomain: 'handleRequest',
       );
@@ -189,7 +277,6 @@ class BackfillResponseHandler {
     required int counter,
     required Set<String> sentPayloads,
   }) async {
-    final myHost = await _vectorClockService.getHost();
     // Look up in our sequence log
     final logEntry = await _sequenceLogService.getEntryByHostAndCounter(
       hostId,
@@ -200,6 +287,7 @@ class BackfillResponseHandler {
       // We don't have this entry in our log
       // Check if we're the originator - if so, respond with unresolvable
       // since no one else can answer for our own counters
+      final myHost = await _vectorClockService.getHost();
       if (myHost != null && hostId == myHost) {
         await _sendUnresolvableResponse(hostId: hostId, counter: counter);
         return true;
@@ -258,27 +346,23 @@ class BackfillResponseHandler {
         final vcContainsCounter = vcCounter != null && vcCounter == counter;
 
         if (!vcContainsCounter) {
-          // VC doesn't contain the counter - entry was modified since this
-          // counter was created. Send BackfillResponse hint so the receiver
-          // can map (hostId, counter) → entryId.
-          if (myHost != null && hostId == myHost) {
-            await _sendUnresolvableResponse(
+          // VC doesn't contain the exact counter — the entry was modified
+          // since this counter was created (superseded by a later VC).
+          // Send a hint with payloadId so the receiver can map
+          // (hostId, counter) → payloadId and mark it as backfilled.
+          // This applies equally for own and foreign counters — previously
+          // own counters were incorrectly marked "unresolvable" which
+          // prevented resolution and caused amplification loops.
+          await _outboxService.enqueueMessage(
+            SyncMessage.backfillResponse(
               hostId: hostId,
               counter: counter,
+              deleted: false,
+              entryId: payloadId, // legacy compatibility (journal only)
               payloadType: payloadType,
-            );
-          } else {
-            await _outboxService.enqueueMessage(
-              SyncMessage.backfillResponse(
-                hostId: hostId,
-                counter: counter,
-                deleted: false,
-                entryId: payloadId, // legacy compatibility (journal only)
-                payloadType: payloadType,
-                payloadId: payloadId,
-              ),
-            );
-          }
+              payloadId: payloadId,
+            ),
+          );
         }
 
         return true;
@@ -313,23 +397,17 @@ class BackfillResponseHandler {
         final vcContainsCounter = vcCounter != null && vcCounter == counter;
 
         if (!vcContainsCounter) {
-          if (myHost != null && hostId == myHost) {
-            await _sendUnresolvableResponse(
+          // Send hint — same logic as journalEntity above.
+          // No legacy entryId field — entryLink was added after payloadId.
+          await _outboxService.enqueueMessage(
+            SyncMessage.backfillResponse(
               hostId: hostId,
               counter: counter,
+              deleted: false,
               payloadType: payloadType,
-            );
-          } else {
-            await _outboxService.enqueueMessage(
-              SyncMessage.backfillResponse(
-                hostId: hostId,
-                counter: counter,
-                deleted: false,
-                payloadType: payloadType,
-                payloadId: payloadId,
-              ),
-            );
-          }
+              payloadId: payloadId,
+            ),
+          );
         }
 
         return true;
