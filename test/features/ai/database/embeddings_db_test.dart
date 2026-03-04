@@ -1123,44 +1123,50 @@ void main() {
     test('recreates tables when PK is single-column (no chunk_index)', () {
       final dbPath = '${tempDir.path}/embeddings_old_pk.sqlite';
 
-      // Create a DB with old single-column PK (entity_id only) and all
-      // the other columns present, but missing chunk_index and
-      // embedding_id from the metadata table.
+      // Create a DB that has ALL required columns (chunk_index,
+      // embedding_id, etc.) but with the old single-column PK
+      // (entity_id only). This isolates the _hasWrongPrimaryKey()
+      // check — no other migration condition triggers.
       final rawDb = raw.sqlite3.open(dbPath)
         ..execute('''
           CREATE TABLE IF NOT EXISTS embedding_metadata (
-            entity_id TEXT PRIMARY KEY,
+            entity_id TEXT NOT NULL,
+            chunk_index INTEGER NOT NULL DEFAULT 0,
+            embedding_id TEXT NOT NULL DEFAULT '',
             entity_type TEXT NOT NULL,
             model_id TEXT NOT NULL,
             content_hash TEXT NOT NULL,
             created_at TEXT NOT NULL,
             category_id TEXT NOT NULL DEFAULT '',
             task_id TEXT NOT NULL DEFAULT '',
-            subtype TEXT NOT NULL DEFAULT ''
+            subtype TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (entity_id)
           )
         ''')
         ..execute('''
           CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
             USING vec0(
-              entity_id TEXT PRIMARY KEY,
+              embedding_id TEXT PRIMARY KEY,
               embedding float[$kEmbeddingDimensions]
             )
         ''')
         ..execute('''
           INSERT INTO embedding_metadata
-            (entity_id, entity_type, model_id, content_hash, created_at)
-          VALUES ('old-entity', 'task', 'model', 'hash', '2024-01-01')
+            (entity_id, chunk_index, embedding_id, entity_type, model_id,
+             content_hash, created_at)
+          VALUES ('old-entity', 0, 'old-entity:0', 'task', 'model', 'hash',
+                  '2024-01-01')
         ''');
       final oldVec = Float32List(kEmbeddingDimensions);
       final oldBlob = oldVec.buffer.asUint8List();
       rawDb
         ..execute(
-          'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
-          ['old-entity', oldBlob],
+          'INSERT INTO vec_embeddings (embedding_id, embedding) VALUES (?, ?)',
+          ['old-entity:0', oldBlob],
         )
         ..dispose();
 
-      // Should detect wrong PK and recreate tables.
+      // Should detect wrong PK (entity_id alone, not composite) and recreate.
       final embeddingsDb = EmbeddingsDb(path: dbPath)..open();
 
       // Old data should be gone.

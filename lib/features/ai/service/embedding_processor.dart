@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
@@ -56,10 +58,6 @@ class EmbeddingProcessor {
     final hash = EmbeddingContentExtractor.contentHash(text);
     final existingHash = embeddingsDb.getContentHash(entityId);
     if (existingHash == hash) return false;
-
-    // Delete all existing chunks before re-inserting — handles both
-    // content changes and chunk count changes cleanly.
-    embeddingsDb.deleteEntityEmbeddings(entityId);
 
     final categoryId = entity.meta.categoryId ?? '';
     await _embedChunks(
@@ -139,9 +137,6 @@ class EmbeddingProcessor {
     final existingHash = embeddingsDb.getContentHash(reportId);
     if (existingHash == hash) return false;
 
-    // Delete all existing chunks before re-inserting.
-    embeddingsDb.deleteEntityEmbeddings(reportId);
-
     await _embedChunks(
       text: text,
       entityId: reportId,
@@ -160,8 +155,9 @@ class EmbeddingProcessor {
 
   /// Chunks [text] and generates embeddings for each chunk.
   ///
-  /// Short text that fits within a single chunk is handled efficiently
-  /// without unnecessary splitting.
+  /// All embeddings are generated first, then old data is deleted and new
+  /// data inserted. This avoids leaving an entity with no embeddings if a
+  /// transient embedding failure occurs mid-way.
   static Future<void> _embedChunks({
     required String text,
     required String entityId,
@@ -176,18 +172,23 @@ class EmbeddingProcessor {
   }) async {
     final chunks = TextChunker.chunk(text);
 
-    for (var i = 0; i < chunks.length; i++) {
-      final embedding = await embeddingRepository.embed(
-        input: chunks[i],
-        baseUrl: baseUrl,
+    // Phase 1: Generate all embeddings (network calls that can fail).
+    final generated = <Float32List>[];
+    for (final chunk in chunks) {
+      generated.add(
+        await embeddingRepository.embed(input: chunk, baseUrl: baseUrl),
       );
+    }
 
+    // Phase 2: Swap — delete old, insert new (local DB, unlikely to fail).
+    embeddingsDb.deleteEntityEmbeddings(entityId);
+    for (var i = 0; i < generated.length; i++) {
       embeddingsDb.upsertEmbedding(
         entityId: entityId,
         chunkIndex: i,
         entityType: entityType,
         modelId: ollamaEmbedDefaultModel,
-        embedding: embedding,
+        embedding: generated[i],
         contentHash: contentHash,
         categoryId: categoryId,
         taskId: taskId,
