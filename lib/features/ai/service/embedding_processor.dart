@@ -3,6 +3,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
 /// Callback that resolves a list of label IDs to their display names.
@@ -56,18 +57,20 @@ class EmbeddingProcessor {
     final existingHash = embeddingsDb.getContentHash(entityId);
     if (existingHash == hash) return false;
 
-    final embedding = await embeddingRepository.embed(
-      input: text,
-      baseUrl: baseUrl,
-    );
+    // Delete all existing chunks before re-inserting — handles both
+    // content changes and chunk count changes cleanly.
+    embeddingsDb.deleteEntityEmbeddings(entityId);
 
-    embeddingsDb.upsertEmbedding(
+    final categoryId = entity.meta.categoryId ?? '';
+    await _embedChunks(
+      text: text,
       entityId: entityId,
       entityType: type,
-      modelId: ollamaEmbedDefaultModel,
-      embedding: embedding,
       contentHash: hash,
-      categoryId: entity.meta.categoryId ?? '',
+      categoryId: categoryId,
+      embeddingsDb: embeddingsDb,
+      embeddingRepository: embeddingRepository,
+      baseUrl: baseUrl,
     );
 
     return true;
@@ -136,22 +139,60 @@ class EmbeddingProcessor {
     final existingHash = embeddingsDb.getContentHash(reportId);
     if (existingHash == hash) return false;
 
-    final embedding = await embeddingRepository.embed(
-      input: text,
-      baseUrl: baseUrl,
-    );
+    // Delete all existing chunks before re-inserting.
+    embeddingsDb.deleteEntityEmbeddings(reportId);
 
-    embeddingsDb.upsertEmbedding(
+    await _embedChunks(
+      text: text,
       entityId: reportId,
       entityType: kEntityTypeAgentReport,
-      modelId: ollamaEmbedDefaultModel,
-      embedding: embedding,
       contentHash: hash,
       categoryId: categoryId,
       taskId: taskId,
       subtype: subtype,
+      embeddingsDb: embeddingsDb,
+      embeddingRepository: embeddingRepository,
+      baseUrl: baseUrl,
     );
 
     return true;
+  }
+
+  /// Chunks [text] and generates embeddings for each chunk.
+  ///
+  /// Short text that fits within a single chunk is handled efficiently
+  /// without unnecessary splitting.
+  static Future<void> _embedChunks({
+    required String text,
+    required String entityId,
+    required String entityType,
+    required String contentHash,
+    required EmbeddingsDb embeddingsDb,
+    required OllamaEmbeddingRepository embeddingRepository,
+    required String baseUrl,
+    String categoryId = '',
+    String taskId = '',
+    String subtype = '',
+  }) async {
+    final chunks = TextChunker.chunk(text);
+
+    for (var i = 0; i < chunks.length; i++) {
+      final embedding = await embeddingRepository.embed(
+        input: chunks[i],
+        baseUrl: baseUrl,
+      );
+
+      embeddingsDb.upsertEmbedding(
+        entityId: entityId,
+        chunkIndex: i,
+        entityType: entityType,
+        modelId: ollamaEmbedDefaultModel,
+        embedding: embedding,
+        contentHash: contentHash,
+        categoryId: categoryId,
+        taskId: taskId,
+        subtype: subtype,
+      );
+    }
   }
 }

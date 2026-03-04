@@ -2334,6 +2334,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editorPlaceholder => 'Zadejte poznámky...';
 
   @override
+  String get embeddingReindexAllButton => 'Přeindexovat všechny embeddingy';
+
+  @override
+  String get embeddingReindexAllDescription =>
+      'Přestavět všechny embeddingy s vylepšeným chunkingem pro dlouhé dokumenty';
+
+  @override
+  String get embeddingReindexAllWarning =>
+      'Všechny embeddingy budou smazány a znovu vytvořeny s vylepšeným chunkingem. Existující vyhledávací data budou dočasně nedostupná. U velkých datových sad to může chvíli trvat.';
+
+  @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Další podrobnosti';
 
   @override

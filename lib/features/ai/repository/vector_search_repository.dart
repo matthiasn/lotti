@@ -79,13 +79,31 @@ class VectorSearchRepository {
       return VectorSearchResult(tasks: [], elapsed: stopwatch.elapsed);
     }
 
-    final searchResults = _embeddingsDb.search(
+    // Request more results than needed to account for multiple chunks
+    // per entity. After deduplication we trim to the requested k.
+    final rawResults = _embeddingsDb.search(
       queryVector: queryVector,
-      k: k,
+      k: k * 3,
       categoryIds: categoryIds,
     );
 
-    final tasks = await _resolveToTasks(searchResults);
+    // Deduplicate: keep only the best (lowest distance) chunk per entity.
+    final bestByEntity = <String, EmbeddingSearchResult>{};
+    for (final result in rawResults) {
+      final key = result.entityType == kEntityTypeAgentReport
+          ? 'agent:${result.taskId}'
+          : result.entityId;
+      final existing = bestByEntity[key];
+      if (existing == null || result.distance < existing.distance) {
+        bestByEntity[key] = result;
+      }
+    }
+    final searchResults = bestByEntity.values.toList()
+      ..sort((a, b) => a.distance.compareTo(b.distance));
+
+    final tasks = await _resolveToTasks(
+      searchResults.take(k).toList(),
+    );
 
     stopwatch.stop();
     return VectorSearchResult(tasks: tasks, elapsed: stopwatch.elapsed);

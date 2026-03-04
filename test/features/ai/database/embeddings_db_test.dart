@@ -684,6 +684,185 @@ void main() {
     });
   });
 
+  group('chunking (composite key)', () {
+    test('stores multiple chunks per entity with different chunk indices', () {
+      final vec0 = _makeVector(kEmbeddingDimensions, value: 1);
+      final vec1 = _makeVector(kEmbeddingDimensions, value: 2);
+
+      db
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec0,
+          contentHash: 'hash-full',
+        )
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: 1,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec1,
+          contentHash: 'hash-full',
+        );
+
+      expect(db.count, 2);
+      expect(db.hasEmbedding('entity-1'), isTrue);
+    });
+
+    test('getChunkCount returns correct number of chunks', () {
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
+
+      for (var i = 0; i < 3; i++) {
+        db.upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: i,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec,
+          contentHash: 'hash',
+        );
+      }
+
+      expect(db.getChunkCount('entity-1'), 3);
+      expect(db.getChunkCount('nonexistent'), 0);
+    });
+
+    test('deleteEntityEmbeddings removes all chunks for an entity', () {
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
+
+      // Insert 3 chunks for entity-1 and 1 for entity-2
+      for (var i = 0; i < 3; i++) {
+        db.upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: i,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec,
+          contentHash: 'hash-1',
+        );
+      }
+      db.upsertEmbedding(
+        entityId: 'entity-2',
+        entityType: 'task',
+        modelId: 'test-model',
+        embedding: vec,
+        contentHash: 'hash-2',
+      );
+
+      expect(db.count, 4);
+
+      db.deleteEntityEmbeddings('entity-1');
+
+      expect(db.count, 1);
+      expect(db.hasEmbedding('entity-1'), isFalse);
+      expect(db.hasEmbedding('entity-2'), isTrue);
+    });
+
+    test('deleteEntityEmbeddings is no-op for nonexistent entity', () {
+      db
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions),
+          contentHash: 'hash-1',
+        )
+        ..deleteEntityEmbeddings('nonexistent');
+      expect(db.count, 1);
+    });
+
+    test('search returns chunk index in results', () {
+      final vec0 = _makeVector(kEmbeddingDimensions, value: 1);
+      final vec1 = _makeVector(kEmbeddingDimensions, value: 2);
+
+      db
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec0,
+          contentHash: 'hash',
+        )
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: 1,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec1,
+          contentHash: 'hash',
+        );
+
+      // Query close to vec0 (value 1)
+      final results = db.search(
+        queryVector: _makeVector(kEmbeddingDimensions, value: 1),
+        k: 2,
+      );
+
+      expect(results, hasLength(2));
+      // Closest should be chunk 0 (value 1 matches query)
+      expect(results[0].entityId, 'entity-1');
+      expect(results[0].chunkIndex, 0);
+      expect(results[1].entityId, 'entity-1');
+      expect(results[1].chunkIndex, 1);
+    });
+
+    test('getContentHash returns hash from chunk 0 only', () {
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
+
+      db
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec,
+          contentHash: 'hash-chunk0',
+        )
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: 1,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec,
+          contentHash: 'hash-chunk1',
+        );
+
+      // Should return hash from chunk 0
+      expect(db.getContentHash('entity-1'), 'hash-chunk0');
+    });
+
+    test('embeddingId generates correct composite key', () {
+      expect(EmbeddingsDb.embeddingId('abc', 0), 'abc:0');
+      expect(EmbeddingsDb.embeddingId('entity-123', 5), 'entity-123:5');
+    });
+
+    test('deleteEmbedding with specific chunk index', () {
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
+
+      db
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec,
+          contentHash: 'hash',
+        )
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: 1,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: vec,
+          contentHash: 'hash',
+        );
+
+      expect(db.count, 2);
+      db.deleteEmbedding('entity-1', chunkIndex: 1);
+      expect(db.count, 1);
+      expect(db.getChunkCount('entity-1'), 1);
+    });
+  });
+
   group('dimension mismatch migration', () {
     late Directory tempDir;
 
@@ -938,6 +1117,76 @@ void main() {
       );
 
       expect(embeddingsDb.count, 1);
+      embeddingsDb.close();
+    });
+
+    test('recreates tables when PK is single-column (no chunk_index)', () {
+      final dbPath = '${tempDir.path}/embeddings_old_pk.sqlite';
+
+      // Create a DB with old single-column PK (entity_id only) and all
+      // the other columns present, but missing chunk_index and
+      // embedding_id from the metadata table.
+      final rawDb = raw.sqlite3.open(dbPath)
+        ..execute('''
+          CREATE TABLE IF NOT EXISTS embedding_metadata (
+            entity_id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            model_id TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            category_id TEXT NOT NULL DEFAULT '',
+            task_id TEXT NOT NULL DEFAULT '',
+            subtype TEXT NOT NULL DEFAULT ''
+          )
+        ''')
+        ..execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
+            USING vec0(
+              entity_id TEXT PRIMARY KEY,
+              embedding float[$kEmbeddingDimensions]
+            )
+        ''')
+        ..execute('''
+          INSERT INTO embedding_metadata
+            (entity_id, entity_type, model_id, content_hash, created_at)
+          VALUES ('old-entity', 'task', 'model', 'hash', '2024-01-01')
+        ''');
+      final oldVec = Float32List(kEmbeddingDimensions);
+      final oldBlob = oldVec.buffer.asUint8List();
+      rawDb
+        ..execute(
+          'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
+          ['old-entity', oldBlob],
+        )
+        ..dispose();
+
+      // Should detect wrong PK and recreate tables.
+      final embeddingsDb = EmbeddingsDb(path: dbPath)..open();
+
+      // Old data should be gone.
+      expect(embeddingsDb.count, 0);
+
+      // New composite key should work.
+      embeddingsDb
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
+          contentHash: 'hash',
+        )
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          chunkIndex: 1,
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 2),
+          contentHash: 'hash',
+        );
+
+      expect(embeddingsDb.count, 2);
+      expect(embeddingsDb.getChunkCount('entity-1'), 2);
+
       embeddingsDb.close();
     });
   });

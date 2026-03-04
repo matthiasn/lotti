@@ -61,10 +61,15 @@ void _stubNoExistingHash(MockEmbeddingsDb db) {
   when(() => db.getContentHash(any())).thenReturn(null);
 }
 
+void _stubDeleteEntityEmbeddings(MockEmbeddingsDb db) {
+  when(() => db.deleteEntityEmbeddings(any())).thenReturn(null);
+}
+
 void _stubUpsertEmbedding(MockEmbeddingsDb db) {
   when(
     () => db.upsertEmbedding(
       entityId: any(named: 'entityId'),
+      chunkIndex: any(named: 'chunkIndex'),
       entityType: any(named: 'entityType'),
       modelId: any(named: 'modelId'),
       embedding: any(named: 'embedding'),
@@ -109,6 +114,7 @@ void main() {
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
 
     _stubNoExistingHash(mockEmbeddingsDb);
+    _stubDeleteEntityEmbeddings(mockEmbeddingsDb);
     _stubUpsertEmbedding(mockEmbeddingsDb);
     _stubEmbed(mockEmbeddingRepo);
   });
@@ -494,6 +500,7 @@ void main() {
       verify(
         () => mockEmbeddingsDb.upsertEmbedding(
           entityId: any(named: 'entityId'),
+          chunkIndex: any(named: 'chunkIndex'),
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
           embedding: any(named: 'embedding'),

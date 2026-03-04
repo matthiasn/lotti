@@ -4224,6 +4224,24 @@ abstract class AppLocalizations {
   /// **'Enter notes...'**
   String get editorPlaceholder;
 
+  /// No description provided for @embeddingReindexAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-index All Embeddings'**
+  String get embeddingReindexAllButton;
+
+  /// No description provided for @embeddingReindexAllDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild all embeddings with improved chunking for long documents'**
+  String get embeddingReindexAllDescription;
+
+  /// No description provided for @embeddingReindexAllWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This will delete and rebuild all embeddings with improved chunking. Existing search data will be temporarily unavailable. This may take a while for large datasets.'**
+  String get embeddingReindexAllWarning;
+
   /// No description provided for @enhancedPromptFormAdditionalDetailsTitle.
   ///
   /// In en, this message translates to:

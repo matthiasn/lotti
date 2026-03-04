@@ -44,6 +44,23 @@ Long transcript (5000 words)
   → search returns best-matching chunk per source entity
 ```
 
+### Visual: Before vs After
+
+```text
+Original: [==========A==========B==========C==========D==========]
+
+Before (one embedding):
+[====A====] ← only this gets read, B/C/D invisible
+
+After (chunked with overlaps):
+[====A====~~]                          ← chunk 0
+         [~~A====B====~~]              ← chunk 1 (overlaps with chunk 0)
+                  [~~B====C====~~]     ← chunk 2 (overlaps with chunk 1)
+                           [~~C====D====]  ← chunk 3 (overlaps with chunk 2)
+
+~~ = overlap region (~50 words shared between consecutive chunks)
+```
+
 ---
 
 ## Token Overlap Strategy

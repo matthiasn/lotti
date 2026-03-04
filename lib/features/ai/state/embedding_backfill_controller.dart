@@ -53,6 +53,21 @@ class EmbeddingBackfillState {
   }
 }
 
+/// Services resolved during the guard phase and passed into the body.
+class _BackfillServices {
+  _BackfillServices({
+    required this.journalDb,
+    required this.embeddingsDb,
+    required this.embeddingRepository,
+    required this.baseUrl,
+  });
+
+  final JournalDb journalDb;
+  final EmbeddingsDb embeddingsDb;
+  final OllamaEmbeddingRepository embeddingRepository;
+  final String baseUrl;
+}
+
 class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
   bool _cancelled = false;
 
@@ -64,14 +79,25 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     _cancelled = true;
   }
 
-  Future<void> backfillCategory(String categoryId) async {
-    if (state.isRunning) {
-      return;
-    }
+  /// Common preamble: validates preconditions, resolves services, resets
+  /// state, and runs [body]. Handles errors and the `finally` block.
+  Future<void> _guardedRun(
+    Future<void> Function(_BackfillServices services) body, {
+    bool requireAgentRepository = false,
+  }) async {
+    if (state.isRunning) return;
 
     if (!getIt.isRegistered<EmbeddingsDb>()) {
       state = state.copyWith(
         error: 'Embedding pipeline not available',
+        isRunning: false,
+      );
+      return;
+    }
+
+    if (requireAgentRepository && !getIt.isRegistered<AgentRepository>()) {
+      state = state.copyWith(
+        error: 'Embedding or agent pipeline not available',
         isRunning: false,
       );
       return;
@@ -93,7 +119,6 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       final embeddingRepository = getIt<OllamaEmbeddingRepository>();
       final aiConfigRepository = getIt<AiConfigRepository>();
 
-      // Check that embeddings are enabled before starting backfill.
       final enabled = await db.getConfigFlag(enableEmbeddingsFlag);
       if (!enabled) {
         state = state.copyWith(
@@ -103,7 +128,6 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         return;
       }
 
-      // Resolve Ollama base URL once upfront.
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
       if (baseUrl == null) {
         state = state.copyWith(
@@ -113,51 +137,14 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         return;
       }
 
-      // Build label resolver for enriched task templates.
-      final labelResolver = await EmbeddingProcessor.buildLabelResolver(db);
-
-      // Fetch all entity IDs in this category.
-      final entityIds = await db.journalEntityIdsByCategory(categoryId).get();
-      final total = entityIds.length;
-      state = state.copyWith(totalCount: total);
-
-      if (total == 0) {
-        state = state.copyWith(isRunning: false, progress: 1);
-        return;
-      }
-
-      var processed = 0;
-      var embedded = 0;
-
-      for (final entityId in entityIds) {
-        if (_cancelled) break;
-
-        try {
-          final didEmbed = await EmbeddingProcessor.processEntity(
-            entityId: entityId,
-            journalDb: db,
-            embeddingsDb: embeddingsDb,
-            embeddingRepository: embeddingRepository,
-            baseUrl: baseUrl,
-            labelNameResolver: labelResolver,
-          );
-          if (didEmbed) embedded++;
-        } catch (e, stackTrace) {
-          developer.log(
-            'Backfill failed for $entityId: $e',
-            error: e,
-            stackTrace: stackTrace,
-            name: 'EmbeddingBackfillController',
-          );
-        }
-
-        processed++;
-        state = state.copyWith(
-          processedCount: processed,
-          embeddedCount: embedded,
-          progress: processed / total,
-        );
-      }
+      await body(
+        _BackfillServices(
+          journalDb: db,
+          embeddingsDb: embeddingsDb,
+          embeddingRepository: embeddingRepository,
+          baseUrl: baseUrl,
+        ),
+      );
     } catch (e, stackTrace) {
       developer.log(
         'Backfill error: $e',
@@ -171,145 +158,299 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     }
   }
 
+  /// Iterates [entityIds], calling [EmbeddingProcessor.processEntity] for
+  /// each, and updating progress state. Shared by backfill and reindex.
+  Future<_EmbedResult> _processEntities({
+    required List<String> entityIds,
+    required _BackfillServices services,
+    required LabelNameResolver labelResolver,
+    int processedOffset = 0,
+    int embeddedOffset = 0,
+    int totalOverride = 0,
+  }) async {
+    final total = totalOverride > 0 ? totalOverride : entityIds.length;
+    var processed = processedOffset;
+    var embedded = embeddedOffset;
+
+    for (final entityId in entityIds) {
+      if (_cancelled) break;
+
+      try {
+        final didEmbed = await EmbeddingProcessor.processEntity(
+          entityId: entityId,
+          journalDb: services.journalDb,
+          embeddingsDb: services.embeddingsDb,
+          embeddingRepository: services.embeddingRepository,
+          baseUrl: services.baseUrl,
+          labelNameResolver: labelResolver,
+        );
+        if (didEmbed) embedded++;
+      } catch (e, stackTrace) {
+        developer.log(
+          'Backfill failed for $entityId: $e',
+          error: e,
+          stackTrace: stackTrace,
+          name: 'EmbeddingBackfillController',
+        );
+      }
+
+      processed++;
+      state = state.copyWith(
+        processedCount: processed,
+        embeddedCount: embedded,
+        progress: processed / total,
+      );
+    }
+
+    return _EmbedResult(processed: processed, embedded: embedded);
+  }
+
+  Future<void> backfillCategory(String categoryId) async {
+    await _guardedRun((services) async {
+      final labelResolver =
+          await EmbeddingProcessor.buildLabelResolver(services.journalDb);
+
+      final entityIds =
+          await services.journalDb.journalEntityIdsByCategory(categoryId).get();
+      state = state.copyWith(totalCount: entityIds.length);
+
+      if (entityIds.isEmpty) {
+        state = state.copyWith(progress: 1);
+        return;
+      }
+
+      await _processEntities(
+        entityIds: entityIds,
+        services: services,
+        labelResolver: labelResolver,
+      );
+    });
+  }
+
+  /// Re-indexes all embeddings by clearing the database and running
+  /// backfill for every category plus all agent reports.
+  ///
+  /// This is needed when the chunking strategy changes (e.g. switching
+  /// from single-embedding to overlapping chunks) so existing data is
+  /// re-embedded with the new logic.
+  Future<void> reindexAll() async {
+    await _guardedRun((services) async {
+      // Clear all existing embeddings.
+      services.embeddingsDb.deleteAll();
+
+      final labelResolver =
+          await EmbeddingProcessor.buildLabelResolver(services.journalDb);
+
+      // Collect all entity IDs across all categories.
+      final categories =
+          await services.journalDb.allCategoryDefinitions().get();
+      final allEntityIds = <String>[];
+      for (final cat in categories) {
+        final ids =
+            await services.journalDb.journalEntityIdsByCategory(cat.id).get();
+        allEntityIds.addAll(ids);
+      }
+
+      // Count agent reports so the total reflects both phases.
+      final agentCount = getIt.isRegistered<AgentRepository>()
+          ? (await getIt<AgentRepository>().getAllAgentIdentities()).length
+          : 0;
+      final total = allEntityIds.length + agentCount;
+      state = state.copyWith(totalCount: total);
+
+      if (total == 0) {
+        state = state.copyWith(progress: 1);
+        return;
+      }
+
+      final result = await _processEntities(
+        entityIds: allEntityIds,
+        services: services,
+        labelResolver: labelResolver,
+        totalOverride: total,
+      );
+
+      // Also reindex agent reports (if the agent repository is available).
+      if (!_cancelled && getIt.isRegistered<AgentRepository>()) {
+        await _reindexAgentReports(
+          services: services,
+          processedOffset: result.processed,
+          embeddedOffset: result.embedded,
+          total: total,
+        );
+      }
+    });
+  }
+
+  Future<void> _reindexAgentReports({
+    required _BackfillServices services,
+    int processedOffset = 0,
+    int embeddedOffset = 0,
+    int total = 0,
+  }) async {
+    final agentRepository = getIt<AgentRepository>();
+    var processed = processedOffset;
+    var embedded = embeddedOffset;
+
+    final agents = await agentRepository.getAllAgentIdentities();
+    for (final agent in agents) {
+      if (_cancelled) break;
+      try {
+        final taskLinks = await agentRepository.getLinksFrom(
+          agent.id,
+          type: AgentLinkTypes.agentTask,
+        );
+        if (taskLinks.isEmpty) {
+          processed++;
+          state = state.copyWith(
+            processedCount: processed,
+            progress: total > 0 ? processed / total : 1,
+          );
+          continue;
+        }
+        final taskId = taskLinks.first.toId;
+
+        final report = await agentRepository.getLatestReport(
+          agent.id,
+          AgentReportScopes.current,
+        );
+        if (report == null || report.content.isEmpty) {
+          processed++;
+          state = state.copyWith(
+            processedCount: processed,
+            progress: total > 0 ? processed / total : 1,
+          );
+          continue;
+        }
+
+        final taskEntity = await services.journalDb.journalEntityById(taskId);
+        final categoryId = taskEntity?.meta.categoryId ?? '';
+
+        final didEmbed = await EmbeddingProcessor.processAgentReport(
+          reportId: report.id,
+          reportContent: report.content,
+          taskId: taskId,
+          categoryId: categoryId,
+          subtype: AgentReportScopes.current,
+          embeddingsDb: services.embeddingsDb,
+          embeddingRepository: services.embeddingRepository,
+          baseUrl: services.baseUrl,
+        );
+        if (didEmbed) embedded++;
+      } catch (e, stackTrace) {
+        developer.log(
+          'Reindex agent report failed for ${agent.id}: $e',
+          error: e,
+          stackTrace: stackTrace,
+          name: 'EmbeddingBackfillController',
+        );
+      }
+
+      processed++;
+      state = state.copyWith(
+        processedCount: processed,
+        embeddedCount: embedded,
+        progress: total > 0 ? processed / total : 1,
+      );
+    }
+  }
+
   /// Backfills embeddings for all agent reports.
   ///
   /// Iterates every agent instance, resolves its task link and latest report
   /// via the report head pointer, and embeds the report content. Reports that
   /// are already embedded with a matching content hash are skipped.
   Future<void> backfillAgentReports() async {
-    if (state.isRunning) return;
+    await _guardedRun(
+      (services) async {
+        final agentRepository = getIt<AgentRepository>();
 
-    if (!getIt.isRegistered<EmbeddingsDb>() ||
-        !getIt.isRegistered<AgentRepository>()) {
-      state = state.copyWith(
-        error: 'Embedding or agent pipeline not available',
-        isRunning: false,
-      );
-      return;
-    }
+        // Get all agent instances and resolve their task links + report heads.
+        final agents = await agentRepository.getAllAgentIdentities();
+        final total = agents.length;
+        state = state.copyWith(totalCount: total);
 
-    _cancelled = false;
-    state = state.copyWith(
-      isRunning: true,
-      progress: 0,
-      processedCount: 0,
-      totalCount: 0,
-      embeddedCount: 0,
-      clearError: true,
-    );
-
-    try {
-      final journalDb = getIt<JournalDb>();
-      final embeddingsDb = getIt<EmbeddingsDb>();
-      final embeddingRepository = getIt<OllamaEmbeddingRepository>();
-      final aiConfigRepository = getIt<AiConfigRepository>();
-      final agentRepository = getIt<AgentRepository>();
-
-      final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
-      if (!enabled) {
-        state = state.copyWith(
-          error: 'Embeddings are disabled',
-          isRunning: false,
-        );
-        return;
-      }
-
-      final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null) {
-        state = state.copyWith(
-          error: 'No Ollama provider configured',
-          isRunning: false,
-        );
-        return;
-      }
-
-      // Get all agent instances and resolve their task links + report heads.
-      final agents = await agentRepository.getAllAgentIdentities();
-      final total = agents.length;
-      state = state.copyWith(totalCount: total);
-
-      if (total == 0) {
-        state = state.copyWith(isRunning: false, progress: 1);
-        return;
-      }
-
-      var processed = 0;
-      var embedded = 0;
-
-      for (final agent in agents) {
-        if (_cancelled) break;
-
-        try {
-          // Resolve the task this agent is linked to.
-          final taskLinks = await agentRepository.getLinksFrom(
-            agent.id,
-            type: AgentLinkTypes.agentTask,
-          );
-          if (taskLinks.isEmpty) {
-            processed++;
-            state = state.copyWith(
-              processedCount: processed,
-              progress: processed / total,
-            );
-            continue;
-          }
-          final taskId = taskLinks.first.toId;
-
-          // Get the latest report via the head pointer.
-          final report = await agentRepository.getLatestReport(
-            agent.id,
-            AgentReportScopes.current,
-          );
-          if (report == null || report.content.isEmpty) {
-            processed++;
-            state = state.copyWith(
-              processedCount: processed,
-              progress: processed / total,
-            );
-            continue;
-          }
-
-          // Resolve the task's category.
-          final taskEntity = await journalDb.journalEntityById(taskId);
-          final categoryId = taskEntity?.meta.categoryId ?? '';
-
-          final didEmbed = await EmbeddingProcessor.processAgentReport(
-            reportId: report.id,
-            reportContent: report.content,
-            taskId: taskId,
-            categoryId: categoryId,
-            subtype: AgentReportScopes.current,
-            embeddingsDb: embeddingsDb,
-            embeddingRepository: embeddingRepository,
-            baseUrl: baseUrl,
-          );
-          if (didEmbed) embedded++;
-        } catch (e, stackTrace) {
-          developer.log(
-            'Agent report backfill failed for ${agent.id}: $e',
-            error: e,
-            stackTrace: stackTrace,
-            name: 'EmbeddingBackfillController',
-          );
+        if (total == 0) {
+          state = state.copyWith(progress: 1);
+          return;
         }
 
-        processed++;
-        state = state.copyWith(
-          processedCount: processed,
-          embeddedCount: embedded,
-          progress: processed / total,
-        );
-      }
-    } catch (e, stackTrace) {
-      developer.log(
-        'Agent report backfill error: $e',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'EmbeddingBackfillController',
-      );
-      state = state.copyWith(error: e.toString());
-    } finally {
-      state = state.copyWith(isRunning: false);
-    }
+        var processed = 0;
+        var embedded = 0;
+
+        for (final agent in agents) {
+          if (_cancelled) break;
+
+          try {
+            // Resolve the task this agent is linked to.
+            final taskLinks = await agentRepository.getLinksFrom(
+              agent.id,
+              type: AgentLinkTypes.agentTask,
+            );
+            if (taskLinks.isEmpty) {
+              processed++;
+              state = state.copyWith(
+                processedCount: processed,
+                progress: processed / total,
+              );
+              continue;
+            }
+            final taskId = taskLinks.first.toId;
+
+            // Get the latest report via the head pointer.
+            final report = await agentRepository.getLatestReport(
+              agent.id,
+              AgentReportScopes.current,
+            );
+            if (report == null || report.content.isEmpty) {
+              processed++;
+              state = state.copyWith(
+                processedCount: processed,
+                progress: processed / total,
+              );
+              continue;
+            }
+
+            // Resolve the task's category.
+            final taskEntity =
+                await services.journalDb.journalEntityById(taskId);
+            final categoryId = taskEntity?.meta.categoryId ?? '';
+
+            final didEmbed = await EmbeddingProcessor.processAgentReport(
+              reportId: report.id,
+              reportContent: report.content,
+              taskId: taskId,
+              categoryId: categoryId,
+              subtype: AgentReportScopes.current,
+              embeddingsDb: services.embeddingsDb,
+              embeddingRepository: services.embeddingRepository,
+              baseUrl: services.baseUrl,
+            );
+            if (didEmbed) embedded++;
+          } catch (e, stackTrace) {
+            developer.log(
+              'Agent report backfill failed for ${agent.id}: $e',
+              error: e,
+              stackTrace: stackTrace,
+              name: 'EmbeddingBackfillController',
+            );
+          }
+
+          processed++;
+          state = state.copyWith(
+            processedCount: processed,
+            embeddedCount: embedded,
+            progress: processed / total,
+          );
+        }
+      },
+      requireAgentRepository: true,
+    );
   }
+}
+
+class _EmbedResult {
+  _EmbedResult({required this.processed, required this.embedded});
+  final int processed;
+  final int embedded;
 }
