@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../features/agents/test_utils.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 class MockSyncSequenceLogService extends Mock
@@ -35,6 +36,7 @@ void main() {
   const entryId = 'test-entry-id';
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       const SyncMessage.backfillRequest(
         entries: [],
@@ -46,14 +48,6 @@ void main() {
         hostId: '',
         counter: 0,
         deleted: false,
-      ),
-    );
-    registerFallbackValue(
-      const SyncMessage.journalEntity(
-        id: '',
-        jsonPath: '',
-        vectorClock: VectorClock({}),
-        status: SyncEntryStatus.initial,
       ),
     );
     registerFallbackValue(
@@ -69,14 +63,6 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
     );
-    registerFallbackValue(
-      const SyncMessage.agentEntity(status: SyncEntryStatus.initial),
-    );
-    registerFallbackValue(
-      const SyncMessage.agentLink(status: SyncEntryStatus.initial),
-    );
-    registerFallbackValue(const VectorClock({}));
-    registerFallbackValue(SyncSequencePayloadType.journalEntity);
   });
 
   setUp(() {
@@ -420,33 +406,36 @@ void main() {
       ).called(1);
     });
 
-    test('skips entries within cooldown period', () async {
-      // Pre-populate the cooldown cache with a recent response
-      handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
+    test('skips entries within cooldown period', () {
+      fakeAsync((async) {
+        // Pre-populate the cooldown cache with a recent response
+        handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
 
-      const request = SyncBackfillRequest(
-        entries: [
-          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
-        ],
-        requesterId: requesterId,
-      );
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
 
-      await handler.handleBackfillRequest(request);
+        handler.handleBackfillRequest(request);
+        async.flushMicrotasks();
 
-      // Should not call any sequence log or outbox methods
-      verifyNever(
-        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
-      );
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        // Should not call any sequence log or outbox methods
+        verifyNever(
+          () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+        );
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
 
-      // Verify cooldownSkipped was logged
-      verify(
-        () => mockLogging.captureEvent(
-          any<String>(that: contains('cooldownSkipped=1')),
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'handleRequest',
-        ),
-      ).called(1);
+        // Verify cooldownSkipped was logged
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('cooldownSkipped=1')),
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'handleRequest',
+          ),
+        ).called(1);
+      });
     });
 
     test('records response in cooldown cache after responding', () async {
@@ -514,38 +503,43 @@ void main() {
       });
     });
 
-    test('cleans expired cooldown entries at batch start', () async {
-      // Add an expired entry (well past cooldown)
-      handler.recentlyResponded['$aliceHostId:99'] =
-          DateTime.now().subtract(const Duration(hours: 1));
+    test('cleans expired cooldown entries at batch start', () {
+      fakeAsync((async) {
+        // Add a non-expired entry first (at t=0)
+        handler.recentlyResponded['$bobHostId:5'] = DateTime.now();
 
-      // Add a non-expired entry
-      handler.recentlyResponded['$bobHostId:5'] = DateTime.now();
+        // Advance time so the next entry is well past cooldown
+        async.elapse(const Duration(hours: 1));
+        // Add an entry that's already expired relative to "now"
+        handler.recentlyResponded['$aliceHostId:99'] =
+            DateTime.now().subtract(const Duration(hours: 2));
 
-      // Request for a different counter so processing is independent
-      const request = SyncBackfillRequest(
-        entries: [
-          BackfillRequestEntry(hostId: bobHostId, counter: 10),
-        ],
-        requesterId: requesterId,
-      );
+        // Request for a different counter so processing is independent
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: bobHostId, counter: 10),
+          ],
+          requesterId: requesterId,
+        );
 
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
-      ).thenAnswer((_) async => null);
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
+        ).thenAnswer((_) async => null);
 
-      await handler.handleBackfillRequest(request);
+        handler.handleBackfillRequest(request);
+        async.flushMicrotasks();
 
-      // Expired entry should be cleaned
-      expect(
-        handler.recentlyResponded.containsKey('$aliceHostId:99'),
-        isFalse,
-      );
-      // Non-expired entry should remain
-      expect(
-        handler.recentlyResponded.containsKey('$bobHostId:5'),
-        isTrue,
-      );
+        // Expired entry should be cleaned
+        expect(
+          handler.recentlyResponded.containsKey('$aliceHostId:99'),
+          isFalse,
+        );
+        // Non-expired entry should remain
+        expect(
+          handler.recentlyResponded.containsKey('$bobHostId:5'),
+          isTrue,
+        );
+      });
     });
   });
 
@@ -1153,6 +1147,15 @@ void main() {
 
       // Should not enqueue anything since there's no agent repository
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+      // Should log that agentRepository is not wired
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('agentRepository not wired')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'processEntry',
+        ),
+      ).called(1);
     });
   });
 

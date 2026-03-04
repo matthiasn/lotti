@@ -419,7 +419,14 @@ class BackfillResponseHandler {
 
         return true;
       case SyncSequencePayloadType.agentEntity:
-        if (agentRepository == null) return false;
+        if (agentRepository == null) {
+          _loggingService.captureEvent(
+            'backfill: agentRepository not wired, skipping agentEntity $payloadId',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'processEntry',
+          );
+          return false;
+        }
         return _processAgentBackfillEntry<AgentDomainEntity>(
           hostId: hostId,
           counter: counter,
@@ -437,7 +444,14 @@ class BackfillResponseHandler {
           typeName: 'agentEntity',
         );
       case SyncSequencePayloadType.agentLink:
-        if (agentRepository == null) return false;
+        if (agentRepository == null) {
+          _loggingService.captureEvent(
+            'backfill: agentRepository not wired, skipping agentLink $payloadId',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'processEntry',
+          );
+          return false;
+        }
         return _processAgentBackfillEntry<AgentLink>(
           hostId: hostId,
           counter: counter,

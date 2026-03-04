@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -130,6 +132,18 @@ void registerAllFallbackValues() {
       createdAt: DateTime.fromMillisecondsSinceEpoch(0),
     ),
   );
+
+  // SyncMessage variant fallbacks
+  registerFallbackValue(
+    const SyncMessage.agentEntity(status: SyncEntryStatus.initial),
+  );
+  registerFallbackValue(
+    const SyncMessage.agentLink(status: SyncEntryStatus.initial),
+  );
+
+  // Sync-related fallbacks
+  registerFallbackValue(const VectorClock({}));
+  registerFallbackValue(SyncSequencePayloadType.journalEntity);
 
   // Enum fallbacks
   registerFallbackValue(CheckedBySource.user);
