@@ -505,14 +505,12 @@ void main() {
 
     test('cleans expired cooldown entries at batch start', () {
       fakeAsync((async) {
-        // Add a non-expired entry first (at t=0)
-        handler.recentlyResponded['$bobHostId:5'] = DateTime.now();
-
-        // Advance time so the next entry is well past cooldown
-        async.elapse(const Duration(hours: 1));
-        // Add an entry that's already expired relative to "now"
+        // Add an entry that's already expired
         handler.recentlyResponded['$aliceHostId:99'] =
             DateTime.now().subtract(const Duration(hours: 2));
+        // Add a non-expired entry (within 10-minute cooldown)
+        handler.recentlyResponded['$bobHostId:5'] =
+            DateTime.now().subtract(const Duration(minutes: 5));
 
         // Request for a different counter so processing is independent
         const request = SyncBackfillRequest(
@@ -1252,6 +1250,41 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('skips backfill when agentRepository is null', () async {
+      handler.agentRepository = null;
+
+      final logItem = _createLogItem(
+        aliceHostId,
+        20,
+        entryId: 'some-link-id',
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentLink,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+      ).thenAnswer((_) async => logItem);
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 20),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('agentRepository not wired')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'processEntry',
+        ),
+      ).called(1);
+    });
   });
 
   group('handleBackfillResponse - AgentEntity', () {
@@ -1355,6 +1388,41 @@ void main() {
           payloadType: SyncSequencePayloadType.agentLink,
         ),
       ).called(1);
+    });
+
+    test('skips verify when agentRepository is null', () async {
+      handler.agentRepository = null;
+
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 20,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.agentLink,
+        payloadId: 'agent-link-id',
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await handler.handleBackfillResponse(response);
+
+      // Should NOT call verifyAndMarkBackfilled since repo is null
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
     });
   });
 }
