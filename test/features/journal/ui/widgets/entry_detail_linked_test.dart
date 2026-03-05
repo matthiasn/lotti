@@ -19,7 +19,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/widgets/misc/collapsible_section.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -337,7 +336,7 @@ void main() {
     });
   });
 
-  group('LinkedEntriesWidget Collapsible Section Tests - ', () {
+  group('LinkedEntriesWidget Layout Tests - ', () {
     setUpAll(() {
       setFakeDocumentsPath();
       registerFallbackValue(FakeMeasurementData());
@@ -429,136 +428,8 @@ void main() {
           .thenReturn(MockSelectable<String>(toIds));
     }
 
-    /// Finds the section-level chevron inside [CollapsibleSection], excluding
-    /// any entry-level collapse chevrons from child [EntryDetailsWidget]s.
-    Finder sectionChevron() => find.descendant(
-          of: find.byType(CollapsibleSection),
-          matching: find.byType(AnimatedRotation),
-          matchRoot: true,
-        );
-
-    testWidgets('shows chevron and label when entries exist', (tester) async {
-      mockLinkedEntries([testLink]);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Section chevron + entry-level chevron (text entries are collapsible)
-      expect(find.byIcon(Icons.expand_more), findsAtLeastNWidgets(1));
-      expect(find.byIcon(Icons.filter_list), findsOneWidget);
-    });
-
-    testWidgets('shows AnimatedSize when entries exist', (tester) async {
-      mockLinkedEntries([testLink]);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AnimatedSize), findsOneWidget);
-    });
-
-    testWidgets('chevron is not rotated when expanded', (tester) async {
-      mockLinkedEntries([testLink]);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final rotation = tester.widget<AnimatedRotation>(sectionChevron().first);
-      expect(rotation.turns, equals(0.0));
-    });
-
-    testWidgets('tapping header collapses the section', (tester) async {
-      mockLinkedEntries([testLink]);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Tap the section-level chevron (the first expand_more icon)
-      await tester.tap(find.byIcon(Icons.expand_more).first);
-      await tester.pumpAndSettle();
-
-      final rotation = tester.widget<AnimatedRotation>(sectionChevron().first);
-      expect(rotation.turns, equals(-0.25));
-    });
-
-    testWidgets('tapping header twice re-expands the section', (tester) async {
-      mockLinkedEntries([testLink]);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more).first);
-      await tester.pumpAndSettle();
-
-      // Re-expand
-      await tester.tap(find.byIcon(Icons.expand_more).first);
-      await tester.pumpAndSettle();
-
-      final rotation = tester.widget<AnimatedRotation>(sectionChevron().first);
-      expect(rotation.turns, equals(0.0));
-    });
-
-    testWidgets('collapsed section shows SizedBox.shrink content',
+    testWidgets('shows filter button and label when entries exist',
         (tester) async {
-      mockLinkedEntries([testLink]);
-
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more).first);
-      await tester.pump();
-
-      // AnimatedSize wraps the content; after collapse the child is SizedBox.shrink
-      final animatedSize =
-          tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-      expect(animatedSize.child, isA<SizedBox>());
-    });
-
-    testWidgets('filter button is present when entries exist', (tester) async {
       mockLinkedEntries([testLink]);
 
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
@@ -607,9 +478,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // No chevron or label because all linked entries are tasks
+      // No label or filter button because all linked entries are tasks
       // and hideTaskEntries=true
-      expect(find.byIcon(Icons.expand_more), findsNothing);
       expect(find.byIcon(Icons.filter_list), findsNothing);
     });
 
@@ -630,8 +500,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Non-task entry exists, so section is shown
-      expect(find.byIcon(Icons.expand_more), findsAtLeastNWidgets(1));
+      // Non-task entry exists, so section is shown with filter button
+      expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
   });
 }

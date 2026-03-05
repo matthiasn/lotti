@@ -20,11 +20,14 @@ TaskAgentService taskAgentService(Ref ref) {
 /// Fetch the Task Agent for a given journal-domain [taskId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
+/// Watches the update stream so the UI rebuilds when an agent-task link
+/// arrives via sync (the notification includes the taskId).
 @riverpod
 Future<AgentDomainEntity?> taskAgent(
   Ref ref,
   String taskId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(taskId));
   final service = ref.watch(taskAgentServiceProvider);
   return service.getTaskAgentForTask(taskId);
 }

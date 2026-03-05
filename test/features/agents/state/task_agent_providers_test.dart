@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -128,6 +129,48 @@ void main() {
       final result = await completer.future;
       expect(result.hasError, isTrue);
       expect(result.error, isA<Exception>());
+    });
+
+    test('rebuilds when update notification arrives for the taskId', () async {
+      final mockService = MockTaskAgentService();
+      const taskId = 'task-sync-refresh';
+      final identity = makeTestIdentity(id: 'agent-sync');
+      final notifications = UpdateNotifications();
+      addTearDown(notifications.dispose);
+
+      // First call returns null (no agent yet).
+      // Second call returns an identity (agent synced in).
+      var callCount = 0;
+      when(() => mockService.getTaskAgentForTask(taskId)).thenAnswer((_) async {
+        callCount++;
+        return callCount > 1 ? identity : null;
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          taskAgentServiceProvider.overrideWithValue(mockService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Initial read: no agent.
+      final first = await container.read(taskAgentProvider(taskId).future);
+      expect(first, isNull);
+
+      // Simulate a sync notification that includes the taskId (as happens
+      // when an AgentTaskLink arrives from another device).
+      notifications.notify({taskId, 'agentNotification'});
+
+      // The notification is debounced (100ms local). Pump the timer.
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Allow the provider to rebuild.
+      await container.read(taskAgentProvider(taskId).future);
+
+      // The service was called at least twice (initial + after notification).
+      verify(() => mockService.getTaskAgentForTask(taskId))
+          .called(greaterThanOrEqualTo(2));
     });
 
     test('returns different results for different task IDs', () async {

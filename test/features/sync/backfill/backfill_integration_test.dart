@@ -479,8 +479,7 @@ void main() {
       expect(missingHighLimit, hasLength(1));
     });
 
-    test('backfill sends hint when VC does not cover own counter',
-        () async {
+    test('backfill sends hint when VC does not cover own counter', () async {
       // Scenario: Entry was created at counter 2, then modified at counter 5.
       // The current entry has VC={alice:5} but someone requests counter 2.
       // In this case, the originator must send an unresolvable response so the
