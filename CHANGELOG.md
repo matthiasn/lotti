@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.902] - 2026-03-06
+### Added
+- One-time backfill of vector clocks on agent entities and links created before
+  the clock-stamping fix. Stamps oldest-to-newest, persists, and enqueues each
+  for cross-device sync via the Sync Maintenance modal.
+
 ## [0.9.901] - 2026-03-05
 ### Fixed
 - Task agent provider now reacts to sync notifications, so agents created on

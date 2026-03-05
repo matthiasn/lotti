@@ -2757,6 +2757,42 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getAgentEntitiesWithNullVectorClock() {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+        variables: [],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<int> countAgentEntitiesWithNullVectorClock() {
+    return customSelect(
+        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL',
+        variables: [],
+        readsFrom: {
+          agentEntities,
+        }).map((QueryRow row) => row.read<int>('cnt'));
+  }
+
+  Selectable<AgentLink> getAgentLinksWithNullVectorClock() {
+    return customSelect(
+        'SELECT * FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+        variables: [],
+        readsFrom: {
+          agentLinks,
+        }).asyncMap(agentLinks.mapFromRow);
+  }
+
+  Selectable<int> countAgentLinksWithNullVectorClock() {
+    return customSelect(
+        'SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL',
+        variables: [],
+        readsFrom: {
+          agentLinks,
+        }).map((QueryRow row) => row.read<int>('cnt'));
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

@@ -1749,6 +1749,8 @@
   "syncStepAgentEntities": "Agent-Entitäten",
   "syncStepAgentLinks": "Agent-Links",
   "syncStepAiSettings": "KI-Einstellungen",
+  "syncStepBackfillAgentEntityClocks": "Agent-Entitäten Uhren nachfüllen",
+  "syncStepBackfillAgentLinkClocks": "Agent-Links Uhren nachfüllen",
   "syncStepCategories": "Kategorien",
   "syncStepComplete": "Abgeschlossen",
   "syncStepDashboards": "Dashboards",

@@ -13,8 +13,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 
 typedef SyncProgressCallback = void Function(double progress);
 typedef SyncDetailedProgressCallback = void Function(int processed, int total);
@@ -51,17 +53,20 @@ class SyncMaintenanceRepository {
     required LoggingService loggingService,
     required AiConfigRepository aiConfigRepository,
     required AgentRepository agentRepository,
+    required VectorClockService vectorClockService,
   })  : _journalDb = journalDb,
         _outboxService = outboxService,
         _loggingService = loggingService,
         _aiConfigRepository = aiConfigRepository,
-        _agentRepository = agentRepository;
+        _agentRepository = agentRepository,
+        _vectorClockService = vectorClockService;
 
   final JournalDb _journalDb;
   final OutboxService _outboxService;
   final LoggingService _loggingService;
   final AiConfigRepository _aiConfigRepository;
   final AgentRepository _agentRepository;
+  final VectorClockService _vectorClockService;
 
   late final SyncOperation<TagEntity> _tagSyncOperation =
       _createOperation<TagEntity>(
@@ -193,6 +198,98 @@ class SyncMaintenanceRepository {
     SyncStep.agentLinks: _agentLinkSyncOperation,
   };
 
+  /// Backfill vector clocks on agent entities that have `vectorClock: null`.
+  ///
+  /// Fetches all null-clock entities oldest-first, stamps each with a new
+  /// vector clock via [VectorClockService], persists directly via the
+  /// repository (not `AgentSyncService` which would double-stamp), and
+  /// enqueues each for outbox sync.
+  Future<void> backfillAgentEntityClocks({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runWithLogging<void>(
+      () async {
+        final entities =
+            await _agentRepository.getEntitiesWithNullVectorClock();
+        final total = entities.length;
+
+        if (total == 0) {
+          onDetailedProgress?.call(0, 0);
+          onProgress?.call(1);
+          return;
+        }
+
+        onDetailedProgress?.call(0, total);
+
+        var processed = 0;
+        for (final entity in entities) {
+          final stamped = entity.copyWith(
+            vectorClock: await _vectorClockService.getNextVectorClock(
+              previous: entity.vectorClock,
+            ),
+          );
+          await _agentRepository.upsertEntity(stamped);
+          await _outboxService.enqueueMessage(
+            SyncMessage.agentEntity(
+              agentEntity: stamped,
+              status: SyncEntryStatus.update,
+            ),
+          );
+
+          processed++;
+          onDetailedProgress?.call(processed, total);
+          onProgress?.call(processed / total);
+        }
+      },
+      'backfillAgentEntityClocks',
+    );
+  }
+
+  /// Backfill vector clocks on agent links that have `vectorClock: null`.
+  ///
+  /// Same pattern as [backfillAgentEntityClocks] but for links.
+  Future<void> backfillAgentLinkClocks({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runWithLogging<void>(
+      () async {
+        final links = await _agentRepository.getLinksWithNullVectorClock();
+        final total = links.length;
+
+        if (total == 0) {
+          onDetailedProgress?.call(0, 0);
+          onProgress?.call(1);
+          return;
+        }
+
+        onDetailedProgress?.call(0, total);
+
+        var processed = 0;
+        for (final link in links) {
+          final stamped = link.copyWith(
+            vectorClock: await _vectorClockService.getNextVectorClock(
+              previous: link.vectorClock,
+            ),
+          );
+          await _agentRepository.upsertLink(stamped);
+          await _outboxService.enqueueMessage(
+            SyncMessage.agentLink(
+              agentLink: stamped,
+              status: SyncEntryStatus.update,
+            ),
+          );
+
+          processed++;
+          onDetailedProgress?.call(processed, total);
+          onProgress?.call(processed / total);
+        }
+      },
+      'backfillAgentLinkClocks',
+    );
+  }
+
   Future<void> syncTags({
     SyncProgressCallback? onProgress,
     SyncDetailedProgressCallback? onDetailedProgress,
@@ -314,6 +411,20 @@ class SyncMaintenanceRepository {
       return 0;
     }
 
+    // Backfill steps use dedicated count queries to avoid loading all rows.
+    if (step == SyncStep.backfillAgentEntityClocks) {
+      return _runWithLogging<int>(
+        _agentRepository.countEntitiesWithNullVectorClock,
+        'fetchTotals_backfillAgentEntityClocks',
+      );
+    }
+    if (step == SyncStep.backfillAgentLinkClocks) {
+      return _runWithLogging<int>(
+        _agentRepository.countLinksWithNullVectorClock,
+        'fetchTotals_backfillAgentLinkClocks',
+      );
+    }
+
     final operation = _operations[step];
     if (operation == null) {
       return 0;
@@ -432,6 +543,10 @@ class SyncMaintenanceRepository {
         return 'syncHabits';
       case SyncStep.aiSettings:
         return 'syncAiSettings';
+      case SyncStep.backfillAgentEntityClocks:
+        return 'backfillAgentEntityClocks';
+      case SyncStep.backfillAgentLinkClocks:
+        return 'backfillAgentLinkClocks';
       case SyncStep.agentEntities:
         return 'syncAgentEntities';
       case SyncStep.agentLinks:
@@ -457,6 +572,10 @@ class SyncMaintenanceRepository {
         return 'fetchTotals_habits';
       case SyncStep.aiSettings:
         return 'fetchTotals_aiSettings';
+      case SyncStep.backfillAgentEntityClocks:
+        return 'fetchTotals_backfillAgentEntityClocks';
+      case SyncStep.backfillAgentLinkClocks:
+        return 'fetchTotals_backfillAgentLinkClocks';
       case SyncStep.agentEntities:
         return 'fetchTotals_agentEntities';
       case SyncStep.agentLinks:
@@ -475,5 +594,6 @@ final syncMaintenanceRepositoryProvider =
     loggingService: ref.watch(loggingServiceProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
+    vectorClockService: getIt<VectorClockService>(),
   );
 });

@@ -7748,6 +7748,18 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get syncSkip;
 
+  /// No description provided for @syncStepBackfillAgentEntityClocks.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill agent entity clocks'**
+  String get syncStepBackfillAgentEntityClocks;
+
+  /// No description provided for @syncStepBackfillAgentLinkClocks.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill agent link clocks'**
+  String get syncStepBackfillAgentLinkClocks;
+
   /// No description provided for @syncStepAgentEntities.
   ///
   /// In en, this message translates to:

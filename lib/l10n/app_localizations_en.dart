@@ -4253,6 +4253,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSkip => 'Skip';
 
   @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Backfill agent entity clocks';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks => 'Backfill agent link clocks';
+
+  @override
   String get syncStepAgentEntities => 'Agent entities';
 
   @override

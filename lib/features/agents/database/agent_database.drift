@@ -155,3 +155,11 @@ getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId A
 getTokenUsageByTemplateId: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
+
+getAgentEntitiesWithNullVectorClock: SELECT * FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
+
+countAgentEntitiesWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL;
+
+getAgentLinksWithNullVectorClock: SELECT * FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
+
+countAgentLinksWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL;

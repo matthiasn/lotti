@@ -4326,6 +4326,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncSkip => 'Überspringen';
 
   @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Agent-Entitäten Uhren nachfüllen';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks => 'Agent-Links Uhren nachfüllen';
+
+  @override
   String get syncStepAgentEntities => 'Agent-Entitäten';
 
   @override

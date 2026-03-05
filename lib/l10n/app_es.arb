@@ -1749,6 +1749,8 @@
   "syncStepAgentEntities": "Entidades de agente",
   "syncStepAgentLinks": "Enlaces de agente",
   "syncStepAiSettings": "Configuración de IA",
+  "syncStepBackfillAgentEntityClocks": "Rellenar relojes de entidades de agente",
+  "syncStepBackfillAgentLinkClocks": "Rellenar relojes de enlaces de agente",
   "syncStepCategories": "Categorías",
   "syncStepComplete": "Completado",
   "syncStepDashboards": "Paneles",

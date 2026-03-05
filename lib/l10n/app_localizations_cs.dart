@@ -4312,6 +4312,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncSkip => 'Přeskočit';
 
   @override
+  String get syncStepBackfillAgentEntityClocks => 'Doplnění hodin entit agentů';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Doplnění hodin propojení agentů';
+
+  @override
   String get syncStepAgentEntities => 'Entity agentů';
 
   @override

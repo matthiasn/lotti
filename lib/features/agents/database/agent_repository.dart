@@ -260,6 +260,21 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch non-deleted agent entities whose serialized `vectorClock` is null,
+  /// ordered by `created_at` ascending.
+  ///
+  /// Used by the backfill maintenance step to stamp vector clocks on entities
+  /// created before the clock-stamping fix.
+  Future<List<AgentDomainEntity>> getEntitiesWithNullVectorClock() async {
+    final rows = await _db.getAgentEntitiesWithNullVectorClock().get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Count non-deleted agent entities whose serialized `vectorClock` is null.
+  Future<int> countEntitiesWithNullVectorClock() {
+    return _db.countAgentEntitiesWithNullVectorClock().getSingle();
+  }
+
   /// Fetch all non-deleted agent entities, ordered by `created_at` ascending.
   ///
   /// Used by the maintenance sync step to enqueue all agent entities for
@@ -524,6 +539,21 @@ class AgentRepository {
       rows = await _db.getAgentLinksByToId(toId).get();
     }
     return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Fetch non-deleted agent links whose serialized `vectorClock` is null,
+  /// ordered by `created_at` ascending.
+  ///
+  /// Used by the backfill maintenance step to stamp vector clocks on links
+  /// created before the clock-stamping fix.
+  Future<List<model.AgentLink>> getLinksWithNullVectorClock() async {
+    final rows = await _db.getAgentLinksWithNullVectorClock().get();
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Count non-deleted agent links whose serialized `vectorClock` is null.
+  Future<int> countLinksWithNullVectorClock() {
+    return _db.countAgentLinksWithNullVectorClock().getSingle();
   }
 
   /// Fetch all non-deleted agent links, ordered by `created_at` ascending.

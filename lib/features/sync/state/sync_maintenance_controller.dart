@@ -31,6 +31,8 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       SyncStep.dashboards,
       SyncStep.habits,
       SyncStep.aiSettings,
+      SyncStep.backfillAgentEntityClocks,
+      SyncStep.backfillAgentLinkClocks,
       SyncStep.agentEntities,
       SyncStep.agentLinks,
     ].where(selectedSteps.contains).toList();
@@ -70,6 +72,8 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       SyncStep.dashboards: _repository.syncDashboards,
       SyncStep.habits: _repository.syncHabits,
       SyncStep.aiSettings: _repository.syncAiSettings,
+      SyncStep.backfillAgentEntityClocks: _repository.backfillAgentEntityClocks,
+      SyncStep.backfillAgentLinkClocks: _repository.backfillAgentLinkClocks,
       SyncStep.agentEntities: _repository.syncAgentEntities,
       SyncStep.agentLinks: _repository.syncAgentLinks,
     };
