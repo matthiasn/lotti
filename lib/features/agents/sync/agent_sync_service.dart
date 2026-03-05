@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 
 /// Per-chain transaction context, stored in a [Zone] value so that
 /// concurrent transaction chains each have their own isolated buffer.
@@ -47,11 +48,14 @@ class AgentSyncService {
   AgentSyncService({
     required AgentRepository repository,
     required OutboxService outboxService,
+    required VectorClockService vectorClockService,
   })  : _repository = repository,
-        _outboxService = outboxService;
+        _outboxService = outboxService,
+        _vectorClockService = vectorClockService;
 
   final AgentRepository _repository;
   final OutboxService _outboxService;
+  final VectorClockService _vectorClockService;
 
   /// The underlying repository for read-only operations.
   AgentRepository get repository => _repository;
@@ -70,10 +74,17 @@ class AgentSyncService {
     AgentDomainEntity entity, {
     bool fromSync = false,
   }) async {
-    await _repository.upsertEntity(entity);
+    final stamped = fromSync
+        ? entity
+        : entity.copyWith(
+            vectorClock: await _vectorClockService.getNextVectorClock(
+              previous: entity.vectorClock,
+            ),
+          );
+    await _repository.upsertEntity(stamped);
     if (!fromSync) {
       final message = SyncMessage.agentEntity(
-        agentEntity: entity,
+        agentEntity: stamped,
         status: SyncEntryStatus.update,
       );
       final txCtx = _currentTxContext;
@@ -94,10 +105,17 @@ class AgentSyncService {
     AgentLink link, {
     bool fromSync = false,
   }) async {
-    await _repository.upsertLink(link);
+    final stamped = fromSync
+        ? link
+        : link.copyWith(
+            vectorClock: await _vectorClockService.getNextVectorClock(
+              previous: link.vectorClock,
+            ),
+          );
+    await _repository.upsertLink(stamped);
     if (!fromSync) {
       final message = SyncMessage.agentLink(
-        agentLink: link,
+        agentLink: stamped,
         status: SyncEntryStatus.update,
       );
       final txCtx = _currentTxContext;
@@ -117,10 +135,17 @@ class AgentSyncService {
     AgentLink link, {
     bool fromSync = false,
   }) async {
-    await _repository.insertLinkExclusive(link);
+    final stamped = fromSync
+        ? link
+        : link.copyWith(
+            vectorClock: await _vectorClockService.getNextVectorClock(
+              previous: link.vectorClock,
+            ),
+          );
+    await _repository.insertLinkExclusive(stamped);
     if (!fromSync) {
       final message = SyncMessage.agentLink(
-        agentLink: link,
+        agentLink: stamped,
         status: SyncEntryStatus.update,
       );
       final txCtx = _currentTxContext;
