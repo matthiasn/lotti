@@ -546,6 +546,7 @@ ChangeDecisionEntity _$ChangeDecisionEntityFromJson(
       taskId: json['taskId'] as String?,
       rejectionReason: json['rejectionReason'] as String?,
       humanSummary: json['humanSummary'] as String?,
+      args: json['args'] as Map<String, dynamic>?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -566,6 +567,7 @@ Map<String, dynamic> _$ChangeDecisionEntityToJson(
       'taskId': instance.taskId,
       'rejectionReason': instance.rejectionReason,
       'humanSummary': instance.humanSummary,
+      'args': instance.args,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

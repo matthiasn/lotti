@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -315,6 +316,17 @@ class TaskAgentWorkflow {
           }
           return null;
         },
+        existingChecklistTitlesResolver: () async {
+          final entity = await journalDb.journalEntityById(taskId);
+          if (entity is! Task) return {};
+          final items = await checklistRepository.getChecklistItemsForTask(
+            task: entity,
+            deletedOnly: false,
+          );
+          return items
+              .map((item) => item.data.title.toLowerCase().trim())
+              .toSet();
+        },
       );
 
       final strategy = TaskAgentStrategy(
@@ -521,9 +533,32 @@ class TaskAgentWorkflow {
         // 10b. Persist deferred change set (if any items were accumulated).
         // Pass the full pending sets so the builder can merge into an
         // existing one rather than creating a duplicate entity.
+        //
+        // Reconstruct fingerprints from rejected decisions so that items
+        // the user previously rejected (in now-resolved change sets) are
+        // still blocked from re-proposal.
+        final recentDecisions = await agentRepository.getRecentDecisions(
+          agentId,
+          taskId: taskId,
+        );
+        final rejectedFingerprints = recentDecisions
+            .where((d) => d.verdict == ChangeDecisionVerdict.rejected)
+            .where((d) => d.args != null)
+            .map(
+              (d) => ChangeItem.fingerprint(
+                ChangeItem(
+                  toolName: d.toolName,
+                  args: d.args!,
+                  humanSummary: '',
+                ),
+              ),
+            )
+            .toSet();
+
         await changeSetBuilder.build(
           syncService,
           existingPendingSets: pendingSets,
+          rejectedFingerprints: rejectedFingerprints,
         );
 
         // 11. Persist state.

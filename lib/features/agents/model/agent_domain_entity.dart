@@ -259,6 +259,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     /// milk"'). Stored at decision time so the agent can see *what* was
     /// confirmed or rejected, not just the tool name.
     String? humanSummary,
+
+    /// The original tool-call arguments, stored so that rejection fingerprints
+    /// can be reconstructed even after the parent change set is resolved.
+    Map<String, dynamic>? args,
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
 
