@@ -231,6 +231,88 @@ void main() {
         expect(tokens, 100);
       });
 
+      test('splits long sentence among shorter ones', () {
+        // Mix of short sentences and one very long sentence (500 words, no
+        // sentence-ending punctuation within it) to verify the expand-based
+        // splitting handles oversized sentences that aren't the only sentence.
+        final shortBefore = List.generate(
+          5,
+          (i) => 'Short sentence before number $i.',
+        );
+        final longSentence = List.generate(500, (i) => 'word$i').join(' ');
+        final shortAfter = List.generate(
+          5,
+          (i) => 'Short sentence after number $i.',
+        );
+        final text = [...shortBefore, longSentence, ...shortAfter].join(' ');
+        final chunks = TextChunker.chunk(text);
+
+        expect(chunks.length, greaterThan(1));
+
+        // Every chunk must stay within the token target
+        for (var i = 0; i < chunks.length; i++) {
+          final tokens = TextChunker.estimateTokens(chunks[i]);
+          expect(
+            tokens,
+            lessThanOrEqualTo(kChunkTargetTokens),
+            reason: 'Chunk $i has $tokens estimated tokens, '
+                'exceeding target of $kChunkTargetTokens',
+          );
+        }
+      });
+
+      test('splits multiple consecutive long sentences', () {
+        // Three long sentences in a row, each ~400 words
+        final longSentences = List.generate(
+          3,
+          (j) => List.generate(400, (i) => 'seg${j}w$i').join(' '),
+        );
+        // Join with period + space so sentence splitter sees boundaries
+        final text = longSentences.join('. ');
+        final chunks = TextChunker.chunk(text);
+
+        expect(chunks.length, greaterThan(3));
+
+        for (var i = 0; i < chunks.length; i++) {
+          final tokens = TextChunker.estimateTokens(chunks[i]);
+          expect(
+            tokens,
+            lessThanOrEqualTo(kChunkTargetTokens),
+            reason: 'Chunk $i has $tokens estimated tokens, '
+                'exceeding target of $kChunkTargetTokens',
+          );
+        }
+      });
+
+      test('no chunk exceeds target tokens after sentence expansion', () {
+        // Build text with sentences of varying length, including some that
+        // exceed the target.
+        final sentences = <String>[
+          // Normal sentence
+          'This is a normal length sentence about testing.',
+          // Oversized: ~350 words with no internal sentence boundary
+          List.generate(350, (i) => 'alpha$i').join(' '),
+          // Normal
+          'Another perfectly normal sentence here.',
+          // Oversized: ~400 words
+          List.generate(400, (i) => 'beta$i').join(' '),
+          // Normal
+          'Final short sentence.',
+        ];
+        final text = sentences.join('. ');
+        final chunks = TextChunker.chunk(text);
+
+        for (var i = 0; i < chunks.length; i++) {
+          final tokens = TextChunker.estimateTokens(chunks[i]);
+          expect(
+            tokens,
+            lessThanOrEqualTo(kChunkTargetTokens),
+            reason: 'Chunk $i has $tokens estimated tokens, '
+                'exceeding target of $kChunkTargetTokens',
+          );
+        }
+      });
+
       test('trims leading and trailing whitespace', () {
         const text = '  Short text with spaces.  ';
         final chunks = TextChunker.chunk(text);

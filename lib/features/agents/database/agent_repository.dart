@@ -269,6 +269,26 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
+  /// Fetches agent entities updated within [start]..[end], paginated.
+  Future<List<AgentDomainEntity>> getEntitiesInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) async {
+    final rows =
+        await _db.getAgentEntitiesInInterval(start, end, limit, offset).get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Counts agent entities updated within [start]..[end].
+  Future<int> countEntitiesInInterval({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return _db.countAgentEntitiesInInterval(start, end).getSingle();
+  }
+
   // ── Evolution queries ──────────────────────────────────────────────────────
 
   /// Fetch the N most recent reports from all instances assigned to
@@ -512,6 +532,26 @@ class AgentRepository {
   Future<List<model.AgentLink>> getAllLinks() async {
     final rows = await _db.getAllAgentLinks().get();
     return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Fetches agent links updated within [start]..[end], paginated.
+  Future<List<model.AgentLink>> getLinksInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) async {
+    final rows =
+        await _db.getAgentLinksInInterval(start, end, limit, offset).get();
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Counts agent links updated within [start]..[end].
+  Future<int> countLinksInInterval({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return _db.countAgentLinksInInterval(start, end).getSingle();
   }
 
   // ── Wake run log ───────────────────────────────────────────────────────────

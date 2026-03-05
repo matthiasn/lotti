@@ -2512,6 +2512,33 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getAgentEntitiesInInterval(
+      DateTime start, DateTime end, int limit, int offset) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE deleted_at IS NULL AND updated_at > ?1 AND updated_at < ?2 ORDER BY updated_at ASC LIMIT ?3 OFFSET ?4',
+        variables: [
+          Variable<DateTime>(start),
+          Variable<DateTime>(end),
+          Variable<int>(limit),
+          Variable<int>(offset)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<int> countAgentEntitiesInInterval(DateTime start, DateTime end) {
+    return customSelect(
+        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND updated_at > ?1 AND updated_at < ?2',
+        variables: [
+          Variable<DateTime>(start),
+          Variable<DateTime>(end)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).map((QueryRow row) => row.read<int>('cnt'));
+  }
+
   Selectable<AgentLink> getAllAgentLinks() {
     return customSelect(
         'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',
@@ -2519,6 +2546,33 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         readsFrom: {
           agentLinks,
         }).asyncMap(agentLinks.mapFromRow);
+  }
+
+  Selectable<AgentLink> getAgentLinksInInterval(
+      DateTime start, DateTime end, int limit, int offset) {
+    return customSelect(
+        'SELECT * FROM agent_links WHERE deleted_at IS NULL AND updated_at > ?1 AND updated_at < ?2 ORDER BY updated_at ASC LIMIT ?3 OFFSET ?4',
+        variables: [
+          Variable<DateTime>(start),
+          Variable<DateTime>(end),
+          Variable<int>(limit),
+          Variable<int>(offset)
+        ],
+        readsFrom: {
+          agentLinks,
+        }).asyncMap(agentLinks.mapFromRow);
+  }
+
+  Selectable<int> countAgentLinksInInterval(DateTime start, DateTime end) {
+    return customSelect(
+        'SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND updated_at > ?1 AND updated_at < ?2',
+        variables: [
+          Variable<DateTime>(start),
+          Variable<DateTime>(end)
+        ],
+        readsFrom: {
+          agentLinks,
+        }).map((QueryRow row) => row.read<int>('cnt'));
   }
 
   Selectable<WakeRunLogData> getWakeRunsByTemplateId(

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.901] - 2026-03-05
+### Fixed
+- Task agent provider now reacts to sync notifications, so agents created on
+  one device appear in the task detail view on other devices without a restart.
+- Removed unused collapsible section wrapper from linked entries widget.
+
+### Added
+- Date-range re-sync for agent entities and links. The Maintenance re-sync
+  action now includes agent data within the selected time interval instead of
+  requiring a full sync of all agent records.
+
 ## [0.9.899] - 2026-03-04
 ### Fixed
 - Break backfill amplification loop: superseded outbox entries now respond with

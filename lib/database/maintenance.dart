@@ -9,6 +9,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -26,8 +27,10 @@ class Maintenance {
     final outboxService = getIt<OutboxService>();
     final vectorClockService = getIt<VectorClockService>();
     final hostId = await vectorClockService.getHost();
-    final count = await _db.countJournalEntries().getSingle();
     const pageSize = 100;
+
+    // 1. Re-sync journal entities and their links.
+    final count = await _db.countJournalEntries().getSingle();
     final pages = (count / pageSize).ceil();
 
     for (var page = 0; page <= pages; page++) {
@@ -35,7 +38,7 @@ class Maintenance {
           .orderedJournalInterval(start, end, pageSize, page * pageSize)
           .get();
       if (dbEntities.isEmpty) {
-        return;
+        break;
       }
 
       final entries = entityStreamMapper(dbEntities);
@@ -63,6 +66,59 @@ class Maintenance {
           );
         }
       }
+    }
+
+    // 2. Re-sync agent entities and links updated in the same interval.
+    final agentDb = AgentDatabase();
+    final agentRepo = AgentRepository(agentDb);
+    try {
+      final entityCount = await agentRepo.countEntitiesInInterval(
+        start: start,
+        end: end,
+      );
+      final entityPages = (entityCount / pageSize).ceil();
+
+      for (var page = 0; page < entityPages; page++) {
+        final entities = await agentRepo.getEntitiesInInterval(
+          start: start,
+          end: end,
+          limit: pageSize,
+          offset: page * pageSize,
+        );
+        for (final entity in entities) {
+          await outboxService.enqueueMessage(
+            SyncMessage.agentEntity(
+              agentEntity: entity,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        }
+      }
+
+      final linkCount = await agentRepo.countLinksInInterval(
+        start: start,
+        end: end,
+      );
+      final linkPages = (linkCount / pageSize).ceil();
+
+      for (var page = 0; page < linkPages; page++) {
+        final links = await agentRepo.getLinksInInterval(
+          start: start,
+          end: end,
+          limit: pageSize,
+          offset: page * pageSize,
+        );
+        for (final link in links) {
+          await outboxService.enqueueMessage(
+            SyncMessage.agentLink(
+              agentLink: link,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        }
+      }
+    } finally {
+      await agentDb.close();
     }
   }
 

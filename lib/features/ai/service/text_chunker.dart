@@ -38,14 +38,15 @@ class TextChunker {
     var sentences = _splitIntoSentences(trimmed);
     if (sentences.isEmpty) return [];
 
-    // If sentence splitting produced a single segment that still exceeds the
-    // target (e.g. markdown lists with no sentence-ending punctuation), fall
-    // back to word-boundary splitting so the model's context window isn't
-    // silently exceeded.
-    if (sentences.length == 1 &&
-        estimateTokens(sentences.first) > kChunkTargetTokens) {
-      sentences = _splitOnWordBoundaries(sentences.first);
-    }
+    // Expand any sentence that exceeds the target token count into
+    // word-boundary segments. This handles both single-segment texts
+    // (e.g. markdown lists) and long sentences among shorter ones.
+    sentences = sentences.expand((s) {
+      if (estimateTokens(s) > kChunkTargetTokens) {
+        return _splitOnWordBoundaries(s);
+      }
+      return [s];
+    }).toList();
 
     return _buildOverlappingChunks(sentences);
   }
