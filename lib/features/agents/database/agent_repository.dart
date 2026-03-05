@@ -269,7 +269,8 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
-  /// Fetches agent entities updated within [start]..[end], paginated.
+  /// Fetches agent entities updated in the half-open interval
+  /// [start, end), paginated.
   Future<List<AgentDomainEntity>> getEntitiesInInterval({
     required DateTime start,
     required DateTime end,
@@ -281,7 +282,7 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
-  /// Counts agent entities updated within [start]..[end].
+  /// Counts agent entities updated in the half-open interval [start, end).
   Future<int> countEntitiesInInterval({
     required DateTime start,
     required DateTime end,
@@ -534,7 +535,8 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
-  /// Fetches agent links updated within [start]..[end], paginated.
+  /// Fetches agent links updated in the half-open interval
+  /// [start, end), paginated.
   Future<List<model.AgentLink>> getLinksInInterval({
     required DateTime start,
     required DateTime end,
@@ -546,7 +548,7 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
-  /// Counts agent links updated within [start]..[end].
+  /// Counts agent links updated in the half-open interval [start, end).
   Future<int> countLinksInInterval({
     required DateTime start,
     required DateTime end,

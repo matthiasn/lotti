@@ -2202,7 +2202,7 @@ void main() {
       // Entity outside interval (Feb 20 — default testDate)
       await repo.upsertEntity(makeAgent(id: 'ent-outside', agentId: 'a2'));
 
-      // Entity at boundary start (March 1) — exclusive, should be excluded
+      // Entity at boundary start (March 1) — inclusive, should be included
       final atStart = makeAgent(id: 'ent-start', agentId: 'a3')
           .copyWith(updatedAt: intervalStart);
       await repo.upsertEntity(atStart);
@@ -2211,8 +2211,8 @@ void main() {
         start: intervalStart,
         end: intervalEnd,
       );
-      // Only 'inside' entity (March 3) matches > start AND < end
-      expect(count, 1);
+      // 'inside' (March 3) and 'atStart' (March 1) match >= start AND < end
+      expect(count, 2);
 
       final entities = await repo.getEntitiesInInterval(
         start: intervalStart,
@@ -2220,8 +2220,11 @@ void main() {
         limit: 100,
         offset: 0,
       );
-      expect(entities, hasLength(1));
-      expect(entities.first.id, 'ent-inside');
+      expect(entities, hasLength(2));
+      expect(
+        entities.map((e) => e.id),
+        containsAll(['ent-inside', 'ent-start']),
+      );
     });
 
     test('getEntitiesInInterval respects pagination', () async {

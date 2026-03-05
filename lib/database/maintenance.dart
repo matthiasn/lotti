@@ -23,6 +23,7 @@ class Maintenance {
   Future<void> reSyncInterval({
     required DateTime start,
     required DateTime end,
+    required AgentRepository agentRepository,
   }) async {
     final outboxService = getIt<OutboxService>();
     final vectorClockService = getIt<VectorClockService>();
@@ -69,56 +70,62 @@ class Maintenance {
     }
 
     // 2. Re-sync agent entities and links updated in the same interval.
-    final agentDb = AgentDatabase();
-    final agentRepo = AgentRepository(agentDb);
-    try {
-      final entityCount = await agentRepo.countEntitiesInInterval(
+    await _reSyncPaginated(
+      countFetcher: () => agentRepository.countEntitiesInInterval(
         start: start,
         end: end,
-      );
-      final entityPages = (entityCount / pageSize).ceil();
-
-      for (var page = 0; page < entityPages; page++) {
-        final entities = await agentRepo.getEntitiesInInterval(
-          start: start,
-          end: end,
-          limit: pageSize,
-          offset: page * pageSize,
-        );
-        for (final entity in entities) {
-          await outboxService.enqueueMessage(
-            SyncMessage.agentEntity(
-              agentEntity: entity,
-              status: SyncEntryStatus.update,
-            ),
-          );
-        }
-      }
-
-      final linkCount = await agentRepo.countLinksInInterval(
+      ),
+      itemsFetcher: (limit, offset) => agentRepository.getEntitiesInInterval(
         start: start,
         end: end,
-      );
-      final linkPages = (linkCount / pageSize).ceil();
+        limit: limit,
+        offset: offset,
+      ),
+      enqueueAction: (entity) => outboxService.enqueueMessage(
+        SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      pageSize: pageSize,
+    );
 
-      for (var page = 0; page < linkPages; page++) {
-        final links = await agentRepo.getLinksInInterval(
-          start: start,
-          end: end,
-          limit: pageSize,
-          offset: page * pageSize,
-        );
-        for (final link in links) {
-          await outboxService.enqueueMessage(
-            SyncMessage.agentLink(
-              agentLink: link,
-              status: SyncEntryStatus.update,
-            ),
-          );
-        }
+    await _reSyncPaginated(
+      countFetcher: () => agentRepository.countLinksInInterval(
+        start: start,
+        end: end,
+      ),
+      itemsFetcher: (limit, offset) => agentRepository.getLinksInInterval(
+        start: start,
+        end: end,
+        limit: limit,
+        offset: offset,
+      ),
+      enqueueAction: (link) => outboxService.enqueueMessage(
+        SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      pageSize: pageSize,
+    );
+  }
+
+  Future<void> _reSyncPaginated<T>({
+    required Future<int> Function() countFetcher,
+    required Future<List<T>> Function(int limit, int offset) itemsFetcher,
+    required Future<void> Function(T item) enqueueAction,
+    required int pageSize,
+  }) async {
+    final count = await countFetcher();
+    if (count == 0) return;
+
+    final pages = (count / pageSize).ceil();
+    for (var page = 0; page < pages; page++) {
+      final items = await itemsFetcher(pageSize, page * pageSize);
+      for (final item in items) {
+        await enqueueAction(item);
       }
-    } finally {
-      await agentDb.close();
     }
   }
 

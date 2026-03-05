@@ -13,6 +13,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -23,6 +24,7 @@ class _StubSyncController extends SyncMaintenanceController {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(registerAllFallbackValues);
 
   group('MatrixSyncMaintenancePage', () {
     late MockJournalDb mockJournalDb;
@@ -39,6 +41,7 @@ void main() {
         () => mockMaintenance.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
+          agentRepository: any(named: 'agentRepository'),
         ),
       ).thenAnswer((_) async {});
 
@@ -157,6 +160,7 @@ void main() {
         () => mockMaintenance.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
+          agentRepository: any(named: 'agentRepository'),
         ),
       ).thenAnswer((_) async {});
       when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});

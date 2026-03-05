@@ -259,6 +259,24 @@ void main() {
     });
 
     group('reSyncInterval', () {
+      late MockAgentRepository mockAgentRepo;
+
+      setUp(() {
+        mockAgentRepo = MockAgentRepository();
+        when(
+          () => mockAgentRepo.countEntitiesInInterval(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockAgentRepo.countLinksInInterval(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer((_) async => 0);
+      });
+
       test('enqueues all journal entities inside interval', () async {
         final baseDate = DateTime(2024);
         final entries = List.generate(
@@ -274,6 +292,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 5)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -300,6 +319,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 2)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -332,6 +352,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(hours: 1)),
           end: baseDate.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -365,6 +386,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 1)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -379,6 +401,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: DateTime(2024, 5),
           end: DateTime(2024, 5, 2),
+          agentRepository: mockAgentRepo,
         );
 
         expect(sentMessages, isEmpty);
@@ -396,6 +419,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: timestamp.subtract(const Duration(hours: 1)),
           end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessage =
@@ -407,25 +431,29 @@ void main() {
     });
 
     group('reSyncInterval – agent entities and links', () {
-      /// Creates a file-backed agent DB in tempDir, populates it, then
-      /// closes it so the Maintenance code can re-open it from the same path.
+      late AgentDatabase agentDb;
+      late AgentRepository agentRepo;
+
+      setUp(() {
+        agentDb = AgentDatabase(inMemoryDatabase: true);
+        agentRepo = AgentRepository(agentDb);
+      });
+
+      tearDown(() async {
+        await agentDb.close();
+      });
+
+      /// Populates the in-memory agent DB with the given entities/links.
       Future<void> populateAgentDb({
         List<AgentDomainEntity> entities = const [],
         List<agent_model.AgentLink> links = const [],
       }) async {
-        final agentDb = AgentDatabase(
-          background: false,
-          documentsDirectoryProvider: () async => tempDir,
-          tempDirectoryProvider: () async => tempDir,
-        );
-        final repo = AgentRepository(agentDb);
         for (final entity in entities) {
-          await repo.upsertEntity(entity);
+          await agentRepo.upsertEntity(entity);
         }
         for (final link in links) {
-          await repo.upsertLink(link);
+          await agentRepo.upsertLink(link);
         }
-        await agentDb.close();
       }
 
       test('enqueues agent entities updated within interval', () async {
@@ -452,6 +480,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
         );
 
         final agentMessages =
@@ -497,6 +526,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
         );
 
         final linkMessages = sentMessages.whereType<SyncAgentLink>().toList();
@@ -528,6 +558,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
         );
 
         final agentMessages =
@@ -580,6 +611,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
         );
 
         final agentMessages =
