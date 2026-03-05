@@ -118,6 +118,15 @@ class SyncTuning {
   // Maximum entries to process per processing cycle
   static const int backfillProcessingBatchSize = 50;
 
+  // Response deduplication - prevents responding to the same (hostId, counter)
+  // pair multiple times across request cycles (N-device amplification prevention).
+  static const Duration backfillResponseCooldown = Duration(minutes: 10);
+
+  // Rate limiting - caps total backfill responses per time window to prevent
+  // outbox flooding during amplification storms.
+  static const Duration backfillResponseRateWindow = Duration(minutes: 1);
+  static const int backfillResponseRateLimit = 100;
+
   // Default limits for automatic backfill (prevents unbounded historical sync)
   // Only request entries from the last day OR 250 entries per host, whichever
   // is more restrictive. Deeper historical backfill requires manual trigger.

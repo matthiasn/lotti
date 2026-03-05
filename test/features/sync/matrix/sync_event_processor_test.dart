@@ -1246,6 +1246,313 @@ void main() {
       ).called(1);
     });
 
+    group('agent entity sequence log recording', () {
+      late MockSyncSequenceLogService mockSeqService;
+      late MockAgentRepository mockAgentRepoSeq;
+
+      setUp(() {
+        mockSeqService = MockSyncSequenceLogService();
+        mockAgentRepoSeq = MockAgentRepository();
+        when(() => mockAgentRepoSeq.upsertEntity(any()))
+            .thenAnswer((_) async {});
+        when(() => mockAgentRepoSeq.upsertLink(any())).thenAnswer((_) async {});
+      });
+
+      test('records received agent entity in sequence log', () async {
+        const vc = VectorClock({'host-A': 10});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-seq-1',
+          agentId: 'agent-seq-1',
+          kind: 'task_agent',
+          displayName: 'Seq Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-A',
+        );
+
+        when(() => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            )).thenAnswer((_) async => []);
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(() => mockSeqService.recordReceivedEntry(
+              entryId: 'agent-seq-1',
+              vectorClock: vc,
+              originatingHostId: 'host-A',
+              coveredVectorClocks: null,
+              payloadType: SyncSequencePayloadType.agentEntity,
+            )).called(1);
+      });
+
+      test('logs gap detection for agent entity', () async {
+        const vc = VectorClock({'host-B': 20});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-gap-1',
+          agentId: 'agent-gap-1',
+          kind: 'task_agent',
+          displayName: 'Gap Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-B',
+        );
+
+        when(() => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            )).thenAnswer(
+          (_) async => [(hostId: 'host-B', counter: 18)],
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => loggingService.captureEvent(
+            contains('apply.agentEntity.gapsDetected count=1'),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'gapDetection',
+          ),
+        ).called(1);
+      });
+
+      test('handles recordReceivedEntry exception for agent entity', () async {
+        const vc = VectorClock({'host-C': 5});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-err-1',
+          agentId: 'agent-err-1',
+          kind: 'task_agent',
+          displayName: 'Err Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-C',
+        );
+
+        when(() => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            )).thenThrow(Exception('seq log error'));
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        // Entity should still be upserted despite seq log error
+        verify(() => mockAgentRepoSeq.upsertEntity(entity)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('records received agent link in sequence log', () async {
+        const vc = VectorClock({'host-A': 15});
+        final link = AgentLink.basic(
+          id: 'link-seq-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-A',
+        );
+
+        when(() => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            )).thenAnswer((_) async => []);
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(() => mockSeqService.recordReceivedEntry(
+              entryId: 'link-seq-1',
+              vectorClock: vc,
+              originatingHostId: 'host-A',
+              coveredVectorClocks: null,
+              payloadType: SyncSequencePayloadType.agentLink,
+            )).called(1);
+      });
+
+      test('skips sequence log when vectorClock is null', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-no-vc',
+          agentId: 'agent-no-vc',
+          kind: 'task_agent',
+          displayName: 'No VC',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-A',
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            ));
+      });
+
+      test('skips sequence log when originatingHostId is null', () async {
+        const vc = VectorClock({'host-A': 10});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-no-host',
+          agentId: 'agent-no-host',
+          kind: 'task_agent',
+          displayName: 'No Host',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          // no originatingHostId
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            ));
+      });
+    });
+
     group('lifecycle side-effects on incoming identity', () {
       late MockWakeOrchestrator mockOrchestrator;
 

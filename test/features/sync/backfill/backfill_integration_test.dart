@@ -479,7 +479,7 @@ void main() {
       expect(missingHighLimit, hasLength(1));
     });
 
-    test('backfill sends unresolvable when VC does not cover own counter',
+    test('backfill sends hint when VC does not cover own counter',
         () async {
       // Scenario: Entry was created at counter 2, then modified at counter 5.
       // The current entry has VC={alice:5} but someone requests counter 2.
@@ -530,8 +530,10 @@ void main() {
       // Alice handles the request
       await aliceResponseHandler.handleBackfillRequest(request);
 
-      // Verify Alice sent BOTH the entry AND an unresolvable response
-      // because VC[alice]=5 but requested counter=2, so VC doesn't cover it
+      // Verify Alice sent BOTH the entry AND a hint response
+      // because VC[alice]=5 but requested counter=2, so VC doesn't cover it.
+      // The hint contains payloadId so the receiver can map the counter to
+      // the payload and mark it as backfilled.
       final capturedMessages = verify(
         () => aliceOutbox.enqueueMessage(captureAny()),
       ).captured;
@@ -543,13 +545,14 @@ void main() {
       final journalEntity = capturedMessages[0] as SyncJournalEntity;
       expect(journalEntity.id, modifiedEntryId);
 
-      // Second should be the unresolvable BackfillResponse
+      // Second should be a BackfillResponse hint with payloadId
       expect(capturedMessages[1], isA<SyncBackfillResponse>());
       final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
       expect(backfillResponse.hostId, aliceHostId);
       expect(backfillResponse.counter, 2);
       expect(backfillResponse.deleted, false);
-      expect(backfillResponse.unresolvable, true);
+      expect(backfillResponse.unresolvable, isNull);
+      expect(backfillResponse.payloadId, modifiedEntryId);
       expect(
         backfillResponse.payloadType,
         SyncSequencePayloadType.journalEntity,

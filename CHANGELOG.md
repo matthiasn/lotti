@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.899] - 2026-03-04
+### Fixed
+- Break backfill amplification loop: superseded outbox entries now respond with
+  hints (carrying the payload ID) instead of "unresolvable" flags, preventing
+  the requester from re-requesting the same counter indefinitely.
+- Agent entities and links now record their vector clock counters in the sync
+  sequence log on both send and receive paths. Previously, agent payloads
+  consumed counters but never logged them, creating permanent phantom gaps that
+  triggered unresolvable backfill requests and contributed to outbox spikes.
+
 ## [0.9.898] - 2026-03-04
 ### Added
 - Overlapping document chunking for vector search embeddings. Long transcripts

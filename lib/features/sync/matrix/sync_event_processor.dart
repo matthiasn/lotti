@@ -25,6 +25,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -1428,6 +1429,36 @@ class SyncEventProcessor {
             domain: 'AGENT_SYNC',
             subDomain: 'apply',
           );
+
+          // Record in sequence log for gap detection (self-healing sync)
+          if (_sequenceLogService != null &&
+              resolvedEntity.vectorClock != null &&
+              msg.originatingHostId != null) {
+            try {
+              final gaps = await _sequenceLogService!.recordReceivedEntry(
+                entryId: resolvedEntity.id,
+                vectorClock: resolvedEntity.vectorClock!,
+                originatingHostId: msg.originatingHostId!,
+                coveredVectorClocks: msg.coveredVectorClocks,
+                payloadType: SyncSequencePayloadType.agentEntity,
+              );
+              if (gaps.isNotEmpty) {
+                _loggingService.captureEvent(
+                  'apply.agentEntity.gapsDetected count=${gaps.length} '
+                  'for entity=${resolvedEntity.id}',
+                  domain: 'SYNC_SEQUENCE',
+                  subDomain: 'gapDetection',
+                );
+              }
+            } catch (e, st) {
+              _loggingService.captureException(
+                e,
+                domain: 'SYNC_SEQUENCE',
+                subDomain: 'recordReceived',
+                stackTrace: st,
+              );
+            }
+          }
         } else {
           _loggingService.captureEvent(
             'agentEntity.ignored no repository',
@@ -1474,6 +1505,36 @@ class SyncEventProcessor {
             domain: 'AGENT_SYNC',
             subDomain: 'apply',
           );
+
+          // Record in sequence log for gap detection (self-healing sync)
+          if (_sequenceLogService != null &&
+              resolvedLink.vectorClock != null &&
+              msg.originatingHostId != null) {
+            try {
+              final gaps = await _sequenceLogService!.recordReceivedEntry(
+                entryId: resolvedLink.id,
+                vectorClock: resolvedLink.vectorClock!,
+                originatingHostId: msg.originatingHostId!,
+                coveredVectorClocks: msg.coveredVectorClocks,
+                payloadType: SyncSequencePayloadType.agentLink,
+              );
+              if (gaps.isNotEmpty) {
+                _loggingService.captureEvent(
+                  'apply.agentLink.gapsDetected count=${gaps.length} '
+                  'for link=${resolvedLink.id}',
+                  domain: 'SYNC_SEQUENCE',
+                  subDomain: 'gapDetection',
+                );
+              }
+            } catch (e, st) {
+              _loggingService.captureException(
+                e,
+                domain: 'SYNC_SEQUENCE',
+                subDomain: 'recordReceived',
+                stackTrace: st,
+              );
+            }
+          }
         } else {
           _loggingService.captureEvent(
             'agentLink.ignored no repository',

@@ -172,9 +172,12 @@ host was N-2, the system detects counter N-1 is missing. Periodically, missing
 entries are requested via broadcast. Any device with the entry can respond.
 
 **Payload Types:** The `SyncSequencePayloadType` enum distinguishes between
-message types: `journalEntity` for journal entries and `entryLink` for entry
-links. Both types are tracked independently in the sequence log, enabling
-complete reconstruction of sync state.
+message types: `journalEntity` for journal entries, `entryLink` for entry
+links, `agentEntity` for agent domain entities, and `agentLink` for agent
+links. All four types are tracked independently in the sequence log, enabling
+complete reconstruction of sync state. Agent payloads carry `originatingHostId`
+and `coveredVectorClocks` fields in their sync messages, just like journal
+entities and entry links.
 
 **Components:**
 - `SyncSequenceLog` table in `sync_db.dart` — stores sequence entries with
@@ -185,8 +188,9 @@ complete reconstruction of sync state.
 - `BackfillRequestService` — periodically scans for missing entries and sends
   batched `SyncBackfillRequest` messages (up to 100 entries per message)
 - `BackfillResponseHandler` — handles incoming requests (re-sends entries,
-  sends BackfillResponse hints when needed, and marks superseded own counters
-  as unresolvable) and verifies responses
+  sends BackfillResponse hints for superseded counters including own counters),
+  verifies responses, and applies per-counter cooldown + rate limiting to
+  prevent N-device amplification storms
 
 **Gap Detection:**
 - Examines ALL hosts in incoming vector clocks (not just the originator)
@@ -230,13 +234,13 @@ was delivered via a different payload type at the same vector clock position.
 
 **Two-Phase Backfill Verification:**
 When responding to a backfill request, the responder re-sends the entry via
-normal sync. If the requested counter is still present in the entry's vector
-clock (or the responder is not the originator), it also sends a
-`BackfillResponse` with the entryId. If the counter belongs to the responder
-but is no longer present in the entry's vector clock, it sends an unresolvable
-response instead to clear the request. This enables safe
-resolution even when the entry's vector clock has evolved since the original
-counter was recorded:
+normal sync. If the requested counter is no longer present in the entry's
+vector clock (superseded by later modifications), it sends a `BackfillResponse`
+hint with the `payloadId` so the receiver can map the counter to the entry.
+This applies equally for own and foreign counters. The only case where
+`unresolvable` is sent is when the originating host has no record of the
+counter in its sequence log at all. This enables safe resolution even when the
+entry's vector clock has evolved since the original counter was recorded:
 
 1. **Phase 1 - Store Hint:** When receiving a BackfillResponse, store the
    `entryId` as a hint on the sequence log entry but don't change status yet
@@ -269,10 +273,11 @@ If the BackfillResponse arrives before the sync message (race condition):
 2. Device A broadcasts `SyncBackfillRequest` with entries list
 3. Device B receives request, looks up entry in its sequence log
 4. If found: Device B re-sends the journal entity via normal sync and:
-   - If the requested counter is still present in its VC (or the counter belongs
-     to another host), it sends `SyncBackfillResponse` with `deleted=false, entryId=<id>`
-   - If the requested counter belongs to Device B but is no longer present in its VC,
-     it sends `SyncBackfillResponse` with `deleted=false, unresolvable=true`
+   - If the requested counter is still present in its VC, no additional
+     BackfillResponse is needed (the entry arrival resolves the gap)
+   - If the counter is no longer in the VC (superseded by later modifications),
+     it sends `SyncBackfillResponse` with `deleted=false, payloadId=<id>` as a
+     hint so the receiver can map the counter to the payload
 5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
 6. Device A receives the BackfillResponse:
    - Stores the entryId hint on the sequence log entry

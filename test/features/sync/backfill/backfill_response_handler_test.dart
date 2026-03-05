@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -11,6 +12,8 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../features/agents/test_utils.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 class MockSyncSequenceLogService extends Mock
@@ -24,6 +27,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLogging;
   late MockVectorClockService mockVcService;
+  late MockAgentRepository mockAgentRepository;
   late BackfillResponseHandler handler;
 
   const aliceHostId = 'alice-host-uuid';
@@ -32,6 +36,7 @@ void main() {
   const entryId = 'test-entry-id';
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       const SyncMessage.backfillRequest(
         entries: [],
@@ -43,14 +48,6 @@ void main() {
         hostId: '',
         counter: 0,
         deleted: false,
-      ),
-    );
-    registerFallbackValue(
-      const SyncMessage.journalEntity(
-        id: '',
-        jsonPath: '',
-        vectorClock: VectorClock({}),
-        status: SyncEntryStatus.initial,
       ),
     );
     registerFallbackValue(
@@ -66,8 +63,6 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
     );
-    registerFallbackValue(const VectorClock({}));
-    registerFallbackValue(SyncSequencePayloadType.journalEntity);
   });
 
   setUp(() {
@@ -97,13 +92,15 @@ void main() {
     ).thenReturn(null);
     when(() => mockVcService.getHost()).thenAnswer((_) async => aliceHostId);
 
+    mockAgentRepository = MockAgentRepository();
+
     handler = BackfillResponseHandler(
       journalDb: mockJournalDb,
       sequenceLogService: mockSequenceService,
       outboxService: mockOutboxService,
       loggingService: mockLogging,
       vectorClockService: mockVcService,
-    );
+    )..agentRepository = mockAgentRepository;
   });
 
   group('handleBackfillRequest', () {
@@ -341,7 +338,7 @@ void main() {
       expect(syncEntity.status, SyncEntryStatus.update);
     });
 
-    test('sends unresolvable when own counter not in entry VC', () async {
+    test('sends hint when own counter not in entry VC', () async {
       const request = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -369,13 +366,16 @@ void main() {
 
       expect(captured.length, 2);
       expect(captured[0], isA<SyncJournalEntity>());
+      // Should send a hint with payloadId (not unresolvable) so receivers
+      // can map (hostId, counter) → payloadId and resolve the gap.
       expect(
         captured[1],
         isA<SyncBackfillResponse>()
             .having((r) => r.hostId, 'hostId', aliceHostId)
             .having((r) => r.counter, 'counter', 3)
             .having((r) => r.deleted, 'deleted', false)
-            .having((r) => r.unresolvable, 'unresolvable', true)
+            .having((r) => r.unresolvable, 'unresolvable', isNull)
+            .having((r) => r.payloadId, 'payloadId', entryId)
             .having((r) => r.payloadType, 'payloadType',
                 SyncSequencePayloadType.journalEntity),
       );
@@ -404,6 +404,140 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       ).called(1);
+    });
+
+    test('skips entries within cooldown period', () {
+      fakeAsync((async) {
+        // Pre-populate the cooldown cache with a recent response
+        handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
+
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+
+        handler.handleBackfillRequest(request);
+        async.flushMicrotasks();
+
+        // Should not call any sequence log or outbox methods
+        verifyNever(
+          () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+        );
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+        // Verify cooldownSkipped was logged
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('cooldownSkipped=1')),
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'handleRequest',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('records response in cooldown cache after responding', () async {
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(() => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3))
+          .thenAnswer((_) async => null);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await handler.handleBackfillRequest(request);
+
+      // Verify the response was recorded in the cooldown cache
+      expect(
+        handler.recentlyResponded.containsKey('$aliceHostId:3'),
+        isTrue,
+      );
+    });
+
+    test('stops processing when rate limit is reached', () {
+      fakeAsync((async) {
+        // Use a handler with a very short cooldown so cooldowns don't interfere
+        handler = BackfillResponseHandler(
+          journalDb: mockJournalDb,
+          sequenceLogService: mockSequenceService,
+          outboxService: mockOutboxService,
+          loggingService: mockLogging,
+          vectorClockService: mockVcService,
+          responseCooldown: Duration.zero,
+        )
+          // Set window to the fakeAsync clock's "now" so the rate window
+          // is still active when _isRateLimited checks.
+          ..windowStart = DateTime.now()
+          ..responsesInWindow = 100; // At the limit
+
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 1),
+            BackfillRequestEntry(hostId: aliceHostId, counter: 2),
+          ],
+          requesterId: requesterId,
+        );
+
+        handler.handleBackfillRequest(request);
+        async.flushMicrotasks();
+
+        // Should be rate limited - no processing
+        verifyNever(
+          () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+        );
+
+        // Verify rate limiting was logged
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('rate limited')),
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'rateLimited',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('cleans expired cooldown entries at batch start', () {
+      fakeAsync((async) {
+        // Add an entry that's already expired
+        handler.recentlyResponded['$aliceHostId:99'] =
+            DateTime.now().subtract(const Duration(hours: 2));
+        // Add a non-expired entry (within 10-minute cooldown)
+        handler.recentlyResponded['$bobHostId:5'] =
+            DateTime.now().subtract(const Duration(minutes: 5));
+
+        // Request for a different counter so processing is independent
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: bobHostId, counter: 10),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
+        ).thenAnswer((_) async => null);
+
+        handler.handleBackfillRequest(request);
+        async.flushMicrotasks();
+
+        // Expired entry should be cleaned
+        expect(
+          handler.recentlyResponded.containsKey('$aliceHostId:99'),
+          isFalse,
+        );
+        // Non-expired entry should remain
+        expect(
+          handler.recentlyResponded.containsKey('$bobHostId:5'),
+          isTrue,
+        );
+      });
     });
   });
 
@@ -632,10 +766,11 @@ void main() {
 
   group('handleBackfillRequest - EntryLink', () {
     test('sends deleted response when entry link was deleted', () async {
-      final logItem = _createEntryLinkLogItem(
+      final logItem = _createLogItem(
         aliceHostId,
         10,
         entryId: 'deleted-link-id',
+        payloadType: SyncSequencePayloadType.entryLink,
       );
 
       when(
@@ -670,11 +805,12 @@ void main() {
     });
 
     test('re-sends entry link when it exists', () async {
-      final logItem = _createEntryLinkLogItem(
+      final logItem = _createLogItem(
         aliceHostId,
         20,
         entryId: 'existing-link-id',
         originatingHostId: aliceHostId,
+        payloadType: SyncSequencePayloadType.entryLink,
       );
 
       final link = _createEntryLink(
@@ -707,13 +843,13 @@ void main() {
       expect(captured[0], isA<SyncEntryLink>());
     });
 
-    test('sends unresolvable for entry link when own counter not in VC',
-        () async {
-      final logItem = _createEntryLinkLogItem(
+    test('sends hint for entry link when own counter not in VC', () async {
+      final logItem = _createLogItem(
         aliceHostId,
         20,
         entryId: 'existing-link-id',
         originatingHostId: aliceHostId,
+        payloadType: SyncSequencePayloadType.entryLink,
       );
 
       final link = _createEntryLink('existing-link-id');
@@ -741,11 +877,13 @@ void main() {
 
       expect(captured.length, 2);
       expect(captured[0], isA<SyncEntryLink>());
+      // Should send a hint with payloadId (not unresolvable)
       expect(
         captured[1],
         isA<SyncBackfillResponse>()
             .having((r) => r.deleted, 'deleted', false)
-            .having((r) => r.unresolvable, 'unresolvable', true)
+            .having((r) => r.unresolvable, 'unresolvable', isNull)
+            .having((r) => r.payloadId, 'payloadId', 'existing-link-id')
             .having((r) => r.payloadType, 'payloadType',
                 SyncSequencePayloadType.entryLink),
       );
@@ -886,6 +1024,407 @@ void main() {
       );
     });
   });
+
+  group('handleBackfillRequest - AgentEntity', () {
+    test('re-sends agent entity and hint when counter not in VC', () async {
+      const agentEntityId = 'agent-entity-id';
+
+      final logItem = _createLogItem(
+        aliceHostId,
+        10,
+        entryId: agentEntityId,
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentEntity,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 10),
+      ).thenAnswer((_) async => logItem);
+
+      final agentEntity = makeTestIdentity(
+        id: agentEntityId,
+        vectorClock: const VectorClock({
+          'alice-host-uuid': 15, // Counter 10 is not in VC (superseded)
+        }),
+      );
+
+      when(() => mockAgentRepository.getEntity(agentEntityId))
+          .thenAnswer((_) async => agentEntity);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 10),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+
+      expect(captured.length, 2);
+      expect(captured[0], isA<SyncAgentEntity>());
+      expect(
+        captured[1],
+        isA<SyncBackfillResponse>()
+            .having((r) => r.deleted, 'deleted', false)
+            .having((r) => r.payloadId, 'payloadId', agentEntityId)
+            .having((r) => r.payloadType, 'payloadType',
+                SyncSequencePayloadType.agentEntity),
+      );
+    });
+
+    test('sends deleted response when agent entity not found', () async {
+      final logItem = _createLogItem(
+        aliceHostId,
+        10,
+        entryId: 'missing-agent-id',
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentEntity,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 10),
+      ).thenAnswer((_) async => logItem);
+
+      when(() => mockAgentRepository.getEntity('missing-agent-id'))
+          .thenAnswer((_) async => null);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 10),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any<SyncMessage>(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.deleted, 'deleted', true)
+                .having((r) => r.payloadType, 'payloadType',
+                    SyncSequencePayloadType.agentEntity),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('skips backfill when agentRepository is null', () async {
+      handler.agentRepository = null;
+
+      final logItem = _createLogItem(
+        aliceHostId,
+        10,
+        entryId: 'some-agent-id',
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentEntity,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 10),
+      ).thenAnswer((_) async => logItem);
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 10),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should not enqueue anything since there's no agent repository
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+      // Should log that agentRepository is not wired
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('agentRepository not wired')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'processEntry',
+        ),
+      ).called(1);
+    });
+  });
+
+  group('handleBackfillRequest - AgentLink', () {
+    test('re-sends agent link and hint when counter not in VC', () async {
+      const agentLinkId = 'agent-link-id';
+
+      final logItem = _createLogItem(
+        aliceHostId,
+        20,
+        entryId: agentLinkId,
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentLink,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+      ).thenAnswer((_) async => logItem);
+
+      final agentLink = makeTestBasicLink(
+        id: agentLinkId,
+        vectorClock: const VectorClock({
+          'alice-host-uuid': 25, // Counter 20 is not in VC (superseded)
+        }),
+      );
+
+      when(() => mockAgentRepository.getLinkById(agentLinkId))
+          .thenAnswer((_) async => agentLink);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 20),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+
+      expect(captured.length, 2);
+      expect(captured[0], isA<SyncAgentLink>());
+      expect(
+        captured[1],
+        isA<SyncBackfillResponse>()
+            .having((r) => r.deleted, 'deleted', false)
+            .having((r) => r.payloadId, 'payloadId', agentLinkId)
+            .having((r) => r.payloadType, 'payloadType',
+                SyncSequencePayloadType.agentLink),
+      );
+    });
+
+    test('sends deleted response when agent link not found', () async {
+      final logItem = _createLogItem(
+        aliceHostId,
+        20,
+        entryId: 'missing-link-id',
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentLink,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+      ).thenAnswer((_) async => logItem);
+
+      when(() => mockAgentRepository.getLinkById('missing-link-id'))
+          .thenAnswer((_) async => null);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 20),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any<SyncMessage>(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.deleted, 'deleted', true)
+                .having((r) => r.payloadType, 'payloadType',
+                    SyncSequencePayloadType.agentLink),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('skips backfill when agentRepository is null', () async {
+      handler.agentRepository = null;
+
+      final logItem = _createLogItem(
+        aliceHostId,
+        20,
+        entryId: 'some-link-id',
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.agentLink,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+      ).thenAnswer((_) async => logItem);
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 20),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('agentRepository not wired')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'processEntry',
+        ),
+      ).called(1);
+    });
+  });
+
+  group('handleBackfillResponse - AgentEntity', () {
+    test('verifies agent entity and marks backfilled when found', () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 10,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.agentEntity,
+        payloadId: 'agent-entity-id',
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final agentEntity = makeTestIdentity(
+        id: 'agent-entity-id',
+        vectorClock: const VectorClock({'test-host': 1}),
+      );
+
+      when(() => mockAgentRepository.getEntity('agent-entity-id'))
+          .thenAnswer((_) async => agentEntity);
+
+      when(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await handler.handleBackfillResponse(response);
+
+      verify(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 10,
+          entryId: 'agent-entity-id',
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: SyncSequencePayloadType.agentEntity,
+        ),
+      ).called(1);
+    });
+  });
+
+  group('handleBackfillResponse - AgentLink', () {
+    test('verifies agent link and marks backfilled when found', () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 20,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.agentLink,
+        payloadId: 'agent-link-id',
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final agentLink = makeTestBasicLink(
+        id: 'agent-link-id',
+        vectorClock: const VectorClock({'test-host': 1}),
+      );
+
+      when(() => mockAgentRepository.getLinkById('agent-link-id'))
+          .thenAnswer((_) async => agentLink);
+
+      when(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await handler.handleBackfillResponse(response);
+
+      verify(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 20,
+          entryId: 'agent-link-id',
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: SyncSequencePayloadType.agentLink,
+        ),
+      ).called(1);
+    });
+
+    test('skips verify when agentRepository is null', () async {
+      handler.agentRepository = null;
+
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 20,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.agentLink,
+        payloadId: 'agent-link-id',
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await handler.handleBackfillResponse(response);
+
+      // Should NOT call verifyAndMarkBackfilled since repo is null
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+  });
 }
 
 SyncSequenceLogItem _createLogItem(
@@ -894,12 +1433,13 @@ SyncSequenceLogItem _createLogItem(
   String? entryId,
   String? originatingHostId,
   SyncSequenceStatus status = SyncSequenceStatus.received,
+  SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
 }) {
   return SyncSequenceLogItem(
     hostId: hostId,
     counter: counter,
     entryId: entryId,
-    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
+    payloadType: payloadType.index,
     originatingHostId: originatingHostId,
     status: status.index,
     createdAt: DateTime(2024),
@@ -936,26 +1476,6 @@ JournalEntity _createJournalEntryWithoutVC(String id) {
       // vectorClock is null
     ),
     entryText: const EntryText(plainText: 'Test entry'),
-  );
-}
-
-SyncSequenceLogItem _createEntryLinkLogItem(
-  String hostId,
-  int counter, {
-  String? entryId,
-  String? originatingHostId,
-  SyncSequenceStatus status = SyncSequenceStatus.received,
-}) {
-  return SyncSequenceLogItem(
-    hostId: hostId,
-    counter: counter,
-    entryId: entryId,
-    payloadType: SyncSequencePayloadType.entryLink.index,
-    originatingHostId: originatingHostId,
-    status: status.index,
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    requestCount: 0,
   );
 }
 

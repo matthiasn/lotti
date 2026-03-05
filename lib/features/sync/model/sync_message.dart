@@ -140,12 +140,28 @@ sealed class SyncMessage with _$SyncMessage {
     required SyncEntryStatus status,
     AgentDomainEntity? agentEntity,
     String? jsonPath,
+
+    /// The host UUID that created/modified this agent entity version.
+    /// Used for sequence tracking to detect gaps in sync.
+    String? originatingHostId,
+
+    /// Vector clocks covered by this payload, including the current vector
+    /// clock and superseded outbox entries.
+    List<VectorClock>? coveredVectorClocks,
   }) = SyncAgentEntity;
 
   const factory SyncMessage.agentLink({
     required SyncEntryStatus status,
     AgentLink? agentLink,
     String? jsonPath,
+
+    /// The host UUID that created/modified this agent link version.
+    /// Used for sequence tracking to detect gaps in sync.
+    String? originatingHostId,
+
+    /// Vector clocks covered by this payload, including the current vector
+    /// clock and superseded outbox entries.
+    List<VectorClock>? coveredVectorClocks,
   }) = SyncAgentLink;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>

@@ -786,6 +786,26 @@ void main() {
       });
     });
 
+    group('getLinkById', () {
+      test('returns link when found', () async {
+        final link = makeBasicLink(id: 'link-find-me');
+        await repo.upsertLink(link);
+
+        final result = await repo.getLinkById('link-find-me');
+
+        expect(result, isNotNull);
+        expect(result!.id, 'link-find-me');
+        expect(result.fromId, testAgentId);
+        expect(result, isA<model.BasicAgentLink>());
+      });
+
+      test('returns null when link not found', () async {
+        final result = await repo.getLinkById('nonexistent-link');
+
+        expect(result, isNull);
+      });
+    });
+
     test('multiple link types for the same agent are stored independently',
         () async {
       await repo.upsertLink(makeBasicLink(

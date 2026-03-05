@@ -25,6 +25,7 @@ import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -3472,6 +3473,218 @@ void main() {
             contains('type=SyncEntryLink'),
             domain: 'OUTBOX',
             subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+  });
+
+  group('Agent sequence log recording -', () {
+    late MockSyncSequenceLogService sequenceLogService;
+    late OutboxService serviceWithSequenceLog;
+
+    setUp(() {
+      sequenceLogService = MockSyncSequenceLogService();
+      registerFallbackValue(const VectorClock({'fallback': 1}));
+      registerFallbackValue(SyncSequencePayloadType.journalEntity);
+    });
+
+    tearDown(() async {
+      await serviceWithSequenceLog.dispose();
+    });
+
+    test('records agent entity in sequence log when vectorClock present',
+        () async {
+      const vc = VectorClock({'host-A': 10});
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-seq-1',
+        agentId: 'agent-seq-1',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: vc,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      when(() => sequenceLogService.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          )).thenAnswer((_) async {});
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      await serviceWithSequenceLog.enqueueMessage(message);
+
+      verify(() => sequenceLogService.recordSentEntry(
+            entryId: 'agent-seq-1',
+            vectorClock: vc,
+            payloadType: SyncSequencePayloadType.agentEntity,
+          )).called(1);
+    });
+
+    test('records agent link in sequence log when vectorClock present',
+        () async {
+      const vc = VectorClock({'host-B': 5});
+      final link = AgentLink.basic(
+        id: 'link-seq-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: vc,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+
+      when(() => sequenceLogService.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          )).thenAnswer((_) async {});
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      await serviceWithSequenceLog.enqueueMessage(message);
+
+      verify(() => sequenceLogService.recordSentEntry(
+            entryId: 'link-seq-1',
+            vectorClock: vc,
+            payloadType: SyncSequencePayloadType.agentLink,
+          )).called(1);
+    });
+
+    test('skips agent entity recording when vectorClock is null', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-no-vc',
+        agentId: 'agent-no-vc',
+        kind: 'task_agent',
+        displayName: 'No VC',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      await serviceWithSequenceLog.enqueueMessage(message);
+
+      verifyNever(() => sequenceLogService.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ));
+    });
+
+    test('handles recordSentEntry errors gracefully for agent entity',
+        () async {
+      const vc = VectorClock({'host-C': 3});
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-err',
+        agentId: 'agent-err',
+        kind: 'task_agent',
+        displayName: 'Err',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: vc,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      when(() => sequenceLogService.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          )).thenThrow(Exception('sequence log error'));
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      // Should not throw
+      await serviceWithSequenceLog.enqueueMessage(message);
+
+      // Verify exception was logged
+      verify(() => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordSent',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           )).called(1);
     });
   });
