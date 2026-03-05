@@ -4399,14 +4399,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncSkip => 'Omitir';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Rellenar relojes de entidades de agente';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Rellenar relojes de enlaces de agente';
-
-  @override
   String get syncStepAgentEntities => 'Entidades de agente';
 
   @override
@@ -4414,6 +4406,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncStepAiSettings => 'Configuración de IA';
+
+  @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Rellenar relojes de entidades de agente';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Rellenar relojes de enlaces de agente';
 
   @override
   String get syncStepCategories => 'Categorías';

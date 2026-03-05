@@ -513,7 +513,7 @@ SELECT * FROM journal
 orderedJournalInterval:
 SELECT * FROM journal
   WHERE deleted = false
-  AND updated_at > :start
+  AND updated_at >= :start
   AND updated_at < :end
   ORDER BY date_from DESC
   LIMIT :limit

@@ -4253,13 +4253,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSkip => 'Skip';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Backfill agent entity clocks';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks => 'Backfill agent link clocks';
-
-  @override
   String get syncStepAgentEntities => 'Agent entities';
 
   @override
@@ -4267,6 +4260,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncStepAiSettings => 'AI settings';
+
+  @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Backfill agent entity clocks';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks => 'Backfill agent link clocks';
 
   @override
   String get syncStepCategories => 'Categories';

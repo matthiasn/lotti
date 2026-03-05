@@ -4339,14 +4339,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncSkip => 'Omite';
 
   @override
-  String get syncStepBackfillAgentEntityClocks =>
-      'Completare ceasuri entități agent';
-
-  @override
-  String get syncStepBackfillAgentLinkClocks =>
-      'Completare ceasuri legături agent';
-
-  @override
   String get syncStepAgentEntities => 'Entități agent';
 
   @override
@@ -4354,6 +4346,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepAiSettings => 'Setări AI';
+
+  @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Completare ceasuri entități agent';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Completare ceasuri legături agent';
 
   @override
   String get syncStepCategories => 'Categorii';
