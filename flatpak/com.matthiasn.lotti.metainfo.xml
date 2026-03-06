@@ -34,6 +34,7 @@
     <release version="0.9.904" date="2026-03-06">
       <description>
           <p>Fixed embedding backfill failing for entries with code, URLs, or long unpunctuated text by lowering the chunk target to 256 tokens for safer headroom against the model's 512-token context window.</p>
+          <p>Sequence log backfill now includes agent entities and agent links alongside journal entries and entry links, closing sync gaps for agent data.</p>
       </description>
     </release>
     <release version="0.9.903" date="2026-03-06">

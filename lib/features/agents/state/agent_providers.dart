@@ -110,12 +110,10 @@ DomainLogger domainLogger(Ref ref) {
   return logger;
 }
 
-/// The agent database instance (lazy singleton).
+/// The agent database instance (singleton via GetIt).
 @Riverpod(keepAlive: true)
 AgentDatabase agentDatabase(Ref ref) {
-  final db = AgentDatabase();
-  ref.onDispose(db.close);
-  return db;
+  return getIt<AgentDatabase>();
 }
 
 /// The agent repository wrapping the database.

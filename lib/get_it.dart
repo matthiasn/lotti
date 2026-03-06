@@ -12,6 +12,7 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/database/embeddings_init.dart';
@@ -166,6 +167,7 @@ Future<void> registerSingletons() async {
     )
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
     ..registerSingleton<JournalDb>(JournalDb())
+    ..registerSingleton<AgentDatabase>(AgentDatabase())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())

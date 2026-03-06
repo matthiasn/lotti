@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -68,5 +69,97 @@ class AgentDatabase extends _$AgentDatabase {
         }
       },
     );
+  }
+
+  /// Stream agent entities with their vector clocks for populating the
+  /// sequence log. Yields batches of records with entity ID and vector
+  /// clock map. Uses lightweight SQL + JSON extraction to avoid full
+  /// deserialization.
+  Stream<List<({String id, Map<String, int>? vectorClock})>>
+      streamAgentEntitiesWithVectorClock({int batchSize = 1000}) async* {
+    var offset = 0;
+
+    while (true) {
+      final rows = await customSelect(
+        'SELECT id, serialized FROM agent_entities '
+        'ORDER BY id LIMIT ? OFFSET ?',
+        variables: [Variable(batchSize), Variable(offset)],
+      ).get();
+
+      if (rows.isEmpty) break;
+
+      yield rows
+          .map(
+            (row) => (
+              id: row.read<String>('id'),
+              vectorClock: _extractVectorClock(row.read<String>('serialized')),
+            ),
+          )
+          .toList();
+      offset += batchSize;
+    }
+  }
+
+  /// Stream agent links with their vector clocks for populating the
+  /// sequence log. Yields batches of records with link ID and vector
+  /// clock map.
+  Stream<List<({String id, Map<String, int>? vectorClock})>>
+      streamAgentLinksWithVectorClock({int batchSize = 1000}) async* {
+    var offset = 0;
+
+    while (true) {
+      final rows = await customSelect(
+        'SELECT id, serialized FROM agent_links '
+        'ORDER BY id LIMIT ? OFFSET ?',
+        variables: [Variable(batchSize), Variable(offset)],
+      ).get();
+
+      if (rows.isEmpty) break;
+
+      yield rows
+          .map(
+            (row) => (
+              id: row.read<String>('id'),
+              vectorClock: _extractVectorClock(row.read<String>('serialized')),
+            ),
+          )
+          .toList();
+      offset += batchSize;
+    }
+  }
+
+  /// Count total agent entities for progress reporting.
+  Future<int> countAllAgentEntities() => _countAll('agent_entities');
+
+  /// Count total agent links for progress reporting.
+  Future<int> countAllAgentLinks() => _countAll('agent_links');
+
+  Future<int> _countAll(String tableName) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS cnt FROM $tableName',
+    ).getSingle();
+    return result.read<int>('cnt');
+  }
+
+  /// Lightweight extraction of vector clock from serialized JSON.
+  /// Agent entities and links store vectorClock at JSON root level.
+  /// Returns null for any malformed data rather than throwing.
+  static Map<String, int>? _extractVectorClock(String serialized) {
+    try {
+      final decoded = jsonDecode(serialized);
+      if (decoded is! Map<String, dynamic>) return null;
+
+      final vc = decoded['vectorClock'];
+      if (vc is! Map<String, dynamic>) return null;
+
+      final result = <String, int>{};
+      for (final entry in vc.entries) {
+        if (entry.value is! num) return null;
+        result[entry.key] = (entry.value as num).toInt();
+      }
+      return result;
+    } on Object catch (_) {
+      return null;
+    }
   }
 }

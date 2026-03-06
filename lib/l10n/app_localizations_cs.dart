@@ -2935,6 +2935,20 @@ class AppLocalizationsCs extends AppLocalizations {
       'Toto prohledá všechny záznamy deníku a přidá je do protokolu synchronizační sekvence. To umožní zpětné zpracování odpovědí pro záznamy vytvořené před přidáním této funkce.';
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Zpracování entit agentů...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Zpracování propojení agentů...';
+
+  @override
+  String get maintenancePopulatePhaseJournal => 'Zpracování záznamů deníku...';
+
+  @override
+  String get maintenancePopulatePhaseLinks => 'Zpracování propojení záznamů...';
+
+  @override
   String get maintenancePurgeDeleted => 'Vyčistit smazané položky';
 
   @override

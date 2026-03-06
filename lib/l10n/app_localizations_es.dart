@@ -2994,6 +2994,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto escaneará todas las entradas del diario y las añadirá al registro de secuencia de sincronización. Esto habilita las respuestas de relleno para entradas creadas antes de que se añadiera esta función.';
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Procesando entidades de agentes...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Procesando enlaces de agentes...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Procesando entradas del diario...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Procesando enlaces de entradas...';
+
+  @override
   String get maintenancePurgeDeleted => 'Purgar elementos eliminados';
 
   @override

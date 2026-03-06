@@ -15,6 +15,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -335,6 +336,8 @@ class MockHabitsRepository extends Mock implements HabitsRepository {}
 class MockRatingRepository extends Mock implements RatingRepository {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class MockAgentDatabase extends Mock implements AgentDatabase {}
 
 class MockBackfillRequestService extends Mock
     implements BackfillRequestService {}

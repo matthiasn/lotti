@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lowered from 384 to 256 estimated tokens to leave sufficient headroom for
   content where the word-based heuristic undercounts.
 
+### Added
+- Sequence log backfill now includes agent entities and agent links alongside
+  journal entries and entry links, closing sync gaps for agent data.
+
 ## [0.9.903] - 2026-03-06
 ### Fixed
 - AI task agent no longer repeatedly proposes checklist items that already exist

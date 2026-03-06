@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -31,6 +32,9 @@ void main() {
       expect(state.progress, 0);
       expect(state.isRunning, false);
       expect(state.populatedCount, isNull);
+      expect(state.populatedLinksCount, isNull);
+      expect(state.populatedAgentEntitiesCount, isNull);
+      expect(state.populatedAgentLinksCount, isNull);
       expect(state.totalCount, isNull);
       expect(state.error, isNull);
     });
@@ -40,6 +44,9 @@ void main() {
         progress: 0.5,
         isRunning: true,
         populatedCount: 100,
+        populatedLinksCount: 50,
+        populatedAgentEntitiesCount: 30,
+        populatedAgentLinksCount: 20,
         totalCount: 200,
         error: 'some error',
       );
@@ -49,6 +56,9 @@ void main() {
       expect(copied.progress, 0.5);
       expect(copied.isRunning, true);
       expect(copied.populatedCount, 100);
+      expect(copied.populatedLinksCount, 50);
+      expect(copied.populatedAgentEntitiesCount, 30);
+      expect(copied.populatedAgentLinksCount, 20);
       expect(copied.totalCount, 200);
       expect(copied.error, 'some error');
     });
@@ -60,6 +70,9 @@ void main() {
         progress: 0.75,
         isRunning: true,
         populatedCount: 50,
+        populatedLinksCount: 25,
+        populatedAgentEntitiesCount: 15,
+        populatedAgentLinksCount: 10,
         totalCount: 100,
         error: 'new error',
       );
@@ -67,6 +80,9 @@ void main() {
       expect(copied.progress, 0.75);
       expect(copied.isRunning, true);
       expect(copied.populatedCount, 50);
+      expect(copied.populatedLinksCount, 25);
+      expect(copied.populatedAgentEntitiesCount, 15);
+      expect(copied.populatedAgentLinksCount, 10);
       expect(copied.totalCount, 100);
       expect(copied.error, 'new error');
     });
@@ -79,15 +95,21 @@ void main() {
       expect(copied.error, isNull);
     });
 
-    test('copyWith clearCount removes counts', () {
+    test('copyWith clearCount removes all counts', () {
       const state = SequenceLogPopulateState(
         populatedCount: 100,
+        populatedLinksCount: 50,
+        populatedAgentEntitiesCount: 30,
+        populatedAgentLinksCount: 20,
         totalCount: 200,
       );
 
       final copied = state.copyWith(clearCount: true);
 
       expect(copied.populatedCount, isNull);
+      expect(copied.populatedLinksCount, isNull);
+      expect(copied.populatedAgentEntitiesCount, isNull);
+      expect(copied.populatedAgentLinksCount, isNull);
       expect(copied.totalCount, isNull);
     });
 
@@ -103,17 +125,26 @@ void main() {
     test('copyWith clearCount takes precedence over new counts', () {
       const state = SequenceLogPopulateState(
         populatedCount: 100,
+        populatedLinksCount: 50,
+        populatedAgentEntitiesCount: 30,
+        populatedAgentLinksCount: 20,
         totalCount: 200,
       );
 
       final copied = state.copyWith(
         clearCount: true,
         populatedCount: 300,
+        populatedLinksCount: 150,
+        populatedAgentEntitiesCount: 90,
+        populatedAgentLinksCount: 60,
         totalCount: 400,
       );
 
       // clearCount should take precedence
       expect(copied.populatedCount, isNull);
+      expect(copied.populatedLinksCount, isNull);
+      expect(copied.populatedAgentEntitiesCount, isNull);
+      expect(copied.populatedAgentLinksCount, isNull);
       expect(copied.totalCount, isNull);
     });
   });
@@ -121,6 +152,7 @@ void main() {
   group('SequenceLogPopulateController', () {
     late MockSyncSequenceLogService mockSequenceLogService;
     late MockJournalDb mockJournalDb;
+    late MockAgentDatabase mockAgentDb;
     late ProviderContainer container;
 
     setUp(() async {
@@ -128,10 +160,12 @@ void main() {
 
       mockSequenceLogService = MockSyncSequenceLogService();
       mockJournalDb = MockJournalDb();
+      mockAgentDb = MockAgentDatabase();
 
       getIt
         ..registerSingleton<SyncSequenceLogService>(mockSequenceLogService)
-        ..registerSingleton<JournalDb>(mockJournalDb);
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<AgentDatabase>(mockAgentDb);
     });
 
     tearDown(() async {
@@ -139,38 +173,30 @@ void main() {
       await getIt.reset();
     });
 
-    test('initial state is not running with zero progress', () {
-      container = ProviderContainer();
-
-      final state = container.read(sequenceLogPopulateControllerProvider);
-
-      expect(state.progress, 0);
-      expect(state.isRunning, false);
-      expect(state.populatedCount, isNull);
-      expect(state.error, isNull);
-    });
-
-    test('populateSequenceLog completes successfully', () async {
-      container = ProviderContainer();
-
+    void stubAllPopulateMethods({
+      int journalCount = 0,
+      int linksCount = 0,
+      int agentEntitiesCount = 0,
+      int agentLinksCount = 0,
+    }) {
       when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
-        (_) => Stream.fromIterable([
-          [
-            (id: 'entry-1', vectorClock: {'host-1': 1}),
-          ],
-        ]),
+        (_) => Stream.fromIterable([]),
       );
       when(() => mockJournalDb.countAllJournalEntries())
-          .thenAnswer((_) async => 1);
-
+          .thenAnswer((_) async => 0);
       when(() => mockJournalDb.streamEntryLinksWithVectorClock()).thenAnswer(
-        (_) => Stream.fromIterable([
-          [
-            (id: 'link-1', vectorClock: {'host-1': 2}),
-          ],
-        ]),
+        (_) => Stream.fromIterable([]),
       );
-      when(() => mockJournalDb.countAllEntryLinks()).thenAnswer((_) async => 1);
+      when(() => mockJournalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
+      when(() => mockAgentDb.streamAgentEntitiesWithVectorClock()).thenAnswer(
+        (_) => Stream.fromIterable([]),
+      );
+      when(() => mockAgentDb.countAllAgentEntities())
+          .thenAnswer((_) async => 0);
+      when(() => mockAgentDb.streamAgentLinksWithVectorClock()).thenAnswer(
+        (_) => Stream.fromIterable([]),
+      );
+      when(() => mockAgentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
 
       when(
         () => mockSequenceLogService.populateFromJournal(
@@ -182,7 +208,7 @@ void main() {
         final onProgress =
             invocation.namedArguments[#onProgress] as void Function(double)?;
         onProgress?.call(1);
-        return 10;
+        return journalCount;
       });
 
       when(
@@ -195,18 +221,66 @@ void main() {
         final onProgress =
             invocation.namedArguments[#onProgress] as void Function(double)?;
         onProgress?.call(1);
-        return 5;
+        return linksCount;
       });
 
-      // Listen for completion
-      final completer = Completer<SequenceLogPopulateState>();
+      when(
+        () => mockSequenceLogService.populateFromAgentEntities(
+          entityStream: any(named: 'entityStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(double)?;
+        onProgress?.call(1);
+        return agentEntitiesCount;
+      });
+
+      when(
+        () => mockSequenceLogService.populateFromAgentLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(double)?;
+        onProgress?.call(1);
+        return agentLinksCount;
+      });
+    }
+
+    test('initial state is not running with zero progress', () {
+      container = ProviderContainer();
+
+      final state = container.read(sequenceLogPopulateControllerProvider);
+
+      expect(state.progress, 0);
+      expect(state.isRunning, false);
+      expect(state.populatedCount, isNull);
+      expect(state.populatedAgentEntitiesCount, isNull);
+      expect(state.populatedAgentLinksCount, isNull);
+      expect(state.error, isNull);
+    });
+
+    test('populateSequenceLog completes all four phases', () async {
+      container = ProviderContainer();
+
+      stubAllPopulateMethods(
+        journalCount: 10,
+        linksCount: 5,
+        agentEntitiesCount: 8,
+        agentLinksCount: 3,
+      );
+
+      // Track phases seen during execution
+      final phasesSeen = <SequenceLogPopulatePhase>[];
       container.listen(
         sequenceLogPopulateControllerProvider,
         (previous, next) {
-          if (!next.isRunning &&
-              next.progress == 1.0 &&
-              !completer.isCompleted) {
-            completer.complete(next);
+          if (!phasesSeen.contains(next.phase)) {
+            phasesSeen.add(next.phase);
           }
         },
       );
@@ -215,16 +289,70 @@ void main() {
           container.read(sequenceLogPopulateControllerProvider.notifier);
       await controller.populateSequenceLog();
 
-      final finalState = await completer.future.timeout(
-        const Duration(seconds: 2),
-        onTimeout: () => container.read(sequenceLogPopulateControllerProvider),
-      );
+      final finalState = container.read(sequenceLogPopulateControllerProvider);
 
       expect(finalState.isRunning, false);
       expect(finalState.progress, 1.0);
       expect(finalState.populatedCount, 10);
       expect(finalState.populatedLinksCount, 5);
+      expect(finalState.populatedAgentEntitiesCount, 8);
+      expect(finalState.populatedAgentLinksCount, 3);
       expect(finalState.error, isNull);
+      expect(finalState.phase, SequenceLogPopulatePhase.done);
+
+      expect(phasesSeen, contains(SequenceLogPopulatePhase.populatingJournal));
+      expect(phasesSeen, contains(SequenceLogPopulatePhase.populatingLinks));
+      expect(
+        phasesSeen,
+        contains(SequenceLogPopulatePhase.populatingAgentEntities),
+      );
+      expect(
+        phasesSeen,
+        contains(SequenceLogPopulatePhase.populatingAgentLinks),
+      );
+      expect(phasesSeen, contains(SequenceLogPopulatePhase.done));
+    });
+
+    test('populateSequenceLog calls all four service methods', () async {
+      container = ProviderContainer();
+
+      stubAllPopulateMethods();
+
+      final controller =
+          container.read(sequenceLogPopulateControllerProvider.notifier);
+      await controller.populateSequenceLog();
+
+      verify(
+        () => mockSequenceLogService.populateFromJournal(
+          entryStream: any(named: 'entryStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+
+      verify(
+        () => mockSequenceLogService.populateFromEntryLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+
+      verify(
+        () => mockSequenceLogService.populateFromAgentEntities(
+          entityStream: any(named: 'entityStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+
+      verify(
+        () => mockSequenceLogService.populateFromAgentLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
     });
 
     test('populateSequenceLog handles errors', () async {

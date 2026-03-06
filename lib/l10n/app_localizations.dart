@@ -5269,6 +5269,30 @@ abstract class AppLocalizations {
   /// **'This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.'**
   String get maintenancePopulateSequenceLogMessage;
 
+  /// No description provided for @maintenancePopulatePhaseAgentEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing agent entities...'**
+  String get maintenancePopulatePhaseAgentEntities;
+
+  /// No description provided for @maintenancePopulatePhaseAgentLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing agent links...'**
+  String get maintenancePopulatePhaseAgentLinks;
+
+  /// No description provided for @maintenancePopulatePhaseJournal.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing journal entries...'**
+  String get maintenancePopulatePhaseJournal;
+
+  /// No description provided for @maintenancePopulatePhaseLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing entry links...'**
+  String get maintenancePopulatePhaseLinks;
+
   /// No description provided for @maintenancePurgeDeleted.
   ///
   /// In en, this message translates to:
