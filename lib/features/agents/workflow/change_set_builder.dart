@@ -119,8 +119,11 @@ class ChangeSetBuilder {
 
       // Track the title so subsequent addItem calls see it.
       final title = args['title'];
-      if (title is String && title.isNotEmpty) {
-        existingTitles.add(title.toLowerCase().trim());
+      if (title is String) {
+        final normalized = title.trim().toLowerCase();
+        if (normalized.isNotEmpty) {
+          existingTitles.add(normalized);
+        }
       }
     }
 
@@ -236,8 +239,11 @@ class ChangeSetBuilder {
         // the same batch with the same title are caught as duplicates.
         if (existingTitles != null) {
           final title = element['title'];
-          if (title is String && title.isNotEmpty) {
-            existingTitles.add(title.toLowerCase().trim());
+          if (title is String) {
+            final normalized = title.trim().toLowerCase();
+            if (normalized.isNotEmpty) {
+              existingTitles.add(normalized);
+            }
           }
         }
         added++;
@@ -502,9 +508,9 @@ class ChangeSetBuilder {
     }
 
     final title = args['title'];
-    if (title is! String || title.isEmpty) return null;
-
-    final normalized = title.toLowerCase().trim();
+    if (title is! String) return null;
+    final normalized = title.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
     if (existingTitles.contains(normalized)) {
       return '"$title" already exists on the task';
     }

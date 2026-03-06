@@ -401,7 +401,7 @@ Extend `build()` to accept recent rejected decisions:
 Future<ChangeSetEntity?> build(
   AgentSyncService syncService, {
   List<ChangeSetEntity> existingPendingSets = const [],
-  List<ChangeDecisionEntity> recentRejections = const [],  // NEW
+  Set<String> rejectedFingerprints = const {},  // NEW
 }) async {
 ```
 
@@ -437,13 +437,14 @@ final rejectedOnly = recentRejections
 
 // Reconstruct fingerprints from rejected decisions
 final rejectedFingerprints = rejectedOnly
-    .map((d) => '${d.toolName}:${const DeepCollectionEquality().hash(d.args)}')
+    .where((d) => d.args != null)
+    .map((d) => ChangeItem.fingerprintFromParts(d.toolName, d.args!))
     .toSet();
 
 await changeSetBuilder.build(
   syncService,
   existingPendingSets: pendingSets,
-  recentRejections: rejectedFingerprints,  // NEW
+  rejectedFingerprints: rejectedFingerprints,  // NEW
 );
 ```
 
