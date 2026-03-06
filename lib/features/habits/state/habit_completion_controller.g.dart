@@ -17,11 +17,7 @@ final class HabitCompletionControllerProvider
         $AsyncNotifierProvider<HabitCompletionController, List<HabitResult>> {
   HabitCompletionControllerProvider._({
     required HabitCompletionControllerFamily super.from,
-    required ({
-      String habitId,
-      DateTime rangeStart,
-      DateTime rangeEnd,
-    })
+    required ({String habitId, DateTime rangeStart, DateTime rangeEnd})
     super.argument,
   }) : super(
          retry: null,
@@ -67,11 +63,7 @@ final class HabitCompletionControllerFamily extends $Family
           AsyncValue<List<HabitResult>>,
           List<HabitResult>,
           FutureOr<List<HabitResult>>,
-          ({
-            String habitId,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          })
+          ({String habitId, DateTime rangeStart, DateTime rangeEnd})
         > {
   HabitCompletionControllerFamily._()
     : super(
@@ -87,11 +79,7 @@ final class HabitCompletionControllerFamily extends $Family
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) => HabitCompletionControllerProvider._(
-    argument: (
-      habitId: habitId,
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
-    ),
+    argument: (habitId: habitId, rangeStart: rangeStart, rangeEnd: rangeEnd),
     from: this,
   );
 
@@ -102,12 +90,7 @@ final class HabitCompletionControllerFamily extends $Family
 abstract class _$HabitCompletionController
     extends $AsyncNotifier<List<HabitResult>> {
   late final _$args =
-      ref.$arg
-          as ({
-            String habitId,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          });
+      ref.$arg as ({String habitId, DateTime rangeStart, DateTime rangeEnd});
   String get habitId => _$args.habitId;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;

@@ -80,9 +80,8 @@ final class JournalFocusControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  JournalFocusControllerProvider call({
-    required String id,
-  }) => JournalFocusControllerProvider._(argument: id, from: this);
+  JournalFocusControllerProvider call({required String id}) =>
+      JournalFocusControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'journalFocusControllerProvider';
@@ -92,9 +91,7 @@ abstract class _$JournalFocusController extends $Notifier<JournalFocusIntent?> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  JournalFocusIntent? build({
-    required String id,
-  });
+  JournalFocusIntent? build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -107,11 +104,6 @@ abstract class _$JournalFocusController extends $Notifier<JournalFocusIntent?> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

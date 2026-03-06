@@ -84,9 +84,8 @@ final class AiConfigByTypeControllerFamily extends $Family
   /// Controller for getting a list of AiConfig items of a specific type
   /// Used in settings list pages to display all configurations of a particular type
 
-  AiConfigByTypeControllerProvider call({
-    required AiConfigType configType,
-  }) => AiConfigByTypeControllerProvider._(argument: configType, from: this);
+  AiConfigByTypeControllerProvider call({required AiConfigType configType}) =>
+      AiConfigByTypeControllerProvider._(argument: configType, from: this);
 
   @override
   String toString() => r'aiConfigByTypeControllerProvider';
@@ -100,9 +99,7 @@ abstract class _$AiConfigByTypeController
   late final _$args = ref.$arg as AiConfigType;
   AiConfigType get configType => _$args;
 
-  Stream<List<AiConfig>> build({
-    required AiConfigType configType,
-  });
+  Stream<List<AiConfig>> build({required AiConfigType configType});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -115,12 +112,7 @@ abstract class _$AiConfigByTypeController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        configType: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(configType: _$args));
   }
 }
 
@@ -169,10 +161,7 @@ final class AiConfigByIdProvider
   @override
   FutureOr<AiConfig?> create(Ref ref) {
     final argument = this.argument as String;
-    return aiConfigById(
-      ref,
-      argument,
-    );
+    return aiConfigById(ref, argument);
   }
 
   @override
@@ -203,9 +192,8 @@ final class AiConfigByIdFamily extends $Family
 
   /// Provider for getting a specific AiConfig by its ID
 
-  AiConfigByIdProvider call(
-    String id,
-  ) => AiConfigByIdProvider._(argument: id, from: this);
+  AiConfigByIdProvider call(String id) =>
+      AiConfigByIdProvider._(argument: id, from: this);
 
   @override
   String toString() => r'aiConfigByIdProvider';

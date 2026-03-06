@@ -2709,9 +2709,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2727,9 +2725,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<String>(type),
         Variable<int>(limit),
       ],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2747,9 +2743,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<String>(subtype),
         Variable<int>(limit),
       ],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2757,9 +2751,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2775,9 +2767,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<String>(threadId),
         Variable<int>(limit),
       ],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2785,9 +2775,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE id = ?1 AND deleted_at IS NULL',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2795,9 +2783,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE from_id = ?1 AND deleted_at IS NULL',
       variables: [Variable<String>(fromId)],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2808,9 +2794,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE from_id = ?1 AND type = ?2 AND deleted_at IS NULL',
       variables: [Variable<String>(fromId), Variable<String>(type)],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2818,9 +2802,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE to_id = ?1 AND deleted_at IS NULL',
       variables: [Variable<String>(toId)],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2828,9 +2810,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE to_id = ?1 AND type = ?2 AND deleted_at IS NULL',
       variables: [Variable<String>(toId), Variable<String>(type)],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2838,9 +2818,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM wake_run_log WHERE agent_id = ?1 ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {
-        wakeRunLog,
-      },
+      readsFrom: {wakeRunLog},
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
@@ -2848,9 +2826,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM wake_run_log WHERE run_key = ?1',
       variables: [Variable<String>(runKey)],
-      readsFrom: {
-        wakeRunLog,
-      },
+      readsFrom: {wakeRunLog},
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
@@ -2858,9 +2834,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE type = \'agent\' AND deleted_at IS NULL ORDER BY created_at DESC',
       variables: [],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2868,9 +2842,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM saga_log WHERE status = \'pending\' ORDER BY created_at ASC',
       variables: [],
-      readsFrom: {
-        sagaLog,
-      },
+      readsFrom: {sagaLog},
     ).asyncMap(sagaLog.mapFromRow);
   }
 
@@ -2914,9 +2886,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE type = \'agentTemplate\' AND deleted_at IS NULL ORDER BY created_at DESC',
       variables: [],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2924,9 +2894,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
       variables: [],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2944,9 +2912,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<int>(limit),
         Variable<int>(offset),
       ],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -2954,9 +2920,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2',
       variables: [Variable<DateTime>(start), Variable<DateTime>(end)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
@@ -2964,9 +2928,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',
       variables: [],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2984,9 +2946,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<int>(limit),
         Variable<int>(offset),
       ],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -2994,9 +2954,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS cnt FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2',
       variables: [Variable<DateTime>(start), Variable<DateTime>(end)],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
@@ -3007,9 +2965,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM wake_run_log WHERE template_id = ?1 ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
-      readsFrom: {
-        wakeRunLog,
-      },
+      readsFrom: {wakeRunLog},
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
@@ -3020,10 +2976,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'agentReport\' AND ae.subtype = \'current\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-        agentLinks,
-      },
+      readsFrom: {agentEntities, agentLinks},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3034,10 +2987,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'agentMessage\' AND ae.subtype = \'observation\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-        agentLinks,
-      },
+      readsFrom: {agentEntities, agentLinks},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3048,9 +2998,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'evolutionSession\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3058,9 +3006,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT"es"."id" AS "nested_0.id", "es"."agent_id" AS "nested_0.agent_id", "es"."type" AS "nested_0.type", "es"."subtype" AS "nested_0.subtype", "es"."thread_id" AS "nested_0.thread_id", "es"."created_at" AS "nested_0.created_at", "es"."updated_at" AS "nested_0.updated_at", "es"."deleted_at" AS "nested_0.deleted_at", "es"."serialized" AS "nested_0.serialized", "es"."schema_version" AS "nested_0.schema_version" FROM agent_entities AS es INNER JOIN agent_entities AS tpl ON tpl.id = es.agent_id AND tpl.type = \'agentTemplate\' AND tpl.deleted_at IS NULL WHERE es.type = \'evolutionSession\' AND es.deleted_at IS NULL ORDER BY es.updated_at DESC',
       variables: [],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(
       (QueryRow row) async => GetAllEvolutionSessionsResult(
         es: await agentEntities.mapFromRow(row, tablePrefix: 'nested_0'),
@@ -3075,9 +3021,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'evolutionNote\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3088,10 +3032,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS cnt FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.updated_at > ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL',
       variables: [Variable<String>(templateId), Variable<DateTime>(since)],
-      readsFrom: {
-        agentEntities,
-        agentLinks,
-      },
+      readsFrom: {agentEntities, agentLinks},
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
@@ -3099,9 +3040,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3112,9 +3051,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND subtype IN (\'pending\', \'partiallyResolved\') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3125,9 +3062,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeDecision\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3143,10 +3078,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<DateTime>(since),
         Variable<int>(limit),
       ],
-      readsFrom: {
-        agentEntities,
-        agentLinks,
-      },
+      readsFrom: {agentEntities, agentLinks},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3154,9 +3086,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'wakeTokenUsage\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3167,10 +3097,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
-      readsFrom: {
-        agentEntities,
-        agentLinks,
-      },
+      readsFrom: {agentEntities, agentLinks},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3178,9 +3105,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',
       variables: [Variable<String>(nowIso)],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3188,9 +3113,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
       variables: [],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
   }
 
@@ -3198,9 +3121,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS cnt FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
       variables: [],
-      readsFrom: {
-        agentEntities,
-      },
+      readsFrom: {agentEntities},
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
@@ -3208,9 +3129,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
       variables: [],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
   }
 
@@ -3218,9 +3137,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS cnt FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
       variables: [],
-      readsFrom: {
-        agentLinks,
-      },
+      readsFrom: {agentLinks},
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
@@ -4506,7 +4423,5 @@ class $AgentDatabaseManager {
 
 class GetAllEvolutionSessionsResult {
   final AgentEntity es;
-  GetAllEvolutionSessionsResult({
-    required this.es,
-  });
+  GetAllEvolutionSessionsResult({required this.es});
 }

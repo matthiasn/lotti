@@ -80,9 +80,8 @@ final class ChatSessionsControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  ChatSessionsControllerProvider call(
-    String categoryId,
-  ) => ChatSessionsControllerProvider._(argument: categoryId, from: this);
+  ChatSessionsControllerProvider call(String categoryId) =>
+      ChatSessionsControllerProvider._(argument: categoryId, from: this);
 
   @override
   String toString() => r'chatSessionsControllerProvider';
@@ -92,9 +91,7 @@ abstract class _$ChatSessionsController extends $Notifier<ChatStateUiModel> {
   late final _$args = ref.$arg as String;
   String get categoryId => _$args;
 
-  ChatStateUiModel build(
-    String categoryId,
-  );
+  ChatStateUiModel build(String categoryId);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -107,11 +104,6 @@ abstract class _$ChatSessionsController extends $Notifier<ChatStateUiModel> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(_$args));
   }
 }

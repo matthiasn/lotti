@@ -105,37 +105,38 @@ const _$ModalityEnumMap = {
   Modality.image: 'image',
 };
 
-AiConfigPrompt _$AiConfigPromptFromJson(
-  Map<String, dynamic> json,
-) => AiConfigPrompt(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  systemMessage: json['systemMessage'] as String,
-  userMessage: json['userMessage'] as String,
-  defaultModelId: json['defaultModelId'] as String,
-  modelIds: (json['modelIds'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  useReasoning: json['useReasoning'] as bool,
-  requiredInputData: (json['requiredInputData'] as List<dynamic>)
-      .map((e) => $enumDecode(_$InputDataTypeEnumMap, e))
-      .toList(),
-  aiResponseType: $enumDecode(_$AiResponseTypeEnumMap, json['aiResponseType']),
-  comment: json['comment'] as String?,
-  updatedAt: json['updatedAt'] == null
-      ? null
-      : DateTime.parse(json['updatedAt'] as String),
-  description: json['description'] as String?,
-  defaultVariables: (json['defaultVariables'] as Map<String, dynamic>?)?.map(
-    (k, e) => MapEntry(k, e as String),
-  ),
-  category: json['category'] as String?,
-  archived: json['archived'] as bool? ?? false,
-  trackPreconfigured: json['trackPreconfigured'] as bool? ?? false,
-  preconfiguredPromptId: json['preconfiguredPromptId'] as String?,
-  $type: json['runtimeType'] as String?,
-);
+AiConfigPrompt _$AiConfigPromptFromJson(Map<String, dynamic> json) =>
+    AiConfigPrompt(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      systemMessage: json['systemMessage'] as String,
+      userMessage: json['userMessage'] as String,
+      defaultModelId: json['defaultModelId'] as String,
+      modelIds: (json['modelIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      useReasoning: json['useReasoning'] as bool,
+      requiredInputData: (json['requiredInputData'] as List<dynamic>)
+          .map((e) => $enumDecode(_$InputDataTypeEnumMap, e))
+          .toList(),
+      aiResponseType: $enumDecode(
+        _$AiResponseTypeEnumMap,
+        json['aiResponseType'],
+      ),
+      comment: json['comment'] as String?,
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      description: json['description'] as String?,
+      defaultVariables: (json['defaultVariables'] as Map<String, dynamic>?)
+          ?.map((k, e) => MapEntry(k, e as String)),
+      category: json['category'] as String?,
+      archived: json['archived'] as bool? ?? false,
+      trackPreconfigured: json['trackPreconfigured'] as bool? ?? false,
+      preconfiguredPromptId: json['preconfiguredPromptId'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
 
 Map<String, dynamic> _$AiConfigPromptToJson(AiConfigPrompt instance) =>
     <String, dynamic>{

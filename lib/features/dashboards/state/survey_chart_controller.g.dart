@@ -17,11 +17,7 @@ final class SurveyChartDataControllerProvider
         $AsyncNotifierProvider<SurveyChartDataController, List<JournalEntity>> {
   SurveyChartDataControllerProvider._({
     required SurveyChartDataControllerFamily super.from,
-    required ({
-      String surveyType,
-      DateTime rangeStart,
-      DateTime rangeEnd,
-    })
+    required ({String surveyType, DateTime rangeStart, DateTime rangeEnd})
     super.argument,
   }) : super(
          retry: null,
@@ -67,11 +63,7 @@ final class SurveyChartDataControllerFamily extends $Family
           AsyncValue<List<JournalEntity>>,
           List<JournalEntity>,
           FutureOr<List<JournalEntity>>,
-          ({
-            String surveyType,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          })
+          ({String surveyType, DateTime rangeStart, DateTime rangeEnd})
         > {
   SurveyChartDataControllerFamily._()
     : super(
@@ -102,12 +94,7 @@ final class SurveyChartDataControllerFamily extends $Family
 abstract class _$SurveyChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
   late final _$args =
-      ref.$arg
-          as ({
-            String surveyType,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          });
+      ref.$arg as ({String surveyType, DateTime rangeStart, DateTime rangeEnd});
   String get surveyType => _$args.surveyType;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;

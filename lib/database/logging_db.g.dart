@@ -587,9 +587,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM log_entries ORDER BY created_at DESC LIMIT ?1',
       variables: [Variable<int>(limit)],
-      readsFrom: {
-        logEntries,
-      },
+      readsFrom: {logEntries},
     ).asyncMap(logEntries.mapFromRow);
   }
 
@@ -603,9 +601,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
         Variable<int>(limit),
         for (var $ in levels) Variable<String>($),
       ],
-      readsFrom: {
-        logEntries,
-      },
+      readsFrom: {logEntries},
     ).asyncMap(logEntries.mapFromRow);
   }
 
@@ -613,9 +609,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM log_entries WHERE id = ?1',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        logEntries,
-      },
+      readsFrom: {logEntries},
     ).asyncMap(logEntries.mapFromRow);
   }
 
@@ -623,9 +617,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM log_entries WHERE(LOWER(message) LIKE ?1 OR LOWER(domain) LIKE ?1 OR(sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE ?1))ORDER BY created_at DESC',
       variables: [Variable<String>(searchQuery)],
-      readsFrom: {
-        logEntries,
-      },
+      readsFrom: {logEntries},
     ).asyncMap(logEntries.mapFromRow);
   }
 
@@ -641,9 +633,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
         Variable<int>(limit),
         Variable<int>(offset),
       ],
-      readsFrom: {
-        logEntries,
-      },
+      readsFrom: {logEntries},
     ).asyncMap(logEntries.mapFromRow);
   }
 
@@ -651,9 +641,7 @@ abstract class _$LoggingDb extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS _c0 FROM log_entries WHERE(LOWER(message) LIKE ?1 OR LOWER(domain) LIKE ?1 OR(sub_domain IS NOT NULL AND LOWER(sub_domain) LIKE ?1))',
       variables: [Variable<String>(searchQuery)],
-      readsFrom: {
-        logEntries,
-      },
+      readsFrom: {logEntries},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 

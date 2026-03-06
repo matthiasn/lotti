@@ -77,9 +77,8 @@ final class LinkedFromEntriesControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  LinkedFromEntriesControllerProvider call({
-    required String id,
-  }) => LinkedFromEntriesControllerProvider._(argument: id, from: this);
+  LinkedFromEntriesControllerProvider call({required String id}) =>
+      LinkedFromEntriesControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'linkedFromEntriesControllerProvider';
@@ -90,9 +89,7 @@ abstract class _$LinkedFromEntriesController
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<List<JournalEntity>> build({
-    required String id,
-  });
+  FutureOr<List<JournalEntity>> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -106,11 +103,6 @@ abstract class _$LinkedFromEntriesController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

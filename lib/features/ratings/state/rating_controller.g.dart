@@ -16,11 +16,7 @@ final class RatingControllerProvider
     extends $AsyncNotifierProvider<RatingController, JournalEntity?> {
   RatingControllerProvider._({
     required RatingControllerFamily super.from,
-    required ({
-      String targetId,
-      String catalogId,
-    })
-    super.argument,
+    required ({String targetId, String catalogId}) super.argument,
   }) : super(
          retry: null,
          name: r'ratingControllerProvider',
@@ -63,10 +59,7 @@ final class RatingControllerFamily extends $Family
           AsyncValue<JournalEntity?>,
           JournalEntity?,
           FutureOr<JournalEntity?>,
-          ({
-            String targetId,
-            String catalogId,
-          })
+          ({String targetId, String catalogId})
         > {
   RatingControllerFamily._()
     : super(
@@ -81,10 +74,7 @@ final class RatingControllerFamily extends $Family
     required String targetId,
     String catalogId = 'session',
   }) => RatingControllerProvider._(
-    argument: (
-      targetId: targetId,
-      catalogId: catalogId,
-    ),
+    argument: (targetId: targetId, catalogId: catalogId),
     from: this,
   );
 
@@ -93,12 +83,7 @@ final class RatingControllerFamily extends $Family
 }
 
 abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
-  late final _$args =
-      ref.$arg
-          as ({
-            String targetId,
-            String catalogId,
-          });
+  late final _$args = ref.$arg as ({String targetId, String catalogId});
   String get targetId => _$args.targetId;
   String get catalogId => _$args.catalogId;
 
@@ -120,10 +105,7 @@ abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
             >;
     element.handleCreate(
       ref,
-      () => build(
-        targetId: _$args.targetId,
-        catalogId: _$args.catalogId,
-      ),
+      () => build(targetId: _$args.targetId, catalogId: _$args.catalogId),
     );
   }
 }

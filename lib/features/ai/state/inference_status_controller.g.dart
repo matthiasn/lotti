@@ -16,11 +16,7 @@ final class InferenceStatusControllerProvider
     extends $NotifierProvider<InferenceStatusController, InferenceStatus> {
   InferenceStatusControllerProvider._({
     required InferenceStatusControllerFamily super.from,
-    required ({
-      String id,
-      AiResponseType aiResponseType,
-    })
-    super.argument,
+    required ({String id, AiResponseType aiResponseType}) super.argument,
   }) : super(
          retry: null,
          name: r'inferenceStatusControllerProvider',
@@ -73,10 +69,7 @@ final class InferenceStatusControllerFamily extends $Family
           InferenceStatus,
           InferenceStatus,
           InferenceStatus,
-          ({
-            String id,
-            AiResponseType aiResponseType,
-          })
+          ({String id, AiResponseType aiResponseType})
         > {
   InferenceStatusControllerFamily._()
     : super(
@@ -91,10 +84,7 @@ final class InferenceStatusControllerFamily extends $Family
     required String id,
     required AiResponseType aiResponseType,
   }) => InferenceStatusControllerProvider._(
-    argument: (
-      id: id,
-      aiResponseType: aiResponseType,
-    ),
+    argument: (id: id, aiResponseType: aiResponseType),
     from: this,
   );
 
@@ -103,12 +93,7 @@ final class InferenceStatusControllerFamily extends $Family
 }
 
 abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
-  late final _$args =
-      ref.$arg
-          as ({
-            String id,
-            AiResponseType aiResponseType,
-          });
+  late final _$args = ref.$arg as ({String id, AiResponseType aiResponseType});
   String get id => _$args.id;
   AiResponseType get aiResponseType => _$args.aiResponseType;
 
@@ -130,10 +115,7 @@ abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
             >;
     element.handleCreate(
       ref,
-      () => build(
-        id: _$args.id,
-        aiResponseType: _$args.aiResponseType,
-      ),
+      () => build(id: _$args.id, aiResponseType: _$args.aiResponseType),
     );
   }
 }
@@ -145,11 +127,7 @@ final class InferenceRunningControllerProvider
     extends $NotifierProvider<InferenceRunningController, bool> {
   InferenceRunningControllerProvider._({
     required InferenceRunningControllerFamily super.from,
-    required ({
-      String id,
-      Set<AiResponseType> responseTypes,
-    })
-    super.argument,
+    required ({String id, Set<AiResponseType> responseTypes}) super.argument,
   }) : super(
          retry: null,
          name: r'inferenceRunningControllerProvider',
@@ -202,10 +180,7 @@ final class InferenceRunningControllerFamily extends $Family
           bool,
           bool,
           bool,
-          ({
-            String id,
-            Set<AiResponseType> responseTypes,
-          })
+          ({String id, Set<AiResponseType> responseTypes})
         > {
   InferenceRunningControllerFamily._()
     : super(
@@ -220,10 +195,7 @@ final class InferenceRunningControllerFamily extends $Family
     required String id,
     required Set<AiResponseType> responseTypes,
   }) => InferenceRunningControllerProvider._(
-    argument: (
-      id: id,
-      responseTypes: responseTypes,
-    ),
+    argument: (id: id, responseTypes: responseTypes),
     from: this,
   );
 
@@ -233,18 +205,11 @@ final class InferenceRunningControllerFamily extends $Family
 
 abstract class _$InferenceRunningController extends $Notifier<bool> {
   late final _$args =
-      ref.$arg
-          as ({
-            String id,
-            Set<AiResponseType> responseTypes,
-          });
+      ref.$arg as ({String id, Set<AiResponseType> responseTypes});
   String get id => _$args.id;
   Set<AiResponseType> get responseTypes => _$args.responseTypes;
 
-  bool build({
-    required String id,
-    required Set<AiResponseType> responseTypes,
-  });
+  bool build({required String id, required Set<AiResponseType> responseTypes});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -259,10 +224,7 @@ abstract class _$InferenceRunningController extends $Notifier<bool> {
             >;
     element.handleCreate(
       ref,
-      () => build(
-        id: _$args.id,
-        responseTypes: _$args.responseTypes,
-      ),
+      () => build(id: _$args.id, responseTypes: _$args.responseTypes),
     );
   }
 }

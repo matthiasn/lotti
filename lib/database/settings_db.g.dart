@@ -283,9 +283,7 @@ abstract class _$SettingsDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM settings WHERE config_key = ?1',
       variables: [Variable<String>(configKey)],
-      readsFrom: {
-        settings,
-      },
+      readsFrom: {settings},
     ).asyncMap(settings.mapFromRow);
   }
 

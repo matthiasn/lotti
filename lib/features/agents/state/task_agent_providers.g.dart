@@ -119,10 +119,7 @@ final class TaskAgentProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return taskAgent(
-      ref,
-      argument,
-    );
+    return taskAgent(ref, argument);
   }
 
   @override
@@ -161,9 +158,8 @@ final class TaskAgentFamily extends $Family
   /// Watches the update stream so the UI rebuilds when an agent-task link
   /// arrives via sync (the notification includes the taskId).
 
-  TaskAgentProvider call(
-    String taskId,
-  ) => TaskAgentProvider._(argument: taskId, from: this);
+  TaskAgentProvider call(String taskId) =>
+      TaskAgentProvider._(argument: taskId, from: this);
 
   @override
   String toString() => r'taskAgentProvider';

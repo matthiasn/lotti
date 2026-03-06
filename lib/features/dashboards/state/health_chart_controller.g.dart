@@ -17,11 +17,7 @@ final class HealthChartDataControllerProvider
         $AsyncNotifierProvider<HealthChartDataController, List<JournalEntity>> {
   HealthChartDataControllerProvider._({
     required HealthChartDataControllerFamily super.from,
-    required ({
-      String healthDataType,
-      DateTime rangeStart,
-      DateTime rangeEnd,
-    })
+    required ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
     super.argument,
   }) : super(
          retry: null,
@@ -67,11 +63,7 @@ final class HealthChartDataControllerFamily extends $Family
           AsyncValue<List<JournalEntity>>,
           List<JournalEntity>,
           FutureOr<List<JournalEntity>>,
-          ({
-            String healthDataType,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          })
+          ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
         > {
   HealthChartDataControllerFamily._()
     : super(
@@ -103,11 +95,7 @@ abstract class _$HealthChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
   late final _$args =
       ref.$arg
-          as ({
-            String healthDataType,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          });
+          as ({String healthDataType, DateTime rangeStart, DateTime rangeEnd});
   String get healthDataType => _$args.healthDataType;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
@@ -153,11 +141,7 @@ final class HealthObservationsControllerProvider
         > {
   HealthObservationsControllerProvider._({
     required HealthObservationsControllerFamily super.from,
-    required ({
-      String healthDataType,
-      DateTime rangeStart,
-      DateTime rangeEnd,
-    })
+    required ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
     super.argument,
   }) : super(
          retry: null,
@@ -203,11 +187,7 @@ final class HealthObservationsControllerFamily extends $Family
           AsyncValue<List<Observation>>,
           List<Observation>,
           FutureOr<List<Observation>>,
-          ({
-            String healthDataType,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          })
+          ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
         > {
   HealthObservationsControllerFamily._()
     : super(
@@ -239,11 +219,7 @@ abstract class _$HealthObservationsController
     extends $AsyncNotifier<List<Observation>> {
   late final _$args =
       ref.$arg
-          as ({
-            String healthDataType,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          });
+          as ({String healthDataType, DateTime rangeStart, DateTime rangeEnd});
   String get healthDataType => _$args.healthDataType;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;

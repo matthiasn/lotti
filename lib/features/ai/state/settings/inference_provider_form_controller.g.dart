@@ -21,10 +21,7 @@ final class InferenceProviderFormControllerProvider
         > {
   InferenceProviderFormControllerProvider._({
     required InferenceProviderFormControllerFamily super.from,
-    required ({
-      String? configId,
-      InferenceProviderType? preselectedType,
-    })
+    required ({String? configId, InferenceProviderType? preselectedType})
     super.argument,
   }) : super(
          retry: null,
@@ -70,10 +67,7 @@ final class InferenceProviderFormControllerFamily extends $Family
           AsyncValue<InferenceProviderFormState?>,
           InferenceProviderFormState?,
           FutureOr<InferenceProviderFormState?>,
-          ({
-            String? configId,
-            InferenceProviderType? preselectedType,
-          })
+          ({String? configId, InferenceProviderType? preselectedType})
         > {
   InferenceProviderFormControllerFamily._()
     : super(
@@ -88,10 +82,7 @@ final class InferenceProviderFormControllerFamily extends $Family
     required String? configId,
     InferenceProviderType? preselectedType,
   }) => InferenceProviderFormControllerProvider._(
-    argument: (
-      configId: configId,
-      preselectedType: preselectedType,
-    ),
+    argument: (configId: configId, preselectedType: preselectedType),
     from: this,
   );
 
@@ -102,11 +93,7 @@ final class InferenceProviderFormControllerFamily extends $Family
 abstract class _$InferenceProviderFormController
     extends $AsyncNotifier<InferenceProviderFormState?> {
   late final _$args =
-      ref.$arg
-          as ({
-            String? configId,
-            InferenceProviderType? preselectedType,
-          });
+      ref.$arg as ({String? configId, InferenceProviderType? preselectedType});
   String? get configId => _$args.configId;
   InferenceProviderType? get preselectedType => _$args.preselectedType;
 

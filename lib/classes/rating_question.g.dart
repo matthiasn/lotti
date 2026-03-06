@@ -35,7 +35,4 @@ _RatingQuestionOption _$RatingQuestionOptionFromJson(
 
 Map<String, dynamic> _$RatingQuestionOptionToJson(
   _RatingQuestionOption instance,
-) => <String, dynamic>{
-  'label': instance.label,
-  'value': instance.value,
-};
+) => <String, dynamic>{'label': instance.label, 'value': instance.value};

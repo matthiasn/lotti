@@ -6430,9 +6430,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM config_flags',
       variables: [],
-      readsFrom: {
-        configFlags,
-      },
+      readsFrom: {configFlags},
     ).asyncMap(configFlags.mapFromRow);
   }
 
@@ -6440,9 +6438,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM config_flags WHERE name = ?1',
       variables: [Variable<String>(name)],
-      readsFrom: {
-        configFlags,
-      },
+      readsFrom: {configFlags},
     ).asyncMap(configFlags.mapFromRow);
   }
 
@@ -6482,10 +6478,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in privateStatuses) Variable<bool>($),
         for (var $ in flaggedStatuses) Variable<int>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6529,10 +6522,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in flaggedStatuses) Variable<int>($),
         for (var $ in categories) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6572,10 +6562,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in privateStatuses) Variable<bool>($),
         for (var $ in flaggedStatuses) Variable<int>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
@@ -6619,10 +6606,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in privateStatuses) Variable<bool>($),
         for (var $ in flaggedStatuses) Variable<int>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
@@ -6666,10 +6650,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in privateStatuses) Variable<bool>($),
         for (var $ in flaggedStatuses) Variable<int>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6687,11 +6668,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeEnd),
         Variable<int>(limit),
       ],
-      readsFrom: {
-        journal,
-        tagged,
-        configFlags,
-      },
+      readsFrom: {journal, tagged, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6712,11 +6689,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<int>(limit),
         for (var $ in tagIds) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        tagged,
-        configFlags,
-      },
+      readsFrom: {journal, tagged, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6727,9 +6700,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\') AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
       variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6745,12 +6716,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {
-        journal,
-        tagged,
-        tagEntities,
-        configFlags,
-      },
+      readsFrom: {journal, tagged, tagEntities, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6805,11 +6771,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in labelIds) Variable<String>($),
         for (var $ in priorities) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-        labeled,
-      },
+      readsFrom: {journal, configFlags, labeled},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6868,11 +6830,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in labelIds) Variable<String>($),
         for (var $ in priorities) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-        labeled,
-      },
+      readsFrom: {journal, configFlags, labeled},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6927,11 +6885,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in labelIds) Variable<String>($),
         for (var $ in priorities) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-        labeled,
-      },
+      readsFrom: {journal, configFlags, labeled},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6990,11 +6944,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in labelIds) Variable<String>($),
         for (var $ in priorities) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-        labeled,
-      },
+      readsFrom: {journal, configFlags, labeled},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7027,10 +6977,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in starredStatuses) Variable<bool>($),
         for (var $ in taskStatuses) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
@@ -7067,10 +7014,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in starredStatuses) Variable<bool>($),
         for (var $ in taskStatuses) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
@@ -7078,9 +7022,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [Variable<int>(limit), Variable<int>(offset)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7098,9 +7040,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<int>(limit),
         Variable<int>(offset),
       ],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7108,9 +7048,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'JournalAudio\' AND deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [Variable<int>(limit), Variable<int>(offset)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7118,9 +7056,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE deleted = FALSE AND flag = 1 ORDER BY date_from DESC LIMIT ?1',
       variables: [Variable<int>(limit)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7128,9 +7064,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM conflicts WHERE status = ?1 ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<int>(status), Variable<int>(limit)],
-      readsFrom: {
-        conflicts,
-      },
+      readsFrom: {conflicts},
     ).asyncMap(conflicts.mapFromRow);
   }
 
@@ -7138,9 +7072,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM conflicts WHERE id = ?1 ORDER BY created_at DESC',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        conflicts,
-      },
+      readsFrom: {conflicts},
     ).asyncMap(conflicts.mapFromRow);
   }
 
@@ -7148,10 +7080,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM measurable_types WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [],
-      readsFrom: {
-        measurableTypes,
-        configFlags,
-      },
+      readsFrom: {measurableTypes, configFlags},
     ).asyncMap(measurableTypes.mapFromRow);
   }
 
@@ -7159,10 +7088,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM measurable_types WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        measurableTypes,
-        configFlags,
-      },
+      readsFrom: {measurableTypes, configFlags},
     ).asyncMap(measurableTypes.mapFromRow);
   }
 
@@ -7178,9 +7104,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7196,9 +7120,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7206,10 +7128,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND deleted = FALSE ORDER BY date_from ASC',
       variables: [Variable<DateTime>(rangeStart)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7225,9 +7144,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7235,9 +7152,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND deleted = FALSE ORDER BY date_from DESC LIMIT 1',
       variables: [Variable<String>(subtype)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7245,9 +7160,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE ORDER BY date_from DESC',
       variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7255,9 +7168,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND deleted = FALSE ORDER BY date_to DESC LIMIT 1',
       variables: [],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7273,9 +7184,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7283,9 +7192,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE',
       variables: [],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -7293,9 +7200,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND flag = 1',
       variables: [],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -7309,10 +7214,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND task = 1 AND task_status IN ($expandedtaskStatuses)',
       variables: [for (var $ in taskStatuses) Variable<String>($)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -7320,10 +7222,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM tag_entities WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY tag COLLATE NOCASE',
       variables: [],
-      readsFrom: {
-        tagEntities,
-        configFlags,
-      },
+      readsFrom: {tagEntities, configFlags},
     ).asyncMap(tagEntities.mapFromRow);
   }
 
@@ -7331,10 +7230,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
       variables: [],
-      readsFrom: {
-        dashboardDefinitions,
-        configFlags,
-      },
+      readsFrom: {dashboardDefinitions, configFlags},
     ).asyncMap(dashboardDefinitions.mapFromRow);
   }
 
@@ -7342,10 +7238,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND id = ?1 AND deleted = FALSE',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        dashboardDefinitions,
-        configFlags,
-      },
+      readsFrom: {dashboardDefinitions, configFlags},
     ).asyncMap(dashboardDefinitions.mapFromRow);
   }
 
@@ -7353,10 +7246,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM habit_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE',
       variables: [],
-      readsFrom: {
-        habitDefinitions,
-        configFlags,
-      },
+      readsFrom: {habitDefinitions, configFlags},
     ).asyncMap(habitDefinitions.mapFromRow);
   }
 
@@ -7364,10 +7254,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM habit_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        habitDefinitions,
-        configFlags,
-      },
+      readsFrom: {habitDefinitions, configFlags},
     ).asyncMap(habitDefinitions.mapFromRow);
   }
 
@@ -7375,10 +7262,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM category_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
       variables: [],
-      readsFrom: {
-        categoryDefinitions,
-        configFlags,
-      },
+      readsFrom: {categoryDefinitions, configFlags},
     ).asyncMap(categoryDefinitions.mapFromRow);
   }
 
@@ -7386,10 +7270,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM category_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        categoryDefinitions,
-        configFlags,
-      },
+      readsFrom: {categoryDefinitions, configFlags},
     ).asyncMap(categoryDefinitions.mapFromRow);
   }
 
@@ -7397,10 +7278,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM label_definitions WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY name COLLATE NOCASE',
       variables: [],
-      readsFrom: {
-        labelDefinitions,
-        configFlags,
-      },
+      readsFrom: {labelDefinitions, configFlags},
     ).asyncMap(labelDefinitions.mapFromRow);
   }
 
@@ -7408,10 +7286,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        labelDefinitions,
-        configFlags,
-      },
+      readsFrom: {labelDefinitions, configFlags},
     ).asyncMap(labelDefinitions.mapFromRow);
   }
 
@@ -7427,10 +7302,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<bool>(inactive),
         Variable<int>(limit),
       ],
-      readsFrom: {
-        tagEntities,
-        configFlags,
-      },
+      readsFrom: {tagEntities, configFlags},
     ).asyncMap(tagEntities.mapFromRow);
   }
 
@@ -7447,9 +7319,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT label_id FROM labeled WHERE journal_id = ?1',
       variables: [Variable<String>(journalId)],
-      readsFrom: {
-        labeled,
-      },
+      readsFrom: {labeled},
     ).map((QueryRow row) => row.read<String>('label_id'));
   }
 
@@ -7529,9 +7399,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT journal_id FROM tagged WHERE tag_entity_id = ?1',
       variables: [Variable<String>(tagId)],
-      readsFrom: {
-        tagged,
-      },
+      readsFrom: {tagged},
     ).map((QueryRow row) => row.read<String>('journal_id'));
   }
 
@@ -7539,9 +7407,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS _c0 FROM tagged',
       variables: [],
-      readsFrom: {
-        tagged,
-      },
+      readsFrom: {tagged},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -7549,9 +7415,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT COUNT(*) AS _c0 FROM labeled',
       variables: [],
-      readsFrom: {
-        labeled,
-      },
+      readsFrom: {labeled},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -7559,11 +7423,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden = FALSE) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [Variable<String>(fromId)],
-      readsFrom: {
-        journal,
-        linkedEntries,
-        configFlags,
-      },
+      readsFrom: {journal, linkedEntries, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7574,10 +7434,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT id FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [for (var $ in ids) Variable<String>($)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
@@ -7585,10 +7442,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT id FROM journal WHERE deleted = FALSE AND category = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [Variable<String>(categoryId)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
@@ -7599,9 +7453,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds)',
       variables: [for (var $ in toIds) Variable<String>($)],
-      readsFrom: {
-        linkedEntries,
-      },
+      readsFrom: {linkedEntries},
     ).asyncMap(linkedEntries.mapFromRow);
   }
 
@@ -7612,9 +7464,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds) AND hidden = FALSE',
       variables: [for (var $ in fromIds) Variable<String>($)],
-      readsFrom: {
-        linkedEntries,
-      },
+      readsFrom: {linkedEntries},
     ).asyncMap(linkedEntries.mapFromRow);
   }
 
@@ -7625,9 +7475,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE id IN ($expandedids)',
       variables: [for (var $ in ids) Variable<String>($)],
-      readsFrom: {
-        journal,
-      },
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7638,10 +7486,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [for (var $ in ids) Variable<String>($)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7655,9 +7500,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<String>(fromId),
         for (var $ in hidden) Variable<bool>($),
       ],
-      readsFrom: {
-        linkedEntries,
-      },
+      readsFrom: {linkedEntries},
     ).map((QueryRow row) => row.read<String>('to_id'));
   }
 
@@ -7665,9 +7508,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT from_id FROM linked_entries WHERE to_id = ?1',
       variables: [Variable<String>(toId)],
-      readsFrom: {
-        linkedEntries,
-      },
+      readsFrom: {linkedEntries},
     ).map((QueryRow row) => row.read<String>('from_id'));
   }
 
@@ -7681,9 +7522,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<String>(fromId),
         for (var $ in hidden) Variable<bool>($),
       ],
-      readsFrom: {
-        linkedEntries,
-      },
+      readsFrom: {linkedEntries},
     ).asyncMap(linkedEntries.mapFromRow);
   }
 
@@ -7691,11 +7530,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT from_id FROM linked_entries WHERE to_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [Variable<String>(toId)],
-      readsFrom: {
-        journal,
-        linkedEntries,
-        configFlags,
-      },
+      readsFrom: {journal, linkedEntries, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7730,10 +7565,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in types) Variable<String>($),
         for (var $ in categoryIds) Variable<String>($),
       ],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7741,10 +7573,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7755,10 +7584,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7766,10 +7592,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') <= ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
       variables: [Variable<String>(endDate)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7777,10 +7600,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') >= ?1 AND json_extract(serialized, \'\$.data.due\') <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
       variables: [Variable<String>(startDate), Variable<String>(endDate)],
-      readsFrom: {
-        journal,
-        configFlags,
-      },
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7796,10 +7616,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at ASC',
       variables: [for (var $ in timeEntryIds) Variable<String>($)],
-      readsFrom: {
-        linkedEntries,
-        journal,
-      },
+      readsFrom: {linkedEntries, journal},
     ).map(
       (QueryRow row) => RatingsForTimeEntriesResult(
         ratingId: row.read<String>('rating_id'),
@@ -7815,10 +7632,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(NULLIF(j.subtype, \'\'), \'session\') = ?2 AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
       variables: [Variable<String>(targetId), Variable<String>(catalogId)],
-      readsFrom: {
-        journal,
-        linkedEntries,
-      },
+      readsFrom: {journal, linkedEntries},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7826,10 +7640,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY COALESCE(NULLIF(j.subtype, \'\'), \'session\') ASC, j.updated_at DESC',
       variables: [Variable<String>(targetId)],
-      readsFrom: {
-        journal,
-        linkedEntries,
-      },
+      readsFrom: {journal, linkedEntries},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -7886,46 +7697,36 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLinkedEntriesToIdHidden,
   ];
   @override
-  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
-    [
-      WritePropagation(
-        on: TableUpdateQuery.onTableName(
-          'journal',
-          limitUpdateKind: UpdateKind.delete,
-        ),
-        result: [
-          TableUpdate('tagged', kind: UpdateKind.delete),
-        ],
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'journal',
+        limitUpdateKind: UpdateKind.delete,
       ),
-      WritePropagation(
-        on: TableUpdateQuery.onTableName(
-          'tag_entities',
-          limitUpdateKind: UpdateKind.delete,
-        ),
-        result: [
-          TableUpdate('tagged', kind: UpdateKind.delete),
-        ],
+      result: [TableUpdate('tagged', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tag_entities',
+        limitUpdateKind: UpdateKind.delete,
       ),
-      WritePropagation(
-        on: TableUpdateQuery.onTableName(
-          'journal',
-          limitUpdateKind: UpdateKind.delete,
-        ),
-        result: [
-          TableUpdate('labeled', kind: UpdateKind.delete),
-        ],
+      result: [TableUpdate('tagged', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'journal',
+        limitUpdateKind: UpdateKind.delete,
       ),
-      WritePropagation(
-        on: TableUpdateQuery.onTableName(
-          'label_definitions',
-          limitUpdateKind: UpdateKind.delete,
-        ),
-        result: [
-          TableUpdate('labeled', kind: UpdateKind.delete),
-        ],
+      result: [TableUpdate('labeled', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'label_definitions',
+        limitUpdateKind: UpdateKind.delete,
       ),
-    ],
-  );
+      result: [TableUpdate('labeled', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
 typedef $JournalCreateCompanionBuilder =

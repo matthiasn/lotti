@@ -135,9 +135,8 @@ final class UnifiedDailyOsDataControllerFamily extends $Family
   /// This ensures that when a time entry is created or synced, all UI components
   /// (timeline, budget progress bars, summary) update together.
 
-  UnifiedDailyOsDataControllerProvider call({
-    required DateTime date,
-  }) => UnifiedDailyOsDataControllerProvider._(argument: date, from: this);
+  UnifiedDailyOsDataControllerProvider call({required DateTime date}) =>
+      UnifiedDailyOsDataControllerProvider._(argument: date, from: this);
 
   @override
   String toString() => r'unifiedDailyOsDataControllerProvider';
@@ -161,9 +160,7 @@ abstract class _$UnifiedDailyOsDataController
   late final _$args = ref.$arg as DateTime;
   DateTime get date => _$args;
 
-  FutureOr<DailyOsData> build({
-    required DateTime date,
-  });
+  FutureOr<DailyOsData> build({required DateTime date});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -176,11 +173,6 @@ abstract class _$UnifiedDailyOsDataController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        date: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(date: _$args));
   }
 }

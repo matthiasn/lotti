@@ -50,7 +50,7 @@ final class EntryControllerProvider
   }
 }
 
-String _$entryControllerHash() => r'ef919cd794050433d08c0d743394c970e5e82b62';
+String _$entryControllerHash() => r'368935389247aebdf77fc934f9cbc6490dcb3126';
 
 final class EntryControllerFamily extends $Family
     with
@@ -70,9 +70,8 @@ final class EntryControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  EntryControllerProvider call({
-    required String id,
-  }) => EntryControllerProvider._(argument: id, from: this);
+  EntryControllerProvider call({required String id}) =>
+      EntryControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'entryControllerProvider';
@@ -82,9 +81,7 @@ abstract class _$EntryController extends $AsyncNotifier<EntryState?> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<EntryState?> build({
-    required String id,
-  });
+  FutureOr<EntryState?> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -97,11 +94,6 @@ abstract class _$EntryController extends $AsyncNotifier<EntryState?> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

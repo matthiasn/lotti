@@ -71,9 +71,8 @@ final class TaskAppBarControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  TaskAppBarControllerProvider call({
-    required String id,
-  }) => TaskAppBarControllerProvider._(argument: id, from: this);
+  TaskAppBarControllerProvider call({required String id}) =>
+      TaskAppBarControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'taskAppBarControllerProvider';
@@ -83,9 +82,7 @@ abstract class _$TaskAppBarController extends $AsyncNotifier<double> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<double> build({
-    required String id,
-  });
+  FutureOr<double> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -98,11 +95,6 @@ abstract class _$TaskAppBarController extends $AsyncNotifier<double> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

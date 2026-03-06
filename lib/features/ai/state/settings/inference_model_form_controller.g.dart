@@ -77,9 +77,8 @@ final class InferenceModelFormControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  InferenceModelFormControllerProvider call({
-    required String? configId,
-  }) => InferenceModelFormControllerProvider._(argument: configId, from: this);
+  InferenceModelFormControllerProvider call({required String? configId}) =>
+      InferenceModelFormControllerProvider._(argument: configId, from: this);
 
   @override
   String toString() => r'inferenceModelFormControllerProvider';
@@ -90,9 +89,7 @@ abstract class _$InferenceModelFormController
   late final _$args = ref.$arg as String?;
   String? get configId => _$args;
 
-  FutureOr<InferenceModelFormState?> build({
-    required String? configId,
-  });
+  FutureOr<InferenceModelFormState?> build({required String? configId});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -113,11 +110,6 @@ abstract class _$InferenceModelFormController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        configId: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(configId: _$args));
   }
 }

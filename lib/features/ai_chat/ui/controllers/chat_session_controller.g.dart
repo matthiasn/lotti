@@ -106,9 +106,8 @@ final class ChatSessionControllerFamily extends $Family
   /// sending to `ChatRepository`. Enforces explicit model selection and manages
   /// streaming placeholders for assistant messages.
 
-  ChatSessionControllerProvider call(
-    String categoryId,
-  ) => ChatSessionControllerProvider._(argument: categoryId, from: this);
+  ChatSessionControllerProvider call(String categoryId) =>
+      ChatSessionControllerProvider._(argument: categoryId, from: this);
 
   @override
   String toString() => r'chatSessionControllerProvider';
@@ -124,9 +123,7 @@ abstract class _$ChatSessionController extends $Notifier<ChatSessionUiModel> {
   late final _$args = ref.$arg as String;
   String get categoryId => _$args;
 
-  ChatSessionUiModel build(
-    String categoryId,
-  );
+  ChatSessionUiModel build(String categoryId);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -139,11 +136,6 @@ abstract class _$ChatSessionController extends $Notifier<ChatSessionUiModel> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(_$args));
   }
 }

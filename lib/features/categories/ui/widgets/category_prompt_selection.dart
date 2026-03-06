@@ -79,8 +79,7 @@ class _CategoryPromptSelectionState extends State<CategoryPromptSelection> {
   /// prompt in the current list.
   Set<String> _providerIdsWithPrompts() {
     return {
-      for (final prompt in widget.prompts)
-        ?_providerIdForPrompt(prompt),
+      for (final prompt in widget.prompts) ?_providerIdForPrompt(prompt),
     };
   }
 

@@ -15,10 +15,7 @@ _BackfillRequestEntry _$BackfillRequestEntryFromJson(
 
 Map<String, dynamic> _$BackfillRequestEntryToJson(
   _BackfillRequestEntry instance,
-) => <String, dynamic>{
-  'hostId': instance.hostId,
-  'counter': instance.counter,
-};
+) => <String, dynamic>{'hostId': instance.hostId, 'counter': instance.counter};
 
 SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
     SyncJournalEntity(
@@ -127,10 +124,7 @@ SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'runtimeType': instance.$type,
-    };
+    <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
 
 SyncThemingSelection _$SyncThemingSelectionFromJson(
   Map<String, dynamic> json,

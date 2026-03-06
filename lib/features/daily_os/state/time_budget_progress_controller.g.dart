@@ -60,10 +60,7 @@ final class DayBudgetStatsProvider
   @override
   FutureOr<DayBudgetStats> create(Ref ref) {
     final argument = this.argument as DateTime;
-    return dayBudgetStats(
-      ref,
-      date: argument,
-    );
+    return dayBudgetStats(ref, date: argument);
   }
 
   @override
@@ -98,9 +95,8 @@ final class DayBudgetStatsFamily extends $Family
   ///
   /// Uses the unified controller to ensure consistent updates when entries change.
 
-  DayBudgetStatsProvider call({
-    required DateTime date,
-  }) => DayBudgetStatsProvider._(argument: date, from: this);
+  DayBudgetStatsProvider call({required DateTime date}) =>
+      DayBudgetStatsProvider._(argument: date, from: this);
 
   @override
   String toString() => r'dayBudgetStatsProvider';

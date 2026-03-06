@@ -440,9 +440,7 @@ abstract class _$EditorDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM editor_drafts WHERE status = \'DRAFT\' ORDER BY created_at DESC',
       variables: [],
-      readsFrom: {
-        editorDrafts,
-      },
+      readsFrom: {editorDrafts},
     ).asyncMap(editorDrafts.mapFromRow);
   }
 
@@ -450,9 +448,7 @@ abstract class _$EditorDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM editor_drafts WHERE entry_id = ?1 AND last_saved = ?2 AND status = \'DRAFT\' ORDER BY created_at DESC',
       variables: [Variable<String>(entryId), Variable<DateTime>(lastSaved)],
-      readsFrom: {
-        editorDrafts,
-      },
+      readsFrom: {editorDrafts},
     ).asyncMap(editorDrafts.mapFromRow);
   }
 

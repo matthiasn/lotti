@@ -52,10 +52,7 @@ final class AudioWaveformProvider
   @override
   FutureOr<AudioWaveformData?> create(Ref ref) {
     final argument = this.argument as AudioWaveformRequest;
-    return audioWaveform(
-      ref,
-      argument,
-    );
+    return audioWaveform(ref, argument);
   }
 
   @override
@@ -86,9 +83,8 @@ final class AudioWaveformFamily extends $Family
         isAutoDispose: true,
       );
 
-  AudioWaveformProvider call(
-    AudioWaveformRequest request,
-  ) => AudioWaveformProvider._(argument: request, from: this);
+  AudioWaveformProvider call(AudioWaveformRequest request) =>
+      AudioWaveformProvider._(argument: request, from: this);
 
   @override
   String toString() => r'audioWaveformProvider';

@@ -16,11 +16,7 @@ final class ImagePasteControllerProvider
     extends $AsyncNotifierProvider<ImagePasteController, bool> {
   ImagePasteControllerProvider._({
     required ImagePasteControllerFamily super.from,
-    required ({
-      String? linkedFromId,
-      String? categoryId,
-    })
-    super.argument,
+    required ({String? linkedFromId, String? categoryId}) super.argument,
   }) : super(
          retry: null,
          name: r'imagePasteControllerProvider',
@@ -64,10 +60,7 @@ final class ImagePasteControllerFamily extends $Family
           AsyncValue<bool>,
           bool,
           FutureOr<bool>,
-          ({
-            String? linkedFromId,
-            String? categoryId,
-          })
+          ({String? linkedFromId, String? categoryId})
         > {
   ImagePasteControllerFamily._()
     : super(
@@ -82,10 +75,7 @@ final class ImagePasteControllerFamily extends $Family
     required String? linkedFromId,
     required String? categoryId,
   }) => ImagePasteControllerProvider._(
-    argument: (
-      linkedFromId: linkedFromId,
-      categoryId: categoryId,
-    ),
+    argument: (linkedFromId: linkedFromId, categoryId: categoryId),
     from: this,
   );
 
@@ -94,12 +84,7 @@ final class ImagePasteControllerFamily extends $Family
 }
 
 abstract class _$ImagePasteController extends $AsyncNotifier<bool> {
-  late final _$args =
-      ref.$arg
-          as ({
-            String? linkedFromId,
-            String? categoryId,
-          });
+  late final _$args = ref.$arg as ({String? linkedFromId, String? categoryId});
   String? get linkedFromId => _$args.linkedFromId;
   String? get categoryId => _$args.categoryId;
 

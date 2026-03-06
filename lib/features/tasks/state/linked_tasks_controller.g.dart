@@ -86,9 +86,8 @@ final class LinkedTasksControllerFamily extends $Family
 
   /// Controller for managing the LinkedTasks section UI state.
 
-  LinkedTasksControllerProvider call({
-    required String taskId,
-  }) => LinkedTasksControllerProvider._(argument: taskId, from: this);
+  LinkedTasksControllerProvider call({required String taskId}) =>
+      LinkedTasksControllerProvider._(argument: taskId, from: this);
 
   @override
   String toString() => r'linkedTasksControllerProvider';
@@ -100,9 +99,7 @@ abstract class _$LinkedTasksController extends $Notifier<LinkedTasksState> {
   late final _$args = ref.$arg as String;
   String get taskId => _$args;
 
-  LinkedTasksState build({
-    required String taskId,
-  });
+  LinkedTasksState build({required String taskId});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -115,12 +112,7 @@ abstract class _$LinkedTasksController extends $Notifier<LinkedTasksState> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        taskId: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(taskId: _$args));
   }
 }
 
@@ -188,10 +180,7 @@ final class OutgoingLinkedTasksProvider
   @override
   List<JournalEntity> create(Ref ref) {
     final argument = this.argument as String;
-    return outgoingLinkedTasks(
-      ref,
-      argument,
-    );
+    return outgoingLinkedTasks(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -243,9 +232,8 @@ final class OutgoingLinkedTasksFamily extends $Family
   ///
   /// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
 
-  OutgoingLinkedTasksProvider call(
-    String taskId,
-  ) => OutgoingLinkedTasksProvider._(argument: taskId, from: this);
+  OutgoingLinkedTasksProvider call(String taskId) =>
+      OutgoingLinkedTasksProvider._(argument: taskId, from: this);
 
   @override
   String toString() => r'outgoingLinkedTasksProvider';

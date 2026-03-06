@@ -51,10 +51,7 @@ final class ConfigFlagProvider
   @override
   Stream<bool> create(Ref ref) {
     final argument = this.argument as String;
-    return configFlag(
-      ref,
-      argument,
-    );
+    return configFlag(ref, argument);
   }
 
   @override
@@ -87,9 +84,8 @@ final class ConfigFlagFamily extends $Family
   /// Provides a stream of the status (bool) for a specific config flag.
   /// Returns false by default if the flag doesn't exist or has no status.
 
-  ConfigFlagProvider call(
-    String flagName,
-  ) => ConfigFlagProvider._(argument: flagName, from: this);
+  ConfigFlagProvider call(String flagName) =>
+      ConfigFlagProvider._(argument: flagName, from: this);
 
   @override
   String toString() => r'configFlagProvider';

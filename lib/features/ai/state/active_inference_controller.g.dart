@@ -16,11 +16,7 @@ final class ActiveInferenceControllerProvider
     extends $NotifierProvider<ActiveInferenceController, ActiveInferenceData?> {
   ActiveInferenceControllerProvider._({
     required ActiveInferenceControllerFamily super.from,
-    required ({
-      String entityId,
-      AiResponseType aiResponseType,
-    })
-    super.argument,
+    required ({String entityId, AiResponseType aiResponseType}) super.argument,
   }) : super(
          retry: null,
          name: r'activeInferenceControllerProvider',
@@ -73,10 +69,7 @@ final class ActiveInferenceControllerFamily extends $Family
           ActiveInferenceData?,
           ActiveInferenceData?,
           ActiveInferenceData?,
-          ({
-            String entityId,
-            AiResponseType aiResponseType,
-          })
+          ({String entityId, AiResponseType aiResponseType})
         > {
   ActiveInferenceControllerFamily._()
     : super(
@@ -91,10 +84,7 @@ final class ActiveInferenceControllerFamily extends $Family
     required String entityId,
     required AiResponseType aiResponseType,
   }) => ActiveInferenceControllerProvider._(
-    argument: (
-      entityId: entityId,
-      aiResponseType: aiResponseType,
-    ),
+    argument: (entityId: entityId, aiResponseType: aiResponseType),
     from: this,
   );
 
@@ -105,11 +95,7 @@ final class ActiveInferenceControllerFamily extends $Family
 abstract class _$ActiveInferenceController
     extends $Notifier<ActiveInferenceData?> {
   late final _$args =
-      ref.$arg
-          as ({
-            String entityId,
-            AiResponseType aiResponseType,
-          });
+      ref.$arg as ({String entityId, AiResponseType aiResponseType});
   String get entityId => _$args.entityId;
   AiResponseType get aiResponseType => _$args.aiResponseType;
 
@@ -210,9 +196,8 @@ final class ActiveInferenceByEntityFamily extends $Family
         isAutoDispose: true,
       );
 
-  ActiveInferenceByEntityProvider call(
-    String entityId,
-  ) => ActiveInferenceByEntityProvider._(argument: entityId, from: this);
+  ActiveInferenceByEntityProvider call(String entityId) =>
+      ActiveInferenceByEntityProvider._(argument: entityId, from: this);
 
   @override
   String toString() => r'activeInferenceByEntityProvider';
@@ -223,9 +208,7 @@ abstract class _$ActiveInferenceByEntity
   late final _$args = ref.$arg as String;
   String get entityId => _$args;
 
-  ActiveInferenceData? build(
-    String entityId,
-  );
+  ActiveInferenceData? build(String entityId);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -238,11 +221,6 @@ abstract class _$ActiveInferenceByEntity
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(_$args));
   }
 }

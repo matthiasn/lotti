@@ -231,17 +231,17 @@ final class DomainLoggerProvider
 
 String _$domainLoggerHash() => r'e203383757041025f853dec58f2f6c2a47af2693';
 
-/// The agent database instance (lazy singleton).
+/// The agent database instance (singleton via GetIt).
 
 @ProviderFor(agentDatabase)
 final agentDatabaseProvider = AgentDatabaseProvider._();
 
-/// The agent database instance (lazy singleton).
+/// The agent database instance (singleton via GetIt).
 
 final class AgentDatabaseProvider
     extends $FunctionalProvider<AgentDatabase, AgentDatabase, AgentDatabase>
     with $Provider<AgentDatabase> {
-  /// The agent database instance (lazy singleton).
+  /// The agent database instance (singleton via GetIt).
   AgentDatabaseProvider._()
     : super(
         from: null,
@@ -275,7 +275,7 @@ final class AgentDatabaseProvider
   }
 }
 
-String _$agentDatabaseHash() => r'32b4e998e7242188077d24ec885585cafd2ae33c';
+String _$agentDatabaseHash() => r'729f95bfb1e3c84ba20013ecef8ba281fc4fa713';
 
 /// The agent repository wrapping the database.
 
@@ -516,10 +516,7 @@ final class AgentIsRunningProvider
   @override
   Stream<bool> create(Ref ref) {
     final argument = this.argument as String;
-    return agentIsRunning(
-      ref,
-      argument,
-    );
+    return agentIsRunning(ref, argument);
   }
 
   @override
@@ -556,9 +553,8 @@ final class AgentIsRunningFamily extends $Family
   /// Yields the initial synchronous value, then updates reactively whenever the
   /// agent starts or stops running.
 
-  AgentIsRunningProvider call(
-    String agentId,
-  ) => AgentIsRunningProvider._(argument: agentId, from: this);
+  AgentIsRunningProvider call(String agentId) =>
+      AgentIsRunningProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentIsRunningProvider';
@@ -631,10 +627,7 @@ final class AgentUpdateStreamProvider
   @override
   Stream<Set<String>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentUpdateStream(
-      ref,
-      argument,
-    );
+    return agentUpdateStream(ref, argument);
   }
 
   @override
@@ -679,9 +672,8 @@ final class AgentUpdateStreamFamily extends $Family
   /// emission. Each `Set` instance is identity-distinct, ensuring every
   /// notification triggers a provider rebuild.
 
-  AgentUpdateStreamProvider call(
-    String agentId,
-  ) => AgentUpdateStreamProvider._(argument: agentId, from: this);
+  AgentUpdateStreamProvider call(String agentId) =>
+      AgentUpdateStreamProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentUpdateStreamProvider';
@@ -1251,10 +1243,7 @@ final class AgentTemplateProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return agentTemplate(
-      ref,
-      argument,
-    );
+    return agentTemplate(ref, argument);
   }
 
   @override
@@ -1289,9 +1278,8 @@ final class AgentTemplateFamily extends $Family
   ///
   /// The returned entity is an [AgentTemplateEntity] (or `null`).
 
-  AgentTemplateProvider call(
-    String templateId,
-  ) => AgentTemplateProvider._(argument: templateId, from: this);
+  AgentTemplateProvider call(String templateId) =>
+      AgentTemplateProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'agentTemplateProvider';
@@ -1351,10 +1339,7 @@ final class ActiveTemplateVersionProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return activeTemplateVersion(
-      ref,
-      argument,
-    );
+    return activeTemplateVersion(ref, argument);
   }
 
   @override
@@ -1390,9 +1375,8 @@ final class ActiveTemplateVersionFamily extends $Family
   ///
   /// The returned entity is an [AgentTemplateVersionEntity] (or `null`).
 
-  ActiveTemplateVersionProvider call(
-    String templateId,
-  ) => ActiveTemplateVersionProvider._(argument: templateId, from: this);
+  ActiveTemplateVersionProvider call(String templateId) =>
+      ActiveTemplateVersionProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'activeTemplateVersionProvider';
@@ -1452,10 +1436,7 @@ final class TemplateVersionHistoryProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return templateVersionHistory(
-      ref,
-      argument,
-    );
+    return templateVersionHistory(ref, argument);
   }
 
   @override
@@ -1492,9 +1473,8 @@ final class TemplateVersionHistoryFamily extends $Family
   ///
   /// Each element is an [AgentTemplateVersionEntity].
 
-  TemplateVersionHistoryProvider call(
-    String templateId,
-  ) => TemplateVersionHistoryProvider._(argument: templateId, from: this);
+  TemplateVersionHistoryProvider call(String templateId) =>
+      TemplateVersionHistoryProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'templateVersionHistoryProvider';
@@ -1554,10 +1534,7 @@ final class TemplateForAgentProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return templateForAgent(
-      ref,
-      argument,
-    );
+    return templateForAgent(ref, argument);
   }
 
   @override
@@ -1592,9 +1569,8 @@ final class TemplateForAgentFamily extends $Family
   ///
   /// The returned entity is an [AgentTemplateEntity] (or `null`).
 
-  TemplateForAgentProvider call(
-    String agentId,
-  ) => TemplateForAgentProvider._(argument: agentId, from: this);
+  TemplateForAgentProvider call(String agentId) =>
+      TemplateForAgentProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'templateForAgentProvider';
@@ -1625,11 +1601,7 @@ final class ModelIdForThreadProvider
   /// when that version was created.
   ModelIdForThreadProvider._({
     required ModelIdForThreadFamily super.from,
-    required (
-      String,
-      String,
-    )
-    super.argument,
+    required (String, String) super.argument,
   }) : super(
          retry: null,
          name: r'modelIdForThreadProvider',
@@ -1655,17 +1627,8 @@ final class ModelIdForThreadProvider
 
   @override
   FutureOr<String?> create(Ref ref) {
-    final argument =
-        this.argument
-            as (
-              String,
-              String,
-            );
-    return modelIdForThread(
-      ref,
-      argument.$1,
-      argument.$2,
-    );
+    final argument = this.argument as (String, String);
+    return modelIdForThread(ref, argument.$1, argument.$2);
   }
 
   @override
@@ -1688,14 +1651,7 @@ String _$modelIdForThreadHash() => r'486d16169ec92f86045907fc9c4a6c564009b17d';
 /// when that version was created.
 
 final class ModelIdForThreadFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<String?>,
-          (
-            String,
-            String,
-          )
-        > {
+    with $FunctionalFamilyOverride<FutureOr<String?>, (String, String)> {
   ModelIdForThreadFamily._()
     : super(
         retry: null,
@@ -1711,16 +1667,8 @@ final class ModelIdForThreadFamily extends $Family
   /// resolves the template version to read the `modelId` that was configured
   /// when that version was created.
 
-  ModelIdForThreadProvider call(
-    String agentId,
-    String threadId,
-  ) => ModelIdForThreadProvider._(
-    argument: (
-      agentId,
-      threadId,
-    ),
-    from: this,
-  );
+  ModelIdForThreadProvider call(String agentId, String threadId) =>
+      ModelIdForThreadProvider._(argument: (agentId, threadId), from: this);
 
   @override
   String toString() => r'modelIdForThreadProvider';
@@ -1780,10 +1728,7 @@ final class AgentReportProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return agentReport(
-      ref,
-      argument,
-    );
+    return agentReport(ref, argument);
   }
 
   @override
@@ -1818,9 +1763,8 @@ final class AgentReportFamily extends $Family
   ///
   /// Returns [AgentDomainEntity] (variant: [AgentReportEntity]) or `null`.
 
-  AgentReportProvider call(
-    String agentId,
-  ) => AgentReportProvider._(argument: agentId, from: this);
+  AgentReportProvider call(String agentId) =>
+      AgentReportProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentReportProvider';
@@ -1880,10 +1824,7 @@ final class AgentStateProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return agentState(
-      ref,
-      argument,
-    );
+    return agentState(ref, argument);
   }
 
   @override
@@ -1918,9 +1859,8 @@ final class AgentStateFamily extends $Family
   ///
   /// Returns [AgentDomainEntity] (variant: [AgentStateEntity]) or `null`.
 
-  AgentStateProvider call(
-    String agentId,
-  ) => AgentStateProvider._(argument: agentId, from: this);
+  AgentStateProvider call(String agentId) =>
+      AgentStateProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentStateProvider';
@@ -1980,10 +1920,7 @@ final class AgentIdentityProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return agentIdentity(
-      ref,
-      argument,
-    );
+    return agentIdentity(ref, argument);
   }
 
   @override
@@ -2018,9 +1955,8 @@ final class AgentIdentityFamily extends $Family
   ///
   /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
 
-  AgentIdentityProvider call(
-    String agentId,
-  ) => AgentIdentityProvider._(argument: agentId, from: this);
+  AgentIdentityProvider call(String agentId) =>
+      AgentIdentityProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentIdentityProvider';
@@ -2086,10 +2022,7 @@ final class AgentRecentMessagesProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentRecentMessages(
-      ref,
-      argument,
-    );
+    return agentRecentMessages(ref, argument);
   }
 
   @override
@@ -2129,9 +2062,8 @@ final class AgentRecentMessagesFamily extends $Family
   /// ordered most-recent first. Each element is an [AgentDomainEntity] of
   /// variant [AgentMessageEntity].
 
-  AgentRecentMessagesProvider call(
-    String agentId,
-  ) => AgentRecentMessagesProvider._(argument: agentId, from: this);
+  AgentRecentMessagesProvider call(String agentId) =>
+      AgentRecentMessagesProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentRecentMessagesProvider';
@@ -2197,10 +2129,7 @@ final class AgentTokenUsageRecordsProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentTokenUsageRecords(
-      ref,
-      argument,
-    );
+    return agentTokenUsageRecords(ref, argument);
   }
 
   @override
@@ -2241,9 +2170,8 @@ final class AgentTokenUsageRecordsFamily extends $Family
   /// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
   /// derive their state from this to avoid redundant database queries.
 
-  AgentTokenUsageRecordsProvider call(
-    String agentId,
-  ) => AgentTokenUsageRecordsProvider._(argument: agentId, from: this);
+  AgentTokenUsageRecordsProvider call(String agentId) =>
+      AgentTokenUsageRecordsProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentTokenUsageRecordsProvider';
@@ -2306,10 +2234,7 @@ final class AgentTokenUsageSummariesProvider
   @override
   FutureOr<List<AgentTokenUsageSummary>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentTokenUsageSummaries(
-      ref,
-      argument,
-    );
+    return agentTokenUsageSummaries(ref, argument);
   }
 
   @override
@@ -2352,9 +2277,8 @@ final class AgentTokenUsageSummariesFamily extends $Family
   /// Derives from [agentTokenUsageRecordsProvider] and aggregates into
   /// per-model summaries sorted by total tokens descending.
 
-  AgentTokenUsageSummariesProvider call(
-    String agentId,
-  ) => AgentTokenUsageSummariesProvider._(argument: agentId, from: this);
+  AgentTokenUsageSummariesProvider call(String agentId) =>
+      AgentTokenUsageSummariesProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentTokenUsageSummariesProvider';
@@ -2392,11 +2316,7 @@ final class TokenUsageForThreadProvider
   /// Returns `null` if no records match.
   TokenUsageForThreadProvider._({
     required TokenUsageForThreadFamily super.from,
-    required (
-      String,
-      String,
-    )
-    super.argument,
+    required (String, String) super.argument,
   }) : super(
          retry: null,
          name: r'tokenUsageForThreadProvider',
@@ -2423,17 +2343,8 @@ final class TokenUsageForThreadProvider
 
   @override
   FutureOr<AgentTokenUsageSummary?> create(Ref ref) {
-    final argument =
-        this.argument
-            as (
-              String,
-              String,
-            );
-    return tokenUsageForThread(
-      ref,
-      argument.$1,
-      argument.$2,
-    );
+    final argument = this.argument as (String, String);
+    return tokenUsageForThread(ref, argument.$1, argument.$2);
   }
 
   @override
@@ -2460,10 +2371,7 @@ final class TokenUsageForThreadFamily extends $Family
     with
         $FunctionalFamilyOverride<
           FutureOr<AgentTokenUsageSummary?>,
-          (
-            String,
-            String,
-          )
+          (String, String)
         > {
   TokenUsageForThreadFamily._()
     : super(
@@ -2480,16 +2388,8 @@ final class TokenUsageForThreadFamily extends $Family
   /// and folds into a single [AgentTokenUsageSummary].
   /// Returns `null` if no records match.
 
-  TokenUsageForThreadProvider call(
-    String agentId,
-    String threadId,
-  ) => TokenUsageForThreadProvider._(
-    argument: (
-      agentId,
-      threadId,
-    ),
-    from: this,
-  );
+  TokenUsageForThreadProvider call(String agentId, String threadId) =>
+      TokenUsageForThreadProvider._(argument: (agentId, threadId), from: this);
 
   @override
   String toString() => r'tokenUsageForThreadProvider';
@@ -2552,10 +2452,7 @@ final class TemplateTokenUsageRecordsProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return templateTokenUsageRecords(
-      ref,
-      argument,
-    );
+    return templateTokenUsageRecords(ref, argument);
   }
 
   @override
@@ -2594,9 +2491,8 @@ final class TemplateTokenUsageRecordsFamily extends $Family
   /// Uses a SQL JOIN via `template_assignment` links to fetch all
   /// [WakeTokenUsageEntity] records across every instance in a single query.
 
-  TemplateTokenUsageRecordsProvider call(
-    String templateId,
-  ) => TemplateTokenUsageRecordsProvider._(argument: templateId, from: this);
+  TemplateTokenUsageRecordsProvider call(String templateId) =>
+      TemplateTokenUsageRecordsProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'templateTokenUsageRecordsProvider';
@@ -2660,10 +2556,7 @@ final class TemplateTokenUsageSummariesProvider
   @override
   FutureOr<List<AgentTokenUsageSummary>> create(Ref ref) {
     final argument = this.argument as String;
-    return templateTokenUsageSummaries(
-      ref,
-      argument,
-    );
+    return templateTokenUsageSummaries(ref, argument);
   }
 
   @override
@@ -2706,9 +2599,8 @@ final class TemplateTokenUsageSummariesFamily extends $Family
   /// Derives from [templateTokenUsageRecordsProvider] and aggregates into
   /// per-model summaries sorted by total tokens descending.
 
-  TemplateTokenUsageSummariesProvider call(
-    String templateId,
-  ) => TemplateTokenUsageSummariesProvider._(argument: templateId, from: this);
+  TemplateTokenUsageSummariesProvider call(String templateId) =>
+      TemplateTokenUsageSummariesProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'templateTokenUsageSummariesProvider';
@@ -2775,10 +2667,7 @@ final class TemplateInstanceTokenBreakdownProvider
   @override
   FutureOr<List<InstanceTokenBreakdown>> create(Ref ref) {
     final argument = this.argument as String;
-    return templateInstanceTokenBreakdown(
-      ref,
-      argument,
-    );
+    return templateInstanceTokenBreakdown(ref, argument);
   }
 
   @override
@@ -2823,12 +2712,11 @@ final class TemplateInstanceTokenBreakdownFamily extends $Family
   /// Returns full per-model summaries so each instance can render a
   /// `TokenUsageTable` identical in structure to the aggregate view.
 
-  TemplateInstanceTokenBreakdownProvider call(
-    String templateId,
-  ) => TemplateInstanceTokenBreakdownProvider._(
-    argument: templateId,
-    from: this,
-  );
+  TemplateInstanceTokenBreakdownProvider call(String templateId) =>
+      TemplateInstanceTokenBreakdownProvider._(
+        argument: templateId,
+        from: this,
+      );
 
   @override
   String toString() => r'templateInstanceTokenBreakdownProvider';
@@ -2882,10 +2770,7 @@ final class TemplateRecentReportsProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return templateRecentReports(
-      ref,
-      argument,
-    );
+    return templateRecentReports(ref, argument);
   }
 
   @override
@@ -2917,9 +2802,8 @@ final class TemplateRecentReportsFamily extends $Family
 
   /// Recent reports from all instances of a template, newest-first.
 
-  TemplateRecentReportsProvider call(
-    String templateId,
-  ) => TemplateRecentReportsProvider._(argument: templateId, from: this);
+  TemplateRecentReportsProvider call(String templateId) =>
+      TemplateRecentReportsProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'templateRecentReportsProvider';
@@ -2974,10 +2858,7 @@ final class AgentMessagePayloadTextProvider
   @override
   FutureOr<String?> create(Ref ref) {
     final argument = this.argument as String;
-    return agentMessagePayloadText(
-      ref,
-      argument,
-    );
+    return agentMessagePayloadText(ref, argument);
   }
 
   @override
@@ -3016,9 +2897,8 @@ final class AgentMessagePayloadTextFamily extends $Family
   /// Returns the `text` field from the payload content map, or `null` if the
   /// payload doesn't exist or has no text.
 
-  AgentMessagePayloadTextProvider call(
-    String payloadId,
-  ) => AgentMessagePayloadTextProvider._(argument: payloadId, from: this);
+  AgentMessagePayloadTextProvider call(String payloadId) =>
+      AgentMessagePayloadTextProvider._(argument: payloadId, from: this);
 
   @override
   String toString() => r'agentMessagePayloadTextProvider';
@@ -3084,10 +2964,7 @@ final class AgentMessagesByThreadProvider
   @override
   FutureOr<Map<String, List<AgentDomainEntity>>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentMessagesByThread(
-      ref,
-      argument,
-    );
+    return agentMessagesByThread(ref, argument);
   }
 
   @override
@@ -3131,9 +3008,8 @@ final class AgentMessagesByThreadFamily extends $Family
   /// chronologically within each thread. Threads are sorted most-recent-first
   /// (by the latest message in each thread).
 
-  AgentMessagesByThreadProvider call(
-    String agentId,
-  ) => AgentMessagesByThreadProvider._(argument: agentId, from: this);
+  AgentMessagesByThreadProvider call(String agentId) =>
+      AgentMessagesByThreadProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentMessagesByThreadProvider';
@@ -3196,10 +3072,7 @@ final class AgentObservationMessagesProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentObservationMessages(
-      ref,
-      argument,
-    );
+    return agentObservationMessages(ref, argument);
   }
 
   @override
@@ -3238,9 +3111,8 @@ final class AgentObservationMessagesFamily extends $Family
   /// Returns only messages with kind [AgentMessageKind.observation], ordered
   /// most-recent first.
 
-  AgentObservationMessagesProvider call(
-    String agentId,
-  ) => AgentObservationMessagesProvider._(argument: agentId, from: this);
+  AgentObservationMessagesProvider call(String agentId) =>
+      AgentObservationMessagesProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentObservationMessagesProvider';
@@ -3303,10 +3175,7 @@ final class AgentReportHistoryProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return agentReportHistory(
-      ref,
-      argument,
-    );
+    return agentReportHistory(ref, argument);
   }
 
   @override
@@ -3344,9 +3213,8 @@ final class AgentReportHistoryFamily extends $Family
   /// Each wake overwrites the report, so older snapshots let the user trace
   /// how the report evolved over time.
 
-  AgentReportHistoryProvider call(
-    String agentId,
-  ) => AgentReportHistoryProvider._(argument: agentId, from: this);
+  AgentReportHistoryProvider call(String agentId) =>
+      AgentReportHistoryProvider._(argument: agentId, from: this);
 
   @override
   String toString() => r'agentReportHistoryProvider';
@@ -3400,10 +3268,7 @@ final class TemplatePerformanceMetricsProvider
   @override
   FutureOr<TemplatePerformanceMetrics> create(Ref ref) {
     final argument = this.argument as String;
-    return templatePerformanceMetrics(
-      ref,
-      argument,
-    );
+    return templatePerformanceMetrics(ref, argument);
   }
 
   @override
@@ -3440,9 +3305,8 @@ final class TemplatePerformanceMetricsFamily extends $Family
 
   /// Computed performance metrics for a template by [templateId].
 
-  TemplatePerformanceMetricsProvider call(
-    String templateId,
-  ) => TemplatePerformanceMetricsProvider._(argument: templateId, from: this);
+  TemplatePerformanceMetricsProvider call(String templateId) =>
+      TemplatePerformanceMetricsProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'templatePerformanceMetricsProvider';
@@ -3564,10 +3428,7 @@ final class EvolutionSessionsProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return evolutionSessions(
-      ref,
-      argument,
-    );
+    return evolutionSessions(ref, argument);
   }
 
   @override
@@ -3602,9 +3463,8 @@ final class EvolutionSessionsFamily extends $Family
   ///
   /// Each element is an [EvolutionSessionEntity].
 
-  EvolutionSessionsProvider call(
-    String templateId,
-  ) => EvolutionSessionsProvider._(argument: templateId, from: this);
+  EvolutionSessionsProvider call(String templateId) =>
+      EvolutionSessionsProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'evolutionSessionsProvider';
@@ -3664,10 +3524,7 @@ final class EvolutionNotesProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return evolutionNotes(
-      ref,
-      argument,
-    );
+    return evolutionNotes(ref, argument);
   }
 
   @override
@@ -3702,9 +3559,8 @@ final class EvolutionNotesFamily extends $Family
   ///
   /// Each element is an [EvolutionNoteEntity].
 
-  EvolutionNotesProvider call(
-    String templateId,
-  ) => EvolutionNotesProvider._(argument: templateId, from: this);
+  EvolutionNotesProvider call(String templateId) =>
+      EvolutionNotesProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'evolutionNotesProvider';

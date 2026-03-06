@@ -79,9 +79,8 @@ final class TaskFocusControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  TaskFocusControllerProvider call({
-    required String id,
-  }) => TaskFocusControllerProvider._(argument: id, from: this);
+  TaskFocusControllerProvider call({required String id}) =>
+      TaskFocusControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'taskFocusControllerProvider';
@@ -91,9 +90,7 @@ abstract class _$TaskFocusController extends $Notifier<TaskFocusIntent?> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  TaskFocusIntent? build({
-    required String id,
-  });
+  TaskFocusIntent? build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -106,11 +103,6 @@ abstract class _$TaskFocusController extends $Notifier<TaskFocusIntent?> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

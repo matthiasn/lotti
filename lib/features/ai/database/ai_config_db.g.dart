@@ -424,9 +424,7 @@ abstract class _$AiConfigDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM ai_configs WHERE id = ?1',
       variables: [Variable<String>(id)],
-      readsFrom: {
-        aiConfigs,
-      },
+      readsFrom: {aiConfigs},
     ).asyncMap(aiConfigs.mapFromRow);
   }
 
@@ -434,9 +432,7 @@ abstract class _$AiConfigDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM ai_configs WHERE type = ?1 ORDER BY created_at DESC',
       variables: [Variable<String>(type)],
-      readsFrom: {
-        aiConfigs,
-      },
+      readsFrom: {aiConfigs},
     ).asyncMap(aiConfigs.mapFromRow);
   }
 
@@ -444,9 +440,7 @@ abstract class _$AiConfigDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM ai_configs ORDER BY created_at DESC',
       variables: [],
-      readsFrom: {
-        aiConfigs,
-      },
+      readsFrom: {aiConfigs},
     ).asyncMap(aiConfigs.mapFromRow);
   }
 

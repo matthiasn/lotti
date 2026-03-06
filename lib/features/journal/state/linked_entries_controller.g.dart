@@ -72,9 +72,8 @@ final class LinkedEntriesControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  LinkedEntriesControllerProvider call({
-    required String id,
-  }) => LinkedEntriesControllerProvider._(argument: id, from: this);
+  LinkedEntriesControllerProvider call({required String id}) =>
+      LinkedEntriesControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'linkedEntriesControllerProvider';
@@ -85,9 +84,7 @@ abstract class _$LinkedEntriesController
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<List<EntryLink>> build({
-    required String id,
-  });
+  FutureOr<List<EntryLink>> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -100,12 +97,7 @@ abstract class _$LinkedEntriesController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -180,9 +172,8 @@ final class IncludeHiddenControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  IncludeHiddenControllerProvider call({
-    required String id,
-  }) => IncludeHiddenControllerProvider._(argument: id, from: this);
+  IncludeHiddenControllerProvider call({required String id}) =>
+      IncludeHiddenControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'includeHiddenControllerProvider';
@@ -192,9 +183,7 @@ abstract class _$IncludeHiddenController extends $Notifier<bool> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  bool build({
-    required String id,
-  });
+  bool build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -207,12 +196,7 @@ abstract class _$IncludeHiddenController extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -287,9 +271,8 @@ final class IncludeAiEntriesControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  IncludeAiEntriesControllerProvider call({
-    required String id,
-  }) => IncludeAiEntriesControllerProvider._(argument: id, from: this);
+  IncludeAiEntriesControllerProvider call({required String id}) =>
+      IncludeAiEntriesControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'includeAiEntriesControllerProvider';
@@ -299,9 +282,7 @@ abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  bool build({
-    required String id,
-  });
+  bool build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -314,12 +295,7 @@ abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -386,9 +362,8 @@ final class NewestLinkedIdControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  NewestLinkedIdControllerProvider call({
-    required String? id,
-  }) => NewestLinkedIdControllerProvider._(argument: id, from: this);
+  NewestLinkedIdControllerProvider call({required String? id}) =>
+      NewestLinkedIdControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'newestLinkedIdControllerProvider';
@@ -398,9 +373,7 @@ abstract class _$NewestLinkedIdController extends $AsyncNotifier<String?> {
   late final _$args = ref.$arg as String?;
   String? get id => _$args;
 
-  FutureOr<String?> build({
-    required String? id,
-  });
+  FutureOr<String?> build({required String? id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -413,12 +386,7 @@ abstract class _$NewestLinkedIdController extends $AsyncNotifier<String?> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -481,10 +449,7 @@ final class ResolvedOutgoingLinkedEntriesProvider
   @override
   List<JournalEntity> create(Ref ref) {
     final argument = this.argument as String;
-    return resolvedOutgoingLinkedEntries(
-      ref,
-      argument,
-    );
+    return resolvedOutgoingLinkedEntries(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -533,9 +498,8 @@ final class ResolvedOutgoingLinkedEntriesFamily extends $Family
   /// filter/process the resolved entities without needing to watch individual
   /// entryControllerProviders in loops.
 
-  ResolvedOutgoingLinkedEntriesProvider call(
-    String id,
-  ) => ResolvedOutgoingLinkedEntriesProvider._(argument: id, from: this);
+  ResolvedOutgoingLinkedEntriesProvider call(String id) =>
+      ResolvedOutgoingLinkedEntriesProvider._(argument: id, from: this);
 
   @override
   String toString() => r'resolvedOutgoingLinkedEntriesProvider';
@@ -590,10 +554,7 @@ final class HasNonTaskLinkedEntriesProvider
   @override
   bool create(Ref ref) {
     final argument = this.argument as String;
-    return hasNonTaskLinkedEntries(
-      ref,
-      argument,
-    );
+    return hasNonTaskLinkedEntries(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -640,9 +601,8 @@ final class HasNonTaskLinkedEntriesFamily extends $Family
   /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
   /// section when hideTaskEntries is true.
 
-  HasNonTaskLinkedEntriesProvider call(
-    String id,
-  ) => HasNonTaskLinkedEntriesProvider._(argument: id, from: this);
+  HasNonTaskLinkedEntriesProvider call(String id) =>
+      HasNonTaskLinkedEntriesProvider._(argument: id, from: this);
 
   @override
   String toString() => r'hasNonTaskLinkedEntriesProvider';

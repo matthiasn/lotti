@@ -102,9 +102,7 @@ _AiInputActionItemsList _$AiInputActionItemsListFromJson(
 
 Map<String, dynamic> _$AiInputActionItemsListToJson(
   _AiInputActionItemsList instance,
-) => <String, dynamic>{
-  'items': instance.items,
-};
+) => <String, dynamic>{'items': instance.items};
 
 _AiLinkedTaskContext _$AiLinkedTaskContextFromJson(Map<String, dynamic> json) =>
     _AiLinkedTaskContext(

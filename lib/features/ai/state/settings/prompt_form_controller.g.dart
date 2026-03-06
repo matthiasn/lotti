@@ -71,9 +71,8 @@ final class PromptFormControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  PromptFormControllerProvider call({
-    required String? configId,
-  }) => PromptFormControllerProvider._(argument: configId, from: this);
+  PromptFormControllerProvider call({required String? configId}) =>
+      PromptFormControllerProvider._(argument: configId, from: this);
 
   @override
   String toString() => r'promptFormControllerProvider';
@@ -83,9 +82,7 @@ abstract class _$PromptFormController extends $AsyncNotifier<PromptFormState?> {
   late final _$args = ref.$arg as String?;
   String? get configId => _$args;
 
-  FutureOr<PromptFormState?> build({
-    required String? configId,
-  });
+  FutureOr<PromptFormState?> build({required String? configId});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -99,11 +96,6 @@ abstract class _$PromptFormController extends $AsyncNotifier<PromptFormState?> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        configId: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(configId: _$args));
   }
 }

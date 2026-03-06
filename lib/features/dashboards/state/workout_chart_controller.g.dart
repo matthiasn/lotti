@@ -20,11 +20,7 @@ final class WorkoutChartDataControllerProvider
         > {
   WorkoutChartDataControllerProvider._({
     required WorkoutChartDataControllerFamily super.from,
-    required ({
-      DateTime rangeStart,
-      DateTime rangeEnd,
-    })
-    super.argument,
+    required ({DateTime rangeStart, DateTime rangeEnd}) super.argument,
   }) : super(
          retry: null,
          name: r'workoutChartDataControllerProvider',
@@ -69,10 +65,7 @@ final class WorkoutChartDataControllerFamily extends $Family
           AsyncValue<List<JournalEntity>>,
           List<JournalEntity>,
           FutureOr<List<JournalEntity>>,
-          ({
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          })
+          ({DateTime rangeStart, DateTime rangeEnd})
         > {
   WorkoutChartDataControllerFamily._()
     : super(
@@ -87,10 +80,7 @@ final class WorkoutChartDataControllerFamily extends $Family
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) => WorkoutChartDataControllerProvider._(
-    argument: (
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
-    ),
+    argument: (rangeStart: rangeStart, rangeEnd: rangeEnd),
     from: this,
   );
 
@@ -100,12 +90,7 @@ final class WorkoutChartDataControllerFamily extends $Family
 
 abstract class _$WorkoutChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
-  late final _$args =
-      ref.$arg
-          as ({
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          });
+  late final _$args = ref.$arg as ({DateTime rangeStart, DateTime rangeEnd});
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
 
@@ -128,10 +113,7 @@ abstract class _$WorkoutChartDataController
             >;
     element.handleCreate(
       ref,
-      () => build(
-        rangeStart: _$args.rangeStart,
-        rangeEnd: _$args.rangeEnd,
-      ),
+      () => build(rangeStart: _$args.rangeStart, rangeEnd: _$args.rangeEnd),
     );
   }
 }
@@ -198,11 +180,7 @@ final class WorkoutObservationsControllerFamily extends $Family
           AsyncValue<List<Observation>>,
           List<Observation>,
           FutureOr<List<Observation>>,
-          ({
-            DashboardItem chartConfig,
-            DateTime rangeStart,
-            DateTime rangeEnd,
-          })
+          ({DashboardItem chartConfig, DateTime rangeStart, DateTime rangeEnd})
         > {
   WorkoutObservationsControllerFamily._()
     : super(

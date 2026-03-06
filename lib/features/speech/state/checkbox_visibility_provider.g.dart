@@ -69,10 +69,7 @@ final class CheckboxVisibilityProvider
   @override
   AutomaticPromptVisibility create(Ref ref) {
     final argument = this.argument as String?;
-    return checkboxVisibility(
-      ref,
-      categoryId: argument,
-    );
+    return checkboxVisibility(ref, categoryId: argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -122,9 +119,8 @@ final class CheckboxVisibilityFamily extends $Family
   /// This extracts the business logic from the widget, making it testable
   /// independently without widget build cycles or timing issues.
 
-  CheckboxVisibilityProvider call({
-    required String? categoryId,
-  }) => CheckboxVisibilityProvider._(argument: categoryId, from: this);
+  CheckboxVisibilityProvider call({required String? categoryId}) =>
+      CheckboxVisibilityProvider._(argument: categoryId, from: this);
 
   @override
   String toString() => r'checkboxVisibilityProvider';

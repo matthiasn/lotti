@@ -68,10 +68,7 @@ final class PendingChangeSetsProvider
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return pendingChangeSets(
-      ref,
-      argument,
-    );
+    return pendingChangeSets(ref, argument);
   }
 
   @override
@@ -110,9 +107,8 @@ final class PendingChangeSetsFamily extends $Family
   /// [agentUpdateStreamProvider] for reactive invalidation, and finally
   /// queries the repository.
 
-  PendingChangeSetsProvider call(
-    String taskId,
-  ) => PendingChangeSetsProvider._(argument: taskId, from: this);
+  PendingChangeSetsProvider call(String taskId) =>
+      PendingChangeSetsProvider._(argument: taskId, from: this);
 
   @override
   String toString() => r'pendingChangeSetsProvider';

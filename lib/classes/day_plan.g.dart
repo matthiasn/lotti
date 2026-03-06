@@ -7,14 +7,10 @@ part of 'day_plan.dart';
 // **************************************************************************
 
 DayPlanStatusDraft _$DayPlanStatusDraftFromJson(Map<String, dynamic> json) =>
-    DayPlanStatusDraft(
-      $type: json['runtimeType'] as String?,
-    );
+    DayPlanStatusDraft($type: json['runtimeType'] as String?);
 
 Map<String, dynamic> _$DayPlanStatusDraftToJson(DayPlanStatusDraft instance) =>
-    <String, dynamic>{
-      'runtimeType': instance.$type,
-    };
+    <String, dynamic>{'runtimeType': instance.$type};
 
 DayPlanStatusAgreed _$DayPlanStatusAgreedFromJson(Map<String, dynamic> json) =>
     DayPlanStatusAgreed(

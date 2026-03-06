@@ -151,10 +151,7 @@ final class ConversationEventsProvider
   @override
   Stream<ConversationEvent> create(Ref ref) {
     final argument = this.argument as String;
-    return conversationEvents(
-      ref,
-      argument,
-    );
+    return conversationEvents(ref, argument);
   }
 
   @override
@@ -186,9 +183,8 @@ final class ConversationEventsFamily extends $Family
 
   /// Provider for accessing conversation events
 
-  ConversationEventsProvider call(
-    String conversationId,
-  ) => ConversationEventsProvider._(argument: conversationId, from: this);
+  ConversationEventsProvider call(String conversationId) =>
+      ConversationEventsProvider._(argument: conversationId, from: this);
 
   @override
   String toString() => r'conversationEventsProvider';
@@ -240,10 +236,7 @@ final class ConversationMessagesProvider
   @override
   List<ChatCompletionMessage> create(Ref ref) {
     final argument = this.argument as String;
-    return conversationMessages(
-      ref,
-      argument,
-    );
+    return conversationMessages(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -283,9 +276,8 @@ final class ConversationMessagesFamily extends $Family
 
   /// Provider for conversation messages
 
-  ConversationMessagesProvider call(
-    String conversationId,
-  ) => ConversationMessagesProvider._(argument: conversationId, from: this);
+  ConversationMessagesProvider call(String conversationId) =>
+      ConversationMessagesProvider._(argument: conversationId, from: this);
 
   @override
   String toString() => r'conversationMessagesProvider';

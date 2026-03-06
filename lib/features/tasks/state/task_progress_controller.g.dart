@@ -72,9 +72,8 @@ final class TaskProgressControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  TaskProgressControllerProvider call({
-    required String id,
-  }) => TaskProgressControllerProvider._(argument: id, from: this);
+  TaskProgressControllerProvider call({required String id}) =>
+      TaskProgressControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'taskProgressControllerProvider';
@@ -85,9 +84,7 @@ abstract class _$TaskProgressController
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<TaskProgressState?> build({
-    required String id,
-  });
+  FutureOr<TaskProgressState?> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -101,11 +98,6 @@ abstract class _$TaskProgressController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

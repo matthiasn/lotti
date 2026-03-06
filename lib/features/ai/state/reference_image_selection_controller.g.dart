@@ -87,9 +87,7 @@ final class ReferenceImageSelectionControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  ReferenceImageSelectionControllerProvider call({
-    required String taskId,
-  }) =>
+  ReferenceImageSelectionControllerProvider call({required String taskId}) =>
       ReferenceImageSelectionControllerProvider._(argument: taskId, from: this);
 
   @override
@@ -101,9 +99,7 @@ abstract class _$ReferenceImageSelectionController
   late final _$args = ref.$arg as String;
   String get taskId => _$args;
 
-  ReferenceImageSelectionState build({
-    required String taskId,
-  });
+  ReferenceImageSelectionState build({required String taskId});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -121,11 +117,6 @@ abstract class _$ReferenceImageSelectionController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        taskId: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(taskId: _$args));
   }
 }

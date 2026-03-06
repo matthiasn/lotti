@@ -65,10 +65,7 @@ final class TemplateWakeRunTimeSeriesProvider
   @override
   FutureOr<WakeRunTimeSeries> create(Ref ref) {
     final argument = this.argument as String;
-    return templateWakeRunTimeSeries(
-      ref,
-      argument,
-    );
+    return templateWakeRunTimeSeries(ref, argument);
   }
 
   @override
@@ -107,9 +104,8 @@ final class TemplateWakeRunTimeSeriesFamily extends $Family
   /// Fetches raw [WakeRunLogData] via the [AgentRepository] and transforms
   /// them into daily and per-version buckets suitable for mini chart rendering.
 
-  TemplateWakeRunTimeSeriesProvider call(
-    String templateId,
-  ) => TemplateWakeRunTimeSeriesProvider._(argument: templateId, from: this);
+  TemplateWakeRunTimeSeriesProvider call(String templateId) =>
+      TemplateWakeRunTimeSeriesProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'templateWakeRunTimeSeriesProvider';
@@ -185,10 +181,7 @@ final class TemplateTaskResolutionTimeSeriesProvider
   @override
   FutureOr<TaskResolutionTimeSeries> create(Ref ref) {
     final argument = this.argument as String;
-    return templateTaskResolutionTimeSeries(
-      ref,
-      argument,
-    );
+    return templateTaskResolutionTimeSeries(ref, argument);
   }
 
   @override
@@ -235,12 +228,11 @@ final class TemplateTaskResolutionTimeSeriesFamily extends $Family
   /// 4. Extracts the first DONE/REJECTED status from the task's status history.
   /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
 
-  TemplateTaskResolutionTimeSeriesProvider call(
-    String templateId,
-  ) => TemplateTaskResolutionTimeSeriesProvider._(
-    argument: templateId,
-    from: this,
-  );
+  TemplateTaskResolutionTimeSeriesProvider call(String templateId) =>
+      TemplateTaskResolutionTimeSeriesProvider._(
+        argument: templateId,
+        from: this,
+      );
 
   @override
   String toString() => r'templateTaskResolutionTimeSeriesProvider';

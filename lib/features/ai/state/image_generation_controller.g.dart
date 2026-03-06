@@ -112,9 +112,8 @@ final class ImageGenerationControllerFamily extends $Family
   /// - Calling the Gemini image generation API
   /// - Managing generation state (idle, generating, success, error)
 
-  ImageGenerationControllerProvider call({
-    required String entityId,
-  }) => ImageGenerationControllerProvider._(argument: entityId, from: this);
+  ImageGenerationControllerProvider call({required String entityId}) =>
+      ImageGenerationControllerProvider._(argument: entityId, from: this);
 
   @override
   String toString() => r'imageGenerationControllerProvider';
@@ -132,9 +131,7 @@ abstract class _$ImageGenerationController
   late final _$args = ref.$arg as String;
   String get entityId => _$args;
 
-  ImageGenerationState build({
-    required String entityId,
-  });
+  ImageGenerationState build({required String entityId});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -147,11 +144,6 @@ abstract class _$ImageGenerationController
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        entityId: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(entityId: _$args));
   }
 }

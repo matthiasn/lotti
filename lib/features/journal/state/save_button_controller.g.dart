@@ -71,9 +71,8 @@ final class SaveButtonControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  SaveButtonControllerProvider call({
-    required String id,
-  }) => SaveButtonControllerProvider._(argument: id, from: this);
+  SaveButtonControllerProvider call({required String id}) =>
+      SaveButtonControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'saveButtonControllerProvider';
@@ -83,9 +82,7 @@ abstract class _$SaveButtonController extends $AsyncNotifier<bool?> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<bool?> build({
-    required String id,
-  });
+  FutureOr<bool?> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
@@ -98,11 +95,6 @@ abstract class _$SaveButtonController extends $AsyncNotifier<bool?> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        id: _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

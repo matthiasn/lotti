@@ -80,10 +80,7 @@ final class PendingRitualReviewProvider
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return pendingRitualReview(
-      ref,
-      argument,
-    );
+    return pendingRitualReview(ref, argument);
   }
 
   @override
@@ -131,9 +128,8 @@ final class PendingRitualReviewFamily extends $Family
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
-  PendingRitualReviewProvider call(
-    String templateId,
-  ) => PendingRitualReviewProvider._(argument: templateId, from: this);
+  PendingRitualReviewProvider call(String templateId) =>
+      PendingRitualReviewProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'pendingRitualReviewProvider';
@@ -193,10 +189,7 @@ final class RitualFeedbackProvider
   @override
   FutureOr<ClassifiedFeedback?> create(Ref ref) {
     final argument = this.argument as String;
-    return ritualFeedback(
-      ref,
-      argument,
-    );
+    return ritualFeedback(ref, argument);
   }
 
   @override
@@ -231,9 +224,8 @@ final class RitualFeedbackFamily extends $Family
   ///
   /// Uses the feedback extraction service to scan the default 7-day window.
 
-  RitualFeedbackProvider call(
-    String templateId,
-  ) => RitualFeedbackProvider._(argument: templateId, from: this);
+  RitualFeedbackProvider call(String templateId) =>
+      RitualFeedbackProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'ritualFeedbackProvider';
@@ -332,10 +324,7 @@ final class EvolutionSessionStatsProvider
   @override
   FutureOr<EvolutionSessionStats> create(Ref ref) {
     final argument = this.argument as String;
-    return evolutionSessionStats(
-      ref,
-      argument,
-    );
+    return evolutionSessionStats(ref, argument);
   }
 
   @override
@@ -367,9 +356,8 @@ final class EvolutionSessionStatsFamily extends $Family
 
   /// Aggregate stats for evolution sessions of a template.
 
-  EvolutionSessionStatsProvider call(
-    String templateId,
-  ) => EvolutionSessionStatsProvider._(argument: templateId, from: this);
+  EvolutionSessionStatsProvider call(String templateId) =>
+      EvolutionSessionStatsProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'evolutionSessionStatsProvider';

@@ -71,7 +71,7 @@ final class JournalPageControllerProvider
 }
 
 String _$journalPageControllerHash() =>
-    r'a015c523bbebaa090478fbcd591353941520befe';
+    r'68e3a3bf6fd8050c6f87c5afdf7c91b57b226bce';
 
 /// Controller for managing journal/tasks page state.
 ///
@@ -101,9 +101,8 @@ final class JournalPageControllerFamily extends $Family
   /// Uses a family provider pattern with showTasks as the family key.
   /// keepAlive: true to preserve state when switching tabs.
 
-  JournalPageControllerProvider call(
-    bool showTasks,
-  ) => JournalPageControllerProvider._(argument: showTasks, from: this);
+  JournalPageControllerProvider call(bool showTasks) =>
+      JournalPageControllerProvider._(argument: showTasks, from: this);
 
   @override
   String toString() => r'journalPageControllerProvider';
@@ -118,9 +117,7 @@ abstract class _$JournalPageController extends $Notifier<JournalPageState> {
   late final _$args = ref.$arg as bool;
   bool get showTasks => _$args;
 
-  JournalPageState build(
-    bool showTasks,
-  );
+  JournalPageState build(bool showTasks);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -133,11 +130,6 @@ abstract class _$JournalPageController extends $Notifier<JournalPageState> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(_$args));
   }
 }

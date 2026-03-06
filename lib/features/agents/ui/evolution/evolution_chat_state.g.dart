@@ -98,9 +98,8 @@ final class EvolutionChatStateFamily extends $Family
   /// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
   /// approve/reject proposals, and end the session.
 
-  EvolutionChatStateProvider call(
-    String templateId,
-  ) => EvolutionChatStateProvider._(argument: templateId, from: this);
+  EvolutionChatStateProvider call(String templateId) =>
+      EvolutionChatStateProvider._(argument: templateId, from: this);
 
   @override
   String toString() => r'evolutionChatStateProvider';
@@ -116,9 +115,7 @@ abstract class _$EvolutionChatState extends $AsyncNotifier<EvolutionChatData> {
   late final _$args = ref.$arg as String;
   String get templateId => _$args;
 
-  FutureOr<EvolutionChatData> build(
-    String templateId,
-  );
+  FutureOr<EvolutionChatData> build(String templateId);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -132,11 +129,6 @@ abstract class _$EvolutionChatState extends $AsyncNotifier<EvolutionChatData> {
               Object?,
               Object?
             >;
-    element.handleCreate(
-      ref,
-      () => build(
-        _$args,
-      ),
-    );
+    element.handleCreate(ref, () => build(_$args));
   }
 }

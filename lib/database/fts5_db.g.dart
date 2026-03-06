@@ -394,9 +394,7 @@ abstract class _$Fts5Db extends GeneratedDatabase {
     return customSelect(
       'SELECT uuid FROM journal_fts WHERE journal_fts MATCH ?1',
       variables: [Variable<String>(query)],
-      readsFrom: {
-        journalFts,
-      },
+      readsFrom: {journalFts},
     ).map((QueryRow row) => row.read<String>('uuid'));
   }
 
