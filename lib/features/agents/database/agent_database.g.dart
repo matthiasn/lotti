@@ -2515,7 +2515,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   Selectable<AgentEntity> getAgentEntitiesInInterval(
       DateTime start, DateTime end, int limit, int offset) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE deleted_at IS NULL AND updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
+        'SELECT * FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
         variables: [
           Variable<DateTime>(start),
           Variable<DateTime>(end),
@@ -2529,7 +2529,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<int> countAgentEntitiesInInterval(DateTime start, DateTime end) {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND updated_at >= ?1 AND updated_at < ?2',
+        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2',
         variables: [
           Variable<DateTime>(start),
           Variable<DateTime>(end)
@@ -2551,7 +2551,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   Selectable<AgentLink> getAgentLinksInInterval(
       DateTime start, DateTime end, int limit, int offset) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE deleted_at IS NULL AND updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
+        'SELECT * FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
         variables: [
           Variable<DateTime>(start),
           Variable<DateTime>(end),
@@ -2565,7 +2565,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<int> countAgentLinksInInterval(DateTime start, DateTime end) {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND updated_at >= ?1 AND updated_at < ?2',
+        'SELECT COUNT(*) AS cnt FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2',
         variables: [
           Variable<DateTime>(start),
           Variable<DateTime>(end)
@@ -2759,7 +2759,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<AgentEntity> getAgentEntitiesWithNullVectorClock() {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+        'SELECT * FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
         variables: [],
         readsFrom: {
           agentEntities,
@@ -2768,7 +2768,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<int> countAgentEntitiesWithNullVectorClock() {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL',
+        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
         variables: [],
         readsFrom: {
           agentEntities,
@@ -2777,7 +2777,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<AgentLink> getAgentLinksWithNullVectorClock() {
     return customSelect(
-        'SELECT * FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+        'SELECT * FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
         variables: [],
         readsFrom: {
           agentLinks,
@@ -2786,7 +2786,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<int> countAgentLinksWithNullVectorClock() {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, \'\$.vectorClock\') IS NULL',
+        'SELECT COUNT(*) AS cnt FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
         variables: [],
         readsFrom: {
           agentLinks,

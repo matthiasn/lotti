@@ -260,17 +260,19 @@ class AgentRepository {
         .toList();
   }
 
-  /// Fetch non-deleted agent entities whose serialized `vectorClock` is null,
-  /// ordered by `created_at` ascending.
+  /// Fetch agent entities (including soft-deleted) whose serialized
+  /// `vectorClock` is null, ordered by `created_at` ascending.
   ///
   /// Used by the backfill maintenance step to stamp vector clocks on entities
-  /// created before the clock-stamping fix.
+  /// created before the clock-stamping fix. Includes tombstones so that
+  /// deletes are also propagated to other devices.
   Future<List<AgentDomainEntity>> getEntitiesWithNullVectorClock() async {
     final rows = await _db.getAgentEntitiesWithNullVectorClock().get();
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
-  /// Count non-deleted agent entities whose serialized `vectorClock` is null.
+  /// Count agent entities (including soft-deleted) whose serialized
+  /// `vectorClock` is null.
   Future<int> countEntitiesWithNullVectorClock() {
     return _db.countAgentEntitiesWithNullVectorClock().getSingle();
   }
@@ -284,8 +286,8 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
-  /// Fetches agent entities updated in the half-open interval
-  /// [start, end), paginated.
+  /// Fetches agent entities (including soft-deleted) updated in the
+  /// half-open interval [start, end), paginated.
   Future<List<AgentDomainEntity>> getEntitiesInInterval({
     required DateTime start,
     required DateTime end,
@@ -297,7 +299,8 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
-  /// Counts agent entities updated in the half-open interval [start, end).
+  /// Counts agent entities (including soft-deleted) updated in the
+  /// half-open interval [start, end).
   Future<int> countEntitiesInInterval({
     required DateTime start,
     required DateTime end,
@@ -541,17 +544,19 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
-  /// Fetch non-deleted agent links whose serialized `vectorClock` is null,
-  /// ordered by `created_at` ascending.
+  /// Fetch agent links (including soft-deleted) whose serialized
+  /// `vectorClock` is null, ordered by `created_at` ascending.
   ///
   /// Used by the backfill maintenance step to stamp vector clocks on links
-  /// created before the clock-stamping fix.
+  /// created before the clock-stamping fix. Includes tombstones so that
+  /// deletes are also propagated to other devices.
   Future<List<model.AgentLink>> getLinksWithNullVectorClock() async {
     final rows = await _db.getAgentLinksWithNullVectorClock().get();
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
-  /// Count non-deleted agent links whose serialized `vectorClock` is null.
+  /// Count agent links (including soft-deleted) whose serialized
+  /// `vectorClock` is null.
   Future<int> countLinksWithNullVectorClock() {
     return _db.countAgentLinksWithNullVectorClock().getSingle();
   }
@@ -565,8 +570,8 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
-  /// Fetches agent links updated in the half-open interval
-  /// [start, end), paginated.
+  /// Fetches agent links (including soft-deleted) updated in the
+  /// half-open interval [start, end), paginated.
   Future<List<model.AgentLink>> getLinksInInterval({
     required DateTime start,
     required DateTime end,
@@ -578,7 +583,8 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
-  /// Counts agent links updated in the half-open interval [start, end).
+  /// Counts agent links (including soft-deleted) updated in the
+  /// half-open interval [start, end).
   Future<int> countLinksInInterval({
     required DateTime start,
     required DateTime end,

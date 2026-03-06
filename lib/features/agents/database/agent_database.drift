@@ -116,15 +116,15 @@ getAllAgentTemplates: SELECT * FROM agent_entities WHERE type = 'agentTemplate' 
 
 getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
-getAgentEntitiesInInterval: SELECT * FROM agent_entities WHERE deleted_at IS NULL AND updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;
+getAgentEntitiesInInterval: SELECT * FROM agent_entities WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;
 
-countAgentEntitiesInInterval: SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND updated_at >= :start AND updated_at < :end;
+countAgentEntitiesInInterval: SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= :start AND updated_at < :end;
 
 getAllAgentLinks: SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
-getAgentLinksInInterval: SELECT * FROM agent_links WHERE deleted_at IS NULL AND updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;
+getAgentLinksInInterval: SELECT * FROM agent_links WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;
 
-countAgentLinksInInterval: SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND updated_at >= :start AND updated_at < :end;
+countAgentLinksInInterval: SELECT COUNT(*) AS cnt FROM agent_links WHERE updated_at >= :start AND updated_at < :end;
 
 getWakeRunsByTemplateId: SELECT * FROM wake_run_log WHERE template_id = :templateId ORDER BY created_at DESC LIMIT :limit;
 
@@ -156,10 +156,10 @@ getTokenUsageByTemplateId: SELECT ae.* FROM agent_entities ae INNER JOIN agent_l
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
 
-getAgentEntitiesWithNullVectorClock: SELECT * FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
+getAgentEntitiesWithNullVectorClock: SELECT * FROM agent_entities WHERE json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
 
-countAgentEntitiesWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_entities WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL;
+countAgentEntitiesWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_entities WHERE json_extract(serialized, '$.vectorClock') IS NULL;
 
-getAgentLinksWithNullVectorClock: SELECT * FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
+getAgentLinksWithNullVectorClock: SELECT * FROM agent_links WHERE json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
 
-countAgentLinksWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_links WHERE deleted_at IS NULL AND json_extract(serialized, '$.vectorClock') IS NULL;
+countAgentLinksWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_links WHERE json_extract(serialized, '$.vectorClock') IS NULL;

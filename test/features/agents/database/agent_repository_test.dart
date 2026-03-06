@@ -2265,7 +2265,7 @@ void main() {
       expect(allIds, hasLength(5));
     });
 
-    test('getEntitiesInInterval excludes soft-deleted entities', () async {
+    test('getEntitiesInInterval includes soft-deleted entities', () async {
       final entity = makeAgent(id: 'ent-deleted')
           .copyWith(updatedAt: DateTime(2026, 3, 3));
       await repo.upsertEntity(entity);
@@ -2277,11 +2277,21 @@ void main() {
       );
       await repo.upsertEntity(deleted);
 
+      // Tombstones must be included so re-sync propagates deletes
       final count = await repo.countEntitiesInInterval(
         start: intervalStart,
         end: intervalEnd,
       );
-      expect(count, isZero);
+      expect(count, 1);
+
+      final results = await repo.getEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 10,
+        offset: 0,
+      );
+      expect(results, hasLength(1));
+      expect(results.first.deletedAt, isNotNull);
     });
 
     test('countLinksInInterval returns 0 for empty DB', () async {
@@ -2369,7 +2379,7 @@ void main() {
       expect(allIds, hasLength(4));
     });
 
-    test('getLinksInInterval excludes soft-deleted links', () async {
+    test('getLinksInInterval includes soft-deleted links', () async {
       await repo.upsertEntity(makeAgent());
       await repo.upsertEntity(
         makeAgentState(id: 'to-del'),
@@ -2389,11 +2399,21 @@ void main() {
       );
       await repo.upsertLink(deleted);
 
+      // Tombstones must be included so re-sync propagates deletes
       final count = await repo.countLinksInInterval(
         start: intervalStart,
         end: intervalEnd,
       );
-      expect(count, isZero);
+      expect(count, 1);
+
+      final results = await repo.getLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 10,
+        offset: 0,
+      );
+      expect(results, hasLength(1));
+      expect(results.first.deletedAt, isNotNull);
     });
   });
 }

@@ -4336,10 +4336,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncStepBackfillAgentEntityClocks =>
-      'Agent-Entitäten Uhren nachfüllen';
+      'Vektoruhren für Agent-Entitäten nachtragen';
 
   @override
-  String get syncStepBackfillAgentLinkClocks => 'Agent-Links Uhren nachfüllen';
+  String get syncStepBackfillAgentLinkClocks =>
+      'Vektoruhren für Agent-Links nachtragen';
 
   @override
   String get syncStepCategories => 'Kategorien';

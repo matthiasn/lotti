@@ -229,13 +229,16 @@ class SyncMaintenanceRepository {
               previous: entity.vectorClock,
             ),
           );
-          await _agentRepository.upsertEntity(stamped);
+          // Enqueue before persisting so the entity still has a null
+          // vector clock on disk if enqueueMessage throws — making the
+          // row retryable on the next backfill run.
           await _outboxService.enqueueMessage(
             SyncMessage.agentEntity(
               agentEntity: stamped,
               status: SyncEntryStatus.update,
             ),
           );
+          await _agentRepository.upsertEntity(stamped);
 
           processed++;
           onDetailedProgress?.call(processed, total);
@@ -273,13 +276,14 @@ class SyncMaintenanceRepository {
               previous: link.vectorClock,
             ),
           );
-          await _agentRepository.upsertLink(stamped);
+          // Enqueue before persisting — see backfillAgentEntityClocks.
           await _outboxService.enqueueMessage(
             SyncMessage.agentLink(
               agentLink: stamped,
               status: SyncEntryStatus.update,
             ),
           );
+          await _agentRepository.upsertLink(stamped);
 
           processed++;
           onDetailedProgress?.call(processed, total);
