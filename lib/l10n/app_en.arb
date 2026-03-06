@@ -1193,9 +1193,8 @@
   "editMenuTitle": "Edit",
   "editorInsertDivider": "Insert divider",
   "editorPlaceholder": "Enter notes...",
-  "embeddingReindexAllButton": "Re-index All Embeddings",
-  "embeddingReindexAllDescription": "Rebuild all embeddings with improved chunking for long documents",
-  "embeddingReindexAllWarning": "This will delete and rebuild all embeddings with improved chunking. Existing search data will be temporarily unavailable. This may take a while for large datasets.",
+  "embeddingSelectAll": "Select All",
+  "embeddingUnselectAll": "Deselect All",
   "enhancedPromptFormAdditionalDetailsTitle": "Additional Details",
   "enhancedPromptFormAiResponseTypeSubtitle": "Format of the expected response",
   "enhancedPromptFormBasicConfigurationTitle": "Basic Configuration",
@@ -1361,24 +1360,6 @@
   "loggingFailedToLoadMore": "Failed to load more results. Please try again.",
   "loggingSearchFailed": "Search failed. Please try again.",
   "logsSearchHint": "Search all logs...",
-  "maintenanceBackfillEmbeddings": "Backfill Embeddings",
-  "maintenanceBackfillEmbeddingsConfirm": "YES, START BACKFILL",
-  "maintenanceBackfillEmbeddingsDescription": "Generate embeddings for all entries in a category",
-  "maintenanceBackfillEmbeddingsMessage": "Select a category to generate embeddings for all its entries.",
-  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}",
-  "@maintenanceBackfillEmbeddingsProgress": {
-    "placeholders": {
-      "processed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "embedded": {
-        "type": "int"
-      }
-    }
-  },
   "maintenanceDeleteAgentDb": "Delete Agents Database",
   "maintenanceDeleteAgentDbDescription": "Delete agents database and restart app",
   "maintenanceDeleteDatabaseConfirm": "YES, DELETE DATABASE",
@@ -1396,6 +1377,28 @@
   "maintenanceDeleteLoggingDbDescription": "Delete logging database",
   "maintenanceDeleteSyncDb": "Delete Sync Database",
   "maintenanceDeleteSyncDbDescription": "Delete sync database",
+  "maintenanceGenerateEmbeddings": "Generate Embeddings",
+  "maintenanceGenerateEmbeddingsConfirm": "YES, GENERATE",
+  "maintenanceGenerateEmbeddingsDescription": "Generate embeddings for entries in selected categories",
+  "maintenanceGenerateEmbeddingsMessage": "Select categories to generate embeddings for.",
+  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}",
+  "@maintenanceGenerateEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenancePopulatePhaseAgentEntities": "Processing agent entities...",
+  "maintenancePopulatePhaseAgentLinks": "Processing agent links...",
+  "maintenancePopulatePhaseJournal": "Processing journal entries...",
+  "maintenancePopulatePhaseLinks": "Processing entry links...",
   "maintenancePopulateSequenceLog": "Populate sync sequence log",
   "maintenancePopulateSequenceLogComplete": "{count} entries indexed",
   "@maintenancePopulateSequenceLogComplete": {
@@ -1408,10 +1411,6 @@
   "maintenancePopulateSequenceLogConfirm": "YES, POPULATE",
   "maintenancePopulateSequenceLogDescription": "Index existing entries for backfill support",
   "maintenancePopulateSequenceLogMessage": "This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.",
-  "maintenancePopulatePhaseAgentEntities": "Processing agent entities...",
-  "maintenancePopulatePhaseAgentLinks": "Processing agent links...",
-  "maintenancePopulatePhaseJournal": "Processing journal entries...",
-  "maintenancePopulatePhaseLinks": "Processing entry links...",
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenancePurgeDeletedConfirm": "Yes, purge all",
   "maintenancePurgeDeletedDescription": "Purge all deleted items permanently",

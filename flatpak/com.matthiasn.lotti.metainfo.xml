@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.905" date="2026-03-06">
+      <description>
+          <p>Unified embedding generation: select multiple categories at once with a Select All toggle. Vector search is now available on the journal tab alongside tasks. Removed the separate "Re-index All Embeddings" action.</p>
+      </description>
+    </release>
     <release version="0.9.904" date="2026-03-06">
       <description>
           <p>Fixed embedding backfill failing for entries with code, URLs, or long unpunctuated text by lowering the chunk target to 256 tokens for safer headroom against the model's 512-token context window.</p>

@@ -2390,15 +2390,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editorPlaceholder => 'Saisir des notes...';
 
   @override
-  String get embeddingReindexAllButton => 'Réindexer tous les embeddings';
+  String get embeddingSelectAll => 'Tout sélectionner';
 
   @override
-  String get embeddingReindexAllDescription =>
-      'Reconstruire tous les embeddings avec un chunking amélioré pour les longs documents';
-
-  @override
-  String get embeddingReindexAllWarning =>
-      'Tous les embeddings seront supprimés et reconstruits avec un chunking amélioré. Les données de recherche existantes seront temporairement indisponibles. Cela peut prendre un moment pour les grands ensembles de données.';
+  String get embeddingUnselectAll => 'Tout désélectionner';
 
   @override
   String get enhancedPromptFormAdditionalDetailsTitle =>
@@ -2896,44 +2891,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get logsSearchHint => 'Rechercher tous les logs...';
 
   @override
-  String get maintenanceBackfillEmbeddings => 'Remplir les embeddings';
-
-  @override
-  String get maintenanceBackfillEmbeddingsConfirm => 'OUI, DÉMARRER';
-
-  @override
-  String get maintenanceBackfillEmbeddingsDescription =>
-      'Générer les embeddings pour toutes les entrées d\'une catégorie';
-
-  @override
-  String get maintenanceBackfillEmbeddingsMessage =>
-      'Sélectionne une catégorie pour générer les embeddings de toutes ses entrées.';
-
-  @override
-  String maintenanceBackfillEmbeddingsProgress(
-      int processed, int total, int embedded) {
-    String _temp0 = intl.Intl.pluralLogic(
-      embedded,
-      locale: localeName,
-      other: '$embedded intégrées',
-      one: '1 intégrée',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      embedded,
-      locale: localeName,
-      other: '$embedded intégrées',
-      one: '1 intégrée',
-    );
-    String _temp2 = intl.Intl.pluralLogic(
-      total,
-      locale: localeName,
-      other: '$processed / $total entrées ($_temp0)',
-      one: '$processed / $total entrée ($_temp1)',
-    );
-    return '$_temp2';
-  }
-
-  @override
   String get maintenanceDeleteAgentDb =>
       'Supprimer la base de données des agents';
 
@@ -2973,6 +2930,44 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get maintenanceDeleteSyncDbDescription =>
       'Supprimer la base de données de synchronisation';
+
+  @override
+  String get maintenanceGenerateEmbeddings => 'Générer les embeddings';
+
+  @override
+  String get maintenanceGenerateEmbeddingsConfirm => 'OUI, GÉNÉRER';
+
+  @override
+  String get maintenanceGenerateEmbeddingsDescription =>
+      'Générer les embeddings pour les entrées des catégories sélectionnées';
+
+  @override
+  String get maintenanceGenerateEmbeddingsMessage =>
+      'Sélectionne les catégories pour générer les embeddings.';
+
+  @override
+  String maintenanceGenerateEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded embeddings générés',
+      one: '1 embedding généré',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded embeddings générés',
+      one: '1 embedding généré',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total entrées ($_temp0)',
+      one: '$processed / $total entrée ($_temp1)',
+    );
+    return '$_temp2';
+  }
 
   @override
   String get maintenancePopulateSequenceLog =>

@@ -45,7 +45,7 @@ class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
     final controller =
         ref.read(journalPageControllerProvider(showTasks).notifier);
 
-    final showVectorToggle = state.showTasks && state.enableVectorSearch;
+    final showVectorToggle = state.enableVectorSearch;
 
     return SliverAppBar(
       pinned: true,

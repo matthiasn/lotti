@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.905] - 2026-03-06
+### Added
+- Unified embedding generation: select multiple categories at once instead of
+  one at a time. Includes Select All / Unselect All toggle.
+- Vector search now available on the journal tab (previously tasks-only).
+
+### Removed
+- Removed "Re-index All Embeddings" maintenance action (superseded by
+  multi-category generate).
+
 ## [0.9.904] - 2026-03-06
 ### Fixed
 - Embedding backfill failing with "input length exceeds the context length" for

@@ -1046,9 +1046,8 @@
   "editMenuTitle": "Editează",
   "editorInsertDivider": "Inserează separator",
   "editorPlaceholder": "Introduceți notițe...",
-  "embeddingReindexAllButton": "Reindexează toate embedding-urile",
-  "embeddingReindexAllDescription": "Reconstruiește toate embedding-urile cu chunking îmbunătățit pentru documente lungi",
-  "embeddingReindexAllWarning": "Toate embedding-urile vor fi șterse și reconstruite cu chunking îmbunătățit. Datele de căutare existente vor fi temporar indisponibile. Acest lucru poate dura ceva timp pentru seturi mari de date.",
+  "embeddingSelectAll": "Selectează tot",
+  "embeddingUnselectAll": "Deselectează tot",
   "enhancedPromptFormAdditionalDetailsTitle": "Detalii suplimentare",
   "enhancedPromptFormAiResponseTypeSubtitle": "Formatul răspunsului așteptat",
   "enhancedPromptFormBasicConfigurationTitle": "Configurare de bază",
@@ -1214,24 +1213,6 @@
   "loggingFailedToLoadMore": "Eșec la încărcarea mai multor rezultate. Vă rugăm să încercați din nou.",
   "loggingSearchFailed": "Căutarea a eșuat. Vă rugăm să încercați din nou.",
   "logsSearchHint": "Caută în toate jurnalele...",
-  "maintenanceBackfillEmbeddings": "Completare încorporări",
-  "maintenanceBackfillEmbeddingsConfirm": "DA, ÎNCEPE",
-  "maintenanceBackfillEmbeddingsDescription": "Generează încorporări pentru toate intrările dintr-o categorie",
-  "maintenanceBackfillEmbeddingsMessage": "Selectează o categorie pentru a genera încorporări pentru toate intrările sale.",
-  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} intrare ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})} other{{processed} / {total} intrări ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})}}",
-  "@maintenanceBackfillEmbeddingsProgress": {
-    "placeholders": {
-      "processed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "embedded": {
-        "type": "int"
-      }
-    }
-  },
   "maintenanceDeleteAgentDb": "Șterge baza de date a agenților",
   "maintenanceDeleteAgentDbDescription": "Șterge baza de date a agenților și repornește aplicația",
   "maintenanceDeleteDatabaseConfirm": "DA, ȘTERGE BAZA DE DATE",
@@ -1249,6 +1230,28 @@
   "maintenanceDeleteLoggingDbDescription": "Șterge baza de date de jurnalizare",
   "maintenanceDeleteSyncDb": "Ștergeți baza de date de sincronizare",
   "maintenanceDeleteSyncDbDescription": "Șterge baza de date de sincronizare",
+  "maintenanceGenerateEmbeddings": "Generare încorporări",
+  "maintenanceGenerateEmbeddingsConfirm": "DA, GENEREAZĂ",
+  "maintenanceGenerateEmbeddingsDescription": "Generează încorporări pentru intrările din categoriile selectate",
+  "maintenanceGenerateEmbeddingsMessage": "Selectează categoriile pentru a genera încorporări.",
+  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} intrare ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})} other{{processed} / {total} intrări ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})}}",
+  "@maintenanceGenerateEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenancePopulatePhaseAgentEntities": "Se procesează entitățile agenților...",
+  "maintenancePopulatePhaseAgentLinks": "Se procesează legăturile agenților...",
+  "maintenancePopulatePhaseJournal": "Se procesează intrările din jurnal...",
+  "maintenancePopulatePhaseLinks": "Se procesează legăturile intrărilor...",
   "maintenancePopulateSequenceLog": "Completează jurnalul de secvență de sincronizare",
   "maintenancePopulateSequenceLogComplete": "{count} intrări indexate",
   "@maintenancePopulateSequenceLogComplete": {
@@ -1261,10 +1264,6 @@
   "maintenancePopulateSequenceLogConfirm": "DA, COMPLETEAZĂ",
   "maintenancePopulateSequenceLogDescription": "Indexează intrările existente pentru suport de completare",
   "maintenancePopulateSequenceLogMessage": "Aceasta va scana toate intrările din jurnal și le va adăuga la jurnalul de secvență de sincronizare. Aceasta permite răspunsurile de completare pentru intrările create înainte de adăugarea acestei funcții.",
-  "maintenancePopulatePhaseAgentEntities": "Se procesează entitățile agenților...",
-  "maintenancePopulatePhaseAgentLinks": "Se procesează legăturile agenților...",
-  "maintenancePopulatePhaseJournal": "Se procesează intrările din jurnal...",
-  "maintenancePopulatePhaseLinks": "Se procesează legăturile intrărilor...",
   "maintenancePurgeDeleted": "Eliminați elementele șterse",
   "maintenancePurgeDeletedConfirm": "Da, șterge tot",
   "maintenancePurgeDeletedDescription": "Șterge definitiv toate elementele șterse",

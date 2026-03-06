@@ -252,7 +252,7 @@ void main() {
       expect(find.text('YES, RECREATE INDEX'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('backfill embeddings card hidden when pipeline not registered',
+    testWidgets('generate embeddings card hidden when pipeline not registered',
         (tester) async {
       // EmbeddingsDb is NOT registered in this test group's setUp
       await tester.pumpWidget(
@@ -260,10 +260,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Backfill Embeddings'), findsNothing);
+      expect(find.text('Generate Embeddings'), findsNothing);
     });
 
-    testWidgets('backfill embeddings card visible when pipeline is registered',
+    testWidgets('generate embeddings card visible when pipeline is registered',
         (tester) async {
       getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
 
@@ -272,11 +272,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Backfill Embeddings'), findsOneWidget);
+      expect(find.text('Generate Embeddings'), findsOneWidget);
       expect(
-        find.text('Generate embeddings for all entries in a category'),
+        find.text('Generate embeddings for entries in selected categories'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('re-index all embeddings card is not shown', (tester) async {
+      getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
+
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Re-index All Embeddings'), findsNothing);
     });
   });
 }

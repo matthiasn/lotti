@@ -859,9 +859,8 @@
   "editMenuTitle": "Upravit",
   "editorInsertDivider": "Vložit oddělovač",
   "editorPlaceholder": "Zadejte poznámky...",
-  "embeddingReindexAllButton": "Přeindexovat všechny embeddingy",
-  "embeddingReindexAllDescription": "Přestavět všechny embeddingy s vylepšeným chunkingem pro dlouhé dokumenty",
-  "embeddingReindexAllWarning": "Všechny embeddingy budou smazány a znovu vytvořeny s vylepšeným chunkingem. Existující vyhledávací data budou dočasně nedostupná. U velkých datových sad to může chvíli trvat.",
+  "embeddingSelectAll": "Vybrat vše",
+  "embeddingUnselectAll": "Zrušit výběr",
   "enhancedPromptFormAdditionalDetailsTitle": "Další podrobnosti",
   "enhancedPromptFormAiResponseTypeSubtitle": "Formát očekávané odpovědi",
   "enhancedPromptFormBasicConfigurationTitle": "Základní konfigurace",
@@ -1010,24 +1009,6 @@
   "loggingFailedToLoadMore": "Nepodařilo se načíst další výsledky. Prosím, zkuste to znovu.",
   "loggingSearchFailed": "Vyhledávání neúspěšné. Prosím, zkuste to znovu.",
   "logsSearchHint": "Prohledat všechny logy...",
-  "maintenanceBackfillEmbeddings": "Doplnit embeddings",
-  "maintenanceBackfillEmbeddingsConfirm": "ANO, SPUSTIT",
-  "maintenanceBackfillEmbeddingsDescription": "Vygenerovat embeddings pro všechny záznamy v kategorii",
-  "maintenanceBackfillEmbeddingsMessage": "Vyberte kategorii pro vygenerování embeddings všech jejích záznamů.",
-  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} záznam ({embedded, plural, =1{1 vložen} few{{embedded} vloženy} other{{embedded} vloženo}})} few{{processed} / {total} záznamy ({embedded, plural, =1{1 vložen} few{{embedded} vloženy} other{{embedded} vloženo}})} other{{processed} / {total} záznamů ({embedded, plural, =1{1 vložen} few{{embedded} vloženy} other{{embedded} vloženo}})}}",
-  "@maintenanceBackfillEmbeddingsProgress": {
-    "placeholders": {
-      "processed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "embedded": {
-        "type": "int"
-      }
-    }
-  },
   "maintenanceDeleteAgentDb": "Smazat databázi agentů",
   "maintenanceDeleteAgentDbDescription": "Smazat databázi agentů a restartovat aplikaci",
   "maintenanceDeleteDatabaseConfirm": "ANO, SMAZAT DATABÁZI",
@@ -1045,6 +1026,28 @@
   "maintenanceDeleteLoggingDbDescription": "Smazat logovací databázi",
   "maintenanceDeleteSyncDb": "Smazat synchronizační databázi",
   "maintenanceDeleteSyncDbDescription": "Smazat synchronizační databázi",
+  "maintenanceGenerateEmbeddings": "Generovat vektory",
+  "maintenanceGenerateEmbeddingsConfirm": "ANO, GENEROVAT",
+  "maintenanceGenerateEmbeddingsDescription": "Generovat vektory pro záznamy ve vybraných kategoriích",
+  "maintenanceGenerateEmbeddingsMessage": "Vyber kategorie pro generování vektorů.",
+  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} záznam ({embedded, plural, =1{1 vektor vložen} few{{embedded} vektory vloženy} other{{embedded} vektorů vloženo}})} few{{processed} / {total} záznamy ({embedded, plural, =1{1 vektor vložen} few{{embedded} vektory vloženy} other{{embedded} vektorů vloženo}})} other{{processed} / {total} záznamů ({embedded, plural, =1{1 vektor vložen} few{{embedded} vektory vloženy} other{{embedded} vektorů vloženo}})}}",
+  "@maintenanceGenerateEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenancePopulatePhaseAgentEntities": "Zpracování entit agentů...",
+  "maintenancePopulatePhaseAgentLinks": "Zpracování propojení agentů...",
+  "maintenancePopulatePhaseJournal": "Zpracování záznamů deníku...",
+  "maintenancePopulatePhaseLinks": "Zpracování propojení záznamů...",
   "maintenancePopulateSequenceLog": "Naplnit protokol synchronizační sekvence",
   "maintenancePopulateSequenceLogComplete": "{count} záznamů indexováno",
   "@maintenancePopulateSequenceLogComplete": {
@@ -1057,10 +1060,6 @@
   "maintenancePopulateSequenceLogConfirm": "ANO, NAPLNIT",
   "maintenancePopulateSequenceLogDescription": "Indexovat existující položky pro podporu doplňování",
   "maintenancePopulateSequenceLogMessage": "Toto prohledá všechny záznamy deníku a přidá je do protokolu synchronizační sekvence. To umožní zpětné zpracování odpovědí pro záznamy vytvořené před přidáním této funkce.",
-  "maintenancePopulatePhaseAgentEntities": "Zpracování entit agentů...",
-  "maintenancePopulatePhaseAgentLinks": "Zpracování propojení agentů...",
-  "maintenancePopulatePhaseJournal": "Zpracování záznamů deníku...",
-  "maintenancePopulatePhaseLinks": "Zpracování propojení záznamů...",
   "maintenancePurgeDeleted": "Vyčistit smazané položky",
   "maintenancePurgeDeletedConfirm": "Ano, vyčistit všechny",
   "maintenancePurgeDeletedDescription": "Vymazat všechny smazané položky trvale",

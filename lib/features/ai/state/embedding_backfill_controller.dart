@@ -220,159 +220,35 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     );
   }
 
-  Future<void> backfillCategory(String categoryId) async {
+  /// Generates embeddings for all entries in the given [categoryIds].
+  Future<void> backfillCategories(Set<String> categoryIds) async {
     await _guardedRun((services) async {
       final labelResolver =
           await EmbeddingProcessor.buildLabelResolver(services.journalDb);
 
-      final entityIds =
-          await services.journalDb.journalEntityIdsByCategory(categoryId).get();
-      state = state.copyWith(totalCount: entityIds.length);
+      // Collect entity IDs across all selected categories, deduplicating
+      // in case an entity belongs to multiple categories.
+      final allEntityIds = <String>{};
+      for (final categoryId in categoryIds) {
+        final ids = await services.journalDb
+            .journalEntityIdsByCategory(categoryId)
+            .get();
+        allEntityIds.addAll(ids);
+      }
 
-      if (entityIds.isEmpty) {
+      state = state.copyWith(totalCount: allEntityIds.length);
+
+      if (allEntityIds.isEmpty) {
         state = state.copyWith(progress: 1);
         return;
       }
 
       await _processEntities(
-        entityIds: entityIds,
+        entityIds: allEntityIds.toList(),
         services: services,
         labelResolver: labelResolver,
       );
     });
-  }
-
-  /// Re-indexes all embeddings by clearing the database and running
-  /// backfill for every category plus all agent reports.
-  ///
-  /// This is needed when the chunking strategy changes (e.g. switching
-  /// from single-embedding to overlapping chunks) so existing data is
-  /// re-embedded with the new logic.
-  Future<void> reindexAll() async {
-    await _guardedRun((services) async {
-      // Clear all existing embeddings.
-      services.embeddingsDb.deleteAll();
-
-      final labelResolver =
-          await EmbeddingProcessor.buildLabelResolver(services.journalDb);
-
-      // Collect all entity IDs across all categories.
-      final categories =
-          await services.journalDb.allCategoryDefinitions().get();
-      final allEntityIds = <String>[];
-      for (final cat in categories) {
-        final ids =
-            await services.journalDb.journalEntityIdsByCategory(cat.id).get();
-        allEntityIds.addAll(ids);
-      }
-
-      // Count agent reports so the total reflects both phases.
-      final agentCount = getIt.isRegistered<AgentRepository>()
-          ? (await getIt<AgentRepository>().getAllAgentIdentities()).length
-          : 0;
-      final total = allEntityIds.length + agentCount;
-      state = state.copyWith(totalCount: total);
-
-      if (total == 0) {
-        state = state.copyWith(progress: 1);
-        return;
-      }
-
-      final result = await _processEntities(
-        entityIds: allEntityIds,
-        services: services,
-        labelResolver: labelResolver,
-        totalOverride: total,
-      );
-
-      // Also reindex agent reports (if the agent repository is available).
-      if (!_cancelled && getIt.isRegistered<AgentRepository>()) {
-        await _reindexAgentReports(
-          services: services,
-          processedOffset: result.processed,
-          embeddedOffset: result.embedded,
-          failedOffset: result.failed,
-          total: total,
-        );
-      }
-    });
-  }
-
-  Future<void> _reindexAgentReports({
-    required _BackfillServices services,
-    int processedOffset = 0,
-    int embeddedOffset = 0,
-    int failedOffset = 0,
-    int total = 0,
-  }) async {
-    final agentRepository = getIt<AgentRepository>();
-    var processed = processedOffset;
-    var embedded = embeddedOffset;
-    var failed = failedOffset;
-
-    final agents = await agentRepository.getAllAgentIdentities();
-    for (final agent in agents) {
-      if (_cancelled) break;
-      try {
-        final taskLinks = await agentRepository.getLinksFrom(
-          agent.id,
-          type: AgentLinkTypes.agentTask,
-        );
-        if (taskLinks.isEmpty) {
-          processed++;
-          state = state.copyWith(
-            processedCount: processed,
-            progress: total > 0 ? processed / total : 1,
-          );
-          continue;
-        }
-        final taskId = taskLinks.first.toId;
-
-        final report = await agentRepository.getLatestReport(
-          agent.id,
-          AgentReportScopes.current,
-        );
-        if (report == null || report.content.isEmpty) {
-          processed++;
-          state = state.copyWith(
-            processedCount: processed,
-            progress: total > 0 ? processed / total : 1,
-          );
-          continue;
-        }
-
-        final taskEntity = await services.journalDb.journalEntityById(taskId);
-        final categoryId = taskEntity?.meta.categoryId ?? '';
-
-        final didEmbed = await EmbeddingProcessor.processAgentReport(
-          reportId: report.id,
-          reportContent: report.content,
-          taskId: taskId,
-          categoryId: categoryId,
-          subtype: AgentReportScopes.current,
-          embeddingsDb: services.embeddingsDb,
-          embeddingRepository: services.embeddingRepository,
-          baseUrl: services.baseUrl,
-        );
-        if (didEmbed) embedded++;
-      } catch (e, stackTrace) {
-        failed++;
-        developer.log(
-          'Reindex agent report failed for ${agent.id}: $e',
-          error: e,
-          stackTrace: stackTrace,
-          name: 'EmbeddingBackfillController',
-        );
-      }
-
-      processed++;
-      state = state.copyWith(
-        processedCount: processed,
-        embeddedCount: embedded,
-        failedCount: failed,
-        progress: total > 0 ? processed / total : 1,
-      );
-    }
   }
 
   /// Backfills embeddings for all agent reports.
