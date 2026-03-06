@@ -73,26 +73,29 @@ class AgentDatabase extends _$AgentDatabase {
 
   /// Stream agent entities with their vector clocks for populating the
   /// sequence log. Yields batches of records with entity ID and vector
-  /// clock map. Uses lightweight JSON extraction to avoid full
+  /// clock map. Uses lightweight SQL + JSON extraction to avoid full
   /// deserialization.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
       streamAgentEntitiesWithVectorClock({int batchSize = 1000}) async* {
     var offset = 0;
 
     while (true) {
-      final batch =
-          await (select(agentEntities)..limit(batchSize, offset: offset))
-              .map(
-                (row) => (
-                  id: row.id,
-                  vectorClock: _extractVectorClock(row.serialized),
-                ),
-              )
-              .get();
+      final rows = await customSelect(
+        'SELECT id, serialized FROM agent_entities '
+        'LIMIT ? OFFSET ?',
+        variables: [Variable(batchSize), Variable(offset)],
+      ).get();
 
-      if (batch.isEmpty) break;
+      if (rows.isEmpty) break;
 
-      yield batch;
+      yield rows
+          .map(
+            (row) => (
+              id: row.read<String>('id'),
+              vectorClock: _extractVectorClock(row.read<String>('serialized')),
+            ),
+          )
+          .toList();
       offset += batchSize;
     }
   }
@@ -105,18 +108,22 @@ class AgentDatabase extends _$AgentDatabase {
     var offset = 0;
 
     while (true) {
-      final batch = await (select(agentLinks)..limit(batchSize, offset: offset))
+      final rows = await customSelect(
+        'SELECT id, serialized FROM agent_links '
+        'LIMIT ? OFFSET ?',
+        variables: [Variable(batchSize), Variable(offset)],
+      ).get();
+
+      if (rows.isEmpty) break;
+
+      yield rows
           .map(
             (row) => (
-              id: row.id,
-              vectorClock: _extractVectorClock(row.serialized),
+              id: row.read<String>('id'),
+              vectorClock: _extractVectorClock(row.read<String>('serialized')),
             ),
           )
-          .get();
-
-      if (batch.isEmpty) break;
-
-      yield batch;
+          .toList();
       offset += batchSize;
     }
   }

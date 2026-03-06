@@ -2048,6 +2048,233 @@ void main() {
     });
   });
 
+  group('populateFromAgentEntities', () {
+    test('populates sequence log from agent entities stream', () async {
+      final entityStream = Stream.fromIterable([
+        [
+          (id: 'entity-1', vectorClock: <String, int>{aliceHostId: 1}),
+          (id: 'entity-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      var progressCalled = false;
+      final populated = await service.populateFromAgentEntities(
+        entityStream: entityStream,
+        getTotalCount: () async => 2,
+        onProgress: (progress) {
+          progressCalled = true;
+        },
+      );
+
+      expect(populated, 2);
+      expect(progressCalled, true);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 2);
+
+      // All entries should have agentEntity payload type
+      for (final entry in entries) {
+        expect(
+          entry.payloadType.value,
+          SyncSequencePayloadType.agentEntity.index,
+        );
+      }
+    });
+
+    test('skips existing counters', () async {
+      final entityStream = Stream.fromIterable([
+        [
+          (id: 'entity-1', vectorClock: <String, int>{aliceHostId: 1}),
+          (id: 'entity-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(aliceHostId))
+          .thenAnswer((_) async => {1});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromAgentEntities(
+        entityStream: entityStream,
+        getTotalCount: () async => 2,
+      );
+
+      expect(populated, 1);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 1);
+      expect(entries[0].counter.value, 2);
+    });
+
+    test('returns zero when stream is empty', () async {
+      const entityStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+
+      final populated = await service.populateFromAgentEntities(
+        entityStream: entityStream,
+        getTotalCount: () async => 0,
+      );
+
+      expect(populated, 0);
+      verifyNever(() => mockDb.batchInsertSequenceEntries(any()));
+    });
+
+    test('skips entities with null vector clock', () async {
+      final entityStream = Stream.fromIterable([
+        [
+          (id: 'entity-1', vectorClock: null),
+          (id: 'entity-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromAgentEntities(
+        entityStream: entityStream,
+        getTotalCount: () async => 2,
+      );
+
+      expect(populated, 1);
+    });
+  });
+
+  group('populateFromAgentLinks', () {
+    test('populates sequence log from agent links stream', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (id: 'alink-1', vectorClock: <String, int>{aliceHostId: 1}),
+          (id: 'alink-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      var progressCalled = false;
+      final populated = await service.populateFromAgentLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 2,
+        onProgress: (progress) {
+          progressCalled = true;
+        },
+      );
+
+      expect(populated, 2);
+      expect(progressCalled, true);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 2);
+
+      // All entries should have agentLink payload type
+      for (final entry in entries) {
+        expect(
+          entry.payloadType.value,
+          SyncSequencePayloadType.agentLink.index,
+        );
+      }
+    });
+
+    test('handles multi-host vector clocks', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (
+            id: 'alink-1',
+            vectorClock: <String, int>{aliceHostId: 5, bobHostId: 3}
+          ),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromAgentLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 1,
+      );
+
+      expect(populated, 2);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 2);
+
+      final aliceEntry = entries.firstWhere(
+        (e) => e.hostId.value == aliceHostId,
+      );
+      final bobEntry = entries.firstWhere(
+        (e) => e.hostId.value == bobHostId,
+      );
+
+      expect(aliceEntry.counter.value, 5);
+      expect(bobEntry.counter.value, 3);
+      expect(aliceEntry.entryId.value, 'alink-1');
+      expect(bobEntry.entryId.value, 'alink-1');
+    });
+
+    test('returns zero when stream is empty', () async {
+      const linkStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+
+      final populated = await service.populateFromAgentLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 0,
+      );
+
+      expect(populated, 0);
+      verifyNever(() => mockDb.batchInsertSequenceEntries(any()));
+    });
+
+    test('skips links with null vector clock', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (id: 'alink-1', vectorClock: null),
+          (id: 'alink-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromAgentLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 2,
+      );
+
+      expect(populated, 1);
+    });
+  });
+
   group('coveredVectorClocks processing', () {
     test('marks covered counters as received', () async {
       // Scenario: Entry arrives with coveredVectorClocks containing VC5 and VC6

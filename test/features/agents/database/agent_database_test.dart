@@ -397,4 +397,198 @@ void main() {
       await db.close();
     });
   });
+
+  group('AgentDatabase streaming and counting', () {
+    late AgentDatabase db;
+
+    setUp(() {
+      db = AgentDatabase(
+        inMemoryDatabase: true,
+        background: false,
+      );
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    Future<void> insertAgentEntity({
+      required String id,
+      required String serialized,
+    }) async {
+      await db.customStatement('''
+        INSERT INTO agent_entities
+          (id, agent_id, type, created_at, updated_at, serialized,
+           schema_version)
+        VALUES
+          ('$id', 'agent-1', 'agentMessage',
+           '2026-01-01', '2026-01-01', '$serialized', 1)
+      ''');
+    }
+
+    Future<void> insertAgentLink({
+      required String id,
+      required String serialized,
+      String? deletedAt,
+    }) async {
+      final deletedClause = deletedAt != null ? "'$deletedAt'" : 'NULL';
+      await db.customStatement('''
+        INSERT INTO agent_links
+          (id, from_id, to_id, type, created_at, updated_at, deleted_at,
+           serialized, schema_version)
+        VALUES
+          ('$id', 'from-1', 'to-$id', 'some_type',
+           '2026-01-01', '2026-01-01', $deletedClause, '$serialized', 1)
+      ''');
+    }
+
+    test('streamAgentEntitiesWithVectorClock yields entities with VCs',
+        () async {
+      await insertAgentEntity(
+        id: 'e-1',
+        serialized: '{"vectorClock":{"host-a":1,"host-b":2}}',
+      );
+      await insertAgentEntity(
+        id: 'e-2',
+        serialized: '{"vectorClock":{"host-a":3}}',
+      );
+
+      final batches =
+          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+
+      expect(batches, hasLength(1));
+      final records = batches.first;
+      expect(records, hasLength(2));
+
+      final e1 = records.firstWhere((r) => r.id == 'e-1');
+      expect(e1.vectorClock, {'host-a': 1, 'host-b': 2});
+
+      final e2 = records.firstWhere((r) => r.id == 'e-2');
+      expect(e2.vectorClock, {'host-a': 3});
+    });
+
+    test('streamAgentEntitiesWithVectorClock handles null VC', () async {
+      await insertAgentEntity(
+        id: 'e-1',
+        serialized: '{"type":"agentMessage"}',
+      );
+
+      final batches =
+          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+
+      expect(batches, hasLength(1));
+      expect(batches.first.first.vectorClock, isNull);
+    });
+
+    test('streamAgentEntitiesWithVectorClock paginates batches', () async {
+      for (var i = 0; i < 5; i++) {
+        await insertAgentEntity(
+          id: 'e-$i',
+          serialized: '{"vectorClock":{"host-a":$i}}',
+        );
+      }
+
+      final batches =
+          await db.streamAgentEntitiesWithVectorClock(batchSize: 2).toList();
+
+      // 5 entities / batchSize 2 = 3 batches (2, 2, 1)
+      expect(batches, hasLength(3));
+      expect(batches[0], hasLength(2));
+      expect(batches[1], hasLength(2));
+      expect(batches[2], hasLength(1));
+    });
+
+    test('streamAgentLinksWithVectorClock yields links with VCs', () async {
+      await insertAgentLink(
+        id: 'l-1',
+        serialized: '{"vectorClock":{"host-a":10,"host-b":20}}',
+      );
+      await insertAgentLink(
+        id: 'l-2',
+        serialized: '{"vectorClock":{"host-c":5}}',
+      );
+
+      final batches =
+          await db.streamAgentLinksWithVectorClock(batchSize: 10).toList();
+
+      expect(batches, hasLength(1));
+      final records = batches.first;
+      expect(records, hasLength(2));
+
+      final l1 = records.firstWhere((r) => r.id == 'l-1');
+      expect(l1.vectorClock, {'host-a': 10, 'host-b': 20});
+
+      final l2 = records.firstWhere((r) => r.id == 'l-2');
+      expect(l2.vectorClock, {'host-c': 5});
+    });
+
+    test('streamAgentLinksWithVectorClock handles null VC', () async {
+      await insertAgentLink(
+        id: 'l-1',
+        serialized: '{"type":"some_type"}',
+      );
+
+      final batches =
+          await db.streamAgentLinksWithVectorClock(batchSize: 10).toList();
+
+      expect(batches, hasLength(1));
+      expect(batches.first.first.vectorClock, isNull);
+    });
+
+    test('countAllAgentEntities returns correct count', () async {
+      expect(await db.countAllAgentEntities(), 0);
+
+      await insertAgentEntity(
+        id: 'e-1',
+        serialized: '{"vectorClock":{"host-a":1}}',
+      );
+      await insertAgentEntity(
+        id: 'e-2',
+        serialized: '{"vectorClock":{"host-a":2}}',
+      );
+
+      expect(await db.countAllAgentEntities(), 2);
+    });
+
+    test('countAllAgentLinks returns correct count', () async {
+      expect(await db.countAllAgentLinks(), 0);
+
+      await insertAgentLink(
+        id: 'l-1',
+        serialized: '{"vectorClock":{"host-a":1}}',
+      );
+      await insertAgentLink(
+        id: 'l-2',
+        serialized: '{"vectorClock":{"host-a":2}}',
+      );
+
+      expect(await db.countAllAgentLinks(), 2);
+    });
+
+    test('_extractVectorClock handles invalid JSON gracefully', () async {
+      await insertAgentEntity(
+        id: 'e-bad',
+        serialized: 'not-json',
+      );
+
+      final batches =
+          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+
+      expect(batches, hasLength(1));
+      expect(batches.first.first.vectorClock, isNull);
+    });
+
+    test('_extractVectorClock handles non-numeric VC values', () async {
+      await insertAgentEntity(
+        id: 'e-bad',
+        serialized: '{"vectorClock":{"host-a":"not-a-number"}}',
+      );
+
+      final batches =
+          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+
+      expect(batches, hasLength(1));
+      expect(batches.first.first.vectorClock, isNull);
+    });
+  });
 }
