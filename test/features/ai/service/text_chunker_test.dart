@@ -1,6 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 
+/// Asserts that every chunk's estimated token count is at most [limit].
+void _expectAllChunksWithinTokenLimit(List<String> chunks, int limit) {
+  for (var i = 0; i < chunks.length; i++) {
+    final tokens = TextChunker.estimateTokens(chunks[i]);
+    expect(
+      tokens,
+      lessThanOrEqualTo(limit),
+      reason: 'Chunk $i has $tokens estimated tokens, '
+          'which exceeds target of $limit',
+    );
+  }
+}
+
 void main() {
   group('TextChunker', () {
     group('estimateTokens', () {
@@ -26,6 +39,15 @@ void main() {
         // "a  b  c" still has 3 words after splitting on \s+
         expect(TextChunker.estimateTokens('a  b  c'), 4); // ceil(3 * 1.3)
       });
+
+      test('estimates long whitespace-free non-CJK token by character count',
+          () {
+        // A 2000-character URL-like string (no whitespace, no CJK)
+        final longUrl = 'https://example.com/${'a' * 1980}';
+        final tokens = TextChunker.estimateTokens(longUrl);
+        // Should use ~4 chars/token → 2000/4 = 500, not 1 word × 1.3 = 2
+        expect(tokens, 500);
+      });
     });
 
     group('chunk', () {
@@ -45,16 +67,16 @@ void main() {
       });
 
       test('returns single chunk for text at exactly the token limit', () {
-        // ~295 words = ~384 tokens (the target)
-        final words = List.generate(290, (i) => 'word$i');
+        // ~196 words = ~255 tokens (just under the 256 target)
+        final words = List.generate(196, (i) => 'word$i');
         final text = words.join(' ');
         final chunks = TextChunker.chunk(text);
-        // Should be 1 chunk since estimateTokens(290 words) = ceil(290*1.3) = 377 < 384
+        // Should be 1 chunk since estimateTokens(196 words) = ceil(196*1.3) = 255 < 256
         expect(chunks, hasLength(1));
       });
 
       test('produces multiple chunks for long text', () {
-        // Build text with ~600 words (well above 384 token threshold)
+        // Build text with ~600 words (well above 256 token threshold)
         final sentences = List.generate(
           60,
           (i) => 'This is sentence number $i with some extra words.',
@@ -124,18 +146,7 @@ void main() {
         );
         final text = sentences.join(' ');
         final chunks = TextChunker.chunk(text);
-
-        for (var i = 0; i < chunks.length; i++) {
-          final tokens = TextChunker.estimateTokens(chunks[i]);
-          // Allow some overshoot for sentence-boundary alignment,
-          // but not more than 2× the target
-          expect(
-            tokens,
-            lessThan(kChunkTargetTokens * 2),
-            reason: 'Chunk $i has $tokens estimated tokens, '
-                'which exceeds 2× target of $kChunkTargetTokens',
-          );
-        }
+        _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
       });
 
       test('handles single very long sentence by splitting on word boundaries',
@@ -156,6 +167,17 @@ void main() {
             reason: 'Word "$marker" not found in any chunk',
           );
         }
+      });
+
+      test('splits oversized sentence within multi-sentence text', () {
+        const normalSentence = 'This is a normal sentence.';
+        final longSentence = List.generate(400, (i) => 'longword$i').join(' ');
+        const anotherNormal = 'Another normal sentence at the end.';
+        final text = '$normalSentence $longSentence $anotherNormal';
+        final chunks = TextChunker.chunk(text);
+
+        expect(chunks.length, greaterThan(1));
+        _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
       });
 
       test('handles paragraph breaks as sentence boundaries', () {
@@ -211,7 +233,7 @@ void main() {
 
       test('handles CJK text without whitespace', () {
         // Build a long string of CJK characters (no word-separating spaces).
-        // 500 characters exceeds kChunkTargetTokens (384) when estimated as
+        // 500 characters exceeds kChunkTargetTokens (256) when estimated as
         // 1 token per character.
         final cjkText = List.generate(500, (i) => '字').join();
         final chunks = TextChunker.chunk(cjkText);
@@ -232,9 +254,6 @@ void main() {
       });
 
       test('splits long sentence among shorter ones', () {
-        // Mix of short sentences and one very long sentence (500 words, no
-        // sentence-ending punctuation within it) to verify the expand-based
-        // splitting handles oversized sentences that aren't the only sentence.
         final shortBefore = List.generate(
           5,
           (i) => 'Short sentence before number $i.',
@@ -248,21 +267,10 @@ void main() {
         final chunks = TextChunker.chunk(text);
 
         expect(chunks.length, greaterThan(1));
-
-        // Every chunk must stay within the token target
-        for (var i = 0; i < chunks.length; i++) {
-          final tokens = TextChunker.estimateTokens(chunks[i]);
-          expect(
-            tokens,
-            lessThanOrEqualTo(kChunkTargetTokens),
-            reason: 'Chunk $i has $tokens estimated tokens, '
-                'exceeding target of $kChunkTargetTokens',
-          );
-        }
+        _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
       });
 
       test('splits multiple consecutive long sentences', () {
-        // Three long sentences in a row, each ~400 words
         final longSentences = List.generate(
           3,
           (j) => List.generate(400, (i) => 'seg${j}w$i').join(' '),
@@ -272,45 +280,46 @@ void main() {
         final chunks = TextChunker.chunk(text);
 
         expect(chunks.length, greaterThan(3));
-
-        for (var i = 0; i < chunks.length; i++) {
-          final tokens = TextChunker.estimateTokens(chunks[i]);
-          expect(
-            tokens,
-            lessThanOrEqualTo(kChunkTargetTokens),
-            reason: 'Chunk $i has $tokens estimated tokens, '
-                'exceeding target of $kChunkTargetTokens',
-          );
-        }
+        _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
       });
 
       test('no chunk exceeds target tokens after sentence expansion', () {
-        // Build text with sentences of varying length, including some that
-        // exceed the target.
         final sentences = <String>[
-          // Normal sentence
           'This is a normal length sentence about testing.',
-          // Oversized: ~350 words with no internal sentence boundary
           List.generate(350, (i) => 'alpha$i').join(' '),
-          // Normal
           'Another perfectly normal sentence here.',
-          // Oversized: ~400 words
           List.generate(400, (i) => 'beta$i').join(' '),
-          // Normal
           'Final short sentence.',
         ];
         final text = sentences.join('. ');
         final chunks = TextChunker.chunk(text);
+        _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
+      });
 
+      test('splits long whitespace-free non-CJK text (URL/minified)', () {
+        // A 3000-character URL-like string with no whitespace or CJK.
+        // Previously this would be estimated as ~2 tokens and returned
+        // as a single chunk, exceeding the model's context window.
+        final longUrl = 'https://example.com/path?q=${'x' * 2970}';
+        final chunks = TextChunker.chunk(longUrl);
+
+        // Should produce multiple chunks
+        expect(chunks.length, greaterThan(1),
+            reason: 'A 3000-char URL must be split into multiple chunks');
+
+        // No chunk should exceed the character-based limit
         for (var i = 0; i < chunks.length; i++) {
           final tokens = TextChunker.estimateTokens(chunks[i]);
           expect(
             tokens,
             lessThanOrEqualTo(kChunkTargetTokens),
-            reason: 'Chunk $i has $tokens estimated tokens, '
-                'exceeding target of $kChunkTargetTokens',
+            reason: 'Chunk $i has $tokens estimated tokens',
           );
         }
+
+        // All content must be preserved
+        final rejoined = chunks.join();
+        expect(rejoined.length, greaterThanOrEqualTo(longUrl.length));
       });
 
       test('trims leading and trailing whitespace', () {
