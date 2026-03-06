@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.903" date="2026-03-06">
       <description>
-          <p>Fix duplicate checklist suggestions: the AI task agent no longer repeatedly proposes items that already exist on the task, were previously confirmed, or were explicitly rejected.</p>
+          <p>Fix duplicate checklist suggestions: the AI task agent no longer repeatedly proposes items that already exist on the task, were previously confirmed, or were explicitly rejected. Pending proposals are now included in the agent's LLM context to prevent re-proposing items already queued for review.</p>
       </description>
     </release>
     <release version="0.9.902" date="2026-03-06">

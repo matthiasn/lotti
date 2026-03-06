@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - AI task agent no longer repeatedly proposes checklist items that already exist
   on the task, were previously confirmed, or were explicitly rejected.
+- Pending change proposals are now included in the agent's LLM context so it
+  avoids re-proposing items that are already queued for user review.
 
 ## [0.9.902] - 2026-03-06
 ### Added
