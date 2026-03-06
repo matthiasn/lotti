@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.904] - 2026-03-06
+### Fixed
+- Embedding backfill failing with "input length exceeds the context length" for
+  entries containing code, URLs, or long unpunctuated text. The chunk target was
+  lowered from 384 to 256 estimated tokens to leave sufficient headroom for
+  content where the word-based heuristic undercounts.
+
 ## [0.9.903] - 2026-03-06
 ### Fixed
 - AI task agent no longer repeatedly proposes checklist items that already exist
@@ -41,9 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.898] - 2026-03-04
 ### Added
 - Overlapping document chunking for vector search embeddings. Long transcripts
-  and agent reports are now split into overlapping chunks (~384 tokens each,
-  64-token overlap) so every part of a long recording is semantically
-  searchable, not just the first ~400 words.
+  and agent reports are now split into overlapping chunks so every part of a
+  long recording is semantically searchable, not just the first ~400 words.
 - Composite embedding index (entity_id + chunk_index) supporting multiple
   vectors per source document.
 - Re-index All Embeddings maintenance action to rebuild all embeddings with

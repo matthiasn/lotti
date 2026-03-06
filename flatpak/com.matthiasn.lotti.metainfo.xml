@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.904" date="2026-03-06">
+      <description>
+          <p>Fixed embedding backfill failing for entries with code, URLs, or long unpunctuated text by lowering the chunk target to 256 tokens for safer headroom against the model's 512-token context window.</p>
+      </description>
+    </release>
     <release version="0.9.903" date="2026-03-06">
       <description>
           <p>Fix duplicate checklist suggestions: the AI task agent no longer repeatedly proposes items that already exist on the task, were previously confirmed, or were explicitly rejected. Pending proposals are now included in the agent's LLM context to prevent re-proposing items already queued for review.</p>
