@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/src/core/extensions.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -2806,7 +2807,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => VectorSearchResult(
-              tasks: [testTask],
+              entities: [testTask],
               elapsed: const Duration(milliseconds: 42),
             ),
           );
@@ -2921,7 +2922,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => VectorSearchResult(
-              tasks: [],
+              entities: [],
               elapsed: const Duration(milliseconds: 10),
             ),
           );
@@ -2959,6 +2960,73 @@ void main() {
               ),
             ),
           ).called(greaterThan(0));
+        });
+      });
+
+      test('journal tab vector search calls searchRelatedEntries', () {
+        fakeAsync((async) {
+          getIt.registerSingleton<VectorSearchRepository>(
+            mockVectorSearchRepo,
+          );
+
+          final testEntry = JournalEntry(
+            meta: Metadata(
+              id: 'journal-entry-1',
+              createdAt: DateTime(2024, 3, 1),
+              dateFrom: DateTime(2024, 3, 1),
+              dateTo: DateTime(2024, 3, 1),
+              updatedAt: DateTime(2024, 3, 1),
+            ),
+            entryText: const EntryText(plainText: 'A journal note'),
+          );
+
+          when(
+            () => mockVectorSearchRepo.searchRelatedEntries(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VectorSearchResult(
+              entities: [testEntry],
+              elapsed: const Duration(milliseconds: 55),
+            ),
+          );
+
+          // Use showTasks: false for journal tab
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller
+            ..setSearchMode(SearchMode.vector)
+            ..setSearchString('semantic journal query');
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(false));
+          expect(state.vectorSearchInFlight, isFalse);
+          expect(state.vectorSearchElapsed, const Duration(milliseconds: 55));
+          expect(state.vectorSearchResultCount, 1);
+
+          // Verify searchRelatedEntries (not searchRelatedTasks) was called
+          verify(
+            () => mockVectorSearchRepo.searchRelatedEntries(
+              query: 'semantic journal query',
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).called(greaterThan(0));
+
+          verifyNever(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          );
         });
       });
 

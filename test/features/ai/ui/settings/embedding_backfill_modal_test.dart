@@ -12,10 +12,20 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-/// Test category used across tests.
-final _testCategory = CategoryDefinition(
+/// Test categories used across tests.
+final _testCategory1 = CategoryDefinition(
   id: 'cat-1',
-  name: 'Test Category',
+  name: 'Work',
+  createdAt: DateTime(2024, 3, 15),
+  updatedAt: DateTime(2024, 3, 15),
+  vectorClock: null,
+  private: false,
+  active: true,
+);
+
+final _testCategory2 = CategoryDefinition(
+  id: 'cat-2',
+  name: 'Personal',
   createdAt: DateTime(2024, 3, 15),
   updatedAt: DateTime(2024, 3, 15),
   vectorClock: null,
@@ -50,21 +60,21 @@ void _setTallSurface(WidgetTester tester) {
   });
 }
 
-/// Opens the modal and selects the test category, then taps confirm.
-///
-/// After this the modal should be on the progress page.
+/// Opens the modal, selects both test categories, and taps confirm.
 Future<void> _openModalSelectAndConfirm(WidgetTester tester) async {
   _setTallSurface(tester);
 
   await tester.tap(find.text('Open Modal'));
   await tester.pumpAndSettle();
 
-  // Select a category first
-  await tester.tap(find.text('Test Category'));
+  // Select both categories
+  await tester.tap(find.text('Work'));
+  await tester.pump();
+  await tester.tap(find.text('Personal'));
   await tester.pump();
 
   // Tap confirm
-  await tester.tap(find.text('YES, START BACKFILL'));
+  await tester.tap(find.text('YES, GENERATE'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
 }
@@ -79,7 +89,7 @@ void main() {
       additionalSetup: () {
         mockCacheService = MockEntitiesCacheService();
         when(() => mockCacheService.sortedCategories)
-            .thenReturn([_testCategory]);
+            .thenReturn([_testCategory1, _testCategory2]);
         getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
       },
     );
@@ -97,14 +107,12 @@ void main() {
 
       // Verify the confirmation message is displayed
       expect(
-        find.text(
-          'Select a category to generate embeddings for all its entries.',
-        ),
+        find.text('Select categories to generate embeddings for.'),
         findsOneWidget,
       );
 
       // Verify the confirm button label is displayed (uppercased)
-      expect(find.text('YES, START BACKFILL'), findsOneWidget);
+      expect(find.text('YES, GENERATE'), findsOneWidget);
 
       // Verify cancel button is present
       expect(find.text('Cancel'), findsOneWidget);
@@ -112,8 +120,12 @@ void main() {
       // Verify no destructive warning icon (isDestructive: false)
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
 
-      // Verify the category picker shows the test category
-      expect(find.text('Test Category'), findsOneWidget);
+      // Verify categories are shown
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
+
+      // Verify Select All button is shown
+      expect(find.text('Select All'), findsOneWidget);
     });
 
     testWidgets('confirm button is disabled until a category is selected',
@@ -125,20 +137,58 @@ void main() {
 
       final confirmFinder = find.widgetWithText(
         LottiPrimaryButton,
-        'YES, START BACKFILL',
+        'YES, GENERATE',
       );
 
       // Before selecting a category, confirm button should be disabled
       var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
       expect(confirmButton.onPressed, isNull);
 
-      // Tap the category to select it
-      await tester.tap(find.text('Test Category'));
+      // Tap a category to select it
+      await tester.tap(find.text('Work'));
       await tester.pump();
 
       // Now the confirm button should be enabled
       confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
       expect(confirmButton.onPressed, isNotNull);
+    });
+
+    testWidgets('select all toggles all categories', (tester) async {
+      _setTallSurface(tester);
+      await tester.pumpWidget(_buildTestWidget());
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Initially disabled
+      final confirmFinder = find.widgetWithText(
+        LottiPrimaryButton,
+        'YES, GENERATE',
+      );
+      var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      expect(confirmButton.onPressed, isNull);
+
+      // Tap "Select All"
+      await tester.tap(find.text('Select All'));
+      await tester.pump();
+
+      // Confirm should now be enabled
+      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      expect(confirmButton.onPressed, isNotNull);
+
+      // Button should now say "Deselect All"
+      expect(find.text('Deselect All'), findsOneWidget);
+
+      // Tap "Deselect All"
+      await tester.tap(find.text('Deselect All'));
+      await tester.pump();
+
+      // Confirm should be disabled again
+      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      expect(confirmButton.onPressed, isNull);
+
+      // Button should say "Select All" again
+      expect(find.text('Select All'), findsOneWidget);
     });
 
     testWidgets('shows progress view with in-progress state after confirming',
@@ -167,10 +217,6 @@ void main() {
 
       // Verify percentage text
       expect(find.text('50%'), findsOneWidget);
-
-      // Verify category name is displayed (may appear in both picker and
-      // progress view, so use findsAtLeastNWidgets)
-      expect(find.text('Test Category'), findsAtLeastNWidgets(1));
 
       // Verify progress text with counts
       expect(
@@ -239,10 +285,6 @@ void main() {
       // Verify no progress indicator in complete state
       expect(find.byType(LinearProgressIndicator), findsNothing);
 
-      // Verify category name is still displayed (may appear in both picker
-      // and progress view)
-      expect(find.text('Test Category'), findsAtLeastNWidgets(1));
-
       // Verify progress text with counts
       expect(
         find.text('10 / 10 entries (8 embedded)'),
@@ -282,9 +324,7 @@ void main() {
 
       // Verify modal is open
       expect(
-        find.text(
-          'Select a category to generate embeddings for all its entries.',
-        ),
+        find.text('Select categories to generate embeddings for.'),
         findsOneWidget,
       );
 
@@ -292,16 +332,14 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      // Verify modal is dismissed — the button text should be gone
-      // (The confirmation message may still be animating out, so check
-      // for the trigger button being visible again)
+      // Verify modal is dismissed
       expect(find.text('Open Modal'), findsOneWidget);
     });
   });
 }
 
 /// A fake [EmbeddingBackfillController] that returns a fixed state
-/// and does nothing when [backfillCategory] is called.
+/// and does nothing when [backfillCategories] is called.
 class _FakeBackfillController extends EmbeddingBackfillController {
   _FakeBackfillController(this._state);
 
@@ -311,7 +349,7 @@ class _FakeBackfillController extends EmbeddingBackfillController {
   EmbeddingBackfillState build() => _state;
 
   @override
-  Future<void> backfillCategory(String categoryId) async {
+  Future<void> backfillCategories(Set<String> categoryIds) async {
     // No-op for testing — the state is already set via constructor.
   }
 }

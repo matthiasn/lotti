@@ -190,7 +190,7 @@ void main() {
       _stubEntityIds(mockJournalDb, ['entity-1']);
       _stubEntity(mockJournalDb, task);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       final s = state();
       expect(s.isRunning, isFalse);
@@ -221,7 +221,7 @@ void main() {
       _stubEntityIds(mockJournalDb, ['entry-1']);
       _stubEntity(mockJournalDb, entry);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().embeddedCount, 1);
       verify(
@@ -251,7 +251,7 @@ void main() {
         _stubEntity(mockJournalDb, entity);
       }
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       final s = state();
       expect(s.processedCount, 5);
@@ -269,7 +269,7 @@ void main() {
       _stubEntityIds(mockJournalDb, ['entry-1']);
       _stubEntity(mockJournalDb, entry);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       verify(
         () => mockEmbeddingRepo.embed(
@@ -279,6 +279,81 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('processes entities across multiple categories', () async {
+      const catA = 'cat-a';
+      const catB = 'cat-b';
+
+      final entryA = JournalEntry(
+        meta: _meta(id: 'entry-a'),
+        entryText: const EntryText(plainText: _longText),
+      );
+      final entryB1 = JournalEntry(
+        meta: _meta(id: 'entry-b1'),
+        entryText: const EntryText(plainText: _longText),
+      );
+      final entryB2 = JournalEntry(
+        meta: _meta(id: 'entry-b2'),
+        entryText: const EntryText(plainText: _longText),
+      );
+
+      when(() => mockJournalDb.journalEntityIdsByCategory(catA))
+          .thenReturn(MockSelectable<String>(['entry-a']));
+      when(() => mockJournalDb.journalEntityIdsByCategory(catB))
+          .thenReturn(MockSelectable<String>(['entry-b1', 'entry-b2']));
+
+      _stubEntity(mockJournalDb, entryA);
+      _stubEntity(mockJournalDb, entryB1);
+      _stubEntity(mockJournalDb, entryB2);
+
+      await controller().backfillCategories({catA, catB});
+
+      final s = state();
+      expect(s.processedCount, 3);
+      expect(s.totalCount, 3);
+      expect(s.embeddedCount, 3);
+      expect(s.progress, 1.0);
+      expect(s.error, isNull);
+    });
+
+    test('handles empty categories in multi-category set', () async {
+      const catEmpty = 'cat-empty';
+      const catFull = 'cat-full';
+
+      final entry = JournalEntry(
+        meta: _meta(id: 'entry-1'),
+        entryText: const EntryText(plainText: _longText),
+      );
+
+      when(() => mockJournalDb.journalEntityIdsByCategory(catEmpty))
+          .thenReturn(MockSelectable<String>([]));
+      when(() => mockJournalDb.journalEntityIdsByCategory(catFull))
+          .thenReturn(MockSelectable<String>(['entry-1']));
+
+      _stubEntity(mockJournalDb, entry);
+
+      await controller().backfillCategories({catEmpty, catFull});
+
+      final s = state();
+      expect(s.processedCount, 1);
+      expect(s.totalCount, 1);
+      expect(s.embeddedCount, 1);
+      expect(s.progress, 1.0);
+    });
+
+    test('completes with progress 1.0 when all categories are empty', () async {
+      when(() => mockJournalDb.journalEntityIdsByCategory('cat-x'))
+          .thenReturn(MockSelectable<String>([]));
+      when(() => mockJournalDb.journalEntityIdsByCategory('cat-y'))
+          .thenReturn(MockSelectable<String>([]));
+
+      await controller().backfillCategories({'cat-x', 'cat-y'});
+
+      final s = state();
+      expect(s.progress, 1.0);
+      expect(s.totalCount, 0);
+      expect(s.processedCount, 0);
+    });
   });
 
   group('EmbeddingBackfillController skips entries', () {
@@ -287,7 +362,7 @@ void main() {
       when(() => mockJournalDb.journalEntityById('missing-1'))
           .thenAnswer((_) async => null);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().processedCount, 1);
       expect(state().embeddedCount, 0);
@@ -314,7 +389,7 @@ void main() {
       _stubEntityIds(mockJournalDb, ['image-1']);
       _stubEntity(mockJournalDb, image);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().processedCount, 1);
       expect(state().embeddedCount, 0);
@@ -329,7 +404,7 @@ void main() {
       _stubEntityIds(mockJournalDb, ['short-1']);
       _stubEntity(mockJournalDb, entry);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().processedCount, 1);
       expect(state().embeddedCount, 0);
@@ -347,7 +422,7 @@ void main() {
       when(() => mockEmbeddingsDb.getContentHash('cached-1'))
           .thenReturn(_hashOf(_longText));
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().processedCount, 1);
       expect(state().embeddedCount, 0);
@@ -390,7 +465,7 @@ void main() {
       when(() => mockEmbeddingsDb.getContentHash('cached-1'))
           .thenReturn(_hashOf(_longText));
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       final s = state();
       expect(s.processedCount, 3);
@@ -401,7 +476,7 @@ void main() {
     test('handles empty category gracefully', () async {
       _stubEntityIds(mockJournalDb, []);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       final s = state();
       expect(s.isRunning, isFalse);
@@ -443,7 +518,7 @@ void main() {
         return Future.value(_fakeEmbedding());
       });
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       final s = state();
       expect(s.processedCount, 2);
@@ -456,7 +531,7 @@ void main() {
       container.dispose();
       container = ProviderContainer();
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().error, contains('not available'));
       expect(state().isRunning, isFalse);
@@ -466,7 +541,7 @@ void main() {
       when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
           .thenAnswer((_) async => null);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().error, contains('No Ollama provider'));
       expect(state().isRunning, isFalse);
@@ -476,7 +551,7 @@ void main() {
       when(() => mockJournalDb.journalEntityIdsByCategory(_testCategoryId))
           .thenThrow(Exception('Database connection lost'));
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().error, contains('Database connection lost'));
       expect(state().isRunning, isFalse);
@@ -489,14 +564,14 @@ void main() {
       when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
           .thenAnswer((_) async => null);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
       expect(state().error, isNotNull);
 
       // Second: fix provider, run empty category
       _stubOllamaProvider(mockAiConfigRepo);
       _stubEntityIds(mockJournalDb, []);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
       expect(state().error, isNull);
     });
 
@@ -508,12 +583,12 @@ void main() {
       _stubEntityIds(mockJournalDb, ['entity-1']);
       _stubEntity(mockJournalDb, entry);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
       expect(state().processedCount, 1);
 
       // Second run — counters reset
       _stubEntityIds(mockJournalDb, []);
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().processedCount, 0);
       expect(state().embeddedCount, 0);
@@ -522,7 +597,7 @@ void main() {
 
     test('isRunning is false after completion', () async {
       _stubEntityIds(mockJournalDb, []);
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
       expect(state().isRunning, isFalse);
     });
 
@@ -530,7 +605,7 @@ void main() {
       when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
           .thenAnswer((_) async => null);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
       expect(state().isRunning, isFalse);
     });
 
@@ -569,7 +644,7 @@ void main() {
         return _fakeEmbedding();
       });
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       // Should have processed only 1 entity (cancelled before 2nd iteration)
       final s = state();
@@ -599,14 +674,14 @@ void main() {
       ).thenAnswer((_) => completer.future);
 
       // Start first backfill (won't complete yet)
-      final firstRun = controller().backfillCategory(_testCategoryId);
+      final firstRun = controller().backfillCategories({_testCategoryId});
 
       // Allow isRunning to be set
       await Future<void>.delayed(Duration.zero);
       expect(state().isRunning, isTrue);
 
       // Second call should be ignored
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       // Complete the hanging embed
       completer.complete(_fakeEmbedding());
@@ -620,7 +695,7 @@ void main() {
       when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
           .thenAnswer((_) async => false);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       expect(state().error, contains('disabled'));
       expect(state().isRunning, isFalse);
@@ -1045,447 +1120,7 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // reindexAll tests
-  // -------------------------------------------------------------------------
-
-  group('EmbeddingBackfillController.reindexAll', () {
-    late MockAgentRepository mockAgentRepo;
-
-    AgentIdentityEntity makeAgent(String id) => AgentDomainEntity.agent(
-          id: id,
-          agentId: id,
-          kind: 'task_agent',
-          displayName: 'Test Agent $id',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-$id',
-          config: const AgentConfig(),
-          createdAt: _fixedDate,
-          updatedAt: _fixedDate,
-          vectorClock: null,
-        ) as AgentIdentityEntity;
-
-    AgentReportEntity makeReport({
-      required String id,
-      required String agentId,
-      String content = 'A long enough agent report content for embedding.',
-    }) =>
-        AgentDomainEntity.agentReport(
-          id: id,
-          agentId: agentId,
-          scope: AgentReportScopes.current,
-          createdAt: _fixedDate,
-          vectorClock: null,
-          content: content,
-        ) as AgentReportEntity;
-
-    AgentLink makeTaskLink({
-      required String fromId,
-      required String toId,
-    }) =>
-        AgentLink.basic(
-          id: 'link-$fromId-$toId',
-          fromId: fromId,
-          toId: toId,
-          createdAt: _fixedDate,
-          updatedAt: _fixedDate,
-          vectorClock: null,
-        );
-
-    CategoryDefinitionDbEntity makeCategory(String id) =>
-        CategoryDefinitionDbEntity(
-          id: id,
-          name: 'Category $id',
-          createdAt: _fixedDate,
-          updatedAt: _fixedDate,
-          deleted: false,
-          private: false,
-          serialized: '{}',
-          active: true,
-        );
-
-    void stubDeleteAll() {
-      when(() => mockEmbeddingsDb.deleteAll()).thenReturn(null);
-    }
-
-    void stubCategories(List<CategoryDefinitionDbEntity> cats) {
-      when(() => mockJournalDb.allCategoryDefinitions())
-          .thenReturn(MockSelectable<CategoryDefinitionDbEntity>(cats));
-    }
-
-    void stubDeleteEntityEmbeddings() {
-      when(() => mockEmbeddingsDb.deleteEntityEmbeddings(any()))
-          .thenReturn(null);
-    }
-
-    setUp(() async {
-      mockAgentRepo = MockAgentRepository();
-      if (getIt.isRegistered<AgentRepository>()) {
-        getIt.unregister<AgentRepository>();
-      }
-      getIt.registerSingleton<AgentRepository>(mockAgentRepo);
-      stubDeleteAll();
-      stubDeleteEntityEmbeddings();
-    });
-
-    test('clears all embeddings and re-indexes entities and agent reports',
-        () async {
-      final cat = makeCategory('cat-1');
-      stubCategories([cat]);
-
-      final task = Task(
-        meta: _meta(id: 'task-1'),
-        data: _taskData('Reindex task'),
-        entryText: const EntryText(plainText: _longText),
-      );
-      when(() => mockJournalDb.journalEntityIdsByCategory('cat-1'))
-          .thenReturn(MockSelectable<String>(['task-1']));
-      _stubEntity(mockJournalDb, task);
-
-      // Agent setup
-      final agent = makeAgent('agent-1');
-      final report = makeReport(id: 'report-1', agentId: 'agent-1');
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          'agent-1',
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenAnswer(
-        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
-      );
-      when(
-        () => mockAgentRepo.getLatestReport(
-          'agent-1',
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) async => report);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.isRunning, isFalse);
-      expect(s.error, isNull);
-      expect(s.totalCount, 2); // 1 entity + 1 agent
-      expect(s.processedCount, 2);
-      expect(s.embeddedCount, 2);
-      expect(s.progress, 1.0);
-
-      verify(() => mockEmbeddingsDb.deleteAll()).called(1);
-    });
-
-    test('handles empty categories and no agents', () async {
-      stubCategories([]);
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => []);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.isRunning, isFalse);
-      expect(s.progress, 1.0);
-      expect(s.totalCount, 0);
-      verify(() => mockEmbeddingsDb.deleteAll()).called(1);
-    });
-
-    test('processes multiple categories', () async {
-      final cat1 = makeCategory('cat-1');
-      final cat2 = makeCategory('cat-2');
-      stubCategories([cat1, cat2]);
-
-      final entry1 = JournalEntry(
-        meta: _meta(id: 'entry-1'),
-        entryText: const EntryText(plainText: _longText),
-      );
-      final entry2 = JournalEntry(
-        meta: _meta(id: 'entry-2'),
-        entryText: const EntryText(plainText: _longText),
-      );
-
-      when(() => mockJournalDb.journalEntityIdsByCategory('cat-1'))
-          .thenReturn(MockSelectable<String>(['entry-1']));
-      when(() => mockJournalDb.journalEntityIdsByCategory('cat-2'))
-          .thenReturn(MockSelectable<String>(['entry-2']));
-      _stubEntity(mockJournalDb, entry1);
-      _stubEntity(mockJournalDb, entry2);
-
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => []);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.processedCount, 2);
-      expect(s.embeddedCount, 2);
-      expect(s.totalCount, 2);
-    });
-
-    test('skips agent reports phase when AgentRepository not registered',
-        () async {
-      // Unregister to test the fallback path
-      getIt.unregister<AgentRepository>();
-
-      stubCategories([]);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.isRunning, isFalse);
-      expect(s.progress, 1.0);
-      expect(s.totalCount, 0);
-    });
-
-    test('sets error when embeddings disabled', () async {
-      when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
-          .thenAnswer((_) async => false);
-
-      await controller().reindexAll();
-
-      expect(state().error, contains('disabled'));
-      expect(state().isRunning, isFalse);
-    });
-
-    test('sets error when pipeline not available', () async {
-      await getIt.reset();
-      container.dispose();
-      container = ProviderContainer();
-
-      await controller().reindexAll();
-
-      expect(state().error, contains('not available'));
-      expect(state().isRunning, isFalse);
-    });
-
-    test('sets error when no Ollama provider configured', () async {
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
-
-      await controller().reindexAll();
-
-      expect(state().error, contains('No Ollama provider'));
-      expect(state().isRunning, isFalse);
-    });
-
-    test('cancellation stops processing mid-loop', () async {
-      final cat = makeCategory('cat-1');
-      stubCategories([cat]);
-
-      final entries = List.generate(
-        3,
-        (i) => JournalEntry(
-          meta: _meta(id: 'entry-$i'),
-          entryText: const EntryText(plainText: _longText),
-        ),
-      );
-      when(() => mockJournalDb.journalEntityIdsByCategory('cat-1')).thenReturn(
-          MockSelectable<String>(entries.map((e) => e.id).toList()));
-      for (final e in entries) {
-        _stubEntity(mockJournalDb, e);
-      }
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => []);
-
-      // Cancel after first embed
-      var embedCount = 0;
-      when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
-      ).thenAnswer((_) async {
-        embedCount++;
-        if (embedCount == 1) controller().cancel();
-        return _fakeEmbedding();
-      });
-
-      await controller().reindexAll();
-
-      expect(state().processedCount, 1);
-      expect(state().isRunning, isFalse);
-    });
-
-    test('agent report error does not stop other agents', () async {
-      stubCategories([]);
-
-      final agent1 = makeAgent('agent-1');
-      final agent2 = makeAgent('agent-2');
-      final report2 = makeReport(id: 'report-2', agentId: 'agent-2');
-
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent1, agent2]);
-
-      // Agent 1 throws
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          'agent-1',
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenThrow(Exception('Agent error'));
-
-      // Agent 2 succeeds
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          'agent-2',
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenAnswer(
-        (_) async => [makeTaskLink(fromId: 'agent-2', toId: 'task-2')],
-      );
-      when(
-        () => mockAgentRepo.getLatestReport(
-          'agent-2',
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) async => report2);
-
-      final task = Task(
-        meta: _meta(id: 'task-2'),
-        data: _taskData('Task 2'),
-      );
-      _stubEntity(mockJournalDb, task);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.processedCount, 2);
-      expect(s.embeddedCount, 1);
-      expect(s.error, isNull);
-    });
-
-    test('skips agents with no task links during reindex', () async {
-      stubCategories([]);
-
-      final agent = makeAgent('agent-1');
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          'agent-1',
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenAnswer((_) async => []);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.processedCount, 1);
-      expect(s.embeddedCount, 0);
-    });
-
-    test('skips agents with null report during reindex', () async {
-      stubCategories([]);
-
-      final agent = makeAgent('agent-1');
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          'agent-1',
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenAnswer(
-        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
-      );
-      when(
-        () => mockAgentRepo.getLatestReport(
-          'agent-1',
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) async => null);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.processedCount, 1);
-      expect(s.embeddedCount, 0);
-    });
-
-    test('skips agents with empty report content during reindex', () async {
-      stubCategories([]);
-
-      final agent = makeAgent('agent-1');
-      final emptyReport =
-          makeReport(id: 'report-1', agentId: 'agent-1', content: '');
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          'agent-1',
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenAnswer(
-        (_) async => [makeTaskLink(fromId: 'agent-1', toId: 'task-1')],
-      );
-      when(
-        () => mockAgentRepo.getLatestReport(
-          'agent-1',
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) async => emptyReport);
-
-      await controller().reindexAll();
-
-      final s = state();
-      expect(s.processedCount, 1);
-      expect(s.embeddedCount, 0);
-    });
-
-    test('cancellation during agent reports phase stops processing', () async {
-      stubCategories([]);
-
-      final agents = List.generate(3, (i) => makeAgent('agent-$i'));
-      for (var i = 0; i < 3; i++) {
-        final report = makeReport(id: 'report-$i', agentId: 'agent-$i');
-        when(
-          () => mockAgentRepo.getLinksFrom(
-            'agent-$i',
-            type: AgentLinkTypes.agentTask,
-          ),
-        ).thenAnswer(
-          (_) async => [makeTaskLink(fromId: 'agent-$i', toId: 'task-$i')],
-        );
-        when(
-          () => mockAgentRepo.getLatestReport(
-            'agent-$i',
-            AgentReportScopes.current,
-          ),
-        ).thenAnswer((_) async => report);
-        final task = Task(
-          meta: _meta(id: 'task-$i'),
-          data: _taskData('Task $i'),
-        );
-        _stubEntity(mockJournalDb, task);
-      }
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => agents);
-
-      // Cancel after first agent report embed
-      var embedCount = 0;
-      when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
-      ).thenAnswer((_) async {
-        embedCount++;
-        if (embedCount == 1) controller().cancel();
-        return _fakeEmbedding();
-      });
-
-      await controller().reindexAll();
-
-      // Should have processed only 1 agent before cancellation took effect
-      expect(state().processedCount, 1);
-      expect(state().isRunning, isFalse);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Label resolver in backfillCategory tests
+  // Label resolver in backfillCategories tests
   // -------------------------------------------------------------------------
 
   group('EmbeddingBackfillController label resolver', () {
@@ -1527,7 +1162,7 @@ void main() {
                 ),
               ]);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       const expectedText =
           'Fix auth bug\nLabels: security, backend\n$_longText';
@@ -1577,7 +1212,7 @@ void main() {
                 ),
               ]);
 
-      await controller().backfillCategory(_testCategoryId);
+      await controller().backfillCategories({_testCategoryId});
 
       // Capture the input text that was embedded.
       final captured = verify(

@@ -612,8 +612,7 @@ class JournalPageController extends _$JournalPageController {
 
   Future<List<JournalEntity>> _runQuery(int pageKey) async {
     // Vector search: bypass FTS5 and DB pagination entirely.
-    if (_showTasks &&
-        _enableVectorSearch &&
+    if (_enableVectorSearch &&
         _searchMode == SearchMode.vector &&
         _query.isNotEmpty &&
         pageKey == 0) {
@@ -719,19 +718,27 @@ class JournalPageController extends _$JournalPageController {
     );
 
     try {
-      final result = await getIt<VectorSearchRepository>().searchRelatedTasks(
-        query: _query,
-        categoryIds:
-            _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
-      );
+      final repo = getIt<VectorSearchRepository>();
+      final categoryIds =
+          _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null;
+
+      final result = _showTasks
+          ? await repo.searchRelatedTasks(
+              query: _query,
+              categoryIds: categoryIds,
+            )
+          : await repo.searchRelatedEntries(
+              query: _query,
+              categoryIds: categoryIds,
+            );
 
       state = state.copyWith(
         vectorSearchInFlight: false,
         vectorSearchElapsed: result.elapsed,
-        vectorSearchResultCount: result.tasks.length,
+        vectorSearchResultCount: result.entities.length,
       );
 
-      return result.tasks;
+      return result.entities;
     } on Exception catch (e) {
       DevLogger.warning(
         name: 'JournalPageController',

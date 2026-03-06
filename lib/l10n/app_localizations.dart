@@ -4224,23 +4224,17 @@ abstract class AppLocalizations {
   /// **'Enter notes...'**
   String get editorPlaceholder;
 
-  /// No description provided for @embeddingReindexAllButton.
+  /// No description provided for @embeddingSelectAll.
   ///
   /// In en, this message translates to:
-  /// **'Re-index All Embeddings'**
-  String get embeddingReindexAllButton;
+  /// **'Select All'**
+  String get embeddingSelectAll;
 
-  /// No description provided for @embeddingReindexAllDescription.
+  /// No description provided for @embeddingUnselectAll.
   ///
   /// In en, this message translates to:
-  /// **'Rebuild all embeddings with improved chunking for long documents'**
-  String get embeddingReindexAllDescription;
-
-  /// No description provided for @embeddingReindexAllWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will delete and rebuild all embeddings with improved chunking. Existing search data will be temporarily unavailable. This may take a while for large datasets.'**
-  String get embeddingReindexAllWarning;
+  /// **'Deselect All'**
+  String get embeddingUnselectAll;
 
   /// No description provided for @enhancedPromptFormAdditionalDetailsTitle.
   ///
@@ -5148,37 +5142,6 @@ abstract class AppLocalizations {
   /// **'Search all logs...'**
   String get logsSearchHint;
 
-  /// No description provided for @maintenanceBackfillEmbeddings.
-  ///
-  /// In en, this message translates to:
-  /// **'Backfill Embeddings'**
-  String get maintenanceBackfillEmbeddings;
-
-  /// No description provided for @maintenanceBackfillEmbeddingsConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'YES, START BACKFILL'**
-  String get maintenanceBackfillEmbeddingsConfirm;
-
-  /// No description provided for @maintenanceBackfillEmbeddingsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Generate embeddings for all entries in a category'**
-  String get maintenanceBackfillEmbeddingsDescription;
-
-  /// No description provided for @maintenanceBackfillEmbeddingsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a category to generate embeddings for all its entries.'**
-  String get maintenanceBackfillEmbeddingsMessage;
-
-  /// No description provided for @maintenanceBackfillEmbeddingsProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}'**
-  String maintenanceBackfillEmbeddingsProgress(
-      int processed, int total, int embedded);
-
   /// No description provided for @maintenanceDeleteAgentDb.
   ///
   /// In en, this message translates to:
@@ -5238,6 +5201,37 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete sync database'**
   String get maintenanceDeleteSyncDbDescription;
+
+  /// No description provided for @maintenanceGenerateEmbeddings.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Embeddings'**
+  String get maintenanceGenerateEmbeddings;
+
+  /// No description provided for @maintenanceGenerateEmbeddingsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'YES, GENERATE'**
+  String get maintenanceGenerateEmbeddingsConfirm;
+
+  /// No description provided for @maintenanceGenerateEmbeddingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate embeddings for entries in selected categories'**
+  String get maintenanceGenerateEmbeddingsDescription;
+
+  /// No description provided for @maintenanceGenerateEmbeddingsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select categories to generate embeddings for.'**
+  String get maintenanceGenerateEmbeddingsMessage;
+
+  /// No description provided for @maintenanceGenerateEmbeddingsProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}'**
+  String maintenanceGenerateEmbeddingsProgress(
+      int processed, int total, int embedded);
 
   /// No description provided for @maintenancePopulateSequenceLog.
   ///

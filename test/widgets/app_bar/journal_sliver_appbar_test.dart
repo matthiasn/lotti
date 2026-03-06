@@ -47,7 +47,7 @@ void main() {
       );
     });
 
-    testWidgets('toggle is hidden on journal tab even when flag is enabled',
+    testWidgets('toggle is visible on journal tab when flag is enabled',
         (tester) async {
       await tester.pumpWidget(buildSubject(
         const JournalPageState(
@@ -58,11 +58,11 @@ void main() {
 
       expect(
         find.byType(SegmentedButton<SearchMode>),
-        findsNothing,
+        findsOneWidget,
       );
     });
 
-    testWidgets('toggle is visible when showTasks and flag are both true',
+    testWidgets('toggle is visible on tasks tab when flag is enabled',
         (tester) async {
       await tester.pumpWidget(buildSubject(
         const JournalPageState(

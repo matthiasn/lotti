@@ -2320,15 +2320,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorPlaceholder => 'Enter notes...';
 
   @override
-  String get embeddingReindexAllButton => 'Re-index All Embeddings';
+  String get embeddingSelectAll => 'Select All';
 
   @override
-  String get embeddingReindexAllDescription =>
-      'Rebuild all embeddings with improved chunking for long documents';
-
-  @override
-  String get embeddingReindexAllWarning =>
-      'This will delete and rebuild all embeddings with improved chunking. Existing search data will be temporarily unavailable. This may take a while for large datasets.';
+  String get embeddingUnselectAll => 'Deselect All';
 
   @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Additional Details';
@@ -2814,32 +2809,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logsSearchHint => 'Search all logs...';
 
   @override
-  String get maintenanceBackfillEmbeddings => 'Backfill Embeddings';
-
-  @override
-  String get maintenanceBackfillEmbeddingsConfirm => 'YES, START BACKFILL';
-
-  @override
-  String get maintenanceBackfillEmbeddingsDescription =>
-      'Generate embeddings for all entries in a category';
-
-  @override
-  String get maintenanceBackfillEmbeddingsMessage =>
-      'Select a category to generate embeddings for all its entries.';
-
-  @override
-  String maintenanceBackfillEmbeddingsProgress(
-      int processed, int total, int embedded) {
-    String _temp0 = intl.Intl.pluralLogic(
-      total,
-      locale: localeName,
-      other: '$processed / $total entries ($embedded embedded)',
-      one: '$processed / $total entry ($embedded embedded)',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get maintenanceDeleteAgentDb => 'Delete Agents Database';
 
   @override
@@ -2872,6 +2841,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get maintenanceDeleteSyncDbDescription => 'Delete sync database';
+
+  @override
+  String get maintenanceGenerateEmbeddings => 'Generate Embeddings';
+
+  @override
+  String get maintenanceGenerateEmbeddingsConfirm => 'YES, GENERATE';
+
+  @override
+  String get maintenanceGenerateEmbeddingsDescription =>
+      'Generate embeddings for entries in selected categories';
+
+  @override
+  String get maintenanceGenerateEmbeddingsMessage =>
+      'Select categories to generate embeddings for.';
+
+  @override
+  String maintenanceGenerateEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total entries ($embedded embedded)',
+      one: '$processed / $total entry ($embedded embedded)',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get maintenancePopulateSequenceLog => 'Populate sync sequence log';

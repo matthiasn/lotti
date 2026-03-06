@@ -2359,15 +2359,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editorPlaceholder => 'Introduceți notițe...';
 
   @override
-  String get embeddingReindexAllButton => 'Reindexează toate embedding-urile';
+  String get embeddingSelectAll => 'Selectează tot';
 
   @override
-  String get embeddingReindexAllDescription =>
-      'Reconstruiește toate embedding-urile cu chunking îmbunătățit pentru documente lungi';
-
-  @override
-  String get embeddingReindexAllWarning =>
-      'Toate embedding-urile vor fi șterse și reconstruite cu chunking îmbunătățit. Datele de căutare existente vor fi temporar indisponibile. Acest lucru poate dura ceva timp pentru seturi mari de date.';
+  String get embeddingUnselectAll => 'Deselectează tot';
 
   @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Detalii suplimentare';
@@ -2860,44 +2855,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get logsSearchHint => 'Caută în toate jurnalele...';
 
   @override
-  String get maintenanceBackfillEmbeddings => 'Completare încorporări';
-
-  @override
-  String get maintenanceBackfillEmbeddingsConfirm => 'DA, ÎNCEPE';
-
-  @override
-  String get maintenanceBackfillEmbeddingsDescription =>
-      'Generează încorporări pentru toate intrările dintr-o categorie';
-
-  @override
-  String get maintenanceBackfillEmbeddingsMessage =>
-      'Selectează o categorie pentru a genera încorporări pentru toate intrările sale.';
-
-  @override
-  String maintenanceBackfillEmbeddingsProgress(
-      int processed, int total, int embedded) {
-    String _temp0 = intl.Intl.pluralLogic(
-      embedded,
-      locale: localeName,
-      other: '$embedded încorporate',
-      one: '1 încorporată',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      embedded,
-      locale: localeName,
-      other: '$embedded încorporate',
-      one: '1 încorporată',
-    );
-    String _temp2 = intl.Intl.pluralLogic(
-      total,
-      locale: localeName,
-      other: '$processed / $total intrări ($_temp0)',
-      one: '$processed / $total intrare ($_temp1)',
-    );
-    return '$_temp2';
-  }
-
-  @override
   String get maintenanceDeleteAgentDb => 'Șterge baza de date a agenților';
 
   @override
@@ -2932,6 +2889,44 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get maintenanceDeleteSyncDbDescription =>
       'Șterge baza de date de sincronizare';
+
+  @override
+  String get maintenanceGenerateEmbeddings => 'Generare încorporări';
+
+  @override
+  String get maintenanceGenerateEmbeddingsConfirm => 'DA, GENEREAZĂ';
+
+  @override
+  String get maintenanceGenerateEmbeddingsDescription =>
+      'Generează încorporări pentru intrările din categoriile selectate';
+
+  @override
+  String get maintenanceGenerateEmbeddingsMessage =>
+      'Selectează categoriile pentru a genera încorporări.';
+
+  @override
+  String maintenanceGenerateEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded încorporate',
+      one: '1 încorporată',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      embedded,
+      locale: localeName,
+      other: '$embedded încorporate',
+      one: '1 încorporată',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total intrări ($_temp0)',
+      one: '$processed / $total intrare ($_temp1)',
+    );
+    return '$_temp2';
+  }
 
   @override
   String get maintenancePopulateSequenceLog =>

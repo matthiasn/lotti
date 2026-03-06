@@ -20,6 +20,8 @@ class CategorySelectionModalContent extends ConsumerStatefulWidget {
     this.initialCategoryId,
     this.multiSelect = false,
     this.initiallySelectedCategoryIds,
+    this.onMultiSelectionChanged,
+    this.showDoneButton = true,
     super.key,
   });
 
@@ -27,6 +29,12 @@ class CategorySelectionModalContent extends ConsumerStatefulWidget {
   final String? initialCategoryId;
   final bool multiSelect;
   final Set<String>? initiallySelectedCategoryIds;
+
+  /// Called after each toggle in multi-select mode with the current selection.
+  final void Function(Set<String> selectedIds)? onMultiSelectionChanged;
+
+  /// Whether to show the "Done" button in multi-select mode.
+  final bool showDoneButton;
 
   @override
   ConsumerState<CategorySelectionModalContent> createState() =>
@@ -49,6 +57,32 @@ class CategorySelectionModalContentState
   void dispose() {
     searchController.dispose();
     super.dispose();
+  }
+
+  /// Replaces the current selection with [ids] and rebuilds.
+  ///
+  /// Does NOT fire [CategorySelectionModalContent.onMultiSelectionChanged]
+  /// because it is intended for programmatic updates from a parent widget
+  /// that already knows the new selection.
+  void setSelectedIds(Set<String> ids) {
+    setState(() {
+      selectedIds = {...ids};
+    });
+  }
+
+  void _onCategoryTap(CategoryDefinition category) {
+    if (widget.multiSelect) {
+      setState(() {
+        if (selectedIds.contains(category.id)) {
+          selectedIds.remove(category.id);
+        } else {
+          selectedIds.add(category.id);
+        }
+      });
+      widget.onMultiSelectionChanged?.call({...selectedIds});
+    } else {
+      widget.onCategorySelected(category);
+    }
   }
 
   Future<void> _showColorPicker(String categoryName) async {
@@ -149,38 +183,14 @@ class CategorySelectionModalContentState
                         category,
                         selected: widget.multiSelect &&
                             selectedIds.contains(category.id),
-                        onTap: () {
-                          if (widget.multiSelect) {
-                            setState(() {
-                              if (selectedIds.contains(category.id)) {
-                                selectedIds.remove(category.id);
-                              } else {
-                                selectedIds.add(category.id);
-                              }
-                            });
-                          } else {
-                            widget.onCategorySelected(category);
-                          }
-                        },
+                        onTap: () => _onCategoryTap(category),
                       ),
                     for (final category in otherCategories)
                       CategoryTypeCard(
                         category,
                         selected: widget.multiSelect &&
                             selectedIds.contains(category.id),
-                        onTap: () {
-                          if (widget.multiSelect) {
-                            setState(() {
-                              if (selectedIds.contains(category.id)) {
-                                selectedIds.remove(category.id);
-                              } else {
-                                selectedIds.add(category.id);
-                              }
-                            });
-                          } else {
-                            widget.onCategorySelected(category);
-                          }
-                        },
+                        onTap: () => _onCategoryTap(category),
                       ),
                   ],
                 ),
@@ -195,7 +205,7 @@ class CategorySelectionModalContentState
                   color: context.colorScheme.outline,
                 ),
               ),
-            if (widget.multiSelect)
+            if (widget.multiSelect && widget.showDoneButton)
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(

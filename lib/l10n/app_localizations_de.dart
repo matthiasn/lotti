@@ -2357,15 +2357,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editorPlaceholder => 'Notizen eingeben...';
 
   @override
-  String get embeddingReindexAllButton => 'Alle Embeddings neu indexieren';
+  String get embeddingSelectAll => 'Alle auswählen';
 
   @override
-  String get embeddingReindexAllDescription =>
-      'Alle Embeddings mit verbessertem Chunking für lange Dokumente neu erstellen';
-
-  @override
-  String get embeddingReindexAllWarning =>
-      'Alle Embeddings werden gelöscht und mit verbessertem Chunking neu erstellt. Bestehende Suchdaten sind vorübergehend nicht verfügbar. Das kann bei großen Datenmengen eine Weile dauern.';
+  String get embeddingUnselectAll => 'Alle abwählen';
 
   @override
   String get enhancedPromptFormAdditionalDetailsTitle => 'Zusätzliche Details';
@@ -2860,32 +2855,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get logsSearchHint => 'Alle Logs durchsuchen...';
 
   @override
-  String get maintenanceBackfillEmbeddings => 'Embeddings nachgenerieren';
-
-  @override
-  String get maintenanceBackfillEmbeddingsConfirm => 'JA, STARTEN';
-
-  @override
-  String get maintenanceBackfillEmbeddingsDescription =>
-      'Embeddings für alle Einträge einer Kategorie generieren';
-
-  @override
-  String get maintenanceBackfillEmbeddingsMessage =>
-      'Wähle eine Kategorie, um Embeddings für alle enthaltenen Einträge zu generieren.';
-
-  @override
-  String maintenanceBackfillEmbeddingsProgress(
-      int processed, int total, int embedded) {
-    String _temp0 = intl.Intl.pluralLogic(
-      total,
-      locale: localeName,
-      other: '$processed / $total Einträge ($embedded eingebettet)',
-      one: '$processed / $total Eintrag ($embedded eingebettet)',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get maintenanceDeleteAgentDb => 'Agenten-Datenbank löschen';
 
   @override
@@ -2920,6 +2889,32 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get maintenanceDeleteSyncDbDescription =>
       'Synchronisierungsdatenbank löschen';
+
+  @override
+  String get maintenanceGenerateEmbeddings => 'Embeddings generieren';
+
+  @override
+  String get maintenanceGenerateEmbeddingsConfirm => 'JA, GENERIEREN';
+
+  @override
+  String get maintenanceGenerateEmbeddingsDescription =>
+      'Embeddings für Einträge ausgewählter Kategorien generieren';
+
+  @override
+  String get maintenanceGenerateEmbeddingsMessage =>
+      'Wähle Kategorien, um Embeddings zu generieren.';
+
+  @override
+  String maintenanceGenerateEmbeddingsProgress(
+      int processed, int total, int embedded) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$processed / $total Einträge ($embedded eingebettet)',
+      one: '$processed / $total Eintrag ($embedded eingebettet)',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get maintenancePopulateSequenceLog => 'Sync-Sequenzprotokoll befüllen';

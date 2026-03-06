@@ -461,6 +461,70 @@ void main() {
       final ids = result!.map((c) => c.id).toList();
       expect(ids, equals(['cat1']));
     });
+
+    testWidgets('onMultiSelectionChanged fires on each toggle', (tester) async {
+      final selectionChanges = <Set<String>>[];
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Material(
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+              multiSelect: true,
+              onMultiSelectionChanged: selectionChanges.add,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Category 1'));
+      await tester.pump();
+      expect(selectionChanges.last, equals({'cat1'}));
+
+      await tester.tap(find.text('Category 2'));
+      await tester.pump();
+      expect(selectionChanges.last, equals({'cat1', 'cat2'}));
+
+      // Deselect Category 1
+      await tester.tap(find.text('Category 1'));
+      await tester.pump();
+      expect(selectionChanges.last, equals({'cat2'}));
+
+      expect(selectionChanges, hasLength(3));
+    });
+
+    testWidgets('showDoneButton false hides Done button in multiSelect mode',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Material(
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+              multiSelect: true,
+              showDoneButton: false,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.widgetWithText(FilledButton, 'Done'), findsNothing);
+    });
+
+    testWidgets('showDoneButton true shows Done button in multiSelect mode',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Material(
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+              multiSelect: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget);
+    });
   });
 
   group('overflow and scrolling behavior', () {

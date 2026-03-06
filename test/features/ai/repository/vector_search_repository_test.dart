@@ -77,8 +77,8 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'test query');
 
-      expect(result.tasks, hasLength(1));
-      expect(result.tasks.first, isA<Task>());
+      expect(result.entities, hasLength(1));
+      expect(result.entities.first, isA<Task>());
       expect(result.elapsed, isNotNull);
     });
 
@@ -124,8 +124,8 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'semantic query');
 
-      expect(result.tasks, hasLength(1));
-      expect(result.tasks.first, isA<Task>());
+      expect(result.entities, hasLength(1));
+      expect(result.entities.first, isA<Task>());
     });
 
     test('deduplicates when multiple results map to the same task', () async {
@@ -173,7 +173,7 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'dup query');
 
-      expect(result.tasks, hasLength(1));
+      expect(result.entities, hasLength(1));
     });
 
     test('returns empty results when no Ollama provider configured', () async {
@@ -182,7 +182,7 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'query');
 
-      expect(result.tasks, isEmpty);
+      expect(result.entities, isEmpty);
       verifyNever(
         () => mockEmbeddingRepo.embed(
           input: any(named: 'input'),
@@ -201,7 +201,7 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'query');
 
-      expect(result.tasks, isEmpty);
+      expect(result.entities, isEmpty);
       verifyNever(
         () => mockEmbeddingsDb.search(
           queryVector: any(named: 'queryVector'),
@@ -229,7 +229,7 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'no matches');
 
-      expect(result.tasks, isEmpty);
+      expect(result.entities, isEmpty);
     });
 
     test('skips non-task linked entries when resolving parents', () async {
@@ -273,7 +273,7 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'orphan');
 
-      expect(result.tasks, isEmpty);
+      expect(result.entities, isEmpty);
     });
 
     test('inflates k parameter to account for chunk deduplication', () async {
@@ -334,8 +334,8 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'agent report query');
 
-      expect(result.tasks, hasLength(1));
-      expect(result.tasks.first, isA<Task>());
+      expect(result.entities, hasLength(1));
+      expect(result.entities.first, isA<Task>());
     });
 
     test('skips agent report results with empty taskId', () async {
@@ -363,7 +363,7 @@ void main() {
 
       final result = await sut.searchRelatedTasks(query: 'orphan report');
 
-      expect(result.tasks, isEmpty);
+      expect(result.entities, isEmpty);
     });
 
     test('deduplicates when task and agent report map to same task', () async {
@@ -401,7 +401,7 @@ void main() {
       final result = await sut.searchRelatedTasks(query: 'dedup query');
 
       // Both results map to the same task — should be deduplicated
-      expect(result.tasks, hasLength(1));
+      expect(result.entities, hasLength(1));
     });
 
     test('passes categoryIds through to embeddings DB search', () async {
@@ -430,6 +430,171 @@ void main() {
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: {'cat-1'},
+        ),
+      ).called(1);
+    });
+  });
+
+  group('VectorSearchRepository.searchRelatedEntries', () {
+    test('returns matched entities directly without task resolution', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        EmbeddingSearchResult(
+          entityId: testTextEntry.meta.id,
+          distance: 0.3,
+          entityType: 'TextEntry',
+        ),
+      ]);
+
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTextEntry]);
+
+      final result = await sut.searchRelatedEntries(query: 'journal query');
+
+      expect(result.entities, hasLength(1));
+      expect(result.entities.first.meta.id, testTextEntry.meta.id);
+      expect(result.elapsed, isNotNull);
+    });
+
+    test('deduplicates by entity ID keeping lowest distance', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        EmbeddingSearchResult(
+          entityId: testTextEntry.meta.id,
+          distance: 0.5,
+          entityType: 'TextEntry',
+        ),
+        EmbeddingSearchResult(
+          entityId: testTextEntry.meta.id,
+          distance: 0.2,
+          entityType: 'TextEntry',
+        ),
+      ]);
+
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTextEntry]);
+
+      final result = await sut.searchRelatedEntries(query: 'dedup');
+
+      expect(result.entities, hasLength(1));
+    });
+
+    test('returns empty when no Ollama provider configured', () async {
+      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
+          .thenAnswer((_) async => null);
+
+      final result = await sut.searchRelatedEntries(query: 'query');
+
+      expect(result.entities, isEmpty);
+    });
+
+    test('returns empty when embedding fails', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenThrow(Exception('Ollama unavailable'));
+
+      final result = await sut.searchRelatedEntries(query: 'query');
+
+      expect(result.entities, isEmpty);
+    });
+
+    test('returns empty when k is zero', () async {
+      final result = await sut.searchRelatedEntries(query: 'query', k: 0);
+
+      expect(result.entities, isEmpty);
+    });
+
+    test('preserves distance ordering in results', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        EmbeddingSearchResult(
+          entityId: testTask.meta.id,
+          distance: 0.8,
+          entityType: kEntityTypeTask,
+        ),
+        EmbeddingSearchResult(
+          entityId: testTextEntry.meta.id,
+          distance: 0.2,
+          entityType: 'TextEntry',
+        ),
+      ]);
+
+      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [testTask, testTextEntry]);
+
+      final result = await sut.searchRelatedEntries(query: 'order test');
+
+      expect(result.entities, hasLength(2));
+      // testTextEntry (distance 0.2) should come before testTask (distance 0.8)
+      expect(result.entities[0].meta.id, testTextEntry.meta.id);
+      expect(result.entities[1].meta.id, testTask.meta.id);
+    });
+
+    test('passes categoryIds through to search', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([]);
+
+      await sut.searchRelatedEntries(
+        query: 'filter test',
+        categoryIds: {'cat-1', 'cat-2'},
+      );
+
+      verify(
+        () => mockEmbeddingsDb.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: {'cat-1', 'cat-2'},
         ),
       ).called(1);
     });

@@ -1046,9 +1046,8 @@
   "editMenuTitle": "Editar",
   "editorInsertDivider": "Insertar separador",
   "editorPlaceholder": "Introducir notas...",
-  "embeddingReindexAllButton": "Reindexar todos los embeddings",
-  "embeddingReindexAllDescription": "Reconstruir todos los embeddings con chunking mejorado para documentos largos",
-  "embeddingReindexAllWarning": "Todos los embeddings se eliminarán y reconstruirán con chunking mejorado. Los datos de búsqueda existentes no estarán disponibles temporalmente. Esto puede tardar un rato con conjuntos de datos grandes.",
+  "embeddingSelectAll": "Seleccionar todo",
+  "embeddingUnselectAll": "Deseleccionar todo",
   "enhancedPromptFormAdditionalDetailsTitle": "Detalles adicionales",
   "enhancedPromptFormAiResponseTypeSubtitle": "Formato de la respuesta esperada",
   "enhancedPromptFormBasicConfigurationTitle": "Configuración básica",
@@ -1214,24 +1213,6 @@
   "loggingFailedToLoadMore": "Error al cargar más resultados. Por favor, inténtalo de nuevo.",
   "loggingSearchFailed": "Error en la búsqueda. Por favor, inténtalo de nuevo.",
   "logsSearchHint": "Buscar todos los logs...",
-  "maintenanceBackfillEmbeddings": "Rellenar embeddings",
-  "maintenanceBackfillEmbeddingsConfirm": "SÍ, INICIAR",
-  "maintenanceBackfillEmbeddingsDescription": "Generar embeddings para todas las entradas de una categoría",
-  "maintenanceBackfillEmbeddingsMessage": "Selecciona una categoría para generar embeddings de todas sus entradas.",
-  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrada ({embedded, plural, =1{1 incrustada} other{{embedded} incrustadas}})} other{{processed} / {total} entradas ({embedded, plural, =1{1 incrustada} other{{embedded} incrustadas}})}}",
-  "@maintenanceBackfillEmbeddingsProgress": {
-    "placeholders": {
-      "processed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "embedded": {
-        "type": "int"
-      }
-    }
-  },
   "maintenanceDeleteAgentDb": "Eliminar la base de datos de agentes",
   "maintenanceDeleteAgentDbDescription": "Eliminar la base de datos de agentes y reiniciar la app",
   "maintenanceDeleteDatabaseConfirm": "SÍ, ELIMINAR BASE DE DATOS",
@@ -1249,6 +1230,28 @@
   "maintenanceDeleteLoggingDbDescription": "Eliminar base de datos de registros",
   "maintenanceDeleteSyncDb": "Eliminar la base de datos de sincronización",
   "maintenanceDeleteSyncDbDescription": "Eliminar base de datos de sincronización",
+  "maintenanceGenerateEmbeddings": "Generar embeddings",
+  "maintenanceGenerateEmbeddingsConfirm": "SÍ, GENERAR",
+  "maintenanceGenerateEmbeddingsDescription": "Generar embeddings para las entradas de las categorías seleccionadas",
+  "maintenanceGenerateEmbeddingsMessage": "Selecciona categorías para generar embeddings.",
+  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrada ({embedded, plural, =1{1 incrustada} other{{embedded} incrustadas}})} other{{processed} / {total} entradas ({embedded, plural, =1{1 incrustada} other{{embedded} incrustadas}})}}",
+  "@maintenanceGenerateEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenancePopulatePhaseAgentEntities": "Procesando entidades de agentes...",
+  "maintenancePopulatePhaseAgentLinks": "Procesando enlaces de agentes...",
+  "maintenancePopulatePhaseJournal": "Procesando entradas del diario...",
+  "maintenancePopulatePhaseLinks": "Procesando enlaces de entradas...",
   "maintenancePopulateSequenceLog": "Llenar registro de secuencia de sincronización",
   "maintenancePopulateSequenceLogComplete": "{count} entradas indexadas",
   "@maintenancePopulateSequenceLogComplete": {
@@ -1261,10 +1264,6 @@
   "maintenancePopulateSequenceLogConfirm": "SÍ, LLENAR",
   "maintenancePopulateSequenceLogDescription": "Indexar entradas existentes para soporte de relleno",
   "maintenancePopulateSequenceLogMessage": "Esto escaneará todas las entradas del diario y las añadirá al registro de secuencia de sincronización. Esto habilita las respuestas de relleno para entradas creadas antes de que se añadiera esta función.",
-  "maintenancePopulatePhaseAgentEntities": "Procesando entidades de agentes...",
-  "maintenancePopulatePhaseAgentLinks": "Procesando enlaces de agentes...",
-  "maintenancePopulatePhaseJournal": "Procesando entradas del diario...",
-  "maintenancePopulatePhaseLinks": "Procesando enlaces de entradas...",
   "maintenancePurgeDeleted": "Purgar elementos eliminados",
   "maintenancePurgeDeletedConfirm": "Sí, purgar todo",
   "maintenancePurgeDeletedDescription": "Purgar permanentemente todos los elementos eliminados",

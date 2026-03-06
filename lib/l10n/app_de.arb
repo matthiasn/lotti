@@ -1046,9 +1046,8 @@
   "editMenuTitle": "Bearbeiten",
   "editorInsertDivider": "Trennlinie einfügen",
   "editorPlaceholder": "Notizen eingeben...",
-  "embeddingReindexAllButton": "Alle Embeddings neu indexieren",
-  "embeddingReindexAllDescription": "Alle Embeddings mit verbessertem Chunking für lange Dokumente neu erstellen",
-  "embeddingReindexAllWarning": "Alle Embeddings werden gelöscht und mit verbessertem Chunking neu erstellt. Bestehende Suchdaten sind vorübergehend nicht verfügbar. Das kann bei großen Datenmengen eine Weile dauern.",
+  "embeddingSelectAll": "Alle auswählen",
+  "embeddingUnselectAll": "Alle abwählen",
   "enhancedPromptFormAdditionalDetailsTitle": "Zusätzliche Details",
   "enhancedPromptFormAiResponseTypeSubtitle": "Format der erwarteten Antwort",
   "enhancedPromptFormBasicConfigurationTitle": "Grundkonfiguration",
@@ -1214,24 +1213,6 @@
   "loggingFailedToLoadMore": "Fehler beim Laden weiterer Ergebnisse. Bitte versuche es erneut.",
   "loggingSearchFailed": "Suche fehlgeschlagen. Bitte versuche es erneut.",
   "logsSearchHint": "Alle Logs durchsuchen...",
-  "maintenanceBackfillEmbeddings": "Embeddings nachgenerieren",
-  "maintenanceBackfillEmbeddingsConfirm": "JA, STARTEN",
-  "maintenanceBackfillEmbeddingsDescription": "Embeddings für alle Einträge einer Kategorie generieren",
-  "maintenanceBackfillEmbeddingsMessage": "Wähle eine Kategorie, um Embeddings für alle enthaltenen Einträge zu generieren.",
-  "maintenanceBackfillEmbeddingsProgress": "{total, plural, =1{{processed} / {total} Eintrag ({embedded} eingebettet)} other{{processed} / {total} Einträge ({embedded} eingebettet)}}",
-  "@maintenanceBackfillEmbeddingsProgress": {
-    "placeholders": {
-      "processed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "embedded": {
-        "type": "int"
-      }
-    }
-  },
   "maintenanceDeleteAgentDb": "Agenten-Datenbank löschen",
   "maintenanceDeleteAgentDbDescription": "Agenten-Datenbank löschen und App neu starten",
   "maintenanceDeleteDatabaseConfirm": "JA, DATENBANK LÖSCHEN",
@@ -1249,6 +1230,28 @@
   "maintenanceDeleteLoggingDbDescription": "Logging-Datenbank löschen",
   "maintenanceDeleteSyncDb": "Synchronisierungsdatenbank löschen",
   "maintenanceDeleteSyncDbDescription": "Synchronisierungsdatenbank löschen",
+  "maintenanceGenerateEmbeddings": "Embeddings generieren",
+  "maintenanceGenerateEmbeddingsConfirm": "JA, GENERIEREN",
+  "maintenanceGenerateEmbeddingsDescription": "Embeddings für Einträge ausgewählter Kategorien generieren",
+  "maintenanceGenerateEmbeddingsMessage": "Wähle Kategorien, um Embeddings zu generieren.",
+  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} Eintrag ({embedded} eingebettet)} other{{processed} / {total} Einträge ({embedded} eingebettet)}}",
+  "@maintenanceGenerateEmbeddingsProgress": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "embedded": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenancePopulatePhaseAgentEntities": "Agenten-Entitäten werden verarbeitet...",
+  "maintenancePopulatePhaseAgentLinks": "Agenten-Verknüpfungen werden verarbeitet...",
+  "maintenancePopulatePhaseJournal": "Journaleinträge werden verarbeitet...",
+  "maintenancePopulatePhaseLinks": "Eintragsverknüpfungen werden verarbeitet...",
   "maintenancePopulateSequenceLog": "Sync-Sequenzprotokoll befüllen",
   "maintenancePopulateSequenceLogComplete": "{count} Einträge indexiert",
   "@maintenancePopulateSequenceLogComplete": {
@@ -1261,10 +1264,6 @@
   "maintenancePopulateSequenceLogConfirm": "JA, BEFÜLLEN",
   "maintenancePopulateSequenceLogDescription": "Bestehende Einträge für Nachfüllunterstützung indexieren",
   "maintenancePopulateSequenceLogMessage": "Dies scannt alle Journaleinträge und fügt sie dem Sync-Sequenzprotokoll hinzu. Dies ermöglicht Nachfüllantworten für Einträge, die vor dieser Funktion erstellt wurden.",
-  "maintenancePopulatePhaseAgentEntities": "Agenten-Entitäten werden verarbeitet...",
-  "maintenancePopulatePhaseAgentLinks": "Agenten-Verknüpfungen werden verarbeitet...",
-  "maintenancePopulatePhaseJournal": "Journaleinträge werden verarbeitet...",
-  "maintenancePopulatePhaseLinks": "Eintragsverknüpfungen werden verarbeitet...",
   "maintenancePurgeDeleted": "Gelöschte Elemente löschen",
   "maintenancePurgeDeletedConfirm": "Ja, alle löschen",
   "maintenancePurgeDeletedDescription": "Alle gelöschten Einträge endgültig entfernen",

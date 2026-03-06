@@ -11,11 +11,11 @@ import 'package:lotti/services/dev_logger.dart';
 /// Result of a vector search, including timing information.
 class VectorSearchResult {
   VectorSearchResult({
-    required this.tasks,
+    required this.entities,
     required this.elapsed,
   });
 
-  final List<JournalEntity> tasks;
+  final List<JournalEntity> entities;
   final Duration elapsed;
 }
 
@@ -51,17 +51,115 @@ class VectorSearchRepository {
     int k = 20,
     Set<String>? categoryIds,
   }) async {
+    final prepared = await _prepareSearch(
+      query: query,
+      k: k,
+      categoryIds: categoryIds,
+    );
+    if (prepared == null) {
+      return VectorSearchResult(entities: [], elapsed: Duration.zero);
+    }
+
+    final (stopwatch, searchResults) = prepared;
+
+    // Deduplicate: keep only the best (lowest distance) chunk per entity,
+    // grouping agent reports by their parent task.
+    final bestByEntity = <String, EmbeddingSearchResult>{};
+    for (final result in searchResults) {
+      final key = result.entityType == kEntityTypeAgentReport
+          ? 'agent:${result.taskId}'
+          : result.entityId;
+      final existing = bestByEntity[key];
+      if (existing == null || result.distance < existing.distance) {
+        bestByEntity[key] = result;
+      }
+    }
+    final deduped = bestByEntity.values.toList()
+      ..sort((a, b) => a.distance.compareTo(b.distance));
+
+    // Resolve all deduplicated results, then trim to k — resolution can
+    // collapse multiple entities to the same task, so trimming before
+    // resolution would lose unique results.
+    final resolvedTasks = await _resolveToTasks(deduped);
+    final tasks = resolvedTasks.take(k).toList();
+
+    stopwatch.stop();
+    return VectorSearchResult(entities: tasks, elapsed: stopwatch.elapsed);
+  }
+
+  /// Searches for journal entries semantically related to [query].
+  ///
+  /// Unlike [searchRelatedTasks], this returns the matched entities directly
+  /// without resolving to parent tasks, suitable for the logbook/journal tab.
+  Future<VectorSearchResult> searchRelatedEntries({
+    required String query,
+    int k = 20,
+    Set<String>? categoryIds,
+  }) async {
+    final prepared = await _prepareSearch(
+      query: query,
+      k: k,
+      categoryIds: categoryIds,
+    );
+    if (prepared == null) {
+      return VectorSearchResult(entities: [], elapsed: Duration.zero);
+    }
+
+    final (stopwatch, searchResults) = prepared;
+
+    // Deduplicate: keep only the best (lowest distance) chunk per entity.
+    final bestByEntity = <String, EmbeddingSearchResult>{};
+    for (final result in searchResults) {
+      final existing = bestByEntity[result.entityId];
+      if (existing == null || result.distance < existing.distance) {
+        bestByEntity[result.entityId] = result;
+      }
+    }
+    final deduped = bestByEntity.values.toList()
+      ..sort((a, b) => a.distance.compareTo(b.distance));
+
+    // Resolve all deduped hits before trimming to k — some entity IDs may
+    // not resolve (deleted entries, agent reports), and trimming first would
+    // waste slots on unresolvable hits.
+    final entityIds = deduped.map((r) => r.entityId).toSet();
+    final entities = await _journalDb.getJournalEntitiesForIds(entityIds);
+
+    // Preserve distance ordering, trim to k.
+    final entityMap = <String, JournalEntity>{
+      for (final e in entities) e.meta.id: e,
+    };
+    final ordered = <JournalEntity>[];
+    for (final result in deduped) {
+      final entity = entityMap[result.entityId];
+      if (entity != null) {
+        ordered.add(entity);
+      }
+      if (ordered.length >= k) break;
+    }
+
+    stopwatch.stop();
+    return VectorSearchResult(entities: ordered, elapsed: stopwatch.elapsed);
+  }
+
+  /// Embeds [query] and searches the vector database, returning the raw
+  /// results and a running [Stopwatch]. Returns `null` (via early
+  /// [VectorSearchResult] return) when the search cannot proceed.
+  Future<(Stopwatch, List<EmbeddingSearchResult>)?> _prepareSearch({
+    required String query,
+    required int k,
+    Set<String>? categoryIds,
+  }) async {
     final stopwatch = Stopwatch()..start();
 
     if (k <= 0) {
       stopwatch.stop();
-      return VectorSearchResult(tasks: [], elapsed: stopwatch.elapsed);
+      return null;
     }
 
     final baseUrl = await _aiConfigRepository.resolveOllamaBaseUrl();
     if (baseUrl == null) {
       stopwatch.stop();
-      return VectorSearchResult(tasks: [], elapsed: stopwatch.elapsed);
+      return null;
     }
 
     final Float32List queryVector;
@@ -76,39 +174,16 @@ class VectorSearchRepository {
         message: 'Failed to embed query: $e',
       );
       stopwatch.stop();
-      return VectorSearchResult(tasks: [], elapsed: stopwatch.elapsed);
+      return null;
     }
 
-    // Request more results than needed to account for multiple chunks
-    // per entity. After deduplication we trim to the requested k.
     final rawResults = _embeddingsDb.search(
       queryVector: queryVector,
       k: k * 3,
       categoryIds: categoryIds,
     );
 
-    // Deduplicate: keep only the best (lowest distance) chunk per entity.
-    final bestByEntity = <String, EmbeddingSearchResult>{};
-    for (final result in rawResults) {
-      final key = result.entityType == kEntityTypeAgentReport
-          ? 'agent:${result.taskId}'
-          : result.entityId;
-      final existing = bestByEntity[key];
-      if (existing == null || result.distance < existing.distance) {
-        bestByEntity[key] = result;
-      }
-    }
-    final searchResults = bestByEntity.values.toList()
-      ..sort((a, b) => a.distance.compareTo(b.distance));
-
-    // Resolve all deduplicated results, then trim to k — resolution can
-    // collapse multiple entities to the same task, so trimming before
-    // resolution would lose unique results.
-    final resolvedTasks = await _resolveToTasks(searchResults);
-    final tasks = resolvedTasks.take(k).toList();
-
-    stopwatch.stop();
-    return VectorSearchResult(tasks: tasks, elapsed: stopwatch.elapsed);
+    return (stopwatch, rawResults);
   }
 
   /// Resolves search results to unique tasks, preserving distance ordering.
