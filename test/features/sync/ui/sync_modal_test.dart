@@ -51,6 +51,8 @@ void main() {
       SyncStep.dashboards: 8,
       SyncStep.habits: 9,
       SyncStep.aiSettings: 10,
+      SyncStep.backfillAgentEntityClocks: 11,
+      SyncStep.backfillAgentLinkClocks: 12,
       SyncStep.agentEntities: 3,
       SyncStep.agentLinks: 2,
     };
@@ -142,6 +144,24 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.agentLinks, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) =>
+          simulateStep(SyncStep.backfillAgentEntityClocks, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.backfillAgentLinkClocks(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) =>
+          simulateStep(SyncStep.backfillAgentLinkClocks, invocation),
     );
 
     when(
@@ -248,6 +268,8 @@ void main() {
           SyncStep.dashboards,
           SyncStep.habits,
           SyncStep.aiSettings,
+          SyncStep.backfillAgentEntityClocks,
+          SyncStep.backfillAgentLinkClocks,
           SyncStep.agentEntities,
           SyncStep.agentLinks,
         },

@@ -19,6 +19,8 @@ class SyncModal extends ConsumerWidget {
       SyncStep.dashboards,
       SyncStep.habits,
       SyncStep.aiSettings,
+      SyncStep.backfillAgentEntityClocks,
+      SyncStep.backfillAgentLinkClocks,
       SyncStep.agentEntities,
       SyncStep.agentLinks,
     ];
@@ -251,6 +253,10 @@ class SyncModal extends ConsumerWidget {
         return context.messages.syncStepHabits;
       case SyncStep.aiSettings:
         return context.messages.syncStepAiSettings;
+      case SyncStep.backfillAgentEntityClocks:
+        return context.messages.syncStepBackfillAgentEntityClocks;
+      case SyncStep.backfillAgentLinkClocks:
+        return context.messages.syncStepBackfillAgentLinkClocks;
       case SyncStep.agentEntities:
         return context.messages.syncStepAgentEntities;
       case SyncStep.agentLinks:

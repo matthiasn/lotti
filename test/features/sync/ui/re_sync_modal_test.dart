@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -14,13 +16,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMaintenance mockMaintenance;
+  late MockAgentRepository mockAgentRepository;
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockMaintenance = MockMaintenance();
+    mockAgentRepository = MockAgentRepository();
     when(
       () => mockMaintenance.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -31,6 +38,7 @@ void main() {
         const ReSyncModalContent(),
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
         ],
       ),
     );
@@ -60,6 +68,7 @@ void main() {
       () => mockMaintenance.reSyncInterval(
         start: start,
         end: end,
+        agentRepository: mockAgentRepository,
       ),
     ).called(1);
   });
@@ -70,6 +79,7 @@ void main() {
         const ReSyncModalContent(),
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
         ],
       ),
     );
@@ -92,6 +102,7 @@ void main() {
         const ReSyncModalContent(),
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
         ],
       ),
     );

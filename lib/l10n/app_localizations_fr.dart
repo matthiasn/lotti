@@ -4410,6 +4410,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncStepAiSettings => 'Paramètres IA';
 
   @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Remplir les horloges des entités d\'agent';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Remplir les horloges des liens d\'agent';
+
+  @override
   String get syncStepCategories => 'Catégories';
 
   @override

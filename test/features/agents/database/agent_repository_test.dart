@@ -2178,4 +2178,242 @@ void main() {
       expect(results, hasLength(2));
     });
   });
+
+  // ── Interval queries (re-sync support) ──────────────────────────────────
+
+  group('Interval queries', () {
+    final intervalStart = DateTime(2026, 3);
+    final intervalEnd = DateTime(2026, 3, 5);
+
+    test('countEntitiesInInterval returns 0 for empty DB', () async {
+      final count = await repo.countEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+      );
+      expect(count, isZero);
+    });
+
+    test('getEntitiesInInterval returns entities within range', () async {
+      // Entity inside interval (March 3)
+      final inside =
+          makeAgent(id: 'ent-inside').copyWith(updatedAt: DateTime(2026, 3, 3));
+      await repo.upsertEntity(inside);
+
+      // Entity outside interval (Feb 20 — default testDate)
+      await repo.upsertEntity(makeAgent(id: 'ent-outside', agentId: 'a2'));
+
+      // Entity at boundary start (March 1) — inclusive, should be included
+      final atStart = makeAgent(id: 'ent-start', agentId: 'a3')
+          .copyWith(updatedAt: intervalStart);
+      await repo.upsertEntity(atStart);
+
+      final count = await repo.countEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+      );
+      // 'inside' (March 3) and 'atStart' (March 1) match >= start AND < end
+      expect(count, 2);
+
+      final entities = await repo.getEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 100,
+        offset: 0,
+      );
+      expect(entities, hasLength(2));
+      expect(
+        entities.map((e) => e.id),
+        containsAll(['ent-inside', 'ent-start']),
+      );
+    });
+
+    test('getEntitiesInInterval respects pagination', () async {
+      for (var i = 0; i < 5; i++) {
+        final entity = makeAgent(
+          id: 'ent-page-$i',
+          agentId: 'agent-page-$i',
+        ).copyWith(updatedAt: DateTime(2026, 3, 2, i));
+        await repo.upsertEntity(entity);
+      }
+
+      final page1 = await repo.getEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 2,
+        offset: 0,
+      );
+      expect(page1, hasLength(2));
+
+      final page2 = await repo.getEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 2,
+        offset: 2,
+      );
+      expect(page2, hasLength(2));
+
+      final page3 = await repo.getEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 2,
+        offset: 4,
+      );
+      expect(page3, hasLength(1));
+
+      // All IDs should be distinct
+      final allIds = [...page1, ...page2, ...page3].map((e) => e.id).toSet();
+      expect(allIds, hasLength(5));
+    });
+
+    test('getEntitiesInInterval includes soft-deleted entities', () async {
+      final entity = makeAgent(id: 'ent-deleted')
+          .copyWith(updatedAt: DateTime(2026, 3, 3));
+      await repo.upsertEntity(entity);
+
+      // Soft-delete by upserting with deletedAt set
+      final deleted = entity.copyWith(
+        deletedAt: DateTime(2026, 3, 4),
+        updatedAt: DateTime(2026, 3, 4),
+      );
+      await repo.upsertEntity(deleted);
+
+      // Tombstones must be included so re-sync propagates deletes
+      final count = await repo.countEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+      );
+      expect(count, 1);
+
+      final results = await repo.getEntitiesInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 10,
+        offset: 0,
+      );
+      expect(results, hasLength(1));
+      expect(results.first.deletedAt, isNotNull);
+    });
+
+    test('countLinksInInterval returns 0 for empty DB', () async {
+      final count = await repo.countLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+      );
+      expect(count, isZero);
+    });
+
+    test('getLinksInInterval returns links within range', () async {
+      // Create entities for the link references
+      await repo.upsertEntity(makeAgent(id: 'from-1'));
+      await repo.upsertEntity(
+        makeAgentState(id: 'to-1'),
+      );
+
+      // Link inside interval
+      final insideLink = makeBasicLink(
+        id: 'link-inside',
+        fromId: 'from-1',
+        toId: 'to-1',
+      ).copyWith(updatedAt: DateTime(2026, 3, 3));
+      await repo.upsertLink(insideLink);
+
+      // Link outside interval (default testDate = Feb 20)
+      await repo.upsertEntity(makeAgent(id: 'from-2', agentId: otherAgentId));
+      await repo.upsertEntity(
+        makeAgentState(id: 'to-2', agentId: otherAgentId),
+      );
+      await repo.upsertLink(
+        makeBasicLink(id: 'link-outside', fromId: 'from-2', toId: 'to-2'),
+      );
+
+      final count = await repo.countLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+      );
+      expect(count, 1);
+
+      final links = await repo.getLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 100,
+        offset: 0,
+      );
+      expect(links, hasLength(1));
+      expect(links.first.id, 'link-inside');
+    });
+
+    test('getLinksInInterval respects pagination', () async {
+      await repo.upsertEntity(makeAgent());
+
+      for (var i = 0; i < 4; i++) {
+        final targetId = 'target-$i';
+        await repo.upsertEntity(
+          makeAgentState(id: targetId),
+        );
+        await repo.upsertLink(
+          makeBasicLink(
+            id: 'link-page-$i',
+            fromId: 'entity-agent-001',
+            toId: targetId,
+          ).copyWith(updatedAt: DateTime(2026, 3, 2, i)),
+        );
+      }
+
+      final page1 = await repo.getLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 2,
+        offset: 0,
+      );
+      expect(page1, hasLength(2));
+
+      final page2 = await repo.getLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 2,
+        offset: 2,
+      );
+      expect(page2, hasLength(2));
+
+      final allIds = [...page1, ...page2].map((l) => l.id).toSet();
+      expect(allIds, hasLength(4));
+    });
+
+    test('getLinksInInterval includes soft-deleted links', () async {
+      await repo.upsertEntity(makeAgent());
+      await repo.upsertEntity(
+        makeAgentState(id: 'to-del'),
+      );
+
+      final link = makeBasicLink(
+        id: 'link-del',
+        fromId: 'entity-agent-001',
+        toId: 'to-del',
+      ).copyWith(updatedAt: DateTime(2026, 3, 3));
+      await repo.upsertLink(link);
+
+      // Soft-delete by upserting with deletedAt set
+      final deleted = link.copyWith(
+        deletedAt: DateTime(2026, 3, 4),
+        updatedAt: DateTime(2026, 3, 4),
+      );
+      await repo.upsertLink(deleted);
+
+      // Tombstones must be included so re-sync propagates deletes
+      final count = await repo.countLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+      );
+      expect(count, 1);
+
+      final results = await repo.getLinksInInterval(
+        start: intervalStart,
+        end: intervalEnd,
+        limit: 10,
+        offset: 0,
+      );
+      expect(results, hasLength(1));
+      expect(results.first.deletedAt, isNotNull);
+    });
+  });
 }

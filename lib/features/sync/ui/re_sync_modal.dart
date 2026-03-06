@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -61,6 +62,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
                     ref.read(maintenanceProvider).reSyncInterval(
                           start: dateFrom,
                           end: dateTo,
+                          agentRepository: ref.read(agentRepositoryProvider),
                         );
                     Navigator.of(context).pop();
                   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -128,6 +130,60 @@ void main() {
       final result = await completer.future;
       expect(result.hasError, isTrue);
       expect(result.error, isA<Exception>());
+    });
+
+    test('rebuilds when update notification arrives for the taskId', () {
+      fakeAsync((async) {
+        final mockService = MockTaskAgentService();
+        const taskId = 'task-sync-refresh';
+        final identity = makeTestIdentity(id: 'agent-sync');
+        final notifications = UpdateNotifications();
+
+        // First call returns null (no agent yet).
+        // Second call returns an identity (agent synced in).
+        var callCount = 0;
+        when(() => mockService.getTaskAgentForTask(taskId))
+            .thenAnswer((_) async {
+          callCount++;
+          return callCount > 1 ? identity : null;
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            taskAgentServiceProvider.overrideWithValue(mockService),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+
+        // Keep the provider alive so notification-driven rebuild fires.
+        final sub = container.listen(
+          taskAgentProvider(taskId),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        // Initial read: no agent.
+        async.flushMicrotasks();
+        expect(
+          container.read(taskAgentProvider(taskId)).value,
+          isNull,
+        );
+
+        // Simulate a sync notification that includes the taskId (as happens
+        // when an AgentTaskLink arrives from another device).
+        notifications.notify({taskId, 'agentNotification'});
+
+        // The notification is debounced (100ms local). Elapse to fire it.
+        async.elapse(const Duration(milliseconds: 150));
+
+        // The service was called at least twice (initial + after notification).
+        verify(() => mockService.getTaskAgentForTask(taskId))
+            .called(greaterThanOrEqualTo(2));
+
+        sub.close();
+        container.dispose();
+        notifications.dispose();
+      });
     });
 
     test('returns different results for different task IDs', () async {

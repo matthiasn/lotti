@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -13,9 +14,11 @@ import '../../../mocks/mocks.dart';
 void main() {
   late MockAgentRepository mockRepository;
   late MockOutboxService mockOutboxService;
+  late MockVectorClockService mockVectorClockService;
   late AgentSyncService syncService;
 
   final testDate = DateTime(2024, 3, 15);
+  const testClock = VectorClock({'host1': 1});
 
   final testEntity = AgentDomainEntity.agent(
     id: 'agent-1',
@@ -135,48 +138,69 @@ void main() {
   setUp(() {
     mockRepository = MockAgentRepository();
     mockOutboxService = MockOutboxService();
+    mockVectorClockService = MockVectorClockService();
 
     when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockRepository.insertLinkExclusive(any()))
+        .thenAnswer((_) async {});
     when(() => mockOutboxService.enqueueMessage(any()))
         .thenAnswer((_) async {});
+    when(
+      () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous')),
+    ).thenAnswer((_) async => testClock);
 
     syncService = AgentSyncService(
       repository: mockRepository,
       outboxService: mockOutboxService,
+      vectorClockService: mockVectorClockService,
     );
   });
 
   group('AgentSyncService', () {
     group('upsertEntity', () {
-      test('calls repository AND enqueues sync message', () async {
+      test('stamps vector clock before persisting and enqueuing', () async {
         await syncService.upsertEntity(testEntity);
 
-        verify(() => mockRepository.upsertEntity(testEntity)).called(1);
+        final stampedEntity = testEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stampedEntity)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(
               that: isA<SyncAgentEntity>().having(
-                (m) => m.agentEntity,
-                'agentEntity',
-                testEntity,
+                (m) => m.agentEntity?.vectorClock,
+                'vectorClock',
+                testClock,
               ),
             ),
           ),
         ).called(1);
+        verify(
+          () => mockVectorClockService.getNextVectorClock(),
+        ).called(1);
       });
 
-      test('calls repository but NOT outbox when fromSync is true', () async {
-        await syncService.upsertEntity(testEntity, fromSync: true);
+      test('preserves original clock when fromSync is true', () async {
+        final syncedEntity = testEntity.copyWith(
+          vectorClock: const VectorClock({'remote': 42}),
+        );
+        await syncService.upsertEntity(syncedEntity, fromSync: true);
 
-        verify(() => mockRepository.upsertEntity(testEntity)).called(1);
+        verify(() => mockRepository.upsertEntity(syncedEntity)).called(1);
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(
+          () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        );
       });
 
       test('works with agentState variant', () async {
         await syncService.upsertEntity(testStateEntity);
 
-        verify(() => mockRepository.upsertEntity(testStateEntity)).called(1);
+        final stamped = testStateEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentEntity>()),
@@ -187,7 +211,8 @@ void main() {
       test('works with agentMessage variant', () async {
         await syncService.upsertEntity(testMessageEntity);
 
-        verify(() => mockRepository.upsertEntity(testMessageEntity)).called(1);
+        final stamped = testMessageEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentEntity>()),
@@ -198,7 +223,8 @@ void main() {
       test('works with agentMessagePayload variant', () async {
         await syncService.upsertEntity(testPayloadEntity);
 
-        verify(() => mockRepository.upsertEntity(testPayloadEntity)).called(1);
+        final stamped = testPayloadEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentEntity>()),
@@ -209,7 +235,8 @@ void main() {
       test('works with agentReport variant', () async {
         await syncService.upsertEntity(testReportEntity);
 
-        verify(() => mockRepository.upsertEntity(testReportEntity)).called(1);
+        final stamped = testReportEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentEntity>()),
@@ -220,9 +247,8 @@ void main() {
       test('works with agentReportHead variant', () async {
         await syncService.upsertEntity(testReportHeadEntity);
 
-        verify(
-          () => mockRepository.upsertEntity(testReportHeadEntity),
-        ).called(1);
+        final stamped = testReportHeadEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentEntity>()),
@@ -251,40 +277,51 @@ void main() {
           throwsA(isA<Exception>()),
         );
 
-        // Entity was saved before the outbox call
-        verify(() => mockRepository.upsertEntity(testEntity)).called(1);
+        // Entity was saved (with stamped clock) before the outbox call
+        final stamped = testEntity.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertEntity(stamped)).called(1);
       });
     });
 
     group('upsertLink', () {
-      test('calls repository AND enqueues sync message', () async {
+      test('stamps vector clock before persisting and enqueuing', () async {
         await syncService.upsertLink(testBasicLink);
 
-        verify(() => mockRepository.upsertLink(testBasicLink)).called(1);
+        final stampedLink = testBasicLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stampedLink)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(
               that: isA<SyncAgentLink>().having(
-                (m) => m.agentLink,
-                'agentLink',
-                testBasicLink,
+                (m) => m.agentLink?.vectorClock,
+                'vectorClock',
+                testClock,
               ),
             ),
           ),
         ).called(1);
       });
 
-      test('calls repository but NOT outbox when fromSync is true', () async {
-        await syncService.upsertLink(testBasicLink, fromSync: true);
+      test('preserves original clock when fromSync is true', () async {
+        final syncedLink = testBasicLink.copyWith(
+          vectorClock: const VectorClock({'remote': 42}),
+        );
+        await syncService.upsertLink(syncedLink, fromSync: true);
 
-        verify(() => mockRepository.upsertLink(testBasicLink)).called(1);
+        verify(() => mockRepository.upsertLink(syncedLink)).called(1);
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(
+          () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        );
       });
 
       test('works with agentState link variant', () async {
         await syncService.upsertLink(testAgentStateLink);
 
-        verify(() => mockRepository.upsertLink(testAgentStateLink)).called(1);
+        final stamped = testAgentStateLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentLink>()),
@@ -295,7 +332,8 @@ void main() {
       test('works with messagePrev link variant', () async {
         await syncService.upsertLink(testMessagePrevLink);
 
-        verify(() => mockRepository.upsertLink(testMessagePrevLink)).called(1);
+        final stamped = testMessagePrevLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentLink>()),
@@ -306,9 +344,8 @@ void main() {
       test('works with messagePayload link variant', () async {
         await syncService.upsertLink(testMessagePayloadLink);
 
-        verify(
-          () => mockRepository.upsertLink(testMessagePayloadLink),
-        ).called(1);
+        final stamped = testMessagePayloadLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentLink>()),
@@ -319,7 +356,8 @@ void main() {
       test('works with toolEffect link variant', () async {
         await syncService.upsertLink(testToolEffectLink);
 
-        verify(() => mockRepository.upsertLink(testToolEffectLink)).called(1);
+        final stamped = testToolEffectLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentLink>()),
@@ -330,7 +368,8 @@ void main() {
       test('works with agentTask link variant', () async {
         await syncService.upsertLink(testAgentTaskLink);
 
-        verify(() => mockRepository.upsertLink(testAgentTaskLink)).called(1);
+        final stamped = testAgentTaskLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stamped)).called(1);
         verify(
           () => mockOutboxService.enqueueMessage(
             any(that: isA<SyncAgentLink>()),
@@ -359,7 +398,8 @@ void main() {
           throwsA(isA<Exception>()),
         );
 
-        verify(() => mockRepository.upsertLink(testBasicLink)).called(1);
+        final stamped = testBasicLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.upsertLink(stamped)).called(1);
       });
     });
 

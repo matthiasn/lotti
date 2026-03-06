@@ -355,7 +355,7 @@ final class AgentSyncServiceProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentSyncServiceHash() => r'6f6862cbc8b443e39b34eab5d5fe38a57480ea5e';
+String _$agentSyncServiceHash() => r'04aecfa0882f6fb9c569cbaf39c826db2ab21553';
 
 /// The in-memory wake queue.
 

@@ -58,6 +58,8 @@ String _$taskAgentServiceHash() => r'ca5323c2e1aee849830805dc8466ba5e09a238a2';
 /// Fetch the Task Agent for a given journal-domain [taskId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
+/// Watches the update stream so the UI rebuilds when an agent-task link
+/// arrives via sync (the notification includes the taskId).
 
 @ProviderFor(taskAgent)
 final taskAgentProvider = TaskAgentFamily._();
@@ -65,6 +67,8 @@ final taskAgentProvider = TaskAgentFamily._();
 /// Fetch the Task Agent for a given journal-domain [taskId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
+/// Watches the update stream so the UI rebuilds when an agent-task link
+/// arrives via sync (the notification includes the taskId).
 
 final class TaskAgentProvider extends $FunctionalProvider<
         AsyncValue<AgentDomainEntity?>,
@@ -76,6 +80,8 @@ final class TaskAgentProvider extends $FunctionalProvider<
   /// Fetch the Task Agent for a given journal-domain [taskId].
   ///
   /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
+  /// Watches the update stream so the UI rebuilds when an agent-task link
+  /// arrives via sync (the notification includes the taskId).
   TaskAgentProvider._(
       {required TaskAgentFamily super.from, required String super.argument})
       : super(
@@ -122,11 +128,13 @@ final class TaskAgentProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentHash() => r'cf4be5f17f0c44bab656fd99881bf918b6b4b356';
+String _$taskAgentHash() => r'0e76442709a1144929c74e043127398e0ad9e0ef';
 
 /// Fetch the Task Agent for a given journal-domain [taskId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
+/// Watches the update stream so the UI rebuilds when an agent-task link
+/// arrives via sync (the notification includes the taskId).
 
 final class TaskAgentFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
@@ -142,6 +150,8 @@ final class TaskAgentFamily extends $Family
   /// Fetch the Task Agent for a given journal-domain [taskId].
   ///
   /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
+  /// Watches the update stream so the UI rebuilds when an agent-task link
+  /// arrives via sync (the notification includes the taskId).
 
   TaskAgentProvider call(
     String taskId,

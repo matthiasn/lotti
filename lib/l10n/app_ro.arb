@@ -1749,6 +1749,8 @@
   "syncStepAgentEntities": "Entități agent",
   "syncStepAgentLinks": "Legături agent",
   "syncStepAiSettings": "Setări AI",
+  "syncStepBackfillAgentEntityClocks": "Completare ceasuri entități agent",
+  "syncStepBackfillAgentLinkClocks": "Completare ceasuri legături agent",
   "syncStepCategories": "Categorii",
   "syncStepComplete": "Finalizat",
   "syncStepDashboards": "Tablouri de bord",

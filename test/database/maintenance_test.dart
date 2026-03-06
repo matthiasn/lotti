@@ -15,6 +15,11 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -254,6 +259,24 @@ void main() {
     });
 
     group('reSyncInterval', () {
+      late MockAgentRepository mockAgentRepo;
+
+      setUp(() {
+        mockAgentRepo = MockAgentRepository();
+        when(
+          () => mockAgentRepo.countEntitiesInInterval(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockAgentRepo.countLinksInInterval(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer((_) async => 0);
+      });
+
       test('enqueues all journal entities inside interval', () async {
         final baseDate = DateTime(2024);
         final entries = List.generate(
@@ -269,6 +292,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 5)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -295,6 +319,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 2)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -327,6 +352,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(hours: 1)),
           end: baseDate.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -360,6 +386,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: baseDate.subtract(const Duration(days: 1)),
           end: baseDate.add(const Duration(days: 1)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessages =
@@ -374,6 +401,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: DateTime(2024, 5),
           end: DateTime(2024, 5, 2),
+          agentRepository: mockAgentRepo,
         );
 
         expect(sentMessages, isEmpty);
@@ -391,6 +419,7 @@ void main() {
         await maintenance.reSyncInterval(
           start: timestamp.subtract(const Duration(hours: 1)),
           end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
         );
 
         final journalMessage =
@@ -398,6 +427,204 @@ void main() {
 
         expect(journalMessage.jsonPath,
             equals('/text_entries/2024-06-15/path-test.text.json'));
+      });
+    });
+
+    group('reSyncInterval – agent entities and links', () {
+      late AgentDatabase agentDb;
+      late AgentRepository agentRepo;
+
+      setUp(() {
+        agentDb = AgentDatabase(inMemoryDatabase: true);
+        agentRepo = AgentRepository(agentDb);
+      });
+
+      tearDown(() async {
+        await agentDb.close();
+      });
+
+      /// Populates the in-memory agent DB with the given entities/links.
+      Future<void> populateAgentDb({
+        List<AgentDomainEntity> entities = const [],
+        List<agent_model.AgentLink> links = const [],
+      }) async {
+        for (final entity in entities) {
+          await agentRepo.upsertEntity(entity);
+        }
+        for (final link in links) {
+          await agentRepo.upsertLink(link);
+        }
+      }
+
+      test('enqueues agent entities updated within interval', () async {
+        final baseDate = DateTime(2024, 10);
+        final insideDate = baseDate.add(const Duration(hours: 12));
+
+        final agentEntity = AgentDomainEntity.agent(
+          id: 'agent-entity-1',
+          agentId: 'agent-1',
+          kind: 'task_agent',
+          displayName: 'Test Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        await populateAgentDb(entities: [agentEntity]);
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final agentMessages =
+            sentMessages.whereType<SyncAgentEntity>().toList();
+        expect(agentMessages, hasLength(1));
+        expect(
+          agentMessages.first.agentEntity?.id,
+          equals('agent-entity-1'),
+        );
+      });
+
+      test('enqueues agent links updated within interval', () async {
+        final baseDate = DateTime(2024, 11);
+        final insideDate = baseDate.add(const Duration(hours: 6));
+
+        // Need an entity so the link's fromId/toId are valid.
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-link-entity',
+          agentId: 'agent-link-agent',
+          kind: 'task_agent',
+          displayName: 'Link Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        final link = agent_model.AgentLink.basic(
+          id: 'agent-link-1',
+          fromId: 'agent-link-agent',
+          toId: 'agent-link-entity',
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        await populateAgentDb(entities: [entity], links: [link]);
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final linkMessages = sentMessages.whereType<SyncAgentLink>().toList();
+        expect(linkMessages, hasLength(1));
+        expect(linkMessages.first.agentLink?.id, equals('agent-link-1'));
+      });
+
+      test('does not enqueue agent entities outside interval', () async {
+        final baseDate = DateTime(2024, 12);
+        final outsideDate = baseDate.subtract(const Duration(days: 10));
+
+        final agentEntity = AgentDomainEntity.agent(
+          id: 'agent-outside',
+          agentId: 'agent-outside-id',
+          kind: 'task_agent',
+          displayName: 'Outside Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: outsideDate,
+          updatedAt: outsideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        await populateAgentDb(entities: [agentEntity]);
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final agentMessages =
+            sentMessages.whereType<SyncAgentEntity>().toList();
+        expect(agentMessages, isEmpty);
+      });
+
+      test('enqueues both agent entities and links together', () async {
+        final baseDate = DateTime(2025);
+        final insideDate = baseDate.add(const Duration(hours: 3));
+
+        final entity1 = AgentDomainEntity.agent(
+          id: 'combo-entity-1',
+          agentId: 'combo-agent-1',
+          kind: 'task_agent',
+          displayName: 'Combo Agent 1',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        final entity2 = AgentDomainEntity.agentState(
+          id: 'combo-state-1',
+          agentId: 'combo-agent-1',
+          revision: 1,
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        final link = agent_model.AgentLink.agentState(
+          id: 'combo-link-1',
+          fromId: 'combo-agent-1',
+          toId: 'combo-state-1',
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+
+        await populateAgentDb(
+          entities: [entity1, entity2],
+          links: [link],
+        );
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final agentMessages =
+            sentMessages.whereType<SyncAgentEntity>().toList();
+        final linkMessages = sentMessages.whereType<SyncAgentLink>().toList();
+
+        expect(agentMessages, hasLength(2));
+        expect(linkMessages, hasLength(1));
+        expect(
+          agentMessages.map((m) => m.agentEntity?.id),
+          containsAll(['combo-entity-1', 'combo-state-1']),
+        );
+        expect(linkMessages.first.agentLink?.id, equals('combo-link-1'));
       });
     });
 

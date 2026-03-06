@@ -6032,7 +6032,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
   Selectable<JournalDbEntity> orderedJournalInterval(
       DateTime start, DateTime end, int limit, int offset) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND updated_at > ?1 AND updated_at < ?2 ORDER BY date_from DESC LIMIT ?3 OFFSET ?4',
+        'SELECT * FROM journal WHERE deleted = FALSE AND updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
         variables: [
           Variable<DateTime>(start),
           Variable<DateTime>(end),

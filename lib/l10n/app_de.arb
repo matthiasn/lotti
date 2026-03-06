@@ -1749,6 +1749,8 @@
   "syncStepAgentEntities": "Agent-Entitäten",
   "syncStepAgentLinks": "Agent-Links",
   "syncStepAiSettings": "KI-Einstellungen",
+  "syncStepBackfillAgentEntityClocks": "Vektoruhren für Agent-Entitäten nachtragen",
+  "syncStepBackfillAgentLinkClocks": "Vektoruhren für Agent-Links nachtragen",
   "syncStepCategories": "Kategorien",
   "syncStepComplete": "Abgeschlossen",
   "syncStepDashboards": "Dashboards",

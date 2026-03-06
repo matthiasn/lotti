@@ -4408,6 +4408,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStepAiSettings => 'Configuración de IA';
 
   @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Rellenar relojes de entidades de agente';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Rellenar relojes de enlaces de agente';
+
+  @override
   String get syncStepCategories => 'Categorías';
 
   @override

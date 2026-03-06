@@ -260,6 +260,23 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch agent entities (including soft-deleted) whose serialized
+  /// `vectorClock` is null, ordered by `created_at` ascending.
+  ///
+  /// Used by the backfill maintenance step to stamp vector clocks on entities
+  /// created before the clock-stamping fix. Includes tombstones so that
+  /// deletes are also propagated to other devices.
+  Future<List<AgentDomainEntity>> getEntitiesWithNullVectorClock() async {
+    final rows = await _db.getAgentEntitiesWithNullVectorClock().get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Count agent entities (including soft-deleted) whose serialized
+  /// `vectorClock` is null.
+  Future<int> countEntitiesWithNullVectorClock() {
+    return _db.countAgentEntitiesWithNullVectorClock().getSingle();
+  }
+
   /// Fetch all non-deleted agent entities, ordered by `created_at` ascending.
   ///
   /// Used by the maintenance sync step to enqueue all agent entities for
@@ -267,6 +284,28 @@ class AgentRepository {
   Future<List<AgentDomainEntity>> getAllEntities() async {
     final rows = await _db.getAllAgentEntities().get();
     return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Fetches agent entities (including soft-deleted) updated in the
+  /// half-open interval [start, end), paginated.
+  Future<List<AgentDomainEntity>> getEntitiesInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) async {
+    final rows =
+        await _db.getAgentEntitiesInInterval(start, end, limit, offset).get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Counts agent entities (including soft-deleted) updated in the
+  /// half-open interval [start, end).
+  Future<int> countEntitiesInInterval({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return _db.countAgentEntitiesInInterval(start, end).getSingle();
   }
 
   // ── Evolution queries ──────────────────────────────────────────────────────
@@ -505,6 +544,23 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
+  /// Fetch agent links (including soft-deleted) whose serialized
+  /// `vectorClock` is null, ordered by `created_at` ascending.
+  ///
+  /// Used by the backfill maintenance step to stamp vector clocks on links
+  /// created before the clock-stamping fix. Includes tombstones so that
+  /// deletes are also propagated to other devices.
+  Future<List<model.AgentLink>> getLinksWithNullVectorClock() async {
+    final rows = await _db.getAgentLinksWithNullVectorClock().get();
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Count agent links (including soft-deleted) whose serialized
+  /// `vectorClock` is null.
+  Future<int> countLinksWithNullVectorClock() {
+    return _db.countAgentLinksWithNullVectorClock().getSingle();
+  }
+
   /// Fetch all non-deleted agent links, ordered by `created_at` ascending.
   ///
   /// Used by the maintenance sync step to enqueue all agent links for
@@ -512,6 +568,28 @@ class AgentRepository {
   Future<List<model.AgentLink>> getAllLinks() async {
     final rows = await _db.getAllAgentLinks().get();
     return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Fetches agent links (including soft-deleted) updated in the
+  /// half-open interval [start, end), paginated.
+  Future<List<model.AgentLink>> getLinksInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) async {
+    final rows =
+        await _db.getAgentLinksInInterval(start, end, limit, offset).get();
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Counts agent links (including soft-deleted) updated in the
+  /// half-open interval [start, end).
+  Future<int> countLinksInInterval({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return _db.countAgentLinksInInterval(start, end).getSingle();
   }
 
   // ── Wake run log ───────────────────────────────────────────────────────────

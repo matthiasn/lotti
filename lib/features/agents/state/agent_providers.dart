@@ -37,6 +37,7 @@ import 'package:lotti/providers/service_providers.dart'
     show journalDbProvider, loggingServiceProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -129,6 +130,7 @@ AgentSyncService agentSyncService(Ref ref) {
   return AgentSyncService(
     repository: ref.watch(agentRepositoryProvider),
     outboxService: ref.watch(outboxServiceProvider),
+    vectorClockService: getIt<VectorClockService>(),
   );
 }
 

@@ -31,6 +31,7 @@ import 'package:lotti/providers/service_providers.dart'
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -236,8 +237,19 @@ void main() {
   });
 
   group('agentSyncServiceProvider', () {
-    test('injects repository and outbox service', () async {
+    test('injects repository, outbox, and vector clock service', () async {
       final mockOutboxService = MockOutboxService();
+      final mockVectorClockService = MockVectorClockService();
+      getIt.registerSingleton<VectorClockService>(mockVectorClockService);
+      addTearDown(() async => getIt.reset());
+
+      const stampedClock = VectorClock({'host': 1});
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => stampedClock);
+
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(mockRepository),
@@ -259,7 +271,9 @@ void main() {
 
       await syncService.upsertEntity(entity);
 
-      verify(() => mockRepository.upsertEntity(entity)).called(1);
+      // Entity is stamped with vector clock before persisting.
+      final stamped = entity.copyWith(vectorClock: stampedClock);
+      verify(() => mockRepository.upsertEntity(stamped)).called(1);
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
   });

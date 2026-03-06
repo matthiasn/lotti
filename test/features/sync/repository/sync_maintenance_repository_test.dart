@@ -12,7 +12,10 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -57,12 +60,40 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockAgentRepository mockAgentRepository;
+  late MockVectorClockService mockVectorClockService;
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(fallbackSyncMessage);
     registerFallbackValue(Exception('fallback'));
+    registerFallbackValue(const VectorClock({}));
+    registerFallbackValue(
+      AgentDomainEntity.agent(
+        id: 'fallback',
+        agentId: 'fallback',
+        kind: 'task_agent',
+        displayName: 'fallback',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: '',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      ),
+    );
+    registerFallbackValue(
+      AgentLink.agentTask(
+        id: 'fallback',
+        fromId: 'fallback',
+        toId: 'fallback',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      ),
+    );
   });
 
   setUp(() {
@@ -71,6 +102,7 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockAiConfigRepository = MockAiConfigRepository();
     mockAgentRepository = MockAgentRepository();
+    mockVectorClockService = MockVectorClockService();
 
     when(
       () => mockLoggingService.captureException(
@@ -87,6 +119,7 @@ void main() {
       loggingService: mockLoggingService,
       aiConfigRepository: mockAiConfigRepository,
       agentRepository: mockAgentRepository,
+      vectorClockService: mockVectorClockService,
     );
   });
 
@@ -1164,7 +1197,11 @@ void main() {
   });
 
   group('syncMaintenanceRepositoryProvider', () {
-    test('constructs repository from shared service providers', () {
+    test('constructs repository from shared service providers', () async {
+      await getIt.reset();
+      getIt.registerSingleton<VectorClockService>(mockVectorClockService);
+      addTearDown(getIt.reset);
+
       final container = ProviderContainer(
         overrides: [
           journalDbProvider.overrideWithValue(mockJournalDb),
@@ -1181,6 +1218,255 @@ void main() {
       final repository = container.read(syncMaintenanceRepositoryProvider);
 
       expect(repository, isA<SyncMaintenanceRepository>());
+    });
+  });
+
+  group('backfillAgentEntityClocks', () {
+    void stubVectorClock(int counter) {
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer(
+        (_) async => VectorClock({'host-1': counter}),
+      );
+    }
+
+    test('stamps and enqueues entities with null vector clocks', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      when(() => mockAgentRepository.getEntitiesWithNullVectorClock())
+          .thenAnswer((_) async => [entity]);
+      when(() => mockAgentRepository.upsertEntity(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+      stubVectorClock(0);
+
+      final progressUpdates = <double>[];
+      final detailedProgress = <List<int>>[];
+
+      await syncMaintenanceRepository.backfillAgentEntityClocks(
+        onProgress: progressUpdates.add,
+        onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+      );
+
+      // Verify entity was stamped with vector clock and persisted
+      final captured =
+          verify(() => mockAgentRepository.upsertEntity(captureAny())).captured;
+      expect(captured.length, 1);
+      final stamped = captured.first as AgentDomainEntity;
+      expect(stamped.vectorClock, isNotNull);
+      expect(stamped.vectorClock!.vclock, {'host-1': 0});
+
+      // Verify entity was enqueued for sync
+      final messages =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(messages.length, 1);
+      final msg = messages.first as SyncMessage;
+      expect(
+        msg.mapOrNull(agentEntity: (m) => m.agentEntity!.vectorClock),
+        isNotNull,
+      );
+
+      // Verify progress reporting
+      expect(progressUpdates, [1.0]);
+      expect(detailedProgress, [
+        [0, 1],
+        [1, 1],
+      ]);
+    });
+
+    test('reports completion immediately when no entities need backfill',
+        () async {
+      when(() => mockAgentRepository.getEntitiesWithNullVectorClock())
+          .thenAnswer((_) async => []);
+
+      final progressUpdates = <double>[];
+      final detailedProgress = <List<int>>[];
+
+      await syncMaintenanceRepository.backfillAgentEntityClocks(
+        onProgress: progressUpdates.add,
+        onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+      );
+
+      expect(progressUpdates, [1.0]);
+      expect(detailedProgress, [
+        [0, 0],
+      ]);
+      verifyNever(() => mockAgentRepository.upsertEntity(any()));
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+
+    test('stamps multiple entities with incrementing clocks', () async {
+      final entities = List.generate(
+        3,
+        (i) => AgentDomainEntity.agent(
+          id: 'agent-$i',
+          agentId: 'agent-$i',
+          kind: 'task_agent',
+          displayName: 'Agent $i',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-$i',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ),
+      );
+
+      var counter = 0;
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => VectorClock({'host-1': counter++}));
+      when(() => mockAgentRepository.getEntitiesWithNullVectorClock())
+          .thenAnswer((_) async => entities);
+      when(() => mockAgentRepository.upsertEntity(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      final progressUpdates = <double>[];
+
+      await syncMaintenanceRepository.backfillAgentEntityClocks(
+        onProgress: progressUpdates.add,
+      );
+
+      verify(() => mockAgentRepository.upsertEntity(any())).called(3);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(3);
+      expect(progressUpdates.length, 3);
+      expect(progressUpdates.last, 1.0);
+    });
+  });
+
+  group('backfillAgentLinkClocks', () {
+    void stubVectorClock(int counter) {
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer(
+        (_) async => VectorClock({'host-1': counter}),
+      );
+    }
+
+    test('stamps and enqueues links with null vector clocks', () async {
+      final link = AgentLink.agentTask(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      when(() => mockAgentRepository.getLinksWithNullVectorClock())
+          .thenAnswer((_) async => [link]);
+      when(() => mockAgentRepository.upsertLink(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+      stubVectorClock(0);
+
+      final progressUpdates = <double>[];
+      final detailedProgress = <List<int>>[];
+
+      await syncMaintenanceRepository.backfillAgentLinkClocks(
+        onProgress: progressUpdates.add,
+        onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+      );
+
+      // Verify link was stamped with vector clock and persisted
+      final captured =
+          verify(() => mockAgentRepository.upsertLink(captureAny())).captured;
+      expect(captured.length, 1);
+      final stamped = captured.first as AgentLink;
+      expect(stamped.vectorClock, isNotNull);
+      expect(stamped.vectorClock!.vclock, {'host-1': 0});
+
+      // Verify link was enqueued for sync
+      final messages =
+          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      expect(messages.length, 1);
+      final msg = messages.first as SyncMessage;
+      expect(
+        msg.mapOrNull(agentLink: (m) => m.agentLink!.vectorClock),
+        isNotNull,
+      );
+
+      // Verify progress reporting
+      expect(progressUpdates, [1.0]);
+      expect(detailedProgress, [
+        [0, 1],
+        [1, 1],
+      ]);
+    });
+
+    test('reports completion immediately when no links need backfill',
+        () async {
+      when(() => mockAgentRepository.getLinksWithNullVectorClock())
+          .thenAnswer((_) async => []);
+
+      final progressUpdates = <double>[];
+      final detailedProgress = <List<int>>[];
+
+      await syncMaintenanceRepository.backfillAgentLinkClocks(
+        onProgress: progressUpdates.add,
+        onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+      );
+
+      expect(progressUpdates, [1.0]);
+      expect(detailedProgress, [
+        [0, 0],
+      ]);
+      verifyNever(() => mockAgentRepository.upsertLink(any()));
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
+  group('fetchTotalsForSteps - backfill steps', () {
+    test('returns count from dedicated query for backfill entity step',
+        () async {
+      when(() => mockAgentRepository.countEntitiesWithNullVectorClock())
+          .thenAnswer((_) async => 42);
+
+      final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
+        {SyncStep.backfillAgentEntityClocks},
+      );
+
+      expect(totals[SyncStep.backfillAgentEntityClocks], 42);
+      verify(() => mockAgentRepository.countEntitiesWithNullVectorClock())
+          .called(1);
+    });
+
+    test('returns count from dedicated query for backfill link step', () async {
+      when(() => mockAgentRepository.countLinksWithNullVectorClock())
+          .thenAnswer((_) async => 7);
+
+      final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
+        {SyncStep.backfillAgentLinkClocks},
+      );
+
+      expect(totals[SyncStep.backfillAgentLinkClocks], 7);
+      verify(() => mockAgentRepository.countLinksWithNullVectorClock())
+          .called(1);
     });
   });
 }

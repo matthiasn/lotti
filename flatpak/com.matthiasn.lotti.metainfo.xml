@@ -31,6 +31,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.902" date="2026-03-06">
+      <description>
+          <p>Add one-time backfill of vector clocks on agent entities and links via the Sync Maintenance modal, enabling cross-device sync for records created before the clock-stamping fix.</p>
+      </description>
+    </release>
+    <release version="0.9.901" date="2026-03-05">
+      <description>
+          <p>Fix cross-device agent sync: task agent provider now reacts to sync notifications so agents appear on other devices without restart. Maintenance re-sync now includes agent entities and links within the selected date range. Removed unused collapsible section from linked entries UI.</p>
+      </description>
+    </release>
     <release version="0.9.899" date="2026-03-04">
       <description>
           <p>Sync stability fixes: break backfill amplification loop by responding with hints instead of unresolvable flags for superseded counters. Agent entities and links now properly record vector clock counters in the sequence log, eliminating phantom gaps that triggered endless backfill requests and outbox spikes.</p>

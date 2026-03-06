@@ -513,9 +513,9 @@ SELECT * FROM journal
 orderedJournalInterval:
 SELECT * FROM journal
   WHERE deleted = false
-  AND updated_at > :start
+  AND updated_at >= :start
   AND updated_at < :end
-  ORDER BY date_from DESC
+  ORDER BY updated_at ASC, id ASC
   LIMIT :limit
   OFFSET :offset;
 

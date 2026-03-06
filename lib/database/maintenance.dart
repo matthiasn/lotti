@@ -9,6 +9,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -22,12 +23,15 @@ class Maintenance {
   Future<void> reSyncInterval({
     required DateTime start,
     required DateTime end,
+    required AgentRepository agentRepository,
   }) async {
     final outboxService = getIt<OutboxService>();
     final vectorClockService = getIt<VectorClockService>();
     final hostId = await vectorClockService.getHost();
-    final count = await _db.countJournalEntries().getSingle();
     const pageSize = 100;
+
+    // 1. Re-sync journal entities and their links.
+    final count = await _db.countJournalEntries().getSingle();
     final pages = (count / pageSize).ceil();
 
     for (var page = 0; page <= pages; page++) {
@@ -35,7 +39,7 @@ class Maintenance {
           .orderedJournalInterval(start, end, pageSize, page * pageSize)
           .get();
       if (dbEntities.isEmpty) {
-        return;
+        break;
       }
 
       final entries = entityStreamMapper(dbEntities);
@@ -62,6 +66,65 @@ class Maintenance {
             ),
           );
         }
+      }
+    }
+
+    // 2. Re-sync agent entities and links updated in the same interval.
+    await _reSyncPaginated(
+      countFetcher: () => agentRepository.countEntitiesInInterval(
+        start: start,
+        end: end,
+      ),
+      itemsFetcher: (limit, offset) => agentRepository.getEntitiesInInterval(
+        start: start,
+        end: end,
+        limit: limit,
+        offset: offset,
+      ),
+      enqueueAction: (entity) => outboxService.enqueueMessage(
+        SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      pageSize: pageSize,
+    );
+
+    await _reSyncPaginated(
+      countFetcher: () => agentRepository.countLinksInInterval(
+        start: start,
+        end: end,
+      ),
+      itemsFetcher: (limit, offset) => agentRepository.getLinksInInterval(
+        start: start,
+        end: end,
+        limit: limit,
+        offset: offset,
+      ),
+      enqueueAction: (link) => outboxService.enqueueMessage(
+        SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      pageSize: pageSize,
+    );
+  }
+
+  Future<void> _reSyncPaginated<T>({
+    required Future<int> Function() countFetcher,
+    required Future<List<T>> Function(int limit, int offset) itemsFetcher,
+    required Future<void> Function(T item) enqueueAction,
+    required int pageSize,
+  }) async {
+    final count = await countFetcher();
+    if (count == 0) return;
+
+    final pages = (count / pageSize).ceil();
+    for (var page = 0; page < pages; page++) {
+      final items = await itemsFetcher(pageSize, page * pageSize);
+      for (final item in items) {
+        await enqueueAction(item);
       }
     }
   }

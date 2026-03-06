@@ -4321,6 +4321,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncStepAiSettings => 'AI nastavení';
 
   @override
+  String get syncStepBackfillAgentEntityClocks => 'Doplnění hodin entit agentů';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Doplnění hodin propojení agentů';
+
+  @override
   String get syncStepCategories => 'Kategorie';
 
   @override

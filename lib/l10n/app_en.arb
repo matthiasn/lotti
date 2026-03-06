@@ -1896,6 +1896,8 @@
   "syncStepAgentEntities": "Agent entities",
   "syncStepAgentLinks": "Agent links",
   "syncStepAiSettings": "AI settings",
+  "syncStepBackfillAgentEntityClocks": "Backfill agent entity clocks",
+  "syncStepBackfillAgentLinkClocks": "Backfill agent link clocks",
   "syncStepCategories": "Categories",
   "syncStepComplete": "Complete",
   "syncStepDashboards": "Dashboards",

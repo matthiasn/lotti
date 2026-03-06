@@ -1530,6 +1530,8 @@
   "syncStepAgentEntities": "Entity agentů",
   "syncStepAgentLinks": "Propojení agentů",
   "syncStepAiSettings": "AI nastavení",
+  "syncStepBackfillAgentEntityClocks": "Doplnění hodin entit agentů",
+  "syncStepBackfillAgentLinkClocks": "Doplnění hodin propojení agentů",
   "syncStepCategories": "Kategorie",
   "syncStepComplete": "Dokončeno",
   "syncStepDashboards": "Dashboardy",

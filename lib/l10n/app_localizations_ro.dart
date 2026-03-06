@@ -4348,6 +4348,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncStepAiSettings => 'Setări AI';
 
   @override
+  String get syncStepBackfillAgentEntityClocks =>
+      'Completare ceasuri entități agent';
+
+  @override
+  String get syncStepBackfillAgentLinkClocks =>
+      'Completare ceasuri legături agent';
+
+  @override
   String get syncStepCategories => 'Categorii';
 
   @override
