@@ -116,6 +116,12 @@ class ChangeSetBuilder {
       final existingTitles = await _resolveExistingTitles();
       final detail = _checkAddRedundancy(toolName, args, existingTitles);
       if (detail != null) return detail;
+
+      // Track the title so subsequent addItem calls see it.
+      final title = args['title'];
+      if (title is String && title.isNotEmpty) {
+        existingTitles.add(title.toLowerCase().trim());
+      }
     }
 
     _items.add(
@@ -169,8 +175,9 @@ class ChangeSetBuilder {
     // and 'update_checklist_items' with 'update_checklist_item'.
     final singularToolName = _singularize(toolName);
 
-    // Resolve existing titles once for the entire batch (cached).
-    final existingTitles = await _resolveExistingTitles();
+    // Only resolve existing titles when this is an add-checklist batch.
+    final isAddBatch = singularToolName == TaskAgentToolNames.addChecklistItem;
+    final existingTitles = isAddBatch ? await _resolveExistingTitles() : null;
 
     var added = 0;
     var skipped = 0;
@@ -180,15 +187,17 @@ class ChangeSetBuilder {
       if (element is Map<String, dynamic>) {
         // Check for redundant add_checklist_item proposals (title already
         // exists on the task or was already proposed in this wake).
-        final addRedundancyDetail = _checkAddRedundancy(
-          singularToolName,
-          element,
-          existingTitles,
-        );
-        if (addRedundancyDetail != null) {
-          redundant++;
-          redundantDetails.add(addRedundancyDetail);
-          continue;
+        if (existingTitles != null) {
+          final addRedundancyDetail = _checkAddRedundancy(
+            singularToolName,
+            element,
+            existingTitles,
+          );
+          if (addRedundancyDetail != null) {
+            redundant++;
+            redundantDetails.add(addRedundancyDetail);
+            continue;
+          }
         }
 
         // Resolve state once per item to avoid redundant DB lookups and
@@ -225,7 +234,7 @@ class ChangeSetBuilder {
 
         // Track the title in the existing set so that subsequent items in
         // the same batch with the same title are caught as duplicates.
-        if (singularToolName == TaskAgentToolNames.addChecklistItem) {
+        if (existingTitles != null) {
           final title = element['title'];
           if (title is String && title.isNotEmpty) {
             existingTitles.add(title.toLowerCase().trim());
@@ -448,42 +457,33 @@ class ChangeSetBuilder {
     }
   }
 
-  /// Resolve existing checklist titles, caching the result for the batch.
+  /// Resolve existing checklist titles, initialising the cache on first call.
   ///
-  /// Also includes titles from items already accumulated in this wake
-  /// (same-wake dedup) so that two identical `add_checklist_item` calls
-  /// in one batch don't both get through.
+  /// The returned set is the canonical `_cachedExistingTitles` instance —
+  /// callers may mutate it (e.g. adding titles for same-wake dedup) and the
+  /// additions will be visible to subsequent calls without re-scanning.
   Future<Set<String>> _resolveExistingTitles() async {
-    if (_cachedExistingTitles == null) {
-      final resolver = existingChecklistTitlesResolver;
-      if (resolver != null) {
-        try {
-          _cachedExistingTitles = await resolver();
-        } catch (e, s) {
-          domainLogger?.error(
-            LogDomains.agentWorkflow,
-            'failed to resolve existing checklist titles',
-            error: e,
-            stackTrace: s,
-          );
-          _cachedExistingTitles = {};
-        }
-      } else {
+    if (_cachedExistingTitles != null) return _cachedExistingTitles!;
+
+    final resolver = existingChecklistTitlesResolver;
+    if (resolver != null) {
+      try {
+        // Copy to a mutable set so callers can add in-wake titles.
+        _cachedExistingTitles = {...await resolver()};
+      } catch (e, s) {
+        domainLogger?.error(
+          LogDomains.agentWorkflow,
+          'failed to resolve existing checklist titles',
+          error: e,
+          stackTrace: s,
+        );
         _cachedExistingTitles = {};
       }
+    } else {
+      _cachedExistingTitles = {};
     }
 
-    // Include titles from items already accumulated in this wake.
-    final wakeAddTitles = _items
-        .where(
-      (i) => i.toolName == TaskAgentToolNames.addChecklistItem,
-    )
-        .map((i) {
-      final title = i.args['title'];
-      return title is String ? title.toLowerCase().trim() : '';
-    }).where((t) => t.isNotEmpty);
-
-    return {..._cachedExistingTitles!, ...wakeAddTitles};
+    return _cachedExistingTitles!;
   }
 
   /// Check whether an `add_checklist_item` proposal is redundant because

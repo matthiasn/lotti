@@ -32,10 +32,20 @@ abstract class ChangeItem with _$ChangeItem {
 
   static const _deepEquals = DeepCollectionEquality();
 
+  /// Structural fingerprint from raw parts, without requiring a [ChangeItem].
+  ///
+  /// Useful when reconstructing fingerprints from persisted decision records
+  /// that store `toolName` and `args` separately.
+  static String fingerprintFromParts(
+    String toolName,
+    Map<String, dynamic> args,
+  ) =>
+      '$toolName:${_deepEquals.hash(args)}';
+
   /// Structural fingerprint based on `toolName` and `args`.
   ///
   /// Ignores `status` and `humanSummary` so that two items proposing the
   /// same mutation are considered equal regardless of presentation.
   static String fingerprint(ChangeItem item) =>
-      '${item.toolName}:${_deepEquals.hash(item.args)}';
+      fingerprintFromParts(item.toolName, item.args);
 }

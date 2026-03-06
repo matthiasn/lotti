@@ -545,13 +545,7 @@ class TaskAgentWorkflow {
             .where((d) => d.verdict == ChangeDecisionVerdict.rejected)
             .where((d) => d.args != null)
             .map(
-              (d) => ChangeItem.fingerprint(
-                ChangeItem(
-                  toolName: d.toolName,
-                  args: d.args!,
-                  humanSummary: '',
-                ),
-              ),
+              (d) => ChangeItem.fingerprintFromParts(d.toolName, d.args!),
             )
             .toSet();
 
