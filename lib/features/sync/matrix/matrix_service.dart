@@ -467,7 +467,7 @@ class MatrixService {
         syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
       ),
-      onSent: (String _, SyncMessage __) => incrementSentCountOf(sentType),
+      onSent: (String _, SyncMessage _) => incrementSentCountOf(sentType),
     );
   }
 

@@ -513,7 +513,7 @@ void main() {
       // Keep aiConfigByTypeController alive during the test
       final configSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, __) {},
+        (_, _) {},
       );
 
       // Wait for entry controller to be ready
@@ -606,7 +606,7 @@ void main() {
       // Keep aiConfigByTypeController alive during the test
       final configSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, __) {},
+        (_, _) {},
       );
 
       // Wait for entry controller to be ready
@@ -667,7 +667,7 @@ void main() {
       // Keep aiConfigByTypeController alive during the test
       final configSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, __) {},
+        (_, _) {},
       );
 
       // Wait for entry controller to be ready
@@ -1076,7 +1076,7 @@ void main() {
       // Keep aiConfigByTypeController alive during the test
       final configSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, __) {},
+        (_, _) {},
       );
 
       // Wait for entry controller to be ready
@@ -1179,7 +1179,7 @@ void main() {
       // Keep aiConfigByTypeController alive during the test
       final configSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, __) {},
+        (_, _) {},
       );
 
       // Wait for entry controller to be ready

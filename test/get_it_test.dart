@@ -151,7 +151,7 @@ void main() {
       runZoned(
         () => expect(getIt.call<int>, throwsA(isA<StateError>())),
         zoneSpecification: ZoneSpecification(
-          print: (_, __, ___, ____) {}, // Suppress prints from get_it package
+          print: (_, _, _, _) {}, // Suppress prints from get_it package
         ),
       );
 

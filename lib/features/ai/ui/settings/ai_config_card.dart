@@ -419,7 +419,7 @@ class _CompactProviderName extends ConsumerWidget {
         ),
       ),
       // Error is handled above with hasError check
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -468,7 +468,7 @@ class _PromptProviderBadge extends ConsumerWidget {
           ),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }

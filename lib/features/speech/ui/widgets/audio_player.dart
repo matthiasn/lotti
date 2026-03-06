@@ -282,7 +282,7 @@ class _WaveformArea extends ConsumerWidget {
             );
           },
           loading: () => progressBar,
-          error: (_, __) => progressBar,
+          error: (_, _) => progressBar,
         );
       },
     );

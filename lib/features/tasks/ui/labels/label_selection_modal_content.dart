@@ -404,7 +404,7 @@ class _LabelSelectionModalContentState
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: filtered.length,
-          separatorBuilder: (context, __) => Divider(
+          separatorBuilder: (context, _) => Divider(
             height: 1,
             thickness: 1,
             color: Theme.of(

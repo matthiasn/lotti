@@ -392,7 +392,7 @@ class ChecklistCompletionController
 
     _checklistSubscription = ref.listen<AsyncValue<Checklist?>>(
       checklistControllerProvider((id: id, taskId: taskId)),
-      (_, __) => _updateState(),
+      (_, _) => _updateState(),
     );
 
     return _computeState();
@@ -411,7 +411,7 @@ class ChecklistCompletionController
       if (!_itemSubscriptions.containsKey(itemId)) {
         _itemSubscriptions[itemId] = ref.listen<AsyncValue<ChecklistItem?>>(
           checklistItemControllerProvider((id: itemId, taskId: taskId)),
-          (_, __) => _updateState(),
+          (_, _) => _updateState(),
         );
       }
     }

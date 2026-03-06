@@ -559,7 +559,7 @@ void main() {
         fakeAsync((async) {
           final fakeChannel = _FakeWebSocketChannel();
           final repo = MistralRealtimeTranscriptionRepository(
-            channelFactory: (_, __) => fakeChannel,
+            channelFactory: (_, _) => fakeChannel,
           );
 
           TranscriptionException? caught;
@@ -586,7 +586,7 @@ void main() {
 
       test('wraps non-TranscriptionException from channel.ready', () async {
         final repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (_, __) => _FailingReadyChannel(),
+          channelFactory: (_, _) => _FailingReadyChannel(),
         );
         addTearDown(repo.dispose);
 

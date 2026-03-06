@@ -1727,9 +1727,8 @@ void main() {
   group('realtimeAvailableProvider', () {
     test('returns true when realtime config is available', () async {
       final mockService = MockRealtimeTranscriptionService();
-      // ignore: unnecessary_lambdas
       when(
-        () => mockService.resolveRealtimeConfig(),
+        mockService.resolveRealtimeConfig,
       ).thenAnswer((_) async => _fakeRealtimeConfig);
 
       final testContainer = ProviderContainer(
@@ -1742,7 +1741,7 @@ void main() {
       // Listen to keep the provider alive
       final sub = testContainer.listen(
         realtimeAvailableProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1755,9 +1754,8 @@ void main() {
 
     test('returns false when no realtime config', () async {
       final mockService = MockRealtimeTranscriptionService();
-      // ignore: unnecessary_lambdas
       when(
-        () => mockService.resolveRealtimeConfig(),
+        mockService.resolveRealtimeConfig,
       ).thenAnswer((_) async => null);
 
       final testContainer = ProviderContainer(
@@ -1769,7 +1767,7 @@ void main() {
 
       final sub = testContainer.listen(
         realtimeAvailableProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 

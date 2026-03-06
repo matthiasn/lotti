@@ -263,8 +263,7 @@ class LabelAssignmentProcessor {
       'dropped_low': droppedLow,
       'legacy_capped':
           legacyUsed && (totalCandidates != null && totalCandidates > 3),
-      if (confidenceBreakdown != null)
-        'confidenceBreakdown': confidenceBreakdown,
+      'confidenceBreakdown': ?confidenceBreakdown,
       'phase': 2,
     });
     _logging.captureEvent(

@@ -95,7 +95,7 @@ class GeminiUtils {
 
     final generationConfig = <String, dynamic>{
       'temperature': temperature,
-      if (maxTokens != null) 'maxOutputTokens': maxTokens,
+      'maxOutputTokens': ?maxTokens,
       'thinkingConfig': thinkingConfig.toJson(modelId: modelId),
     };
 
@@ -172,7 +172,7 @@ class GeminiUtils {
 
     final generationConfig = <String, dynamic>{
       'temperature': temperature,
-      if (maxTokens != null) 'maxOutputTokens': maxTokens,
+      'maxOutputTokens': ?maxTokens,
       'thinkingConfig': thinkingConfig.toJson(modelId: modelId),
     };
 

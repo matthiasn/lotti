@@ -352,7 +352,7 @@ class _SlotModelPickerContent extends StatelessWidget {
         children: models.map((model) {
           final providerLabel = _providerName(model.inferenceProviderId);
           final subtitle = [
-            if (providerLabel != null) providerLabel,
+            ?providerLabel,
             model.providerModelId,
           ].join(' — ');
           final isSelected = model.providerModelId == selectedModelId;

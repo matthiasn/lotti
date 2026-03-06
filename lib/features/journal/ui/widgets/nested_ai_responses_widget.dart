@@ -100,7 +100,7 @@ class _NestedAiResponsesWidgetState
 
     return asyncAiResponses.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (aiResponses) {
         // Don't render anything if no AI responses exist
         if (aiResponses.isEmpty) {

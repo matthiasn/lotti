@@ -104,7 +104,7 @@ void main() {
 
           when(() => mockDb.getAllDashboards()).thenThrow(error);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
 
           async.flushMicrotasks();
 
@@ -190,7 +190,7 @@ void main() {
             () => mockDb.getAllDashboards(),
           ).thenAnswer((_) async => [dashboard1, dashboard2]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(filteredSortedDashboardsProvider);
@@ -213,7 +213,7 @@ void main() {
             () => mockDb.getAllDashboards(),
           ).thenAnswer((_) async => [dashboardB, dashboardA]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(filteredSortedDashboardsProvider);
@@ -238,7 +238,7 @@ void main() {
             () => mockDb.getAllDashboards(),
           ).thenAnswer((_) async => [dashboardUpper, dashboardLower]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(filteredSortedDashboardsProvider);
@@ -269,7 +269,7 @@ void main() {
             () => mockDb.getAllDashboards(),
           ).thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           // Select category-1 filter
@@ -305,7 +305,7 @@ void main() {
             () => mockDb.getAllDashboards(),
           ).thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           // Select multiple categories
@@ -344,7 +344,7 @@ void main() {
               () => mockDb.getAllDashboards(),
             ).thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
 
-            container.listen(dashboardsProvider, (_, __) {});
+            container.listen(dashboardsProvider, (_, _) {});
             async.flushMicrotasks();
 
             // Select category-1 filter
@@ -378,7 +378,7 @@ void main() {
               () => mockDb.getAllDashboards(),
             ).thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
 
-            container.listen(dashboardsProvider, (_, __) {});
+            container.listen(dashboardsProvider, (_, _) {});
             async.flushMicrotasks();
 
             final state = container.read(filteredSortedDashboardsProvider);
@@ -415,7 +415,7 @@ void main() {
 
           when(() => mockDb.getAllCategories()).thenThrow(error);
 
-          container.listen(dashboardCategoriesProvider, (_, __) {});
+          container.listen(dashboardCategoriesProvider, (_, _) {});
 
           async.flushMicrotasks();
 
@@ -444,7 +444,7 @@ void main() {
             () => mockEntitiesCacheService.getDashboardById(dashboard.id),
           ).thenReturn(dashboard);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final result = container.read(dashboardByIdProvider(dashboard.id));
@@ -461,7 +461,7 @@ void main() {
             () => mockEntitiesCacheService.getDashboardById('unknown-id'),
           ).thenReturn(null);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final result = container.read(dashboardByIdProvider('unknown-id'));
@@ -481,7 +481,7 @@ void main() {
             () => mockEntitiesCacheService.getDashboardById(dashboard.id),
           ).thenReturn(dashboard);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           var result = container.read(dashboardByIdProvider(dashboard.id));

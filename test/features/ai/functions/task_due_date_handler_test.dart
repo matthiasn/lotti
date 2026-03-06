@@ -89,8 +89,8 @@ void main() {
         name: 'update_task_due_date',
         arguments: jsonEncode({
           'dueDate': dueDate,
-          if (reason != null) 'reason': reason,
-          if (confidence != null) 'confidence': confidence,
+          'reason': ?reason,
+          'confidence': ?confidence,
         }),
       ),
     );

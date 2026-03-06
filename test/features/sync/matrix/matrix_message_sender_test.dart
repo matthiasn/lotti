@@ -111,7 +111,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: context,
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -135,7 +135,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: context,
-      onSent: (_, __) => calls++,
+      onSent: (_, _) => calls++,
     );
 
     expect(result, isFalse);
@@ -157,7 +157,7 @@ void main() {
         syncRoom: null,
         unverifiedDevices: <DeviceKeys>[],
       ),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -183,7 +183,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -217,7 +217,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -263,7 +263,7 @@ void main() {
         status: SyncEntryStatus.update,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -288,7 +288,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -335,7 +335,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -395,7 +395,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: context,
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -481,7 +481,7 @@ void main() {
         status: SyncEntryStatus.update,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -554,7 +554,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isTrue);
@@ -623,7 +623,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isTrue);
@@ -691,7 +691,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: message,
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -761,7 +761,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isTrue);
@@ -830,7 +830,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isTrue);
@@ -863,7 +863,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -897,7 +897,7 @@ void main() {
     final result = await sender.sendMatrixMessage(
       message: const SyncMessage.aiConfigDelete(id: 'abc'),
       context: buildContext(),
-      onSent: (_, __) => calls++,
+      onSent: (_, _) => calls++,
     );
 
     expect(result, isTrue);
@@ -972,7 +972,7 @@ void main() {
         status: SyncEntryStatus.update,
       ),
       context: buildContext(),
-      onSent: (_, __) => callbackCount++,
+      onSent: (_, _) => callbackCount++,
     );
 
     expect(result, isTrue);
@@ -1057,7 +1057,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: (_, __) => callbackCount++,
+      onSent: (_, _) => callbackCount++,
     );
 
     expect(result, isTrue);
@@ -1127,7 +1127,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -1186,7 +1186,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isTrue);
@@ -1223,7 +1223,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     expect(result, isFalse);
@@ -1307,7 +1307,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: audioEntity,
         context: buildContext(),
-        onSent: (_, __) => callbackCount++,
+        onSent: (_, _) => callbackCount++,
       );
 
       expect(result, isTrue);
@@ -1371,7 +1371,7 @@ void main() {
           status: SyncEntryStatus.initial,
         ),
         context: buildContext(),
-        onSent: (_, __) => callbackCount++,
+        onSent: (_, _) => callbackCount++,
       ),
       completion(isFalse),
     );
@@ -1433,7 +1433,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       context: buildContext(),
-      onSent: (_, __) {},
+      onSent: (_, _) {},
     );
 
     // Missing files are skipped gracefully — the journal entity is still sent
@@ -1857,7 +1857,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isTrue);
@@ -1911,7 +1911,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isFalse);
@@ -1950,7 +1950,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isFalse);
@@ -2003,7 +2003,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: message,
         context: buildContext(),
-        onSent: (_, __) {},
+        onSent: (_, _) {},
       );
 
       expect(result, isTrue);

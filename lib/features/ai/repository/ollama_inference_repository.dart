@@ -163,7 +163,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       'tools': ollamaTools,
       'options': {
         'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
+        'num_predict': ?maxCompletionTokens,
       },
     };
 
@@ -224,7 +224,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       'stream': true, // Use streaming for consistency
       'options': {
         'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
+        'num_predict': ?maxCompletionTokens,
       },
     };
 
@@ -302,7 +302,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       'tools': ollamaTools,
       'options': {
         'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
+        'num_predict': ?maxCompletionTokens,
       },
     };
 

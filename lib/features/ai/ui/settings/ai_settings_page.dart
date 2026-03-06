@@ -502,7 +502,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList.separated(
             itemCount: filteredProfiles.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final profile = filteredProfiles[index];
               return ProfileCard(

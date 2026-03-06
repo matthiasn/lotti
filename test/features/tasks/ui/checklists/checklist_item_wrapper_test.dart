@@ -24,7 +24,7 @@ class MockChecklistItemController extends ChecklistItemController {
     required ChecklistItem? item,
     this.shouldDelete = false,
   }) {
-    _itemsMap = {if (item != null) item.meta.id: item};
+    _itemsMap = {?item?.meta.id: ?item};
     _currentId = item?.meta.id;
     _initialItem = item;
   }

@@ -69,7 +69,7 @@ class ChecklistWrapper extends ConsumerWidget {
                   taskId: taskId,
                 )).future,
               )
-              .catchError((Object _, StackTrace __) => null),
+              .catchError((Object _, StackTrace _) => null),
         );
     return Future.wait<ChecklistItem?>(futures);
   }

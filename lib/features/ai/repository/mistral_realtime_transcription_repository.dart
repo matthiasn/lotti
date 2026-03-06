@@ -127,7 +127,7 @@ class MistralRealtimeTranscriptionRepository {
     try {
       final WebSocketChannel channel;
       if (_channelFactory != null) {
-        channel = _channelFactory!(wsUrl, headers);
+        channel = _channelFactory(wsUrl, headers);
       } else {
         channel = IOWebSocketChannel.connect(
           wsUrl,

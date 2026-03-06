@@ -141,7 +141,7 @@ void main() {
     // Add a listener to track state changes
     container.listen(
       taskProgressControllerProvider(id: testTaskId),
-      (_, __) {},
+      (_, _) {},
       fireImmediately: true,
     );
 

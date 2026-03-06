@@ -67,7 +67,7 @@ class DateLabelRow extends ConsumerWidget {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
 
           // Status indicator
@@ -80,7 +80,7 @@ class DateLabelRow extends ConsumerWidget {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
 
           // Today button (if not viewing today)

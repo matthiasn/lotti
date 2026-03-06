@@ -271,7 +271,7 @@ void main() {
         // Start listening to trigger subscription
         final subscription = container.listen(
           categoriesStreamProvider,
-          (_, __) {},
+          (_, _) {},
         );
 
         // Process microtasks
@@ -313,7 +313,7 @@ void main() {
         // Start listening to trigger subscription
         final subscription = container.listen(
           categoriesStreamProvider,
-          (_, __) {},
+          (_, _) {},
         );
 
         // Process microtasks

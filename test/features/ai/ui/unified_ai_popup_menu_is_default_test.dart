@@ -546,7 +546,7 @@ void main() {
             home: Scaffold(
               body: UnifiedAiPromptsList(
                 journalEntity: journalEntity,
-                onPromptSelected: (_, __) async {},
+                onPromptSelected: (_, _) async {},
               ),
             ),
           ),
@@ -631,7 +631,7 @@ void main() {
             home: Scaffold(
               body: UnifiedAiPromptsList(
                 journalEntity: journalEntity,
-                onPromptSelected: (_, __) async {},
+                onPromptSelected: (_, _) async {},
               ),
             ),
           ),
@@ -691,7 +691,7 @@ void main() {
             home: Scaffold(
               body: UnifiedAiPromptsList(
                 journalEntity: journalEntity,
-                onPromptSelected: (_, __) async {},
+                onPromptSelected: (_, _) async {},
               ),
             ),
           ),

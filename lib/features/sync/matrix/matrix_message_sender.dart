@@ -50,7 +50,7 @@ class MatrixMessageSender {
     SyncMessage message,
   ) async {
     if (_vectorClockService == null) return message;
-    final host = await _vectorClockService!.getHost();
+    final host = await _vectorClockService.getHost();
     if (host == null) return message;
 
     if (message is SyncJournalEntity && message.originatingHostId == null) {

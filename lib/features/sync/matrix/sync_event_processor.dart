@@ -810,7 +810,7 @@ class SyncEventProcessor {
 
     if (_sequenceLogService != null && syncMessage.originatingHostId != null) {
       try {
-        final gaps = await _sequenceLogService!.recordReceivedEntry(
+        final gaps = await _sequenceLogService.recordReceivedEntry(
           entryId: syncMessage.id,
           vectorClock: incomingVc,
           originatingHostId: syncMessage.originatingHostId!,
@@ -945,7 +945,7 @@ class SyncEventProcessor {
           await journalDb.journalEntityById(journalEntity.meta.id) != null;
       if (entryExistsInJournal) {
         try {
-          final gaps = await _sequenceLogService!.recordReceivedEntry(
+          final gaps = await _sequenceLogService.recordReceivedEntry(
             entryId: journalEntity.meta.id,
             vectorClock: syncMessage.vectorClock!,
             originatingHostId: syncMessage.originatingHostId!,
@@ -1026,7 +1026,7 @@ class SyncEventProcessor {
           rows > 0 || await journalDb.entryLinkById(entryLink.id) != null;
       if (linkExists) {
         try {
-          final gaps = await _sequenceLogService!.recordReceivedEntryLink(
+          final gaps = await _sequenceLogService.recordReceivedEntryLink(
             linkId: entryLink.id,
             vectorClock: entryLink.vectorClock!,
             originatingHostId: originatingHostId,
@@ -1448,7 +1448,7 @@ class SyncEventProcessor {
               resolvedEntity.vectorClock != null &&
               msg.originatingHostId != null) {
             try {
-              final gaps = await _sequenceLogService!.recordReceivedEntry(
+              final gaps = await _sequenceLogService.recordReceivedEntry(
                 entryId: resolvedEntity.id,
                 vectorClock: resolvedEntity.vectorClock!,
                 originatingHostId: msg.originatingHostId!,
@@ -1524,7 +1524,7 @@ class SyncEventProcessor {
               resolvedLink.vectorClock != null &&
               msg.originatingHostId != null) {
             try {
-              final gaps = await _sequenceLogService!.recordReceivedEntry(
+              final gaps = await _sequenceLogService.recordReceivedEntry(
                 entryId: resolvedLink.id,
                 vectorClock: resolvedLink.vectorClock!,
                 originatingHostId: msg.originatingHostId!,

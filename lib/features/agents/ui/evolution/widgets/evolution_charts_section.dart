@@ -37,7 +37,7 @@ class EvolutionChartsSection extends ConsumerWidget {
         resolutionAsync.value,
       ),
       loading: SizedBox.shrink,
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 

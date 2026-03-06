@@ -42,7 +42,7 @@ void main() {
       // Keep a subscription alive to prevent premature disposal.
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -88,7 +88,7 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -123,7 +123,7 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -193,7 +193,7 @@ void main() {
 
         final sub = container.listen(
           pendingChangeSetsProvider('task-001'),
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
 
@@ -257,7 +257,7 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -297,7 +297,7 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 

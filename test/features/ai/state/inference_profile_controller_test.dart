@@ -49,7 +49,7 @@ void main() {
       final c = createContainer();
       final subscription = c.listen(
         inferenceProfileControllerProvider,
-        (_, __) {},
+        (_, _) {},
       );
 
       // Initially loading
@@ -112,7 +112,7 @@ void main() {
       final c = createContainer();
       final subscription = c.listen(
         inferenceProfileControllerProvider,
-        (_, __) {},
+        (_, _) {},
       );
 
       // First emission: one profile

@@ -93,7 +93,7 @@ class WhatsNewModal {
             precacheImage(
               NetworkImage(bannerUrl),
               context,
-              onError: (_, __) {}, // Ignore failures silently
+              onError: (_, _) {}, // Ignore failures silently
             ),
           );
         }
@@ -108,7 +108,7 @@ class WhatsNewModal {
             precacheImage(
               NetworkImage(imageUrl),
               context,
-              onError: (_, __) {}, // Ignore failures silently
+              onError: (_, _) {}, // Ignore failures silently
             ),
           );
         }
@@ -332,7 +332,7 @@ class _HeroBanner extends StatelessWidget {
           Image.network(
             imageUrl!,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _BannerFallback(version: version),
+            errorBuilder: (_, _, _) => _BannerFallback(version: version),
           )
         else
           _BannerFallback(version: version),

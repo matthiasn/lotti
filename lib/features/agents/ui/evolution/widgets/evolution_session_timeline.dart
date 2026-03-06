@@ -58,7 +58,7 @@ class EvolutionSessionTimeline extends ConsumerWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
-      error: (_, __) => Center(
+      error: (_, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Text(

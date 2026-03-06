@@ -826,7 +826,7 @@ class _ModelListItem extends ConsumerWidget {
           ],
         ),
       ),
-      error: (_, __) => Container(
+      error: (_, _) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.colorScheme.errorContainer.withValues(alpha: 0.1),

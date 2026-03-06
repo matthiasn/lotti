@@ -112,7 +112,7 @@ class _TaskAgentReportSectionState
 
     return taskAgentAsync.when(
       loading: SizedBox.shrink,
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (agentEntity) {
         if (agentEntity == null) {
           _scheduleStopCountdown();

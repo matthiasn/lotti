@@ -2623,7 +2623,7 @@ void main() {
           when(() => e.senderId).thenReturn('@other:server');
           when(() => e.attachmentMimetype).thenReturn('');
           when(() => e.content).thenReturn(<String, dynamic>{
-            if (msgType != null) 'msgtype': msgType,
+            'msgtype': ?msgType,
           });
           return e;
         }

@@ -162,7 +162,7 @@ void main() {
         // Keep the provider alive so notification-driven rebuild fires.
         final sub = container.listen(
           taskAgentProvider(taskId),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 

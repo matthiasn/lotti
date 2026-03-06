@@ -124,7 +124,7 @@ void main() {
         container = ProviderContainer();
         final sub = container.listen(
           audioWaveformProvider(request),
-          (_, __) {},
+          (_, _) {},
         );
         await container.read(audioWaveformProvider(request).future);
         sub.close();

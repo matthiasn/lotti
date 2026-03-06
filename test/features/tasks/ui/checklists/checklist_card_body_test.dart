@@ -37,7 +37,7 @@ void main() {
             focusNode: focusNode,
             isCreatingItem: false,
             onCreateItem: (_) async {},
-            onReorder: (_, __) {},
+            onReorder: (_, _) {},
           ),
         ),
       );

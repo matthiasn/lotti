@@ -204,7 +204,7 @@ void main() {
       ],
     );
     // No need to keep provider alive for this quick path
-    final sub1 = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub1 = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub1.close);
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
@@ -244,9 +244,9 @@ void main() {
           ),
         ],
       );
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
 
-      final sub2 = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub2 = container.listen(chatRecorderControllerProvider, (_, _) {});
       final controller = container.read(
         chatRecorderControllerProvider.notifier,
       );
@@ -345,9 +345,9 @@ void main() {
         ),
       ],
     );
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
 
-    final sub3 = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub3 = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub3.close);
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
@@ -399,7 +399,7 @@ void main() {
         ),
       ],
     );
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
 
@@ -481,7 +481,7 @@ void main() {
       ],
     );
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
 
@@ -553,7 +553,7 @@ void main() {
       ],
     );
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     await controller.stopAndTranscribe();
@@ -614,7 +614,7 @@ void main() {
       ],
     );
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     await controller.stopAndTranscribe();
@@ -646,7 +646,7 @@ void main() {
         ),
       ],
     );
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
@@ -699,7 +699,7 @@ void main() {
     addTearDown(container.dispose);
 
     // Keep provider alive during async operations
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -758,7 +758,7 @@ void main() {
     addTearDown(container.dispose);
 
     // Keep provider alive during async operations
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -825,7 +825,7 @@ void main() {
     addTearDown(container.dispose);
 
     // Keep provider alive during async operations
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -958,7 +958,7 @@ void main() {
       ],
     );
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
 
@@ -1053,7 +1053,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1132,7 +1132,7 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -1188,7 +1188,7 @@ void main() {
       container.dispose();
     });
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -1251,7 +1251,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1282,7 +1282,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1314,7 +1314,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1364,7 +1364,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1428,7 +1428,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1477,7 +1477,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1506,7 +1506,7 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
     addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -1558,7 +1558,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1623,7 +1623,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1677,7 +1677,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1745,7 +1745,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1781,7 +1781,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1829,7 +1829,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1903,7 +1903,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -1973,7 +1973,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(
@@ -2013,7 +2013,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       // Controller is in idle state
@@ -2099,7 +2099,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
 
       final controller = container.read(

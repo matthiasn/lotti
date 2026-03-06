@@ -39,7 +39,7 @@ class FormBottomBar extends StatelessWidget {
                 ? MainAxisAlignment.spaceBetween
                 : MainAxisAlignment.end,
             children: [
-              if (leftButton != null) leftButton!,
+              ?leftButton,
               Flexible(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

@@ -364,7 +364,7 @@ void main() {
 
         final subscription = container.listen(
           habitSettingsControllerProvider(habitFlossing.id),
-          (_, __) {},
+          (_, _) {},
         );
 
         final controller = container.read(
@@ -413,7 +413,7 @@ void main() {
 
         container.listen(
           habitSettingsControllerProvider(habitWithDefaultStory.id),
-          (_, __) {},
+          (_, _) {},
         );
 
         container.read(
@@ -527,7 +527,7 @@ void main() {
 
         container.listen(
           habitSettingsControllerProvider(habitWithStory.id),
-          (_, __) {},
+          (_, _) {},
         );
 
         container.read(

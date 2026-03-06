@@ -62,7 +62,7 @@ class InferenceProfilePage extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList.separated(
                   itemCount: profiles.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final profile = profiles[index];
                     return ProfileCard(
@@ -76,7 +76,7 @@ class InferenceProfilePage extends ConsumerWidget {
             loading: () => const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (_, __) => SliverFillRemaining(
+            error: (_, _) => SliverFillRemaining(
               hasScrollBody: false,
               child: Center(child: Text(context.messages.commonError)),
             ),

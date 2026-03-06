@@ -57,14 +57,14 @@ Map<String, dynamic> createSseChunkEvent({
       {
         'index': 0,
         'delta': {
-          if (content != null) 'content': content,
-          if (role != null) 'role': role,
-          if (toolCalls != null) 'tool_calls': toolCalls,
+          'content': ?content,
+          'role': ?role,
+          'tool_calls': ?toolCalls,
         },
         'finish_reason': finishReason,
       },
     ],
-    if (usage != null) 'usage': usage,
+    'usage': ?usage,
   };
 }
 

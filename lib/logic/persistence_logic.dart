@@ -724,7 +724,7 @@ class PersistenceLogic {
 
       _updateNotifications.notify({
         ...journalEntity.affectedIds,
-        if (linkedId != null) linkedId,
+        ?linkedId,
         ...parentIds,
         labelUsageNotification,
       });

@@ -138,7 +138,7 @@ class AssistantSettingsSheet extends ConsumerWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-                error: (err, __) => Column(
+                error: (err, _) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Failed to load models'),

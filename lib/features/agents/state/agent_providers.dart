@@ -945,7 +945,7 @@ Future<void> _notifyWakeCompletion(
 
   updateNotifications.notify({
     agentId,
-    if (templateId != null) templateId,
+    ?templateId,
     agentNotification,
   });
 }

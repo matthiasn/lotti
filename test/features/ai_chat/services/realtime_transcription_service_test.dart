@@ -186,7 +186,7 @@ class _TestBench {
     final fakeChannel = _FakeWebSocketChannel();
 
     final repo = MistralRealtimeTranscriptionRepository(
-      channelFactory: (_, __) {
+      channelFactory: (_, _) {
         // Simulate the session.created handshake after a microtask
         Future<void>.delayed(Duration.zero).then((_) {
           fakeChannel.simulateServerMessage({

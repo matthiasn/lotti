@@ -74,7 +74,7 @@ class SyncRoomManager {
     if (_discoveryService == null) {
       return const [];
     }
-    return _discoveryService!.discoverSyncRooms(_gateway.client);
+    return _discoveryService.discoverSyncRooms(_gateway.client);
   }
 
   /// Loads any persisted room identifier and resolves the current room snapshot
@@ -104,7 +104,7 @@ class SyncRoomManager {
 
     // Mark the room for future discovery by other devices
     if (room != null && _discoveryService != null) {
-      await _discoveryService!.markRoomAsLottiSync(room);
+      await _discoveryService.markRoomAsLottiSync(room);
     }
 
     _loggingService.captureEvent(

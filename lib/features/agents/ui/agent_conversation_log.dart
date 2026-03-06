@@ -178,7 +178,7 @@ class _ThreadTile extends ConsumerWidget {
             context.messages.agentConversationTokenCount(
               tokenNumberFormat.format(tokenUsage.totalTokens),
             ),
-          if (model != null) model,
+          ?model,
         ].join(' · '),
         style: context.textTheme.labelSmall?.copyWith(
           color: context.colorScheme.outline,

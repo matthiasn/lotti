@@ -43,7 +43,7 @@ class AgentActivityLog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (_preloadedMessages != null) {
-      return _buildMessageList(context, _preloadedMessages!);
+      return _buildMessageList(context, _preloadedMessages);
     }
 
     final messagesAsync = ref.watch(agentRecentMessagesProvider(agentId));
@@ -93,7 +93,7 @@ class AgentActivityLog extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: messages.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const SizedBox(height: AppTheme.spacingXSmall),
       itemBuilder: (context, index) {
         final entity = messages[index];
@@ -171,7 +171,7 @@ class AgentObservationLog extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: observations.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const SizedBox(height: AppTheme.spacingXSmall),
       itemBuilder: (context, index) {
         final entity = observations[index];

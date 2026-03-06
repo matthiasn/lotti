@@ -2434,7 +2434,7 @@ void main() {
         cloudInferenceRepository: mockCloudInference,
         templateService: mockTemplateService,
         syncService: mockSyncService,
-        onSessionCompleted: (_, __) {
+        onSessionCompleted: (_, _) {
           callbackFired = true;
         },
       );
@@ -2497,7 +2497,7 @@ void main() {
         cloudInferenceRepository: mockCloudInference,
         templateService: mockTemplateService,
         syncService: mockSyncService,
-        onSessionCompleted: (_, __) {
+        onSessionCompleted: (_, _) {
           throw StateError('Callback explosion');
         },
       );

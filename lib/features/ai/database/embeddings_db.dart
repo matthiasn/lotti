@@ -379,7 +379,7 @@ class EmbeddingsDb {
     final params = [
       blob,
       k,
-      if (entityTypeFilter != null) entityTypeFilter,
+      ?entityTypeFilter,
       if (categoryIds != null && categoryIds.isNotEmpty) ...categoryIds,
     ];
 

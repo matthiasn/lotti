@@ -1129,7 +1129,7 @@ class SyncActorCommandHandler {
   }) {
     return <String, Object?>{
       'ok': true,
-      if (requestId != null) 'requestId': requestId,
+      'requestId': ?requestId,
       ...?extra,
     };
   }
@@ -1143,8 +1143,8 @@ class SyncActorCommandHandler {
     return <String, Object?>{
       'ok': false,
       'error': message,
-      if (errorCode != null) 'errorCode': errorCode,
-      if (requestId != null) 'requestId': requestId,
+      'errorCode': ?errorCode,
+      'requestId': ?requestId,
       if (stackTrace != null) 'stackTrace': '$stackTrace',
     };
   }

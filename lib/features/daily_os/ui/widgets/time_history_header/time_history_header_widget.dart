@@ -362,7 +362,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
             child: historyDataAsync.when(
               data: (data) => _buildDaySelectorWithChart(data, selectedDate),
               loading: _buildDaySelectorSkeleton,
-              error: (_, __) => _buildDaySelectorSkeleton(),
+              error: (_, _) => _buildDaySelectorSkeleton(),
             ),
           ),
 

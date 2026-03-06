@@ -196,7 +196,7 @@ void main() {
           // Keep provider alive during async streaming
           final sbSubscription = container.listen(
             chatSessionControllerProvider('test-category'),
-            (_, __) {},
+            (_, _) {},
             fireImmediately: true,
           );
           when(
@@ -220,7 +220,7 @@ void main() {
           // Keep provider alive during async streaming
           final keepAlive = container.listen(
             chatSessionControllerProvider('test-category'),
-            (_, __) {},
+            (_, _) {},
             fireImmediately: true,
           );
 
@@ -356,7 +356,7 @@ void main() {
         // Keep provider alive during async streaming
         final keepAlive = container.listen(
           chatSessionControllerProvider('test-category'),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -572,7 +572,7 @@ void main() {
         // Keep provider alive during async streaming
         final keepAlive = container.listen(
           chatSessionControllerProvider('test-category'),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -771,12 +771,12 @@ void main() {
           // Keep provider alive during async streaming by listening to it
           final sub = container.listen(
             chatSessionControllerProvider('test-category'),
-            (_, __) {},
+            (_, _) {},
             fireImmediately: true,
           );
           final keepAlive = container.listen(
             chatSessionControllerProvider('test-category'),
-            (_, __) {},
+            (_, _) {},
             fireImmediately: true,
           );
 
@@ -908,7 +908,7 @@ void main() {
         // Keep provider alive during async streaming by listening to it
         final keepSub = container.listen(
           chatSessionControllerProvider('test-category'),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -973,7 +973,7 @@ void main() {
         // Keep provider alive during async streaming by listening to it
         final sub = container.listen(
           chatSessionControllerProvider('test-category'),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -1043,7 +1043,7 @@ void main() {
         // Keep provider alive during async streaming by listening to it
         final sub = container.listen(
           chatSessionControllerProvider('test-category'),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 

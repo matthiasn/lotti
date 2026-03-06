@@ -80,7 +80,7 @@ class _CategoryPromptSelectionState extends State<CategoryPromptSelection> {
   Set<String> _providerIdsWithPrompts() {
     return {
       for (final prompt in widget.prompts)
-        if (_providerIdForPrompt(prompt) case final pid?) pid,
+        ?_providerIdForPrompt(prompt),
     };
   }
 

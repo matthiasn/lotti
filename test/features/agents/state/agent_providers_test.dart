@@ -152,7 +152,7 @@ void main() {
 
       // Read + listen to ensure the provider stays alive and processes
       // stream events from configFlagProvider.
-      final sub = container.listen(domainLoggerProvider, (_, __) {});
+      final sub = container.listen(domainLoggerProvider, (_, _) {});
       addTearDown(sub.close);
       final logger = container.read(domainLoggerProvider);
       expect(logger, isA<DomainLogger>());
@@ -190,7 +190,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final sub = container.listen(domainLoggerProvider, (_, __) {});
+      final sub = container.listen(domainLoggerProvider, (_, _) {});
       addTearDown(sub.close);
       final logger = container.read(domainLoggerProvider);
 
@@ -993,7 +993,7 @@ void main() {
 
       final sub = container.listen(
         agentIsRunningProvider(kTestAgentId),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1046,7 +1046,7 @@ void main() {
 
       final sub = container.listen(
         agentIsRunningProvider(kTestAgentId),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1083,7 +1083,7 @@ void main() {
 
       final sub = container.listen(
         agentIsRunningProvider(kTestAgentId),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1270,7 +1270,7 @@ void main() {
       // Keep the subscription alive for keepAlive provider.
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1287,7 +1287,7 @@ void main() {
 
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
 
@@ -1304,7 +1304,7 @@ void main() {
 
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1318,7 +1318,7 @@ void main() {
 
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1345,7 +1345,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1394,7 +1394,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1450,7 +1450,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1513,7 +1513,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1577,7 +1577,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1635,7 +1635,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1695,7 +1695,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1761,7 +1761,7 @@ void main() {
         final container = createInitContainer(enableAgents: true);
         final sub = container.listen(
           agentInitializationProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
@@ -1793,7 +1793,7 @@ void main() {
 
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -1813,7 +1813,7 @@ void main() {
 
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
 
       await container.read(agentInitializationProvider.future);
@@ -1830,7 +1830,7 @@ void main() {
 
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
 
       await container.read(agentInitializationProvider.future);
@@ -2505,7 +2505,7 @@ void main() {
       // Initial fetch.
       final sub = container.listen(
         evolutionSessionsProvider(kTestTemplateId),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
       await container.read(evolutionSessionsProvider(kTestTemplateId).future);
@@ -2728,7 +2728,7 @@ void main() {
       final container = createInitContainer();
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -2745,7 +2745,7 @@ void main() {
       final container = createInitContainer();
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
@@ -2855,7 +2855,7 @@ void main() {
       // Initial fetch.
       final sub = container.listen(
         evolutionNotesProvider(kTestTemplateId),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
       await container.read(evolutionNotesProvider(kTestTemplateId).future);
@@ -2926,7 +2926,7 @@ void main() {
 
       final sub = container.listen(
         agentInitializationProvider,
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 

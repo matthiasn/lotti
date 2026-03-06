@@ -120,7 +120,7 @@ class OutboxService {
             }
             // If not logged in yet, add bounded extra nudges.
             final notLoggedIn =
-                _matrixService != null && !_matrixService!.isLoggedIn();
+                _matrixService != null && !_matrixService.isLoggedIn();
             if (notLoggedIn) {
               unawaited(
                 enqueueNextSendRequest(delay: const Duration(seconds: 1)),
@@ -489,7 +489,7 @@ class OutboxService {
       // Pause processing while not logged in. Do not schedule immediate retries
       // from here to avoid spin while logged out. Normal triggers (enqueue,
       // connectivity regain, UI actions) will re-nudge the outbox after login.
-      if (_matrixService != null && !_matrixService!.isLoggedIn()) {
+      if (_matrixService != null && !_matrixService.isLoggedIn()) {
         _loggingService.captureEvent(
           'sendNext.loginGate.notLoggedIn',
           domain: 'OUTBOX',
@@ -826,7 +826,7 @@ class OutboxService {
           if (_sequenceLogService != null &&
               journalEntity.meta.vectorClock != null) {
             try {
-              await _sequenceLogService!.recordSentEntry(
+              await _sequenceLogService.recordSentEntry(
                 entryId: journalEntity.meta.id,
                 vectorClock: journalEntity.meta.vectorClock!,
               );
@@ -877,7 +877,7 @@ class OutboxService {
     // Record in sequence log for backfill support (self-healing sync)
     if (_sequenceLogService != null && journalEntity.meta.vectorClock != null) {
       try {
-        await _sequenceLogService!.recordSentEntry(
+        await _sequenceLogService.recordSentEntry(
           entryId: journalEntity.meta.id,
           vectorClock: journalEntity.meta.vectorClock!,
         );
@@ -963,7 +963,7 @@ class OutboxService {
           if (_sequenceLogService != null &&
               msg.entryLink.vectorClock != null) {
             try {
-              await _sequenceLogService!.recordSentEntryLink(
+              await _sequenceLogService.recordSentEntryLink(
                 linkId: linkId,
                 vectorClock: msg.entryLink.vectorClock!,
               );
@@ -1008,7 +1008,7 @@ class OutboxService {
     // Record in sequence log for backfill support (self-healing sync)
     if (_sequenceLogService != null && msg.entryLink.vectorClock != null) {
       try {
-        await _sequenceLogService!.recordSentEntryLink(
+        await _sequenceLogService.recordSentEntryLink(
           linkId: linkId,
           vectorClock: msg.entryLink.vectorClock!,
         );
@@ -1299,7 +1299,7 @@ class OutboxService {
   }) async {
     if (_sequenceLogService != null && vectorClock != null) {
       try {
-        await _sequenceLogService!.recordSentEntry(
+        await _sequenceLogService.recordSentEntry(
           entryId: entryId,
           vectorClock: vectorClock,
           payloadType: payloadType,

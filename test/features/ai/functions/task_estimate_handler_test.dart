@@ -89,8 +89,8 @@ void main() {
         name: 'update_task_estimate',
         arguments: jsonEncode({
           'minutes': minutes,
-          if (reason != null) 'reason': reason,
-          if (confidence != null) 'confidence': confidence,
+          'reason': ?reason,
+          'confidence': ?confidence,
         }),
       ),
     );

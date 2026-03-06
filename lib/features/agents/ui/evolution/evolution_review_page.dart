@@ -162,7 +162,7 @@ class EvolutionReviewPage extends ConsumerWidget {
                 loading: () => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                error: (_, __) => _EmptyState(
+                error: (_, _) => _EmptyState(
                   text: context.messages.commonError,
                 ),
               ),

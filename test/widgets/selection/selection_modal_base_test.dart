@@ -40,7 +40,7 @@ class TestSelectionModal extends StatelessWidget {
               child: SelectionSaveButton(onPressed: onSave),
             ),
           ],
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );

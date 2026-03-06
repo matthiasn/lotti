@@ -85,7 +85,7 @@ class GameySettingsCard extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
           if (trailing == null && onTap != null && showChevron)
             Icon(
               Icons.chevron_right,
@@ -297,7 +297,7 @@ class GameyListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) trailing!,
+              ?trailing,
             ],
           ),
         ),

@@ -225,7 +225,7 @@ class EditHabitPage extends ConsumerWidget {
         return HabitDetailsPage(habitId: habitId);
       },
       loading: () => const EmptyScaffoldWithTitle(''),
-      error: (_, __) => const EmptyScaffoldWithTitle(''),
+      error: (_, _) => const EmptyScaffoldWithTitle(''),
     );
   }
 }

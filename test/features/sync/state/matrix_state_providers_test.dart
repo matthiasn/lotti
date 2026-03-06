@@ -174,7 +174,7 @@ void main() {
         // First, subscribe to the stream provider to ensure it's active
         final streamSub = container.listen(
           matrixStatsStreamProvider,
-          (_, __) {},
+          (_, _) {},
         );
         addTearDown(streamSub.close);
 

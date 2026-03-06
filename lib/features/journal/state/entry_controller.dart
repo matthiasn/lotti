@@ -131,7 +131,7 @@ class EntryController extends _$EntryController {
     // Use listen (not watch) to avoid rebuilding this controller when the
     // initialization provider resolves.
     ref
-      ..listen(agentInitializationProvider, (_, __) {})
+      ..listen(agentInitializationProvider, (_, _) {})
       ..onDispose(() {
         _updateSubscription?.cancel();
       })

@@ -480,7 +480,7 @@ void main() {
       // Keep provider alive with a listener (required in Riverpod 3 for auto-dispose)
       final subscription = container.listen(
         promptFormControllerProvider(configId: null),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(subscription.close);
 

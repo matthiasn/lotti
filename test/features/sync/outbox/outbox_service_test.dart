@@ -436,7 +436,7 @@ void main() {
       processor: processor,
       activityGate: failingGate,
       ownsActivityGate: false,
-      saveJsonHandler: (_, __) => Future.error(Exception('disk full')),
+      saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
     );
 
     final message = SyncMessage.journalEntity(
@@ -4778,7 +4778,7 @@ void main() {
         processor: processor,
         activityGate: createGate(),
         ownsActivityGate: false,
-        saveJsonHandler: (_, __) => Future.error(Exception('disk full')),
+        saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
       );
 
       final entity = AgentDomainEntity.agent(

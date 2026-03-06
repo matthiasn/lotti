@@ -782,7 +782,7 @@ class _CompactProviderName extends ConsumerWidget {
           ),
         ),
       ),
-      error: (_, __) => Container(
+      error: (_, _) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: context.colorScheme.errorContainer.withValues(alpha: 0.5),

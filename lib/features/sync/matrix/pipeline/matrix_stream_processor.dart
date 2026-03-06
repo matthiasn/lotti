@@ -177,7 +177,7 @@ class MatrixStreamProcessor {
     if (_attachmentIndex != null && _descriptorCatchUp == null) {
       _descriptorCatchUp = DescriptorCatchUpManager(
         logging: _loggingService,
-        attachmentIndex: _attachmentIndex!,
+        attachmentIndex: _attachmentIndex,
         roomManager: _roomManager,
         scheduleLiveScan: scheduleLiveScan,
         retryNow: retryNow,

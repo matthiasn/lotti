@@ -231,8 +231,8 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         validatedItems.add({
           'id': id.trim(),
-          if (isChecked != null) 'isChecked': isChecked,
-          if (normalizedTitle != null) 'title': normalizedTitle,
+          'isChecked': ?isChecked,
+          'title': ?normalizedTitle,
           if (reasonStr != null && reasonStr.isNotEmpty) 'reason': reasonStr,
         });
       }

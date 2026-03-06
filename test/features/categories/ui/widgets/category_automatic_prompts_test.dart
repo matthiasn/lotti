@@ -100,7 +100,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: const [],
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: true,
           ),
         ),
@@ -117,7 +117,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: const [],
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
             error: errorMessage,
           ),
@@ -137,7 +137,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -167,7 +167,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -267,7 +267,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: emptyConfig,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -282,7 +282,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -317,7 +317,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -356,7 +356,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -380,7 +380,7 @@ void main() {
           home: WidgetTestBench(
             child: CategoryAutomaticPrompts(
               configs: testConfigs,
-              onPromptChanged: (_, __) {},
+              onPromptChanged: (_, _) {},
               isLoading: false,
             ),
           ),
@@ -413,7 +413,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: const [],
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),

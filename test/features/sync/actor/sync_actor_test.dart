@@ -203,7 +203,7 @@ Map<String, Object?> _initPayload({
     'password': password,
     'dbRootPath': dbRootPath,
     'deviceDisplayName': deviceDisplayName,
-    if (eventPort != null) 'eventPort': eventPort,
+    'eventPort': ?eventPort,
   };
 }
 

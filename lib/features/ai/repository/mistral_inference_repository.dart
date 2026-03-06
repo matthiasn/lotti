@@ -215,8 +215,8 @@ class MistralInferenceRepository {
       'model': model,
       'messages': messages,
       'stream': true,
-      if (temperature != null) 'temperature': temperature,
-      if (maxCompletionTokens != null) 'max_tokens': maxCompletionTokens,
+      'temperature': ?temperature,
+      'max_tokens': ?maxCompletionTokens,
     };
 
     // Add tools if provided

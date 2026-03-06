@@ -25,7 +25,7 @@ void _testActorEntrypoint(SendPort readyPort) {
       case 'ping':
         replyTo?.send(<String, Object?>{
           'ok': true,
-          if (requestId != null) 'requestId': requestId,
+          'requestId': ?requestId,
         });
       case 'setEventPort':
         eventPort = command['eventPort'] as SendPort?;

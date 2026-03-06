@@ -69,7 +69,7 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (trailing != null) trailing!,
+              ?trailing,
               if (showChevron) ...[
                 if (trailing != null) const SizedBox(width: 8),
                 Icon(

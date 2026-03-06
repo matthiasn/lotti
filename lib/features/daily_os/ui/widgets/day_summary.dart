@@ -93,7 +93,7 @@ class DaySummary extends ConsumerWidget {
         );
       },
       loading: () => const _LoadingState(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 

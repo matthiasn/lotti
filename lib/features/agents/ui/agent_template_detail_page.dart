@@ -538,7 +538,7 @@ class _VersionHistorySection extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => Text(context.messages.commonError),
+          error: (_, _) => Text(context.messages.commonError),
         ),
       ],
     );

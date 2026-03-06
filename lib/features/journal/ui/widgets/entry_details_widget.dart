@@ -525,7 +525,7 @@ class EntryDetailsContent extends ConsumerWidget {
           if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
           if (item is JournalImage) EntryImageWidget(item),
           if (!shouldHideEditor) EditorWidget(entryId: itemId),
-          if (detailSection != null) detailSection,
+          ?detailSection,
           if (item is JournalAudio)
             NestedAiResponsesWidget(
               parentEntryId: itemId,

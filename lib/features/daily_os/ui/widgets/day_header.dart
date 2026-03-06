@@ -135,7 +135,7 @@ class DayHeader extends ConsumerWidget {
                     return _DayLabelChip(label: label);
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
 
                 // Status indicator
@@ -150,7 +150,7 @@ class DayHeader extends ConsumerWidget {
                     );
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
 
                 // Today button (if not on today)
