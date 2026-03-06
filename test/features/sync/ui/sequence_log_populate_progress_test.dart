@@ -38,21 +38,24 @@ void main() {
       expect(find.text('Test error message'), findsOneWidget);
     });
 
-    testWidgets('shows check icon when completed', (tester) async {
+    testWidgets('shows check icon when completed with all four counts',
+        (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
           const SequenceLogPopulateState(
             progress: 1,
             populatedCount: 100,
             populatedLinksCount: 50,
+            populatedAgentEntitiesCount: 30,
+            populatedAgentLinksCount: 20,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-      // Should show total (100 + 50 = 150)
-      expect(find.textContaining('150'), findsOneWidget);
+      // Should show total (100 + 50 + 30 + 20 = 200)
+      expect(find.textContaining('200'), findsOneWidget);
     });
 
     testWidgets('shows progress indicator when running', (tester) async {
@@ -76,7 +79,7 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(
           const SequenceLogPopulateState(
-            progress: 0.75,
+            progress: 0.375,
             isRunning: true,
             phase: SequenceLogPopulatePhase.populatingLinks,
           ),
@@ -85,8 +88,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      expect(find.text('75%'), findsOneWidget);
+      expect(find.text('38%'), findsOneWidget);
       expect(find.text('Processing entry links...'), findsOneWidget);
+    });
+
+    testWidgets('shows agent entities phase message', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          const SequenceLogPopulateState(
+            progress: 0.625,
+            isRunning: true,
+            phase: SequenceLogPopulatePhase.populatingAgentEntities,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.text('63%'), findsOneWidget);
+      expect(find.text('Processing agent entities...'), findsOneWidget);
+    });
+
+    testWidgets('shows agent links phase message', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          const SequenceLogPopulateState(
+            progress: 0.875,
+            isRunning: true,
+            phase: SequenceLogPopulatePhase.populatingAgentLinks,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.text('88%'), findsOneWidget);
+      expect(find.text('Processing agent links...'), findsOneWidget);
     });
 
     testWidgets('shows idle state when not running and not completed',
@@ -103,6 +140,8 @@ void main() {
       // Should not show phase message when not running
       expect(find.text('Processing journal entries...'), findsNothing);
       expect(find.text('Processing entry links...'), findsNothing);
+      expect(find.text('Processing agent entities...'), findsNothing);
+      expect(find.text('Processing agent links...'), findsNothing);
     });
 
     testWidgets('shows 100% but still running state', (tester) async {
@@ -112,7 +151,7 @@ void main() {
           const SequenceLogPopulateState(
             progress: 1,
             isRunning: true,
-            phase: SequenceLogPopulatePhase.populatingLinks,
+            phase: SequenceLogPopulatePhase.populatingAgentLinks,
           ),
         ),
       );
@@ -152,7 +191,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-      // Total should be 0 when both counts are null
+      // Total should be 0 when all counts are null
       expect(find.textContaining('0'), findsOneWidget);
     });
 
@@ -162,13 +201,15 @@ void main() {
           const SequenceLogPopulateState(
             progress: 1,
             populatedCount: 75,
+            populatedAgentEntitiesCount: 25,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-      expect(find.textContaining('75'), findsOneWidget);
+      // Total should be 75 + 25 = 100
+      expect(find.textContaining('100'), findsOneWidget);
     });
 
     testWidgets('shows correct percentage rounding', (tester) async {

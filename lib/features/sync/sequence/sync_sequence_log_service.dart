@@ -729,126 +729,81 @@ class SyncSequenceLogService {
   }
 
   /// Populate the sequence log from existing journal entries.
-  /// This is used to backfill the sequence log for entries that were
-  /// created before the sequence log feature was added.
-  ///
-  /// This method streams journal entries in batches and records their vector
-  /// clocks in the sequence log. Records entries for ALL hosts in each entry's
-  /// vector clock so any device with the entry can respond to backfill requests.
-  ///
-  /// [onProgress] is called with progress from 0.0 to 1.0 as entries are
-  /// processed.
-  ///
-  /// Returns the number of entries populated.
+  /// Returns the number of sequence log entries populated.
   Future<int> populateFromJournal({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
         entryStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
-  }) async {
-    final total = await getTotalCount();
-    var processed = 0;
-    var populated = 0;
-    final now = DateTime.now();
-
-    // Cache of existing (hostId, counter) pairs to avoid duplicates
-    // We'll populate this lazily per-host as we encounter them
-    final existingByHost = <String, Set<int>>{};
-
-    await for (final batch in entryStream) {
-      final toInsert = <SyncSequenceLogCompanion>[];
-
-      for (final entry in batch) {
-        processed++;
-
-        final vc = entry.vectorClock;
-        if (vc == null || vc.isEmpty) continue;
-
-        // Find the originating host (the one with the highest counter,
-        // which is typically the creator of this specific entry version)
-        String? originatingHost;
-        var maxCounter = 0;
-        for (final e in vc.entries) {
-          if (e.value > maxCounter) {
-            maxCounter = e.value;
-            originatingHost = e.key;
-          }
-        }
-
-        // Record entry for each host in the vector clock
-        for (final vcEntry in vc.entries) {
-          final hostId = vcEntry.key;
-          final counter = vcEntry.value;
-
-          // Lazily load existing counters for this host
-          if (!existingByHost.containsKey(hostId)) {
-            existingByHost[hostId] =
-                await _syncDatabase.getCountersForHost(hostId);
-          }
-
-          final existing = existingByHost[hostId]!;
-
-          // Skip if already exists
-          if (existing.contains(counter)) continue;
-
-          // Mark as existing to avoid duplicates within this run
-          existing.add(counter);
-
-          toInsert.add(
-            SyncSequenceLogCompanion(
-              hostId: Value(hostId),
-              counter: Value(counter),
-              entryId: Value(entry.id),
-              originatingHostId: Value(originatingHost ?? hostId),
-              status: Value(SyncSequenceStatus.received.index),
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
-          );
-        }
-      }
-
-      // Batch insert
-      if (toInsert.isNotEmpty) {
-        await _syncDatabase.batchInsertSequenceEntries(toInsert);
-        populated += toInsert.length;
-      }
-
-      // Report progress after each batch
-      if (onProgress != null && total > 0) {
-        onProgress(processed / total);
-      }
-    }
-
-    if (populated > 0) {
-      _loggingService.captureEvent(
-        'populateFromJournal: added $populated sequence log entries',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'populate',
-      );
-    }
-
-    return populated;
+  }) {
+    return _populateFromStream(
+      dataStream: entryStream,
+      getTotalCount: getTotalCount,
+      onProgress: onProgress,
+      payloadType: SyncSequencePayloadType.journalEntity,
+      label: 'populateFromJournal',
+    );
   }
 
   /// Populate the sequence log from existing entry links.
-  /// This is used to backfill the sequence log for entry links that were
-  /// created before the sequence log feature was added, or to resolve
-  /// "ghost missing" counters that correspond to EntryLink operations.
-  ///
-  /// This method streams entry links in batches and records their vector
-  /// clocks in the sequence log with [SyncSequencePayloadType.entryLink].
-  /// Records entries for ALL hosts in each link's vector clock so any device
-  /// with the link can respond to backfill requests.
-  ///
-  /// [onProgress] is called with progress from 0.0 to 1.0 as links are
-  /// processed.
-  ///
-  /// Returns the number of entries populated.
+  /// Returns the number of sequence log entries populated.
   Future<int> populateFromEntryLinks({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
         linkStream,
     required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) {
+    return _populateFromStream(
+      dataStream: linkStream,
+      getTotalCount: getTotalCount,
+      onProgress: onProgress,
+      payloadType: SyncSequencePayloadType.entryLink,
+      label: 'populateFromEntryLinks',
+    );
+  }
+
+  /// Populate the sequence log from existing agent entities.
+  /// Returns the number of sequence log entries populated.
+  Future<int> populateFromAgentEntities({
+    required Stream<List<({String id, Map<String, int>? vectorClock})>>
+        entityStream,
+    required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) {
+    return _populateFromStream(
+      dataStream: entityStream,
+      getTotalCount: getTotalCount,
+      onProgress: onProgress,
+      payloadType: SyncSequencePayloadType.agentEntity,
+      label: 'populateFromAgentEntities',
+    );
+  }
+
+  /// Populate the sequence log from existing agent links.
+  /// Returns the number of sequence log entries populated.
+  Future<int> populateFromAgentLinks({
+    required Stream<List<({String id, Map<String, int>? vectorClock})>>
+        linkStream,
+    required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) {
+    return _populateFromStream(
+      dataStream: linkStream,
+      getTotalCount: getTotalCount,
+      onProgress: onProgress,
+      payloadType: SyncSequencePayloadType.agentLink,
+      label: 'populateFromAgentLinks',
+    );
+  }
+
+  /// Shared implementation for populating the sequence log from a paginated
+  /// stream of records with vector clocks. Used by all four populate methods.
+  Future<int> _populateFromStream({
+    required Stream<List<({String id, Map<String, int>? vectorClock})>>
+        dataStream,
+    required Future<int> Function() getTotalCount,
+    required SyncSequencePayloadType payloadType,
+    required String label,
     void Function(double progress)? onProgress,
   }) async {
     final total = await getTotalCount();
@@ -857,22 +812,19 @@ class SyncSequenceLogService {
     final now = DateTime.now();
 
     // Cache of existing (hostId, counter) pairs to avoid duplicates
-    // We'll populate this lazily per-host as we encounter them
     final existingByHost = <String, Set<int>>{};
 
-    await for (final batch in linkStream) {
+    await for (final batch in dataStream) {
       final toInsert = <SyncSequenceLogCompanion>[];
 
-      for (final link in batch) {
+      for (final record in batch) {
         processed++;
 
-        final vc = link.vectorClock;
+        final vc = record.vectorClock;
         if (vc == null || vc.isEmpty) continue;
 
-        // Find the originating host (the one with the highest counter,
-        // which is typically the creator of this specific link version).
-        // Sort entries by host ID first to ensure deterministic tie-breaking
-        // when multiple hosts have the same max counter.
+        // Find the originating host (the one with the highest counter).
+        // Sort entries by host ID for deterministic tie-breaking.
         String? originatingHost;
         var maxCounter = -1;
         final sortedEntries = vc.entries.toList()
@@ -907,8 +859,8 @@ class SyncSequenceLogService {
             SyncSequenceLogCompanion(
               hostId: Value(hostId),
               counter: Value(counter),
-              entryId: Value(link.id),
-              payloadType: Value(SyncSequencePayloadType.entryLink.index),
+              entryId: Value(record.id),
+              payloadType: Value(payloadType.index),
               originatingHostId: Value(originatingHost ?? hostId),
               status: Value(SyncSequenceStatus.received.index),
               createdAt: Value(now),
@@ -932,7 +884,7 @@ class SyncSequenceLogService {
 
     if (populated > 0) {
       _loggingService.captureEvent(
-        'populateFromEntryLinks: added $populated sequence log entries',
+        '$label: added $populated sequence log entries',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'populate',
       );

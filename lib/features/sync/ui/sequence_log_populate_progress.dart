@@ -20,7 +20,12 @@ class SequenceLogPopulateProgress extends StatelessWidget {
     final populatedCount = state.populatedCount;
     final populatedLinksCount = state.populatedLinksCount;
     final phase = state.phase;
-    final totalPopulated = (populatedCount ?? 0) + (populatedLinksCount ?? 0);
+    final populatedAgentEntitiesCount = state.populatedAgentEntitiesCount;
+    final populatedAgentLinksCount = state.populatedAgentLinksCount;
+    final totalPopulated = (populatedCount ?? 0) +
+        (populatedLinksCount ?? 0) +
+        (populatedAgentEntitiesCount ?? 0) +
+        (populatedAgentLinksCount ?? 0);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -62,9 +67,17 @@ class SequenceLogPopulateProgress extends StatelessWidget {
             children: [
               if (isRunning)
                 Text(
-                  phase == SequenceLogPopulatePhase.populatingJournal
-                      ? 'Processing journal entries...'
-                      : 'Processing entry links...',
+                  switch (phase) {
+                    SequenceLogPopulatePhase.populatingJournal =>
+                      'Processing journal entries...',
+                    SequenceLogPopulatePhase.populatingLinks =>
+                      'Processing entry links...',
+                    SequenceLogPopulatePhase.populatingAgentEntities =>
+                      'Processing agent entities...',
+                    SequenceLogPopulatePhase.populatingAgentLinks =>
+                      'Processing agent links...',
+                    _ => '',
+                  },
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),

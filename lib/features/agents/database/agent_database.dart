@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -68,5 +69,88 @@ class AgentDatabase extends _$AgentDatabase {
         }
       },
     );
+  }
+
+  /// Stream agent entities with their vector clocks for populating the
+  /// sequence log. Yields batches of records with entity ID and vector
+  /// clock map. Uses lightweight JSON extraction to avoid full
+  /// deserialization.
+  Stream<List<({String id, Map<String, int>? vectorClock})>>
+      streamAgentEntitiesWithVectorClock({int batchSize = 1000}) async* {
+    var offset = 0;
+
+    while (true) {
+      final batch =
+          await (select(agentEntities)..limit(batchSize, offset: offset))
+              .map(
+                (row) => (
+                  id: row.id,
+                  vectorClock: _extractVectorClock(row.serialized),
+                ),
+              )
+              .get();
+
+      if (batch.isEmpty) break;
+
+      yield batch;
+      offset += batchSize;
+    }
+  }
+
+  /// Stream agent links with their vector clocks for populating the
+  /// sequence log. Yields batches of records with link ID and vector
+  /// clock map.
+  Stream<List<({String id, Map<String, int>? vectorClock})>>
+      streamAgentLinksWithVectorClock({int batchSize = 1000}) async* {
+    var offset = 0;
+
+    while (true) {
+      final batch = await (select(agentLinks)..limit(batchSize, offset: offset))
+          .map(
+            (row) => (
+              id: row.id,
+              vectorClock: _extractVectorClock(row.serialized),
+            ),
+          )
+          .get();
+
+      if (batch.isEmpty) break;
+
+      yield batch;
+      offset += batchSize;
+    }
+  }
+
+  /// Count total agent entities for progress reporting.
+  Future<int> countAllAgentEntities() async {
+    final count = agentEntities.id.count();
+    final query = selectOnly(agentEntities)..addColumns([count]);
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
+  }
+
+  /// Count total agent links for progress reporting.
+  Future<int> countAllAgentLinks() async {
+    final count = agentLinks.id.count();
+    final query = selectOnly(agentLinks)..addColumns([count]);
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
+  }
+
+  /// Lightweight extraction of vector clock from serialized JSON.
+  /// Agent entities and links store vectorClock at JSON root level.
+  static Map<String, int>? _extractVectorClock(String serialized) {
+    try {
+      final json = jsonDecode(serialized) as Map<String, dynamic>;
+      final vc = json['vectorClock'] as Map<String, dynamic>?;
+      if (vc == null) return null;
+
+      for (final v in vc.values) {
+        if (v is! num) return null;
+      }
+      return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
+    } on FormatException catch (_) {
+      return null;
+    }
   }
 }
