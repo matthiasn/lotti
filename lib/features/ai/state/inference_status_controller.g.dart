@@ -14,20 +14,20 @@ final inferenceStatusControllerProvider = InferenceStatusControllerFamily._();
 
 final class InferenceStatusControllerProvider
     extends $NotifierProvider<InferenceStatusController, InferenceStatus> {
-  InferenceStatusControllerProvider._(
-      {required InferenceStatusControllerFamily super.from,
-      required ({
-        String id,
-        AiResponseType aiResponseType,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'inferenceStatusControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  InferenceStatusControllerProvider._({
+    required InferenceStatusControllerFamily super.from,
+    required ({
+      String id,
+      AiResponseType aiResponseType,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'inferenceStatusControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$inferenceStatusControllerHash();
@@ -69,41 +69,46 @@ String _$inferenceStatusControllerHash() =>
 final class InferenceStatusControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            InferenceStatusController,
-            InferenceStatus,
-            InferenceStatus,
-            InferenceStatus,
-            ({
-              String id,
-              AiResponseType aiResponseType,
-            })> {
+          InferenceStatusController,
+          InferenceStatus,
+          InferenceStatus,
+          InferenceStatus,
+          ({
+            String id,
+            AiResponseType aiResponseType,
+          })
+        > {
   InferenceStatusControllerFamily._()
-      : super(
-          retry: null,
-          name: r'inferenceStatusControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'inferenceStatusControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   InferenceStatusControllerProvider call({
     required String id,
     required AiResponseType aiResponseType,
-  }) =>
-      InferenceStatusControllerProvider._(argument: (
-        id: id,
-        aiResponseType: aiResponseType,
-      ), from: this);
+  }) => InferenceStatusControllerProvider._(
+    argument: (
+      id: id,
+      aiResponseType: aiResponseType,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'inferenceStatusControllerProvider';
 }
 
 abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
-  late final _$args = ref.$arg as ({
-    String id,
-    AiResponseType aiResponseType,
-  });
+  late final _$args =
+      ref.$arg
+          as ({
+            String id,
+            AiResponseType aiResponseType,
+          });
   String get id => _$args.id;
   AiResponseType get aiResponseType => _$args.aiResponseType;
 
@@ -115,17 +120,21 @@ abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<InferenceStatus, InferenceStatus>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<InferenceStatus, InferenceStatus>,
-        InferenceStatus,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<InferenceStatus, InferenceStatus>,
+              InferenceStatus,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              id: _$args.id,
-              aiResponseType: _$args.aiResponseType,
-            ));
+      ref,
+      () => build(
+        id: _$args.id,
+        aiResponseType: _$args.aiResponseType,
+      ),
+    );
   }
 }
 
@@ -134,20 +143,20 @@ final inferenceRunningControllerProvider = InferenceRunningControllerFamily._();
 
 final class InferenceRunningControllerProvider
     extends $NotifierProvider<InferenceRunningController, bool> {
-  InferenceRunningControllerProvider._(
-      {required InferenceRunningControllerFamily super.from,
-      required ({
-        String id,
-        Set<AiResponseType> responseTypes,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'inferenceRunningControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  InferenceRunningControllerProvider._({
+    required InferenceRunningControllerFamily super.from,
+    required ({
+      String id,
+      Set<AiResponseType> responseTypes,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'inferenceRunningControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$inferenceRunningControllerHash();
@@ -189,41 +198,46 @@ String _$inferenceRunningControllerHash() =>
 final class InferenceRunningControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            InferenceRunningController,
-            bool,
-            bool,
-            bool,
-            ({
-              String id,
-              Set<AiResponseType> responseTypes,
-            })> {
+          InferenceRunningController,
+          bool,
+          bool,
+          bool,
+          ({
+            String id,
+            Set<AiResponseType> responseTypes,
+          })
+        > {
   InferenceRunningControllerFamily._()
-      : super(
-          retry: null,
-          name: r'inferenceRunningControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'inferenceRunningControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   InferenceRunningControllerProvider call({
     required String id,
     required Set<AiResponseType> responseTypes,
-  }) =>
-      InferenceRunningControllerProvider._(argument: (
-        id: id,
-        responseTypes: responseTypes,
-      ), from: this);
+  }) => InferenceRunningControllerProvider._(
+    argument: (
+      id: id,
+      responseTypes: responseTypes,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'inferenceRunningControllerProvider';
 }
 
 abstract class _$InferenceRunningController extends $Notifier<bool> {
-  late final _$args = ref.$arg as ({
-    String id,
-    Set<AiResponseType> responseTypes,
-  });
+  late final _$args =
+      ref.$arg
+          as ({
+            String id,
+            Set<AiResponseType> responseTypes,
+          });
   String get id => _$args.id;
   Set<AiResponseType> get responseTypes => _$args.responseTypes;
 
@@ -235,13 +249,20 @@ abstract class _$InferenceRunningController extends $Notifier<bool> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<bool, bool>, bool, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              id: _$args.id,
-              responseTypes: _$args.responseTypes,
-            ));
+      ref,
+      () => build(
+        id: _$args.id,
+        responseTypes: _$args.responseTypes,
+      ),
+    );
   }
 }

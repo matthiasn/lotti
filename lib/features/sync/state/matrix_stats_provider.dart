@@ -29,8 +29,9 @@ class MatrixStatsController extends _$MatrixStatsController {
 
 /// Typed metrics provider. Use [ref.invalidate(matrixSyncMetricsFutureProvider)]
 /// to trigger a refresh in the UI.
-final matrixSyncMetricsFutureProvider =
-    FutureProvider<SyncMetrics?>((ref) async {
+final matrixSyncMetricsFutureProvider = FutureProvider<SyncMetrics?>((
+  ref,
+) async {
   final svc = ref.watch(matrixServiceProvider);
   return svc.getSyncMetrics();
 });

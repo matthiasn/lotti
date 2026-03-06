@@ -18,8 +18,9 @@ void main() {
 
   group('FeedbackCategoryBreakdown', () {
     group('empty state', () {
-      testWidgets('renders nothing (SizedBox.shrink) when items are empty',
-          (tester) async {
+      testWidgets('renders nothing (SizedBox.shrink) when items are empty', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(items: []);
 
         await tester.pumpWidget(
@@ -34,8 +35,9 @@ void main() {
     });
 
     group('category grouping', () {
-      testWidgets('groups items by category and shows category label',
-          (tester) async {
+      testWidgets('groups items by category and shows category label', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -68,8 +70,9 @@ void main() {
         expect(find.byType(FeedbackItemTile), findsNWidgets(2));
       });
 
-      testWidgets('renders separate groups for different categories',
-          (tester) async {
+      testWidgets('renders separate groups for different categories', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -139,8 +142,9 @@ void main() {
         );
         final commHeaderFinder = find.descendant(
           of: find.byType(FeedbackCategoryBreakdown),
-          matching:
-              find.text(context.messages.agentFeedbackCategoryCommunication),
+          matching: find.text(
+            context.messages.agentFeedbackCategoryCommunication,
+          ),
         );
 
         // Both should appear somewhere
@@ -160,8 +164,9 @@ void main() {
         expect(commY, lessThan(accuracyY));
       });
 
-      testWidgets('shows item detail text within expanded group',
-          (tester) async {
+      testWidgets('shows item detail text within expanded group', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -184,8 +189,9 @@ void main() {
     });
 
     group('category icons', () {
-      testWidgets('accuracy category shows verified_outlined icon',
-          (tester) async {
+      testWidgets('accuracy category shows verified_outlined icon', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -204,8 +210,9 @@ void main() {
         expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
       });
 
-      testWidgets('communication category shows chat_outlined icon',
-          (tester) async {
+      testWidgets('communication category shows chat_outlined icon', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -223,8 +230,9 @@ void main() {
         expect(find.byIcon(Icons.chat_outlined), findsOneWidget);
       });
 
-      testWidgets('prioritization category shows sort_outlined icon',
-          (tester) async {
+      testWidgets('prioritization category shows sort_outlined icon', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -264,8 +272,9 @@ void main() {
         expect(find.byIcon(Icons.build_outlined), findsOneWidget);
       });
 
-      testWidgets('timeliness category shows schedule_outlined icon',
-          (tester) async {
+      testWidgets('timeliness category shows schedule_outlined icon', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -307,8 +316,9 @@ void main() {
     });
 
     group('expand/collapse', () {
-      testWidgets('category group starts expanded showing items',
-          (tester) async {
+      testWidgets('category group starts expanded showing items', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -398,45 +408,48 @@ void main() {
         expect(find.text('Great tool usage'), findsWidgets);
       });
 
-      testWidgets('collapsing one category does not collapse other categories',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.negative,
-              source: 'observation',
-              detail: 'Accuracy detail',
-            ),
-            makeTestClassifiedFeedbackItem(
-              category: FeedbackCategory.communication,
-              detail: 'Communication detail',
-            ),
-          ],
-        );
+      testWidgets(
+        'collapsing one category does not collapse other categories',
+        (tester) async {
+          final feedback = makeTestClassifiedFeedback(
+            items: [
+              makeTestClassifiedFeedbackItem(
+                sentiment: FeedbackSentiment.negative,
+                source: 'observation',
+                detail: 'Accuracy detail',
+              ),
+              makeTestClassifiedFeedbackItem(
+                category: FeedbackCategory.communication,
+                detail: 'Communication detail',
+              ),
+            ],
+          );
 
-        await tester.pumpWidget(
-          buildSubject(FeedbackCategoryBreakdown(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            buildSubject(FeedbackCategoryBreakdown(feedback: feedback)),
+          );
+          await tester.pumpAndSettle();
 
-        // Both groups are initially expanded
-        expect(find.byType(FeedbackItemTile), findsNWidgets(2));
+          // Both groups are initially expanded
+          expect(find.byType(FeedbackItemTile), findsNWidgets(2));
 
-        // Collapse accuracy group by tapping its icon
-        await tester.tap(find.byIcon(Icons.verified_outlined));
-        await tester.pumpAndSettle();
+          // Collapse accuracy group by tapping its icon
+          await tester.tap(find.byIcon(Icons.verified_outlined));
+          await tester.pumpAndSettle();
 
-        // Accuracy detail gone, communication detail still visible
-        expect(find.text('Accuracy detail'), findsNothing);
-        expect(find.text('Communication detail'), findsWidgets);
-        // Only one tile remaining (communication)
-        expect(find.byType(FeedbackItemTile), findsOneWidget);
-      });
+          // Accuracy detail gone, communication detail still visible
+          expect(find.text('Accuracy detail'), findsNothing);
+          expect(find.text('Communication detail'), findsWidgets);
+          // Only one tile remaining (communication)
+          expect(find.byType(FeedbackItemTile), findsOneWidget);
+        },
+      );
     });
 
     group('item count badge', () {
-      testWidgets('shows correct count for category with multiple items',
-          (tester) async {
+      testWidgets('shows correct count for category with multiple items', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(

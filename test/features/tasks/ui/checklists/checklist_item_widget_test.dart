@@ -8,8 +8,9 @@ import '../../../../test_helper.dart';
 
 void main() {
   group('ChecklistItemWidget', () {
-    testWidgets('applies background + strikethrough when checked',
-        (tester) async {
+    testWidgets('applies background + strikethrough when checked', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -44,8 +45,9 @@ void main() {
       );
     });
 
-    testWidgets('shows transient completion highlight when checked',
-        (tester) async {
+    testWidgets('shows transient completion highlight when checked', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -216,8 +218,9 @@ void main() {
       expect(find.byIcon(Icons.edit), findsWidgets);
     });
 
-    testWidgets('does not show edit icon when showEditIcon is false',
-        (tester) async {
+    testWidgets('does not show edit icon when showEditIcon is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -232,8 +235,9 @@ void main() {
       // In the case where showEditIcon is false, we should not find an edit icon
       // within the row, but we may still find one elsewhere if onEdit is provided
       // Let's check the widget directly
-      final widget =
-          tester.widget<ChecklistItemWidget>(find.byType(ChecklistItemWidget));
+      final widget = tester.widget<ChecklistItemWidget>(
+        find.byType(ChecklistItemWidget),
+      );
       expect(widget.showEditIcon, false);
     });
 
@@ -255,8 +259,9 @@ void main() {
       );
 
       // Verify the ChecklistItemWidget has an onEdit callback
-      final widget =
-          tester.widget<ChecklistItemWidget>(find.byType(ChecklistItemWidget));
+      final widget = tester.widget<ChecklistItemWidget>(
+        find.byType(ChecklistItemWidget),
+      );
       expect(widget.onEdit, isNotNull);
 
       // Call the callback directly to verify it works
@@ -282,8 +287,9 @@ void main() {
       );
 
       // Find and verify that the onTitleChange callback is set
-      final widget =
-          tester.widget<ChecklistItemWidget>(find.byType(ChecklistItemWidget));
+      final widget = tester.widget<ChecklistItemWidget>(
+        find.byType(ChecklistItemWidget),
+      );
       expect(widget.onTitleChange, isNotNull);
 
       // Call the callback with a test value
@@ -330,8 +336,9 @@ void main() {
       expect(find.byType(AnimatedContainer), findsOneWidget);
 
       // Verify animation duration is set correctly
-      final animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       expect(
         animatedContainer.duration,
         equals(const Duration(milliseconds: 150)),
@@ -351,8 +358,9 @@ void main() {
       );
 
       // Verify AnimatedContainer exists with correct animation settings
-      final animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       expect(
         animatedContainer.duration,
         equals(const Duration(milliseconds: 150)),
@@ -389,8 +397,9 @@ void main() {
       );
 
       // Find AnimatedContainer and verify border radius
-      final animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       final decoration = animatedContainer.decoration as BoxDecoration?;
 
       expect(decoration, isNotNull);
@@ -419,8 +428,9 @@ void main() {
       expect(hasEightPxSpacer, isFalse);
     });
 
-    testWidgets('does not show spacing when showEditIcon is false',
-        (tester) async {
+    testWidgets('does not show spacing when showEditIcon is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -443,8 +453,9 @@ void main() {
       expect(sizedBoxWidgets, isEmpty);
     });
 
-    testWidgets('applies different background colors based on state',
-        (tester) async {
+    testWidgets('applies different background colors based on state', (
+      tester,
+    ) async {
       // Test unchecked state
       await tester.pumpWidget(
         WidgetTestBench(
@@ -457,8 +468,9 @@ void main() {
       );
 
       // Verify AnimatedContainer exists with decoration
-      var animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      var animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       var decoration = animatedContainer.decoration as BoxDecoration?;
       expect(decoration, isNotNull);
       expect(decoration!.color, isNotNull);
@@ -469,8 +481,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Verify container decoration changed
-      animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       decoration = animatedContainer.decoration as BoxDecoration?;
       expect(decoration, isNotNull);
       expect(decoration!.color, isNotNull);
@@ -527,8 +540,9 @@ void main() {
       expect(find.byType(TitleTextField), findsOneWidget);
 
       // Find the TitleTextField and access its onCancel callback
-      final titleTextField =
-          tester.widget<TitleTextField>(find.byType(TitleTextField));
+      final titleTextField = tester.widget<TitleTextField>(
+        find.byType(TitleTextField),
+      );
       expect(titleTextField.onCancel, isNotNull);
 
       // Call onCancel to exit edit mode
@@ -540,8 +554,9 @@ void main() {
       expect(find.byIcon(Icons.edit), findsWidgets);
     });
 
-    testWidgets('has MouseRegion with hover callbacks configured',
-        (tester) async {
+    testWidgets('has MouseRegion with hover callbacks configured', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -553,8 +568,9 @@ void main() {
       );
 
       // Find the MouseRegion widgets and verify at least one has hover callbacks
-      final mouseRegions =
-          tester.widgetList<MouseRegion>(find.byType(MouseRegion));
+      final mouseRegions = tester.widgetList<MouseRegion>(
+        find.byType(MouseRegion),
+      );
       expect(mouseRegions.length, greaterThan(0));
 
       // At least one MouseRegion should have onEnter and onExit callbacks
@@ -564,14 +580,16 @@ void main() {
       expect(mouseRegionsWithCallbacks, isNotEmpty);
 
       // Verify AnimatedContainer exists for hover animations
-      final animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       expect(animatedContainer.duration, const Duration(milliseconds: 150));
       expect(animatedContainer.curve, Curves.easeInOut);
     });
 
-    testWidgets('renders edit button when showEditIcon is true',
-        (tester) async {
+    testWidgets('renders edit button when showEditIcon is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -610,8 +628,9 @@ void main() {
       expect(find.byIcon(Icons.edit), findsNothing);
     });
 
-    testWidgets('applies editing background color when editing',
-        (tester) async {
+    testWidgets('applies editing background color when editing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -624,8 +643,9 @@ void main() {
       );
 
       // Get initial background color
-      var animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      var animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       final initialDecoration = animatedContainer.decoration as BoxDecoration?;
       final initialColor = initialDecoration?.color;
 
@@ -634,8 +654,9 @@ void main() {
       await tester.pump();
 
       // Get background color in edit mode
-      animatedContainer =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      animatedContainer = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       final editingDecoration = animatedContainer.decoration as BoxDecoration?;
       final editingColor = editingDecoration?.color;
 
@@ -645,8 +666,9 @@ void main() {
       expect(animatedContainer.duration, const Duration(milliseconds: 150));
     });
 
-    testWidgets('applies strikethrough when isArchived is true',
-        (tester) async {
+    testWidgets('applies strikethrough when isArchived is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -688,37 +710,39 @@ void main() {
     });
 
     testWidgets(
-        'applies strikethrough when both isArchived and isChecked are true',
-        (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: ChecklistItemWidget(
-            title: 'Archived Checked Item',
-            isChecked: true,
-            isArchived: true,
-            onChanged: (_) {},
+      'applies strikethrough when both isArchived and isChecked are true',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: ChecklistItemWidget(
+              title: 'Archived Checked Item',
+              isChecked: true,
+              isArchived: true,
+              onChanged: (_) {},
+            ),
           ),
-        ),
-      );
+        );
 
-      // Verify strikethrough style is applied
-      final textWidget = find
-          .byType(Text)
-          .evaluate()
-          .map((e) => e.widget as Text)
-          .firstWhere((t) => t.data == 'Archived Checked Item');
-      expect(
-        textWidget.style?.decoration,
-        equals(TextDecoration.lineThrough),
-      );
+        // Verify strikethrough style is applied
+        final textWidget = find
+            .byType(Text)
+            .evaluate()
+            .map((e) => e.widget as Text)
+            .firstWhere((t) => t.data == 'Archived Checked Item');
+        expect(
+          textWidget.style?.decoration,
+          equals(TextDecoration.lineThrough),
+        );
 
-      // Verify the checkbox is disabled
-      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
-      expect(checkbox.onChanged, isNull);
-    });
+        // Verify the checkbox is disabled
+        final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+        expect(checkbox.onChanged, isNull);
+      },
+    );
 
-    testWidgets('does not disable checkbox when isArchived is false',
-        (tester) async {
+    testWidgets('does not disable checkbox when isArchived is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(

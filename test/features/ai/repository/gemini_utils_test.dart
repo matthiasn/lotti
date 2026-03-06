@@ -50,8 +50,8 @@ void main() {
       );
       expect(body['contents'], isA<List<dynamic>>());
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final firstParts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final firstParts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(firstParts[0]['text'], 'Hello');
 
       final generationConfig = body['generationConfig'] as Map<String, dynamic>;
@@ -61,8 +61,8 @@ void main() {
 
       final systemInstruction =
           body['systemInstruction'] as Map<String, dynamic>;
-      final systemParts =
-          (systemInstruction['parts'] as List).cast<Map<String, dynamic>>();
+      final systemParts = (systemInstruction['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(systemParts[0]['text'], 'System prompt');
       expect(body.containsKey('tools'), isFalse);
     });
@@ -135,8 +135,8 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       expect(contents.length, 1);
 
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.length, 1);
 
       final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
@@ -169,8 +169,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
 
       // Signature is at part level, sibling of functionCall (not nested inside it)
       expect(parts.first['thoughtSignature'], 'signature-abc123');
@@ -203,8 +203,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
 
       // Signature should not be present at part level when ID doesn't match
       expect(parts.first.containsKey('thoughtSignature'), isFalse);
@@ -243,8 +243,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
 
       expect(parts.length, 2);
       // Signature is at part level, not inside functionCall
@@ -273,8 +273,8 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       expect(contents.length, 1);
       expect(contents.first['role'], 'user');
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.first['text'], 'Hello, world!');
     });
 
@@ -294,8 +294,8 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       expect(contents.length, 1);
       expect(contents.first['role'], 'model');
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.first['text'], 'I am an assistant response');
     });
 
@@ -354,8 +354,8 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       expect(contents.length, 1);
       expect(contents.first['role'], 'function');
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       final funcResponse = parts.first['functionResponse'] as Map;
       expect(funcResponse['name'], 'my_function');
       expect((funcResponse['response'] as Map)['result'], 'Function result');
@@ -466,8 +466,9 @@ void main() {
       );
 
       final toolsArr = (body['tools'] as List).cast<Map<String, dynamic>>();
-      final funcDecl = (toolsArr.first['functionDeclarations'] as List).first
-          as Map<String, dynamic>;
+      final funcDecl =
+          (toolsArr.first['functionDeclarations'] as List).first
+              as Map<String, dynamic>;
       final params = funcDecl['parameters'] as Map<String, dynamic>;
 
       // Top-level additionalProperties should be stripped
@@ -506,8 +507,9 @@ void main() {
       );
 
       final toolsArr = (body['tools'] as List).cast<Map<String, dynamic>>();
-      final funcDecl = (toolsArr.first['functionDeclarations'] as List).first
-          as Map<String, dynamic>;
+      final funcDecl =
+          (toolsArr.first['functionDeclarations'] as List).first
+              as Map<String, dynamic>;
       final params = funcDecl['parameters'] as Map<String, dynamic>;
       expect(params.containsKey('additionalProperties'), isFalse);
     });
@@ -591,8 +593,8 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       expect(contents.length, 1);
       expect(contents.first['role'], 'user');
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       // Text and image placeholder should be concatenated
       expect(parts.first['text'], contains('Describe this:'));
       expect(parts.first['text'], contains('[image]'));
@@ -620,8 +622,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.first['text'], contains('Transcribe:'));
       expect(parts.first['text'], contains('[audio]'));
     });
@@ -666,8 +668,8 @@ void main() {
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       expect(contents.length, 1);
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       final funcResponse = parts.first['functionResponse'] as Map;
       expect(funcResponse['name'], 'my_function');
       // Should use empty string for null content
@@ -690,8 +692,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       final funcResponse = parts.first['functionResponse'] as Map;
       // Should fall back to toolCallId when name not in mapping
       expect(funcResponse['name'], 'unknown-id');
@@ -709,8 +711,8 @@ void main() {
       expect(contents.length, 1);
       expect(contents.first['role'], 'user');
 
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.first['text'], 'A beautiful sunset over mountains');
 
       final generationConfig = body['generationConfig'] as Map<String, dynamic>;
@@ -731,8 +733,8 @@ void main() {
           body['systemInstruction'] as Map<String, dynamic>;
       expect(systemInstruction['role'], 'system');
 
-      final parts =
-          (systemInstruction['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (systemInstruction['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.first['text'], 'You are an image generator');
     });
 
@@ -804,8 +806,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
 
       // Should have 2 parts: 1 reference image + 1 text prompt
       expect(parts.length, 2);
@@ -844,8 +846,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
 
       // Should have 4 parts: 3 reference images + 1 text prompt
       expect(parts.length, 4);
@@ -873,8 +875,8 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
 
       // Should have only text prompt
       expect(parts.length, 1);
@@ -897,8 +899,8 @@ void main() {
 
       // Verify reference images are in content
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final parts = (contents.first['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(parts.length, 2);
       expect(parts[0].containsKey('inline_data'), isTrue);
 
@@ -906,8 +908,8 @@ void main() {
       expect(body.containsKey('systemInstruction'), isTrue);
       final systemInstruction =
           body['systemInstruction'] as Map<String, dynamic>;
-      final systemParts =
-          (systemInstruction['parts'] as List).cast<Map<String, dynamic>>();
+      final systemParts = (systemInstruction['parts'] as List)
+          .cast<Map<String, dynamic>>();
       expect(systemParts.first['text'], 'Use artistic style');
     });
   });

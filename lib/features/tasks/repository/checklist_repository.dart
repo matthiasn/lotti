@@ -37,10 +37,12 @@ class ChecklistRepository {
   /// - [checklist]: The created Checklist entity or null if creation failed
   /// - [createdItems]: List of created items with their generated IDs
   Future<
-      ({
-        JournalEntity? checklist,
-        List<({String id, String title, bool isChecked})> createdItems,
-      })> createChecklist({
+    ({
+      JournalEntity? checklist,
+      List<({String id, String title, bool isChecked})> createdItems,
+    })
+  >
+  createChecklist({
     required String? taskId,
     List<ChecklistItemData>? items,
     String? title,
@@ -49,7 +51,7 @@ class ChecklistRepository {
       if (taskId == null) {
         return (
           checklist: null,
-          createdItems: <({String id, String title, bool isChecked})>[]
+          createdItems: <({String id, String title, bool isChecked})>[],
         );
       }
 
@@ -58,7 +60,7 @@ class ChecklistRepository {
       if (task is! Task) {
         return (
           checklist: null,
-          createdItems: <({String id, String title, bool isChecked})>[]
+          createdItems: <({String id, String title, bool isChecked})>[],
         );
       }
 
@@ -129,7 +131,7 @@ class ChecklistRepository {
       );
       return (
         checklist: null,
-        createdItems: <({String id, String title, bool isChecked})>[]
+        createdItems: <({String id, String title, bool isChecked})>[],
       );
     }
   }

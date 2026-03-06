@@ -71,29 +71,38 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
       vsync: this,
     );
 
-    _needleAnimation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(CurvedAnimation(
-      parent: _needleController,
-      curve: Curves.easeOutCubic,
-    ));
+    _needleAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 0,
+        ).animate(
+          CurvedAnimation(
+            parent: _needleController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
-    _peakAnimation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(CurvedAnimation(
-      parent: _peakController,
-      curve: Curves.easeInOutCubic,
-    ));
+    _peakAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 0,
+        ).animate(
+          CurvedAnimation(
+            parent: _peakController,
+            curve: Curves.easeInOutCubic,
+          ),
+        );
 
-    _clipAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(
-      parent: _clipController,
-      curve: Curves.easeOut,
-    ));
+    _clipAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _clipController,
+            curve: Curves.easeOut,
+          ),
+        );
   }
 
   @override
@@ -128,13 +137,16 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
   }
 
   void _animateNeedle(double normalizedValue) {
-    _needleAnimation = Tween<double>(
-      begin: _currentValue,
-      end: normalizedValue,
-    ).animate(CurvedAnimation(
-      parent: _needleController,
-      curve: Curves.easeOutCubic,
-    ));
+    _needleAnimation =
+        Tween<double>(
+          begin: _currentValue,
+          end: normalizedValue,
+        ).animate(
+          CurvedAnimation(
+            parent: _needleController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _needleController.forward(from: 0);
     _currentValue = normalizedValue;
@@ -176,13 +188,16 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
   }
 
   void _decayPeak() {
-    _peakAnimation = Tween<double>(
-      begin: _peakValue,
-      end: _currentValue, // Fall back to current level, not zero
-    ).animate(CurvedAnimation(
-      parent: _peakController,
-      curve: Curves.easeInQuad,
-    ));
+    _peakAnimation =
+        Tween<double>(
+          begin: _peakValue,
+          end: _currentValue, // Fall back to current level, not zero
+        ).animate(
+          CurvedAnimation(
+            parent: _peakController,
+            curve: Curves.easeInQuad,
+          ),
+        );
 
     _peakController.forward(from: 0).then((_) {
       if (mounted) {
@@ -209,8 +224,11 @@ class _AnalogVuMeterState extends State<AnalogVuMeter>
       width: widget.size,
       height: widget.size * 0.4,
       child: AnimatedBuilder(
-        animation: Listenable.merge(
-            [_needleAnimation, _peakAnimation, _clipAnimation]),
+        animation: Listenable.merge([
+          _needleAnimation,
+          _peakAnimation,
+          _clipAnimation,
+        ]),
         builder: (context, child) {
           return CustomPaint(
             painter: VuMeterPainter(

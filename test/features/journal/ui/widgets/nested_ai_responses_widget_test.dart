@@ -86,8 +86,9 @@ void main() {
     mockLoggingService = MockLoggingService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     getIt.allowReassignment = true;
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
@@ -113,11 +114,14 @@ void main() {
       ),
     ];
 
-    when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-        .thenAnswer((_) async => links);
-    when(() => mockJournalRepository.getJournalEntityById(
-          testAiResponseEntry1.meta.id,
-        )).thenAnswer((_) async => testAiResponseEntry1);
+    when(
+      () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+    ).thenAnswer((_) async => links);
+    when(
+      () => mockJournalRepository.getJournalEntityById(
+        testAiResponseEntry1.meta.id,
+      ),
+    ).thenAnswer((_) async => testAiResponseEntry1);
   }
 
   /// Helper to pump the widget under test
@@ -141,8 +145,9 @@ void main() {
       // Arrange - use a completer to keep the provider in loading state
       final completer = Completer<List<EntryLink>>();
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) => completer.future);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+      ).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -163,10 +168,12 @@ void main() {
       );
     });
 
-    testWidgets('shows nothing when AI responses list is empty',
-        (tester) async {
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => []);
+    testWidgets('shows nothing when AI responses list is empty', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+      ).thenAnswer((_) async => []);
 
       await pumpWidget(tester);
 
@@ -177,8 +184,9 @@ void main() {
     });
 
     testWidgets('shows nothing on initial error state', (tester) async {
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenThrow(Exception('Database error'));
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+      ).thenThrow(Exception('Database error'));
 
       await pumpWidget(tester);
 
@@ -188,8 +196,9 @@ void main() {
       );
     });
 
-    testWidgets('renders header and AI responses when data is available',
-        (tester) async {
+    testWidgets('renders header and AI responses when data is available', (
+      tester,
+    ) async {
       setupSingleAiResponse();
 
       await pumpWidget(tester);
@@ -201,13 +210,16 @@ void main() {
       );
       // Should show the AI icon in header
       expect(
-          find.byIcon(Icons.auto_fix_high_outlined), findsAtLeastNWidgets(1));
+        find.byIcon(Icons.auto_fix_high_outlined),
+        findsAtLeastNWidgets(1),
+      );
       // Should have Dismissible for the AI response
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('renders multiple AI responses with correct count',
-        (tester) async {
+    testWidgets('renders multiple AI responses with correct count', (
+      tester,
+    ) async {
       final links = [
         EntryLink.basic(
           id: 'link-1',
@@ -227,14 +239,19 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry2.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry2);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+      ).thenAnswer((_) async => links);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry2.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry2);
 
       await pumpWidget(tester);
 
@@ -244,14 +261,16 @@ void main() {
   });
 
   group('Expand/Collapse Behavior', () {
-    testWidgets('starts expanded and collapses when header is tapped',
-        (tester) async {
+    testWidgets('starts expanded and collapses when header is tapped', (
+      tester,
+    ) async {
       setupSingleAiResponse();
       await pumpWidget(tester);
 
       // Verify initially expanded (SizeTransition should have value 1.0)
-      final sizeTransition =
-          tester.widget<SizeTransition>(find.byType(SizeTransition));
+      final sizeTransition = tester.widget<SizeTransition>(
+        find.byType(SizeTransition),
+      );
       expect(sizeTransition.sizeFactor.value, equals(1.0));
 
       // Tap the header to collapse using the key
@@ -259,8 +278,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify collapsed (SizeTransition should have value 0.0)
-      final collapsedSizeTransition =
-          tester.widget<SizeTransition>(find.byType(SizeTransition));
+      final collapsedSizeTransition = tester.widget<SizeTransition>(
+        find.byType(SizeTransition),
+      );
       expect(collapsedSizeTransition.sizeFactor.value, equals(0.0));
     });
 
@@ -275,8 +295,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify collapsed
-      var sizeTransition =
-          tester.widget<SizeTransition>(find.byType(SizeTransition));
+      var sizeTransition = tester.widget<SizeTransition>(
+        find.byType(SizeTransition),
+      );
       expect(sizeTransition.sizeFactor.value, equals(0.0));
 
       // Expand again
@@ -284,8 +305,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify expanded
-      sizeTransition =
-          tester.widget<SizeTransition>(find.byType(SizeTransition));
+      sizeTransition = tester.widget<SizeTransition>(
+        find.byType(SizeTransition),
+      );
       expect(sizeTransition.sizeFactor.value, equals(1.0));
     });
 
@@ -301,8 +323,9 @@ void main() {
       expect(rotationTransition, findsOneWidget);
 
       // Get initial rotation value - when expanded, value is 0.5
-      final initialRotation =
-          tester.widget<RotationTransition>(rotationTransition);
+      final initialRotation = tester.widget<RotationTransition>(
+        rotationTransition,
+      );
       expect(initialRotation.turns.value, equals(0.5));
 
       // Collapse
@@ -310,8 +333,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify rotation changed - when collapsed, value is 0.0
-      final collapsedRotation =
-          tester.widget<RotationTransition>(rotationTransition);
+      final collapsedRotation = tester.widget<RotationTransition>(
+        rotationTransition,
+      );
       expect(collapsedRotation.turns.value, equals(0.0));
     });
   });
@@ -331,8 +355,9 @@ void main() {
       expect(find.text('Delete'), findsOneWidget);
     });
 
-    testWidgets('cancel button dismisses dialog without deleting',
-        (tester) async {
+    testWidgets('cancel button dismisses dialog without deleting', (
+      tester,
+    ) async {
       setupSingleAiResponse();
       await pumpWidget(tester);
 
@@ -354,11 +379,13 @@ void main() {
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('delete button calls repository and dismisses on success',
-        (tester) async {
+    testWidgets('delete button calls repository and dismisses on success', (
+      tester,
+    ) async {
       setupSingleAiResponse();
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepository.deleteJournalEntity(any()),
+      ).thenAnswer((_) async => true);
 
       await pumpWidget(tester);
 
@@ -371,9 +398,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify delete was called with correct ID
-      verify(() => mockJournalRepository.deleteJournalEntity(
-            testAiResponseEntry1.meta.id,
-          )).called(1);
+      verify(
+        () => mockJournalRepository.deleteJournalEntity(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).called(1);
 
       // Dialog should be dismissed
       expect(find.byType(AlertDialog), findsNothing);
@@ -381,8 +410,9 @@ void main() {
 
     testWidgets('shows error snackbar when delete fails', (tester) async {
       setupSingleAiResponse();
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenAnswer((_) async => false);
+      when(
+        () => mockJournalRepository.deleteJournalEntity(any()),
+      ).thenAnswer((_) async => false);
 
       await pumpWidget(tester);
 
@@ -398,9 +428,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify delete was called
-      verify(() => mockJournalRepository.deleteJournalEntity(
-            testAiResponseEntry1.meta.id,
-          )).called(1);
+      verify(
+        () => mockJournalRepository.deleteJournalEntity(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).called(1);
 
       // Error snackbar should be shown
       expect(find.byType(SnackBar), findsOneWidget);
@@ -409,11 +441,13 @@ void main() {
       expect(dismissibleFinder, findsOneWidget);
     });
 
-    testWidgets('shows error snackbar when delete throws exception',
-        (tester) async {
+    testWidgets('shows error snackbar when delete throws exception', (
+      tester,
+    ) async {
       setupSingleAiResponse();
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenThrow(Exception('Network error'));
+      when(
+        () => mockJournalRepository.deleteJournalEntity(any()),
+      ).thenThrow(Exception('Network error'));
 
       await pumpWidget(tester);
 
@@ -435,8 +469,9 @@ void main() {
       expect(dismissibleFinder, findsOneWidget);
     });
 
-    testWidgets('dialog dismissed by tapping outside does not delete',
-        (tester) async {
+    testWidgets('dialog dismissed by tapping outside does not delete', (
+      tester,
+    ) async {
       setupSingleAiResponse();
       await pumpWidget(tester);
 
@@ -463,8 +498,9 @@ void main() {
   });
 
   group('Dismissible Configuration', () {
-    testWidgets('Dismissible has correct direction and threshold',
-        (tester) async {
+    testWidgets('Dismissible has correct direction and threshold', (
+      tester,
+    ) async {
       setupSingleAiResponse();
       await pumpWidget(tester);
 
@@ -482,8 +518,9 @@ void main() {
       expect(dismissible.confirmDismiss, isNotNull);
     });
 
-    testWidgets('AiResponseSummary is rendered inside Dismissible',
-        (tester) async {
+    testWidgets('AiResponseSummary is rendered inside Dismissible', (
+      tester,
+    ) async {
       setupSingleAiResponse();
       await pumpWidget(tester);
 

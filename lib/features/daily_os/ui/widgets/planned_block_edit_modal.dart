@@ -84,8 +84,9 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.3),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -143,7 +144,8 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingMedium),
+                    horizontal: AppTheme.spacingMedium,
+                  ),
                   child: Icon(
                     MdiIcons.arrowRight,
                     color: context.colorScheme.onSurfaceVariant,
@@ -330,7 +332,8 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     if ((confirmed ?? false) && mounted) {
       await ref
           .read(
-              unifiedDailyOsDataControllerProvider(date: widget.date).notifier)
+            unifiedDailyOsDataControllerProvider(date: widget.date).notifier,
+          )
           .removePlannedBlock(widget.block.id);
       if (mounted) {
         Navigator.pop(context);

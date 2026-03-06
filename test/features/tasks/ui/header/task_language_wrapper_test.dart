@@ -56,8 +56,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<EditorStateService>(mockEditorStateService)
@@ -105,25 +106,29 @@ void main() {
     };
   }
 
-  testWidgets('triggers task summary refresh when language changes',
-      (tester) async {
-    when(() => mockJournalRepository.updateJournalEntity(any()))
-        .thenAnswer((_) async => true);
+  testWidgets('triggers task summary refresh when language changes', (
+    tester,
+  ) async {
+    when(
+      () => mockJournalRepository.updateJournalEntity(any()),
+    ).thenAnswer((_) async => true);
 
     final callback = await pumpWrapper(tester, task: baseTask);
 
     await callback(SupportedLanguage.es);
 
     final updatedTask =
-        verify(() => mockJournalRepository.updateJournalEntity(captureAny()))
-            .captured
-            .single as Task;
+        verify(
+              () => mockJournalRepository.updateJournalEntity(captureAny()),
+            ).captured.single
+            as Task;
 
     expect(updatedTask.data.languageCode, 'es');
   });
 
-  testWidgets('does nothing when the selected language matches current value',
-      (tester) async {
+  testWidgets('does nothing when the selected language matches current value', (
+    tester,
+  ) async {
     final taskWithLanguage = baseTask.copyWith(
       data: baseTask.data.copyWith(languageCode: 'es'),
     );
@@ -136,8 +141,9 @@ void main() {
   });
 
   testWidgets('skips summary refresh when task update fails', (tester) async {
-    when(() => mockJournalRepository.updateJournalEntity(any()))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalRepository.updateJournalEntity(any()),
+    ).thenAnswer((_) async => false);
 
     final callback = await pumpWrapper(tester, task: baseTask);
 

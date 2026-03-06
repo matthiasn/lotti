@@ -89,16 +89,18 @@ void main() {
   });
 
   group('HighlightScrollMixin - ', () {
-    testWidgets('highlightedEntryId getter returns correct value',
-        (tester) async {
+    testWidgets('highlightedEntryId getter returns correct value', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: TestWidgetWithMixin(entryIds: ['entry-1']),
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin));
+      final state = tester.state<TestWidgetWithMixinState>(
+        find.byType(TestWidgetWithMixin),
+      );
 
       expect(state.highlightedEntryId, isNull);
 
@@ -114,9 +116,9 @@ void main() {
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-        ..highlightedEntryId = 'test-id';
+      final state = tester.state<TestWidgetWithMixinState>(
+        find.byType(TestWidgetWithMixin),
+      )..highlightedEntryId = 'test-id';
       await tester.pump();
 
       expect(state.highlightedEntryId, equals('test-id'));
@@ -127,8 +129,9 @@ void main() {
       expect(state.highlightedEntryId, isNull);
     });
 
-    testWidgets('disposeHighlight cancels timer and sets disposed flag',
-        (tester) async {
+    testWidgets('disposeHighlight cancels timer and sets disposed flag', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: TestWidgetWithMixin(entryIds: ['entry-1']),
@@ -152,13 +155,17 @@ void main() {
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin));
+      final state = tester.state<TestWidgetWithMixinState>(
+        find.byType(TestWidgetWithMixin),
+      );
 
       var callbackInvoked = false;
-      state.triggerScroll('entry-1', onScrolled: () {
-        callbackInvoked = true;
-      });
+      state.triggerScroll(
+        'entry-1',
+        onScrolled: () {
+          callbackInvoked = true;
+        },
+      );
 
       // Wait for post-frame callback
       await tester.pumpAndSettle();
@@ -167,27 +174,34 @@ void main() {
       expect(state.onScrolledCallCount, equals(1));
     });
 
-    testWidgets('scrollToEntry prevents duplicate concurrent scrolls',
-        (tester) async {
+    testWidgets('scrollToEntry prevents duplicate concurrent scrolls', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2']),
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin));
+      final state = tester.state<TestWidgetWithMixinState>(
+        find.byType(TestWidgetWithMixin),
+      );
 
       var callCount = 0;
       state
-        ..triggerScroll('entry-1', onScrolled: () {
-          callCount++;
-        })
-
+        ..triggerScroll(
+          'entry-1',
+          onScrolled: () {
+            callCount++;
+          },
+        )
         //  Try to scroll to the same entry again immediately
-        ..triggerScroll('entry-1', onScrolled: () {
-          callCount++;
-        });
+        ..triggerScroll(
+          'entry-1',
+          onScrolled: () {
+            callCount++;
+          },
+        );
 
       await tester.pumpAndSettle();
 
@@ -197,38 +211,44 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('scrollToEntry sets highlighted entry after successful scroll',
-        (tester) async {
+    testWidgets(
+      'scrollToEntry sets highlighted entry after successful scroll',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: TestWidgetWithMixin(
+              entryIds: ['entry-1', 'entry-2', 'entry-3'],
+            ),
+          ),
+        );
+
+        final state = tester.state<TestWidgetWithMixinState>(
+          find.byType(TestWidgetWithMixin),
+        );
+
+        expect(state.highlightedEntryId, isNull);
+
+        state.triggerScroll('entry-1');
+        await tester.pumpAndSettle();
+
+        expect(state.highlightedEntryId, equals('entry-1'));
+      },
+    );
+
+    testWidgets('highlight auto-clears after highlight duration', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home:
-              TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2', 'entry-3']),
+          home: TestWidgetWithMixin(
+            entryIds: ['entry-1', 'entry-2', 'entry-3'],
+          ),
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin));
-
-      expect(state.highlightedEntryId, isNull);
-
-      state.triggerScroll('entry-1');
-      await tester.pumpAndSettle();
-
-      expect(state.highlightedEntryId, equals('entry-1'));
-    });
-
-    testWidgets('highlight auto-clears after highlight duration',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home:
-              TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2', 'entry-3']),
-        ),
-      );
-
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-        ..triggerScroll('entry-1');
+      final state = tester.state<TestWidgetWithMixinState>(
+        find.byType(TestWidgetWithMixin),
+      )..triggerScroll('entry-1');
       await tester.pumpAndSettle();
 
       expect(state.highlightedEntryId, equals('entry-1'));
@@ -246,14 +266,14 @@ void main() {
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-
-        // Manually call disposeHighlight
-        ..disposeHighlight()
-
-        // Try to scroll after dispose
-        ..triggerScroll('entry-1');
+      final state =
+          tester.state<TestWidgetWithMixinState>(
+              find.byType(TestWidgetWithMixin),
+            )
+            // Manually call disposeHighlight
+            ..disposeHighlight()
+            // Try to scroll after dispose
+            ..triggerScroll('entry-1');
       await tester.pumpAndSettle();
 
       // Should not crash or set highlight
@@ -261,27 +281,31 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('scrollToEntry accepts different alignment values',
-        (tester) async {
+    testWidgets('scrollToEntry accepts different alignment values', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home:
-              TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2', 'entry-3']),
+          home: TestWidgetWithMixin(
+            entryIds: ['entry-1', 'entry-2', 'entry-3'],
+          ),
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-
-        // Test different alignment values don't crash
-        ..triggerScroll('entry-1', alignment: 0);
+      final state =
+          tester.state<TestWidgetWithMixinState>(
+              find.byType(TestWidgetWithMixin),
+            )
+            // Test different alignment values don't crash
+            ..triggerScroll('entry-1', alignment: 0);
       await tester.pumpAndSettle();
       expect(state.highlightedEntryId, equals('entry-1'));
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('retry logic handles missing context and logs warning',
-        (tester) async {
+    testWidgets('retry logic handles missing context and logs warning', (
+      tester,
+    ) async {
       DevLogger.clear();
 
       await tester.pumpWidget(
@@ -290,11 +314,12 @@ void main() {
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-
-        // Try to scroll to an entry that doesn't exist
-        ..triggerScroll('non-existent-entry');
+      final state =
+          tester.state<TestWidgetWithMixinState>(
+              find.byType(TestWidgetWithMixin),
+            )
+            // Try to scroll to an entry that doesn't exist
+            ..triggerScroll('non-existent-entry');
 
       // The mixin uses Timer-based retries. In test mode (FLUTTER_TEST=true):
       // maxScrollRetries=5, scrollRetryDelay=50ms
@@ -325,25 +350,28 @@ void main() {
         expect(
           hasWarning,
           isTrue,
-          reason: 'Should log warning after max retries exceeded. '
+          reason:
+              'Should log warning after max retries exceeded. '
               'Logs: ${DevLogger.capturedLogs}',
         );
       }
     });
 
-    testWidgets('scroll operation completes when entry becomes available',
-        (tester) async {
+    testWidgets('scroll operation completes when entry becomes available', (
+      tester,
+    ) async {
       // Start with empty list
       final entryIds = <String>[];
       final widget = TestWidgetWithMixin(entryIds: entryIds);
 
       await tester.pumpWidget(MaterialApp(home: widget));
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-
-        // Try to scroll to an entry that doesn't exist yet
-        ..triggerScroll('entry-1');
+      final state =
+          tester.state<TestWidgetWithMixinState>(
+              find.byType(TestWidgetWithMixin),
+            )
+            // Try to scroll to an entry that doesn't exist yet
+            ..triggerScroll('entry-1');
       await tester.pump();
 
       // Entry is still not available
@@ -362,23 +390,25 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('concurrent scroll to different entry cancels previous',
-        (tester) async {
+    testWidgets('concurrent scroll to different entry cancels previous', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home:
-              TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2', 'entry-3']),
+          home: TestWidgetWithMixin(
+            entryIds: ['entry-1', 'entry-2', 'entry-3'],
+          ),
         ),
       );
 
-      final state = tester
-          .state<TestWidgetWithMixinState>(find.byType(TestWidgetWithMixin))
-
-        // Start scroll to entry-1
-        ..triggerScroll('entry-1')
-
-        // Immediately start scroll to entry-2 (different entry)
-        ..triggerScroll('entry-2');
+      final state =
+          tester.state<TestWidgetWithMixinState>(
+              find.byType(TestWidgetWithMixin),
+            )
+            // Start scroll to entry-1
+            ..triggerScroll('entry-1')
+            // Immediately start scroll to entry-2 (different entry)
+            ..triggerScroll('entry-2');
 
       await tester.pumpAndSettle();
 

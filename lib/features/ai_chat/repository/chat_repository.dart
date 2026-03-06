@@ -49,11 +49,11 @@ class ChatRepository {
     required this.systemMessageService,
     required this.loggingService,
   }) : _messageProcessor = ChatMessageProcessor(
-          aiConfigRepository: aiConfigRepository,
-          cloudInferenceRepository: cloudInferenceRepository,
-          taskSummaryRepository: taskSummaryRepository,
-          loggingService: loggingService,
-        );
+         aiConfigRepository: aiConfigRepository,
+         cloudInferenceRepository: cloudInferenceRepository,
+         taskSummaryRepository: taskSummaryRepository,
+         loggingService: loggingService,
+       );
 
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
@@ -93,13 +93,15 @@ class ChatRepository {
       );
 
       // Get AI configuration for the specified model
-      final config =
-          await _messageProcessor.getAiConfigurationForModel(modelId);
+      final config = await _messageProcessor.getAiConfigurationForModel(
+        modelId,
+      );
       final systemMessage = systemMessageService.getSystemMessage();
 
       // Convert conversation history and build messages
-      final previousMessages =
-          _messageProcessor.convertConversationHistory(conversationHistory);
+      final previousMessages = _messageProcessor.convertConversationHistory(
+        conversationHistory,
+      );
       final messages = _messageProcessor.buildMessagesList(
         previousMessages,
         message,
@@ -107,8 +109,10 @@ class ChatRepository {
       );
 
       // Build conversation context for the prompt (string with history)
-      final fullPrompt =
-          _messageProcessor.buildPromptFromMessages(previousMessages, message);
+      final fullPrompt = _messageProcessor.buildPromptFromMessages(
+        previousMessages,
+        message,
+      );
       final tools = [TaskSummaryTool.toolDefinition];
 
       // Initial response stream
@@ -165,10 +169,10 @@ class ChatRepository {
         // Stream the final response generated from tool results
         await for (final finalDelta
             in _messageProcessor.generateFinalResponseStream(
-          messages: messages,
-          config: config,
-          systemMessage: systemMessage,
-        )) {
+              messages: messages,
+              config: config,
+              systemMessage: systemMessage,
+            )) {
           yield finalDelta;
         }
       }
@@ -250,19 +254,21 @@ class ChatRepository {
     }
 
     // Filter by search query (title or message content)
-    final matchingSessions = sessions.where((session) {
-      // Check title match
-      if (session.title.toLowerCase().contains(lowercaseQuery)) {
-        return true;
-      }
+    final matchingSessions =
+        sessions.where((session) {
+            // Check title match
+            if (session.title.toLowerCase().contains(lowercaseQuery)) {
+              return true;
+            }
 
-      // Check message content match
-      return session.messages.any(
-          (message) => message.content.toLowerCase().contains(lowercaseQuery));
-    }).toList()
-
-      // Sort by last message time, most recent first
-      ..sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
+            // Check message content match
+            return session.messages.any(
+              (message) =>
+                  message.content.toLowerCase().contains(lowercaseQuery),
+            );
+          }).toList()
+          // Sort by last message time, most recent first
+          ..sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
 
     // Apply limit
     return matchingSessions.length > limit

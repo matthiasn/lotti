@@ -220,28 +220,28 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : filtered.isEmpty
-                      ? Center(
-                          child: Text(
-                            _query.isEmpty
-                                ? context.messages.noTasksToLink
-                                : context.messages.noTasksFound,
-                            style: context.textTheme.bodyMedium?.copyWith(
-                              color: context.colorScheme.outline,
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            final task = filtered[index];
-                            return _TaskListTile(
-                              task: task,
-                              onTap: () => _selectTask(task),
-                            );
-                          },
+                  ? Center(
+                      child: Text(
+                        _query.isEmpty
+                            ? context.messages.noTasksToLink
+                            : context.messages.noTasksFound,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.outline,
                         ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final task = filtered[index];
+                        return _TaskListTile(
+                          task: task,
+                          onTap: () => _selectTask(task),
+                        );
+                      },
+                    ),
             ),
           ],
         );

@@ -16,8 +16,10 @@ void main() {
       await db.close();
     });
 
-    Future<void> insertSerialized(
-        {required String id, required Object? rawType}) async {
+    Future<void> insertSerialized({
+      required String id,
+      required Object? rawType,
+    }) async {
       final now = DateTime(2024);
       final payload = <String, dynamic>{
         'runtimeType': 'inferenceProvider',
@@ -60,26 +62,30 @@ void main() {
       expect(pNull!.inferenceProviderType, InferenceProviderType.genericOpenAi);
       expect(pInt!.inferenceProviderType, InferenceProviderType.genericOpenAi);
       expect(
-          pUnknown!.inferenceProviderType, InferenceProviderType.genericOpenAi);
-    });
-
-    test('inferenceProfile type is persisted and retrieved correctly',
-        () async {
-      final profile = AiConfig.inferenceProfile(
-        id: 'profile-1',
-        name: 'Gemini Flash',
-        thinkingModelId: 'models/gemini-3-flash-preview',
-        createdAt: DateTime(2024),
+        pUnknown!.inferenceProviderType,
+        InferenceProviderType.genericOpenAi,
       );
-
-      await db.saveConfig(profile);
-
-      final retrieved = await db.getConfigById('profile-1');
-      expect(retrieved, isA<AiConfigInferenceProfile>());
-      final p = retrieved! as AiConfigInferenceProfile;
-      expect(p.name, 'Gemini Flash');
-      expect(p.thinkingModelId, 'models/gemini-3-flash-preview');
     });
+
+    test(
+      'inferenceProfile type is persisted and retrieved correctly',
+      () async {
+        final profile = AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          createdAt: DateTime(2024),
+        );
+
+        await db.saveConfig(profile);
+
+        final retrieved = await db.getConfigById('profile-1');
+        expect(retrieved, isA<AiConfigInferenceProfile>());
+        final p = retrieved! as AiConfigInferenceProfile;
+        expect(p.name, 'Gemini Flash');
+        expect(p.thinkingModelId, 'models/gemini-3-flash-preview');
+      },
+    );
 
     test('valid string values remain unchanged', () async {
       await insertSerialized(id: 'p-ollama', rawType: 'ollama');

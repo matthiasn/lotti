@@ -39,8 +39,7 @@ abstract class ChangeItem with _$ChangeItem {
   static String fingerprintFromParts(
     String toolName,
     Map<String, dynamic> args,
-  ) =>
-      '$toolName:${_deepEquals.hash(args)}';
+  ) => '$toolName:${_deepEquals.hash(args)}';
 
   /// Structural fingerprint based on `toolName` and `args`.
   ///

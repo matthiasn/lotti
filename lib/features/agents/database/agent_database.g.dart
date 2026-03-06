@@ -10,94 +10,134 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
   AgentEntities(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL PRIMARY KEY');
-  static const VerificationMeta _agentIdMeta =
-      const VerificationMeta('agentId');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
   late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-      'agent_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
-      'type', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _subtypeMeta =
-      const VerificationMeta('subtype');
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _subtypeMeta = const VerificationMeta(
+    'subtype',
+  );
   late final GeneratedColumn<String> subtype = GeneratedColumn<String>(
-      'subtype', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _threadIdMeta =
-      const VerificationMeta('threadId');
+    'subtype',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _threadIdMeta = const VerificationMeta(
+    'threadId',
+  );
   late final GeneratedColumn<String> threadId = GeneratedColumn<String>(
-      'thread_id', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'thread_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedAtMeta =
-      const VerificationMeta('deletedAt');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
   late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-      'deleted_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _schemaVersionMeta =
-      const VerificationMeta('schemaVersion');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
   late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
-      'schema_version', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 1',
-      defaultValue: const CustomExpression('1'));
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
+    defaultValue: const CustomExpression('1'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        agentId,
-        type,
-        subtype,
-        threadId,
-        createdAt,
-        updatedAt,
-        deletedAt,
-        serialized,
-        schemaVersion
-      ];
+    id,
+    agentId,
+    type,
+    subtype,
+    threadId,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    serialized,
+    schemaVersion,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'agent_entities';
   @override
-  VerificationContext validateIntegrity(Insertable<AgentEntity> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<AgentEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -106,54 +146,71 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
       context.missing(_idMeta);
     }
     if (data.containsKey('agent_id')) {
-      context.handle(_agentIdMeta,
-          agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta));
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_agentIdMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
     if (data.containsKey('subtype')) {
-      context.handle(_subtypeMeta,
-          subtype.isAcceptableOrUnknown(data['subtype']!, _subtypeMeta));
+      context.handle(
+        _subtypeMeta,
+        subtype.isAcceptableOrUnknown(data['subtype']!, _subtypeMeta),
+      );
     }
     if (data.containsKey('thread_id')) {
-      context.handle(_threadIdMeta,
-          threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta));
+      context.handle(
+        _threadIdMeta,
+        threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta),
+      );
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted_at')) {
-      context.handle(_deletedAtMeta,
-          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('schema_version')) {
       context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
           _schemaVersionMeta,
-          schemaVersion.isAcceptableOrUnknown(
-              data['schema_version']!, _schemaVersionMeta));
+        ),
+      );
     }
     return context;
   }
@@ -164,26 +221,46 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
   AgentEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AgentEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      agentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}agent_id'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      subtype: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}subtype']),
-      threadId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}thread_id']),
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deletedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      schemaVersion: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}schema_version'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      subtype: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subtype'],
+      ),
+      threadId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thread_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
     );
   }
 
@@ -207,17 +284,18 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
   final DateTime? deletedAt;
   final String serialized;
   final int schemaVersion;
-  const AgentEntity(
-      {required this.id,
-      required this.agentId,
-      required this.type,
-      this.subtype,
-      this.threadId,
-      required this.createdAt,
-      required this.updatedAt,
-      this.deletedAt,
-      required this.serialized,
-      required this.schemaVersion});
+  const AgentEntity({
+    required this.id,
+    required this.agentId,
+    required this.type,
+    this.subtype,
+    this.threadId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.serialized,
+    required this.schemaVersion,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -261,8 +339,10 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
     );
   }
 
-  factory AgentEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory AgentEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AgentEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -294,29 +374,29 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
     };
   }
 
-  AgentEntity copyWith(
-          {String? id,
-          String? agentId,
-          String? type,
-          Value<String?> subtype = const Value.absent(),
-          Value<String?> threadId = const Value.absent(),
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          Value<DateTime?> deletedAt = const Value.absent(),
-          String? serialized,
-          int? schemaVersion}) =>
-      AgentEntity(
-        id: id ?? this.id,
-        agentId: agentId ?? this.agentId,
-        type: type ?? this.type,
-        subtype: subtype.present ? subtype.value : this.subtype,
-        threadId: threadId.present ? threadId.value : this.threadId,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
-        serialized: serialized ?? this.serialized,
-        schemaVersion: schemaVersion ?? this.schemaVersion,
-      );
+  AgentEntity copyWith({
+    String? id,
+    String? agentId,
+    String? type,
+    Value<String?> subtype = const Value.absent(),
+    Value<String?> threadId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    String? serialized,
+    int? schemaVersion,
+  }) => AgentEntity(
+    id: id ?? this.id,
+    agentId: agentId ?? this.agentId,
+    type: type ?? this.type,
+    subtype: subtype.present ? subtype.value : this.subtype,
+    threadId: threadId.present ? threadId.value : this.threadId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    serialized: serialized ?? this.serialized,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+  );
   AgentEntity copyWithCompanion(AgentEntitiesCompanion data) {
     return AgentEntity(
       id: data.id.present ? data.id.value : this.id,
@@ -327,8 +407,9 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       schemaVersion: data.schemaVersion.present
           ? data.schemaVersion.value
           : this.schemaVersion,
@@ -353,8 +434,18 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
   }
 
   @override
-  int get hashCode => Object.hash(id, agentId, type, subtype, threadId,
-      createdAt, updatedAt, deletedAt, serialized, schemaVersion);
+  int get hashCode => Object.hash(
+    id,
+    agentId,
+    type,
+    subtype,
+    threadId,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    serialized,
+    schemaVersion,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -408,12 +499,12 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
     required String serialized,
     this.schemaVersion = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        agentId = Value(agentId),
-        type = Value(type),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized);
+  }) : id = Value(id),
+       agentId = Value(agentId),
+       type = Value(type),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized);
   static Insertable<AgentEntity> custom({
     Expression<String>? id,
     Expression<String>? agentId,
@@ -442,18 +533,19 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
     });
   }
 
-  AgentEntitiesCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? agentId,
-      Value<String>? type,
-      Value<String?>? subtype,
-      Value<String?>? threadId,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<DateTime?>? deletedAt,
-      Value<String>? serialized,
-      Value<int>? schemaVersion,
-      Value<int>? rowid}) {
+  AgentEntitiesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? agentId,
+    Value<String>? type,
+    Value<String?>? subtype,
+    Value<String?>? threadId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<String>? serialized,
+    Value<int>? schemaVersion,
+    Value<int>? rowid,
+  }) {
     return AgentEntitiesCompanion(
       id: id ?? this.id,
       agentId: agentId ?? this.agentId,
@@ -534,84 +626,118 @@ class AgentLinks extends Table with TableInfo<AgentLinks, AgentLink> {
   AgentLinks(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL PRIMARY KEY');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
   static const VerificationMeta _fromIdMeta = const VerificationMeta('fromId');
   late final GeneratedColumn<String> fromId = GeneratedColumn<String>(
-      'from_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'from_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _toIdMeta = const VerificationMeta('toId');
   late final GeneratedColumn<String> toId = GeneratedColumn<String>(
-      'to_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'to_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
-      'type', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedAtMeta =
-      const VerificationMeta('deletedAt');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
   late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-      'deleted_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _schemaVersionMeta =
-      const VerificationMeta('schemaVersion');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
   late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
-      'schema_version', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 1',
-      defaultValue: const CustomExpression('1'));
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
+    defaultValue: const CustomExpression('1'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        fromId,
-        toId,
-        type,
-        createdAt,
-        updatedAt,
-        deletedAt,
-        serialized,
-        schemaVersion
-      ];
+    id,
+    fromId,
+    toId,
+    type,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    serialized,
+    schemaVersion,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'agent_links';
   @override
-  VerificationContext validateIntegrity(Insertable<AgentLink> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<AgentLink> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -620,52 +746,67 @@ class AgentLinks extends Table with TableInfo<AgentLinks, AgentLink> {
       context.missing(_idMeta);
     }
     if (data.containsKey('from_id')) {
-      context.handle(_fromIdMeta,
-          fromId.isAcceptableOrUnknown(data['from_id']!, _fromIdMeta));
+      context.handle(
+        _fromIdMeta,
+        fromId.isAcceptableOrUnknown(data['from_id']!, _fromIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_fromIdMeta);
     }
     if (data.containsKey('to_id')) {
       context.handle(
-          _toIdMeta, toId.isAcceptableOrUnknown(data['to_id']!, _toIdMeta));
+        _toIdMeta,
+        toId.isAcceptableOrUnknown(data['to_id']!, _toIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_toIdMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted_at')) {
-      context.handle(_deletedAtMeta,
-          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('schema_version')) {
       context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
           _schemaVersionMeta,
-          schemaVersion.isAcceptableOrUnknown(
-              data['schema_version']!, _schemaVersionMeta));
+        ),
+      );
     }
     return context;
   }
@@ -674,30 +815,48 @@ class AgentLinks extends Table with TableInfo<AgentLinks, AgentLink> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-        {fromId, toId, type},
-      ];
+    {fromId, toId, type},
+  ];
   @override
   AgentLink map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AgentLink(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      fromId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}from_id'])!,
-      toId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}to_id'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deletedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      schemaVersion: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}schema_version'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      fromId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_id'],
+      )!,
+      toId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
     );
   }
 
@@ -722,16 +881,17 @@ class AgentLink extends DataClass implements Insertable<AgentLink> {
   final DateTime? deletedAt;
   final String serialized;
   final int schemaVersion;
-  const AgentLink(
-      {required this.id,
-      required this.fromId,
-      required this.toId,
-      required this.type,
-      required this.createdAt,
-      required this.updatedAt,
-      this.deletedAt,
-      required this.serialized,
-      required this.schemaVersion});
+  const AgentLink({
+    required this.id,
+    required this.fromId,
+    required this.toId,
+    required this.type,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.serialized,
+    required this.schemaVersion,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -765,8 +925,10 @@ class AgentLink extends DataClass implements Insertable<AgentLink> {
     );
   }
 
-  factory AgentLink.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory AgentLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AgentLink(
       id: serializer.fromJson<String>(json['id']),
@@ -796,27 +958,27 @@ class AgentLink extends DataClass implements Insertable<AgentLink> {
     };
   }
 
-  AgentLink copyWith(
-          {String? id,
-          String? fromId,
-          String? toId,
-          String? type,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          Value<DateTime?> deletedAt = const Value.absent(),
-          String? serialized,
-          int? schemaVersion}) =>
-      AgentLink(
-        id: id ?? this.id,
-        fromId: fromId ?? this.fromId,
-        toId: toId ?? this.toId,
-        type: type ?? this.type,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
-        serialized: serialized ?? this.serialized,
-        schemaVersion: schemaVersion ?? this.schemaVersion,
-      );
+  AgentLink copyWith({
+    String? id,
+    String? fromId,
+    String? toId,
+    String? type,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    String? serialized,
+    int? schemaVersion,
+  }) => AgentLink(
+    id: id ?? this.id,
+    fromId: fromId ?? this.fromId,
+    toId: toId ?? this.toId,
+    type: type ?? this.type,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    serialized: serialized ?? this.serialized,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+  );
   AgentLink copyWithCompanion(AgentLinksCompanion data) {
     return AgentLink(
       id: data.id.present ? data.id.value : this.id,
@@ -826,8 +988,9 @@ class AgentLink extends DataClass implements Insertable<AgentLink> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       schemaVersion: data.schemaVersion.present
           ? data.schemaVersion.value
           : this.schemaVersion,
@@ -851,8 +1014,17 @@ class AgentLink extends DataClass implements Insertable<AgentLink> {
   }
 
   @override
-  int get hashCode => Object.hash(id, fromId, toId, type, createdAt, updatedAt,
-      deletedAt, serialized, schemaVersion);
+  int get hashCode => Object.hash(
+    id,
+    fromId,
+    toId,
+    type,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    serialized,
+    schemaVersion,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -902,13 +1074,13 @@ class AgentLinksCompanion extends UpdateCompanion<AgentLink> {
     required String serialized,
     this.schemaVersion = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        fromId = Value(fromId),
-        toId = Value(toId),
-        type = Value(type),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized);
+  }) : id = Value(id),
+       fromId = Value(fromId),
+       toId = Value(toId),
+       type = Value(type),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized);
   static Insertable<AgentLink> custom({
     Expression<String>? id,
     Expression<String>? fromId,
@@ -935,17 +1107,18 @@ class AgentLinksCompanion extends UpdateCompanion<AgentLink> {
     });
   }
 
-  AgentLinksCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? fromId,
-      Value<String>? toId,
-      Value<String>? type,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<DateTime?>? deletedAt,
-      Value<String>? serialized,
-      Value<int>? schemaVersion,
-      Value<int>? rowid}) {
+  AgentLinksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? fromId,
+    Value<String>? toId,
+    Value<String>? type,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<String>? serialized,
+    Value<int>? schemaVersion,
+    Value<int>? rowid,
+  }) {
     return AgentLinksCompanion(
       id: id ?? this.id,
       fromId: fromId ?? this.fromId,
@@ -1021,217 +1194,307 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
   WakeRunLog(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _runKeyMeta = const VerificationMeta('runKey');
   late final GeneratedColumn<String> runKey = GeneratedColumn<String>(
-      'run_key', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL PRIMARY KEY');
-  static const VerificationMeta _agentIdMeta =
-      const VerificationMeta('agentId');
+    'run_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
   late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-      'agent_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
   late final GeneratedColumn<String> reason = GeneratedColumn<String>(
-      'reason', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _reasonIdMeta =
-      const VerificationMeta('reasonId');
+    'reason',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _reasonIdMeta = const VerificationMeta(
+    'reasonId',
+  );
   late final GeneratedColumn<String> reasonId = GeneratedColumn<String>(
-      'reason_id', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _threadIdMeta =
-      const VerificationMeta('threadId');
+    'reason_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _threadIdMeta = const VerificationMeta(
+    'threadId',
+  );
   late final GeneratedColumn<String> threadId = GeneratedColumn<String>(
-      'thread_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'thread_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
-      'status', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _logicalChangeKeyMeta =
-      const VerificationMeta('logicalChangeKey');
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _logicalChangeKeyMeta = const VerificationMeta(
+    'logicalChangeKey',
+  );
   late final GeneratedColumn<String> logicalChangeKey = GeneratedColumn<String>(
-      'logical_change_key', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'logical_change_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _startedAtMeta =
-      const VerificationMeta('startedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
   late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
-      'started_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _completedAtMeta =
-      const VerificationMeta('completedAt');
+    'started_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
   late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
-      'completed_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _errorMessageMeta =
-      const VerificationMeta('errorMessage');
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _errorMessageMeta = const VerificationMeta(
+    'errorMessage',
+  );
   late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
-      'error_message', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _templateIdMeta =
-      const VerificationMeta('templateId');
+    'error_message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _templateIdMeta = const VerificationMeta(
+    'templateId',
+  );
   late final GeneratedColumn<String> templateId = GeneratedColumn<String>(
-      'template_id', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _templateVersionIdMeta =
-      const VerificationMeta('templateVersionId');
+    'template_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _templateVersionIdMeta = const VerificationMeta(
+    'templateVersionId',
+  );
   late final GeneratedColumn<String> templateVersionId =
-      GeneratedColumn<String>('template_version_id', aliasedName, true,
-          type: DriftSqlType.string,
-          requiredDuringInsert: false,
-          $customConstraints: '');
-  static const VerificationMeta _userRatingMeta =
-      const VerificationMeta('userRating');
+      GeneratedColumn<String>(
+        'template_version_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: '',
+      );
+  static const VerificationMeta _userRatingMeta = const VerificationMeta(
+    'userRating',
+  );
   late final GeneratedColumn<double> userRating = GeneratedColumn<double>(
-      'user_rating', aliasedName, true,
-      type: DriftSqlType.double,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _ratedAtMeta =
-      const VerificationMeta('ratedAt');
+    'user_rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _ratedAtMeta = const VerificationMeta(
+    'ratedAt',
+  );
   late final GeneratedColumn<DateTime> ratedAt = GeneratedColumn<DateTime>(
-      'rated_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
+    'rated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        runKey,
-        agentId,
-        reason,
-        reasonId,
-        threadId,
-        status,
-        logicalChangeKey,
-        createdAt,
-        startedAt,
-        completedAt,
-        errorMessage,
-        templateId,
-        templateVersionId,
-        userRating,
-        ratedAt
-      ];
+    runKey,
+    agentId,
+    reason,
+    reasonId,
+    threadId,
+    status,
+    logicalChangeKey,
+    createdAt,
+    startedAt,
+    completedAt,
+    errorMessage,
+    templateId,
+    templateVersionId,
+    userRating,
+    ratedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'wake_run_log';
   @override
-  VerificationContext validateIntegrity(Insertable<WakeRunLogData> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<WakeRunLogData> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('run_key')) {
-      context.handle(_runKeyMeta,
-          runKey.isAcceptableOrUnknown(data['run_key']!, _runKeyMeta));
+      context.handle(
+        _runKeyMeta,
+        runKey.isAcceptableOrUnknown(data['run_key']!, _runKeyMeta),
+      );
     } else if (isInserting) {
       context.missing(_runKeyMeta);
     }
     if (data.containsKey('agent_id')) {
-      context.handle(_agentIdMeta,
-          agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta));
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_agentIdMeta);
     }
     if (data.containsKey('reason')) {
-      context.handle(_reasonMeta,
-          reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta));
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
     } else if (isInserting) {
       context.missing(_reasonMeta);
     }
     if (data.containsKey('reason_id')) {
-      context.handle(_reasonIdMeta,
-          reasonId.isAcceptableOrUnknown(data['reason_id']!, _reasonIdMeta));
+      context.handle(
+        _reasonIdMeta,
+        reasonId.isAcceptableOrUnknown(data['reason_id']!, _reasonIdMeta),
+      );
     }
     if (data.containsKey('thread_id')) {
-      context.handle(_threadIdMeta,
-          threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta));
+      context.handle(
+        _threadIdMeta,
+        threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_threadIdMeta);
     }
     if (data.containsKey('status')) {
-      context.handle(_statusMeta,
-          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
     if (data.containsKey('logical_change_key')) {
       context.handle(
+        _logicalChangeKeyMeta,
+        logicalChangeKey.isAcceptableOrUnknown(
+          data['logical_change_key']!,
           _logicalChangeKeyMeta,
-          logicalChangeKey.isAcceptableOrUnknown(
-              data['logical_change_key']!, _logicalChangeKeyMeta));
+        ),
+      );
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('started_at')) {
-      context.handle(_startedAtMeta,
-          startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta));
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
     }
     if (data.containsKey('completed_at')) {
       context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
           _completedAtMeta,
-          completedAt.isAcceptableOrUnknown(
-              data['completed_at']!, _completedAtMeta));
+        ),
+      );
     }
     if (data.containsKey('error_message')) {
       context.handle(
+        _errorMessageMeta,
+        errorMessage.isAcceptableOrUnknown(
+          data['error_message']!,
           _errorMessageMeta,
-          errorMessage.isAcceptableOrUnknown(
-              data['error_message']!, _errorMessageMeta));
+        ),
+      );
     }
     if (data.containsKey('template_id')) {
       context.handle(
-          _templateIdMeta,
-          templateId.isAcceptableOrUnknown(
-              data['template_id']!, _templateIdMeta));
+        _templateIdMeta,
+        templateId.isAcceptableOrUnknown(data['template_id']!, _templateIdMeta),
+      );
     }
     if (data.containsKey('template_version_id')) {
       context.handle(
+        _templateVersionIdMeta,
+        templateVersionId.isAcceptableOrUnknown(
+          data['template_version_id']!,
           _templateVersionIdMeta,
-          templateVersionId.isAcceptableOrUnknown(
-              data['template_version_id']!, _templateVersionIdMeta));
+        ),
+      );
     }
     if (data.containsKey('user_rating')) {
       context.handle(
-          _userRatingMeta,
-          userRating.isAcceptableOrUnknown(
-              data['user_rating']!, _userRatingMeta));
+        _userRatingMeta,
+        userRating.isAcceptableOrUnknown(data['user_rating']!, _userRatingMeta),
+      );
     }
     if (data.containsKey('rated_at')) {
-      context.handle(_ratedAtMeta,
-          ratedAt.isAcceptableOrUnknown(data['rated_at']!, _ratedAtMeta));
+      context.handle(
+        _ratedAtMeta,
+        ratedAt.isAcceptableOrUnknown(data['rated_at']!, _ratedAtMeta),
+      );
     }
     return context;
   }
@@ -1242,36 +1505,66 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
   WakeRunLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return WakeRunLogData(
-      runKey: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}run_key'])!,
-      agentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}agent_id'])!,
-      reason: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}reason'])!,
-      reasonId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}reason_id']),
-      threadId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}thread_id'])!,
-      status: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      runKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_key'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      )!,
+      reasonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason_id'],
+      ),
+      threadId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thread_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
       logicalChangeKey: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}logical_change_key']),
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      startedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}started_at']),
-      completedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
-      errorMessage: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}error_message']),
-      templateId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}template_id']),
+        DriftSqlType.string,
+        data['${effectivePrefix}logical_change_key'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      errorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_message'],
+      ),
+      templateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_id'],
+      ),
       templateVersionId: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}template_version_id']),
-      userRating: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}user_rating']),
-      ratedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}rated_at']),
+        DriftSqlType.string,
+        data['${effectivePrefix}template_version_id'],
+      ),
+      userRating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}user_rating'],
+      ),
+      ratedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}rated_at'],
+      ),
     );
   }
 
@@ -1300,22 +1593,23 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
   final String? templateVersionId;
   final double? userRating;
   final DateTime? ratedAt;
-  const WakeRunLogData(
-      {required this.runKey,
-      required this.agentId,
-      required this.reason,
-      this.reasonId,
-      required this.threadId,
-      required this.status,
-      this.logicalChangeKey,
-      required this.createdAt,
-      this.startedAt,
-      this.completedAt,
-      this.errorMessage,
-      this.templateId,
-      this.templateVersionId,
-      this.userRating,
-      this.ratedAt});
+  const WakeRunLogData({
+    required this.runKey,
+    required this.agentId,
+    required this.reason,
+    this.reasonId,
+    required this.threadId,
+    required this.status,
+    this.logicalChangeKey,
+    required this.createdAt,
+    this.startedAt,
+    this.completedAt,
+    this.errorMessage,
+    this.templateId,
+    this.templateVersionId,
+    this.userRating,
+    this.ratedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1393,8 +1687,10 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     );
   }
 
-  factory WakeRunLogData.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory WakeRunLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return WakeRunLogData(
       runKey: serializer.fromJson<String>(json['run_key']),
@@ -1403,15 +1699,17 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       reasonId: serializer.fromJson<String?>(json['reason_id']),
       threadId: serializer.fromJson<String>(json['thread_id']),
       status: serializer.fromJson<String>(json['status']),
-      logicalChangeKey:
-          serializer.fromJson<String?>(json['logical_change_key']),
+      logicalChangeKey: serializer.fromJson<String?>(
+        json['logical_change_key'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['created_at']),
       startedAt: serializer.fromJson<DateTime?>(json['started_at']),
       completedAt: serializer.fromJson<DateTime?>(json['completed_at']),
       errorMessage: serializer.fromJson<String?>(json['error_message']),
       templateId: serializer.fromJson<String?>(json['template_id']),
-      templateVersionId:
-          serializer.fromJson<String?>(json['template_version_id']),
+      templateVersionId: serializer.fromJson<String?>(
+        json['template_version_id'],
+      ),
       userRating: serializer.fromJson<double?>(json['user_rating']),
       ratedAt: serializer.fromJson<DateTime?>(json['rated_at']),
     );
@@ -1438,44 +1736,43 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     };
   }
 
-  WakeRunLogData copyWith(
-          {String? runKey,
-          String? agentId,
-          String? reason,
-          Value<String?> reasonId = const Value.absent(),
-          String? threadId,
-          String? status,
-          Value<String?> logicalChangeKey = const Value.absent(),
-          DateTime? createdAt,
-          Value<DateTime?> startedAt = const Value.absent(),
-          Value<DateTime?> completedAt = const Value.absent(),
-          Value<String?> errorMessage = const Value.absent(),
-          Value<String?> templateId = const Value.absent(),
-          Value<String?> templateVersionId = const Value.absent(),
-          Value<double?> userRating = const Value.absent(),
-          Value<DateTime?> ratedAt = const Value.absent()}) =>
-      WakeRunLogData(
-        runKey: runKey ?? this.runKey,
-        agentId: agentId ?? this.agentId,
-        reason: reason ?? this.reason,
-        reasonId: reasonId.present ? reasonId.value : this.reasonId,
-        threadId: threadId ?? this.threadId,
-        status: status ?? this.status,
-        logicalChangeKey: logicalChangeKey.present
-            ? logicalChangeKey.value
-            : this.logicalChangeKey,
-        createdAt: createdAt ?? this.createdAt,
-        startedAt: startedAt.present ? startedAt.value : this.startedAt,
-        completedAt: completedAt.present ? completedAt.value : this.completedAt,
-        errorMessage:
-            errorMessage.present ? errorMessage.value : this.errorMessage,
-        templateId: templateId.present ? templateId.value : this.templateId,
-        templateVersionId: templateVersionId.present
-            ? templateVersionId.value
-            : this.templateVersionId,
-        userRating: userRating.present ? userRating.value : this.userRating,
-        ratedAt: ratedAt.present ? ratedAt.value : this.ratedAt,
-      );
+  WakeRunLogData copyWith({
+    String? runKey,
+    String? agentId,
+    String? reason,
+    Value<String?> reasonId = const Value.absent(),
+    String? threadId,
+    String? status,
+    Value<String?> logicalChangeKey = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> startedAt = const Value.absent(),
+    Value<DateTime?> completedAt = const Value.absent(),
+    Value<String?> errorMessage = const Value.absent(),
+    Value<String?> templateId = const Value.absent(),
+    Value<String?> templateVersionId = const Value.absent(),
+    Value<double?> userRating = const Value.absent(),
+    Value<DateTime?> ratedAt = const Value.absent(),
+  }) => WakeRunLogData(
+    runKey: runKey ?? this.runKey,
+    agentId: agentId ?? this.agentId,
+    reason: reason ?? this.reason,
+    reasonId: reasonId.present ? reasonId.value : this.reasonId,
+    threadId: threadId ?? this.threadId,
+    status: status ?? this.status,
+    logicalChangeKey: logicalChangeKey.present
+        ? logicalChangeKey.value
+        : this.logicalChangeKey,
+    createdAt: createdAt ?? this.createdAt,
+    startedAt: startedAt.present ? startedAt.value : this.startedAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
+    templateId: templateId.present ? templateId.value : this.templateId,
+    templateVersionId: templateVersionId.present
+        ? templateVersionId.value
+        : this.templateVersionId,
+    userRating: userRating.present ? userRating.value : this.userRating,
+    ratedAt: ratedAt.present ? ratedAt.value : this.ratedAt,
+  );
   WakeRunLogData copyWithCompanion(WakeRunLogCompanion data) {
     return WakeRunLogData(
       runKey: data.runKey.present ? data.runKey.value : this.runKey,
@@ -1489,18 +1786,21 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           : this.logicalChangeKey,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
-      completedAt:
-          data.completedAt.present ? data.completedAt.value : this.completedAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
       errorMessage: data.errorMessage.present
           ? data.errorMessage.value
           : this.errorMessage,
-      templateId:
-          data.templateId.present ? data.templateId.value : this.templateId,
+      templateId: data.templateId.present
+          ? data.templateId.value
+          : this.templateId,
       templateVersionId: data.templateVersionId.present
           ? data.templateVersionId.value
           : this.templateVersionId,
-      userRating:
-          data.userRating.present ? data.userRating.value : this.userRating,
+      userRating: data.userRating.present
+          ? data.userRating.value
+          : this.userRating,
       ratedAt: data.ratedAt.present ? data.ratedAt.value : this.ratedAt,
     );
   }
@@ -1529,21 +1829,22 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
 
   @override
   int get hashCode => Object.hash(
-      runKey,
-      agentId,
-      reason,
-      reasonId,
-      threadId,
-      status,
-      logicalChangeKey,
-      createdAt,
-      startedAt,
-      completedAt,
-      errorMessage,
-      templateId,
-      templateVersionId,
-      userRating,
-      ratedAt);
+    runKey,
+    agentId,
+    reason,
+    reasonId,
+    threadId,
+    status,
+    logicalChangeKey,
+    createdAt,
+    startedAt,
+    completedAt,
+    errorMessage,
+    templateId,
+    templateVersionId,
+    userRating,
+    ratedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1617,12 +1918,12 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.userRating = const Value.absent(),
     this.ratedAt = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : runKey = Value(runKey),
-        agentId = Value(agentId),
-        reason = Value(reason),
-        threadId = Value(threadId),
-        status = Value(status),
-        createdAt = Value(createdAt);
+  }) : runKey = Value(runKey),
+       agentId = Value(agentId),
+       reason = Value(reason),
+       threadId = Value(threadId),
+       status = Value(status),
+       createdAt = Value(createdAt);
   static Insertable<WakeRunLogData> custom({
     Expression<String>? runKey,
     Expression<String>? agentId,
@@ -1661,23 +1962,24 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     });
   }
 
-  WakeRunLogCompanion copyWith(
-      {Value<String>? runKey,
-      Value<String>? agentId,
-      Value<String>? reason,
-      Value<String?>? reasonId,
-      Value<String>? threadId,
-      Value<String>? status,
-      Value<String?>? logicalChangeKey,
-      Value<DateTime>? createdAt,
-      Value<DateTime?>? startedAt,
-      Value<DateTime?>? completedAt,
-      Value<String?>? errorMessage,
-      Value<String?>? templateId,
-      Value<String?>? templateVersionId,
-      Value<double?>? userRating,
-      Value<DateTime?>? ratedAt,
-      Value<int>? rowid}) {
+  WakeRunLogCompanion copyWith({
+    Value<String>? runKey,
+    Value<String>? agentId,
+    Value<String>? reason,
+    Value<String?>? reasonId,
+    Value<String>? threadId,
+    Value<String>? status,
+    Value<String?>? logicalChangeKey,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? startedAt,
+    Value<DateTime?>? completedAt,
+    Value<String?>? errorMessage,
+    Value<String?>? templateId,
+    Value<String?>? templateVersionId,
+    Value<double?>? userRating,
+    Value<DateTime?>? ratedAt,
+    Value<int>? rowid,
+  }) {
     return WakeRunLogCompanion(
       runKey: runKey ?? this.runKey,
       agentId: agentId ?? this.agentId,
@@ -1781,139 +2083,193 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   SagaLog(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _operationIdMeta =
-      const VerificationMeta('operationId');
+  static const VerificationMeta _operationIdMeta = const VerificationMeta(
+    'operationId',
+  );
   late final GeneratedColumn<String> operationId = GeneratedColumn<String>(
-      'operation_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL PRIMARY KEY');
-  static const VerificationMeta _agentIdMeta =
-      const VerificationMeta('agentId');
+    'operation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
   late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
-      'agent_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _runKeyMeta = const VerificationMeta('runKey');
   late final GeneratedColumn<String> runKey = GeneratedColumn<String>(
-      'run_key', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'run_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _phaseMeta = const VerificationMeta('phase');
   late final GeneratedColumn<String> phase = GeneratedColumn<String>(
-      'phase', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'phase',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
-      'status', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _toolNameMeta =
-      const VerificationMeta('toolName');
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _toolNameMeta = const VerificationMeta(
+    'toolName',
+  );
   late final GeneratedColumn<String> toolName = GeneratedColumn<String>(
-      'tool_name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _lastErrorMeta =
-      const VerificationMeta('lastError');
+    'tool_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
   late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
-      'last_error', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        operationId,
-        agentId,
-        runKey,
-        phase,
-        status,
-        toolName,
-        lastError,
-        createdAt,
-        updatedAt
-      ];
+    operationId,
+    agentId,
+    runKey,
+    phase,
+    status,
+    toolName,
+    lastError,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'saga_log';
   @override
-  VerificationContext validateIntegrity(Insertable<SagaLogData> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<SagaLogData> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('operation_id')) {
       context.handle(
+        _operationIdMeta,
+        operationId.isAcceptableOrUnknown(
+          data['operation_id']!,
           _operationIdMeta,
-          operationId.isAcceptableOrUnknown(
-              data['operation_id']!, _operationIdMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_operationIdMeta);
     }
     if (data.containsKey('agent_id')) {
-      context.handle(_agentIdMeta,
-          agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta));
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_agentIdMeta);
     }
     if (data.containsKey('run_key')) {
-      context.handle(_runKeyMeta,
-          runKey.isAcceptableOrUnknown(data['run_key']!, _runKeyMeta));
+      context.handle(
+        _runKeyMeta,
+        runKey.isAcceptableOrUnknown(data['run_key']!, _runKeyMeta),
+      );
     } else if (isInserting) {
       context.missing(_runKeyMeta);
     }
     if (data.containsKey('phase')) {
       context.handle(
-          _phaseMeta, phase.isAcceptableOrUnknown(data['phase']!, _phaseMeta));
+        _phaseMeta,
+        phase.isAcceptableOrUnknown(data['phase']!, _phaseMeta),
+      );
     } else if (isInserting) {
       context.missing(_phaseMeta);
     }
     if (data.containsKey('status')) {
-      context.handle(_statusMeta,
-          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
     if (data.containsKey('tool_name')) {
-      context.handle(_toolNameMeta,
-          toolName.isAcceptableOrUnknown(data['tool_name']!, _toolNameMeta));
+      context.handle(
+        _toolNameMeta,
+        toolName.isAcceptableOrUnknown(data['tool_name']!, _toolNameMeta),
+      );
     } else if (isInserting) {
       context.missing(_toolNameMeta);
     }
     if (data.containsKey('last_error')) {
-      context.handle(_lastErrorMeta,
-          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
@@ -1926,24 +2282,42 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
   SagaLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SagaLogData(
-      operationId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}operation_id'])!,
-      agentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}agent_id'])!,
-      runKey: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}run_key'])!,
-      phase: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}phase'])!,
-      status: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
-      toolName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}tool_name'])!,
-      lastError: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      operationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      runKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_key'],
+      )!,
+      phase: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phase'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      toolName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tool_name'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -1966,16 +2340,17 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   final String? lastError;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const SagaLogData(
-      {required this.operationId,
-      required this.agentId,
-      required this.runKey,
-      required this.phase,
-      required this.status,
-      required this.toolName,
-      this.lastError,
-      required this.createdAt,
-      required this.updatedAt});
+  const SagaLogData({
+    required this.operationId,
+    required this.agentId,
+    required this.runKey,
+    required this.phase,
+    required this.status,
+    required this.toolName,
+    this.lastError,
+    required this.createdAt,
+    required this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2009,8 +2384,10 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
     );
   }
 
-  factory SagaLogData.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory SagaLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SagaLogData(
       operationId: serializer.fromJson<String>(json['operation_id']),
@@ -2040,31 +2417,32 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
     };
   }
 
-  SagaLogData copyWith(
-          {String? operationId,
-          String? agentId,
-          String? runKey,
-          String? phase,
-          String? status,
-          String? toolName,
-          Value<String?> lastError = const Value.absent(),
-          DateTime? createdAt,
-          DateTime? updatedAt}) =>
-      SagaLogData(
-        operationId: operationId ?? this.operationId,
-        agentId: agentId ?? this.agentId,
-        runKey: runKey ?? this.runKey,
-        phase: phase ?? this.phase,
-        status: status ?? this.status,
-        toolName: toolName ?? this.toolName,
-        lastError: lastError.present ? lastError.value : this.lastError,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  SagaLogData copyWith({
+    String? operationId,
+    String? agentId,
+    String? runKey,
+    String? phase,
+    String? status,
+    String? toolName,
+    Value<String?> lastError = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => SagaLogData(
+    operationId: operationId ?? this.operationId,
+    agentId: agentId ?? this.agentId,
+    runKey: runKey ?? this.runKey,
+    phase: phase ?? this.phase,
+    status: status ?? this.status,
+    toolName: toolName ?? this.toolName,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
   SagaLogData copyWithCompanion(SagaLogCompanion data) {
     return SagaLogData(
-      operationId:
-          data.operationId.present ? data.operationId.value : this.operationId,
+      operationId: data.operationId.present
+          ? data.operationId.value
+          : this.operationId,
       agentId: data.agentId.present ? data.agentId.value : this.agentId,
       runKey: data.runKey.present ? data.runKey.value : this.runKey,
       phase: data.phase.present ? data.phase.value : this.phase,
@@ -2093,8 +2471,17 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   }
 
   @override
-  int get hashCode => Object.hash(operationId, agentId, runKey, phase, status,
-      toolName, lastError, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    operationId,
+    agentId,
+    runKey,
+    phase,
+    status,
+    toolName,
+    lastError,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2144,14 +2531,14 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
-  })  : operationId = Value(operationId),
-        agentId = Value(agentId),
-        runKey = Value(runKey),
-        phase = Value(phase),
-        status = Value(status),
-        toolName = Value(toolName),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt);
+  }) : operationId = Value(operationId),
+       agentId = Value(agentId),
+       runKey = Value(runKey),
+       phase = Value(phase),
+       status = Value(status),
+       toolName = Value(toolName),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<SagaLogData> custom({
     Expression<String>? operationId,
     Expression<String>? agentId,
@@ -2178,17 +2565,18 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
     });
   }
 
-  SagaLogCompanion copyWith(
-      {Value<String>? operationId,
-      Value<String>? agentId,
-      Value<String>? runKey,
-      Value<String>? phase,
-      Value<String>? status,
-      Value<String>? toolName,
-      Value<String?>? lastError,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<int>? rowid}) {
+  SagaLogCompanion copyWith({
+    Value<String>? operationId,
+    Value<String>? agentId,
+    Value<String>? runKey,
+    Value<String>? phase,
+    Value<String>? status,
+    Value<String>? toolName,
+    Value<String?>? lastError,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
     return SagaLogCompanion(
       operationId: operationId ?? this.operationId,
       agentId: agentId ?? this.agentId,
@@ -2263,199 +2651,227 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   $AgentDatabaseManager get managers => $AgentDatabaseManager(this);
   late final AgentEntities agentEntities = AgentEntities(this);
   late final Index idxAgentEntitiesAgentId = Index(
-      'idx_agent_entities_agent_id',
-      'CREATE INDEX idx_agent_entities_agent_id ON agent_entities (agent_id)');
-  late final Index idxAgentEntitiesType = Index('idx_agent_entities_type',
-      'CREATE INDEX idx_agent_entities_type ON agent_entities (type, agent_id, created_at DESC)');
+    'idx_agent_entities_agent_id',
+    'CREATE INDEX idx_agent_entities_agent_id ON agent_entities (agent_id)',
+  );
+  late final Index idxAgentEntitiesType = Index(
+    'idx_agent_entities_type',
+    'CREATE INDEX idx_agent_entities_type ON agent_entities (type, agent_id, created_at DESC)',
+  );
   late final Index idxAgentEntitiesAgentTypeSub = Index(
-      'idx_agent_entities_agent_type_sub',
-      'CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities (agent_id, type, subtype, created_at DESC)');
-  late final Index idxAgentEntitiesThread = Index('idx_agent_entities_thread',
-      'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)');
+    'idx_agent_entities_agent_type_sub',
+    'CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities (agent_id, type, subtype, created_at DESC)',
+  );
+  late final Index idxAgentEntitiesThread = Index(
+    'idx_agent_entities_thread',
+    'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
+  );
   late final AgentLinks agentLinks = AgentLinks(this);
-  late final Index idxAgentLinksFrom = Index('idx_agent_links_from',
-      'CREATE INDEX idx_agent_links_from ON agent_links (from_id, type)');
-  late final Index idxAgentLinksTo = Index('idx_agent_links_to',
-      'CREATE INDEX idx_agent_links_to ON agent_links (to_id, type)');
-  late final Index idxAgentLinksType = Index('idx_agent_links_type',
-      'CREATE INDEX idx_agent_links_type ON agent_links (type)');
+  late final Index idxAgentLinksFrom = Index(
+    'idx_agent_links_from',
+    'CREATE INDEX idx_agent_links_from ON agent_links (from_id, type)',
+  );
+  late final Index idxAgentLinksTo = Index(
+    'idx_agent_links_to',
+    'CREATE INDEX idx_agent_links_to ON agent_links (to_id, type)',
+  );
+  late final Index idxAgentLinksType = Index(
+    'idx_agent_links_type',
+    'CREATE INDEX idx_agent_links_type ON agent_links (type)',
+  );
   late final Index idxUniqueImproverPerTemplate = Index(
-      'idx_unique_improver_per_template',
-      'CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links (to_id) WHERE type = \'improver_target\' AND deleted_at IS NULL');
+    'idx_unique_improver_per_template',
+    'CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links (to_id) WHERE type = \'improver_target\' AND deleted_at IS NULL',
+  );
   late final WakeRunLog wakeRunLog = WakeRunLog(this);
-  late final Index idxWakeRunLogAgent = Index('idx_wake_run_log_agent',
-      'CREATE INDEX idx_wake_run_log_agent ON wake_run_log (agent_id, created_at DESC)');
-  late final Index idxWakeRunLogTemplate = Index('idx_wake_run_log_template',
-      'CREATE INDEX idx_wake_run_log_template ON wake_run_log (template_id, created_at DESC)');
-  late final Index idxWakeRunLogStatus = Index('idx_wake_run_log_status',
-      'CREATE INDEX idx_wake_run_log_status ON wake_run_log (status)');
+  late final Index idxWakeRunLogAgent = Index(
+    'idx_wake_run_log_agent',
+    'CREATE INDEX idx_wake_run_log_agent ON wake_run_log (agent_id, created_at DESC)',
+  );
+  late final Index idxWakeRunLogTemplate = Index(
+    'idx_wake_run_log_template',
+    'CREATE INDEX idx_wake_run_log_template ON wake_run_log (template_id, created_at DESC)',
+  );
+  late final Index idxWakeRunLogStatus = Index(
+    'idx_wake_run_log_status',
+    'CREATE INDEX idx_wake_run_log_status ON wake_run_log (status)',
+  );
   late final SagaLog sagaLog = SagaLog(this);
-  late final Index idxSagaLogAgent = Index('idx_saga_log_agent',
-      'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)');
-  late final Index idxSagaLogStatus = Index('idx_saga_log_status',
-      'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)');
+  late final Index idxSagaLogAgent = Index(
+    'idx_saga_log_agent',
+    'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)',
+  );
+  late final Index idxSagaLogStatus = Index(
+    'idx_saga_log_status',
+    'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)',
+  );
   Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId, int limit) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(agentId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(agentId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAgentEntitiesByType(
-      String agentId, String type, int limit) {
+    String agentId,
+    String type,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
-        variables: [
-          Variable<String>(agentId),
-          Variable<String>(type),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
+      variables: [
+        Variable<String>(agentId),
+        Variable<String>(type),
+        Variable<int>(limit),
+      ],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAgentEntitiesByTypeAndSubtype(
-      String agentId, String type, String? subtype, int limit) {
+    String agentId,
+    String type,
+    String? subtype,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = ?2 AND subtype = ?3 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?4',
-        variables: [
-          Variable<String>(agentId),
-          Variable<String>(type),
-          Variable<String>(subtype),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = ?2 AND subtype = ?3 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?4',
+      variables: [
+        Variable<String>(agentId),
+        Variable<String>(type),
+        Variable<String>(subtype),
+        Variable<int>(limit),
+      ],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAgentEntityById(String id) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',
+      variables: [Variable<String>(id)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAgentMessagesByThread(
-      String agentId, String? threadId, int limit) {
+    String agentId,
+    String? threadId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'agentMessage\' AND thread_id = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
-        variables: [
-          Variable<String>(agentId),
-          Variable<String>(threadId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'agentMessage\' AND thread_id = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
+      variables: [
+        Variable<String>(agentId),
+        Variable<String>(threadId),
+        Variable<int>(limit),
+      ],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinkById(String id) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE id = ?1 AND deleted_at IS NULL',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE id = ?1 AND deleted_at IS NULL',
+      variables: [Variable<String>(id)],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinksByFromId(String fromId) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE from_id = ?1 AND deleted_at IS NULL',
-        variables: [
-          Variable<String>(fromId)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE from_id = ?1 AND deleted_at IS NULL',
+      variables: [Variable<String>(fromId)],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinksByFromIdAndType(
-      String fromId, String type) {
+    String fromId,
+    String type,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE from_id = ?1 AND type = ?2 AND deleted_at IS NULL',
-        variables: [
-          Variable<String>(fromId),
-          Variable<String>(type)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE from_id = ?1 AND type = ?2 AND deleted_at IS NULL',
+      variables: [Variable<String>(fromId), Variable<String>(type)],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinksByToId(String toId) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE to_id = ?1 AND deleted_at IS NULL',
-        variables: [
-          Variable<String>(toId)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE to_id = ?1 AND deleted_at IS NULL',
+      variables: [Variable<String>(toId)],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinksByToIdAndType(String toId, String type) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE to_id = ?1 AND type = ?2 AND deleted_at IS NULL',
-        variables: [
-          Variable<String>(toId),
-          Variable<String>(type)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE to_id = ?1 AND type = ?2 AND deleted_at IS NULL',
+      variables: [Variable<String>(toId), Variable<String>(type)],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<WakeRunLogData> getWakeRunsByAgentId(String agentId, int limit) {
     return customSelect(
-        'SELECT * FROM wake_run_log WHERE agent_id = ?1 ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(agentId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          wakeRunLog,
-        }).asyncMap(wakeRunLog.mapFromRow);
+      'SELECT * FROM wake_run_log WHERE agent_id = ?1 ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(agentId), Variable<int>(limit)],
+      readsFrom: {
+        wakeRunLog,
+      },
+    ).asyncMap(wakeRunLog.mapFromRow);
   }
 
   Selectable<WakeRunLogData> getWakeRunByKey(String runKey) {
-    return customSelect('SELECT * FROM wake_run_log WHERE run_key = ?1',
-        variables: [
-          Variable<String>(runKey)
-        ],
-        readsFrom: {
-          wakeRunLog,
-        }).asyncMap(wakeRunLog.mapFromRow);
+    return customSelect(
+      'SELECT * FROM wake_run_log WHERE run_key = ?1',
+      variables: [Variable<String>(runKey)],
+      readsFrom: {
+        wakeRunLog,
+      },
+    ).asyncMap(wakeRunLog.mapFromRow);
   }
 
   Selectable<AgentEntity> getAllAgentIdentities() {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE type = \'agent\' AND deleted_at IS NULL ORDER BY created_at DESC',
-        variables: [],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE type = \'agent\' AND deleted_at IS NULL ORDER BY created_at DESC',
+      variables: [],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<SagaLogData> getPendingSagaOps() {
     return customSelect(
-        'SELECT * FROM saga_log WHERE status = \'pending\' ORDER BY created_at ASC',
-        variables: [],
-        readsFrom: {
-          sagaLog,
-        }).asyncMap(sagaLog.mapFromRow);
+      'SELECT * FROM saga_log WHERE status = \'pending\' ORDER BY created_at ASC',
+      variables: [],
+      readsFrom: {
+        sagaLog,
+      },
+    ).asyncMap(sagaLog.mapFromRow);
   }
 
   Future<int> deleteAgentEntities(String agentId) {
@@ -2496,301 +2912,316 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<AgentEntity> getAllAgentTemplates() {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE type = \'agentTemplate\' AND deleted_at IS NULL ORDER BY created_at DESC',
-        variables: [],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE type = \'agentTemplate\' AND deleted_at IS NULL ORDER BY created_at DESC',
+      variables: [],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAllAgentEntities() {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
-        variables: [],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
+      variables: [],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAgentEntitiesInInterval(
-      DateTime start, DateTime end, int limit, int offset) {
+    DateTime start,
+    DateTime end,
+    int limit,
+    int offset,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
-        variables: [
-          Variable<DateTime>(start),
-          Variable<DateTime>(end),
-          Variable<int>(limit),
-          Variable<int>(offset)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
+      variables: [
+        Variable<DateTime>(start),
+        Variable<DateTime>(end),
+        Variable<int>(limit),
+        Variable<int>(offset),
+      ],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<int> countAgentEntitiesInInterval(DateTime start, DateTime end) {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2',
-        variables: [
-          Variable<DateTime>(start),
-          Variable<DateTime>(end)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).map((QueryRow row) => row.read<int>('cnt'));
+      'SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= ?1 AND updated_at < ?2',
+      variables: [Variable<DateTime>(start), Variable<DateTime>(end)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
   Selectable<AgentLink> getAllAgentLinks() {
     return customSelect(
-        'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',
-        variables: [],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',
+      variables: [],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinksInInterval(
-      DateTime start, DateTime end, int limit, int offset) {
+    DateTime start,
+    DateTime end,
+    int limit,
+    int offset,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
-        variables: [
-          Variable<DateTime>(start),
-          Variable<DateTime>(end),
-          Variable<int>(limit),
-          Variable<int>(offset)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
+      variables: [
+        Variable<DateTime>(start),
+        Variable<DateTime>(end),
+        Variable<int>(limit),
+        Variable<int>(offset),
+      ],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<int> countAgentLinksInInterval(DateTime start, DateTime end) {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2',
-        variables: [
-          Variable<DateTime>(start),
-          Variable<DateTime>(end)
-        ],
-        readsFrom: {
-          agentLinks,
-        }).map((QueryRow row) => row.read<int>('cnt'));
+      'SELECT COUNT(*) AS cnt FROM agent_links WHERE updated_at >= ?1 AND updated_at < ?2',
+      variables: [Variable<DateTime>(start), Variable<DateTime>(end)],
+      readsFrom: {
+        agentLinks,
+      },
+    ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
   Selectable<WakeRunLogData> getWakeRunsByTemplateId(
-      String? templateId, int limit) {
+    String? templateId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM wake_run_log WHERE template_id = ?1 ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(templateId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          wakeRunLog,
-        }).asyncMap(wakeRunLog.mapFromRow);
+      'SELECT * FROM wake_run_log WHERE template_id = ?1 ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {
+        wakeRunLog,
+      },
+    ).asyncMap(wakeRunLog.mapFromRow);
   }
 
   Selectable<AgentEntity> getRecentReportsByTemplate(
-      String templateId, int limit) {
+    String templateId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'agentReport\' AND ae.subtype = \'current\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(templateId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-          agentLinks,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'agentReport\' AND ae.subtype = \'current\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
+      variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+        agentLinks,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getRecentObservationsByTemplate(
-      String templateId, int limit) {
+    String templateId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'agentMessage\' AND ae.subtype = \'observation\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(templateId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-          agentLinks,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'agentMessage\' AND ae.subtype = \'observation\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
+      variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+        agentLinks,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getEvolutionSessionsByTemplate(
-      String templateId, int limit) {
+    String templateId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'evolutionSession\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(templateId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'evolutionSession\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<GetAllEvolutionSessionsResult> getAllEvolutionSessions() {
     return customSelect(
-        'SELECT"es"."id" AS "nested_0.id", "es"."agent_id" AS "nested_0.agent_id", "es"."type" AS "nested_0.type", "es"."subtype" AS "nested_0.subtype", "es"."thread_id" AS "nested_0.thread_id", "es"."created_at" AS "nested_0.created_at", "es"."updated_at" AS "nested_0.updated_at", "es"."deleted_at" AS "nested_0.deleted_at", "es"."serialized" AS "nested_0.serialized", "es"."schema_version" AS "nested_0.schema_version" FROM agent_entities AS es INNER JOIN agent_entities AS tpl ON tpl.id = es.agent_id AND tpl.type = \'agentTemplate\' AND tpl.deleted_at IS NULL WHERE es.type = \'evolutionSession\' AND es.deleted_at IS NULL ORDER BY es.updated_at DESC',
-        variables: [],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap((QueryRow row) async => GetAllEvolutionSessionsResult(
-          es: await agentEntities.mapFromRow(row, tablePrefix: 'nested_0'),
-        ));
+      'SELECT"es"."id" AS "nested_0.id", "es"."agent_id" AS "nested_0.agent_id", "es"."type" AS "nested_0.type", "es"."subtype" AS "nested_0.subtype", "es"."thread_id" AS "nested_0.thread_id", "es"."created_at" AS "nested_0.created_at", "es"."updated_at" AS "nested_0.updated_at", "es"."deleted_at" AS "nested_0.deleted_at", "es"."serialized" AS "nested_0.serialized", "es"."schema_version" AS "nested_0.schema_version" FROM agent_entities AS es INNER JOIN agent_entities AS tpl ON tpl.id = es.agent_id AND tpl.type = \'agentTemplate\' AND tpl.deleted_at IS NULL WHERE es.type = \'evolutionSession\' AND es.deleted_at IS NULL ORDER BY es.updated_at DESC',
+      variables: [],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(
+      (QueryRow row) async => GetAllEvolutionSessionsResult(
+        es: await agentEntities.mapFromRow(row, tablePrefix: 'nested_0'),
+      ),
+    );
   }
 
   Selectable<AgentEntity> getEvolutionNotesByTemplate(
-      String templateId, int limit) {
+    String templateId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'evolutionNote\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(templateId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'evolutionNote\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<int> countEntitiesChangedSinceForTemplate(
-      String templateId, DateTime since) {
+    String templateId,
+    DateTime since,
+  ) {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.updated_at > ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL',
-        variables: [
-          Variable<String>(templateId),
-          Variable<DateTime>(since)
-        ],
-        readsFrom: {
-          agentEntities,
-          agentLinks,
-        }).map((QueryRow row) => row.read<int>('cnt'));
+      'SELECT COUNT(*) AS cnt FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.updated_at > ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL',
+      variables: [Variable<String>(templateId), Variable<DateTime>(since)],
+      readsFrom: {
+        agentEntities,
+        agentLinks,
+      },
+    ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
   Selectable<AgentEntity> getChangeSetsForAgent(String agentId, int limit) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(agentId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(agentId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getPendingChangeSetsForAgent(
-      String agentId, int limit) {
+    String agentId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND subtype IN (\'pending\', \'partiallyResolved\') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(agentId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND subtype IN (\'pending\', \'partiallyResolved\') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(agentId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getRecentDecisionsForAgent(
-      String agentId, int limit) {
+    String agentId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeDecision\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(agentId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeDecision\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(agentId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getRecentDecisionsByTemplate(
-      String templateId, DateTime since, int limit) {
+    String templateId,
+    DateTime since,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?3',
-        variables: [
-          Variable<String>(templateId),
-          Variable<DateTime>(since),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-          agentLinks,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?3',
+      variables: [
+        Variable<String>(templateId),
+        Variable<DateTime>(since),
+        Variable<int>(limit),
+      ],
+      readsFrom: {
+        agentEntities,
+        agentLinks,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getTokenUsageByAgentId(String agentId, int limit) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'wakeTokenUsage\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(agentId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'wakeTokenUsage\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<String>(agentId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getTokenUsageByTemplateId(
-      String templateId, int limit) {
+    String templateId,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
-        variables: [
-          Variable<String>(templateId),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          agentEntities,
-          agentLinks,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
+      variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {
+        agentEntities,
+        agentLinks,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',
-        variables: [
-          Variable<String>(nowIso)
-        ],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',
+      variables: [Variable<String>(nowIso)],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getAgentEntitiesWithNullVectorClock() {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
-        variables: [],
-        readsFrom: {
-          agentEntities,
-        }).asyncMap(agentEntities.mapFromRow);
+      'SELECT * FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+      variables: [],
+      readsFrom: {
+        agentEntities,
+      },
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<int> countAgentEntitiesWithNullVectorClock() {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
-        variables: [],
-        readsFrom: {
-          agentEntities,
-        }).map((QueryRow row) => row.read<int>('cnt'));
+      'SELECT COUNT(*) AS cnt FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
+      variables: [],
+      readsFrom: {
+        agentEntities,
+      },
+    ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
   Selectable<AgentLink> getAgentLinksWithNullVectorClock() {
     return customSelect(
-        'SELECT * FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
-        variables: [],
-        readsFrom: {
-          agentLinks,
-        }).asyncMap(agentLinks.mapFromRow);
+      'SELECT * FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+      variables: [],
+      readsFrom: {
+        agentLinks,
+      },
+    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<int> countAgentLinksWithNullVectorClock() {
     return customSelect(
-        'SELECT COUNT(*) AS cnt FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
-        variables: [],
-        readsFrom: {
-          agentLinks,
-        }).map((QueryRow row) => row.read<int>('cnt'));
+      'SELECT COUNT(*) AS cnt FROM agent_links WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL',
+      variables: [],
+      readsFrom: {
+        agentLinks,
+      },
+    ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
   @override
@@ -2798,52 +3229,54 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-        agentEntities,
-        idxAgentEntitiesAgentId,
-        idxAgentEntitiesType,
-        idxAgentEntitiesAgentTypeSub,
-        idxAgentEntitiesThread,
-        agentLinks,
-        idxAgentLinksFrom,
-        idxAgentLinksTo,
-        idxAgentLinksType,
-        idxUniqueImproverPerTemplate,
-        wakeRunLog,
-        idxWakeRunLogAgent,
-        idxWakeRunLogTemplate,
-        idxWakeRunLogStatus,
-        sagaLog,
-        idxSagaLogAgent,
-        idxSagaLogStatus
-      ];
+    agentEntities,
+    idxAgentEntitiesAgentId,
+    idxAgentEntitiesType,
+    idxAgentEntitiesAgentTypeSub,
+    idxAgentEntitiesThread,
+    agentLinks,
+    idxAgentLinksFrom,
+    idxAgentLinksTo,
+    idxAgentLinksType,
+    idxUniqueImproverPerTemplate,
+    wakeRunLog,
+    idxWakeRunLogAgent,
+    idxWakeRunLogTemplate,
+    idxWakeRunLogStatus,
+    sagaLog,
+    idxSagaLogAgent,
+    idxSagaLogStatus,
+  ];
 }
 
-typedef $AgentEntitiesCreateCompanionBuilder = AgentEntitiesCompanion Function({
-  required String id,
-  required String agentId,
-  required String type,
-  Value<String?> subtype,
-  Value<String?> threadId,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<DateTime?> deletedAt,
-  required String serialized,
-  Value<int> schemaVersion,
-  Value<int> rowid,
-});
-typedef $AgentEntitiesUpdateCompanionBuilder = AgentEntitiesCompanion Function({
-  Value<String> id,
-  Value<String> agentId,
-  Value<String> type,
-  Value<String?> subtype,
-  Value<String?> threadId,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<DateTime?> deletedAt,
-  Value<String> serialized,
-  Value<int> schemaVersion,
-  Value<int> rowid,
-});
+typedef $AgentEntitiesCreateCompanionBuilder =
+    AgentEntitiesCompanion Function({
+      required String id,
+      required String agentId,
+      required String type,
+      Value<String?> subtype,
+      Value<String?> threadId,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      required String serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
+typedef $AgentEntitiesUpdateCompanionBuilder =
+    AgentEntitiesCompanion Function({
+      Value<String> id,
+      Value<String> agentId,
+      Value<String> type,
+      Value<String?> subtype,
+      Value<String?> threadId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<String> serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
 
 class $AgentEntitiesFilterComposer
     extends Composer<_$AgentDatabase, AgentEntities> {
@@ -2855,34 +3288,54 @@ class $AgentEntitiesFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get agentId => $composableBuilder(
-      column: $table.agentId, builder: (column) => ColumnFilters(column));
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get subtype => $composableBuilder(
-      column: $table.subtype, builder: (column) => ColumnFilters(column));
+    column: $table.subtype,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get threadId => $composableBuilder(
-      column: $table.threadId, builder: (column) => ColumnFilters(column));
+    column: $table.threadId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-      column: $table.deletedAt, builder: (column) => ColumnFilters(column));
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => ColumnFilters(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $AgentEntitiesOrderingComposer
@@ -2895,35 +3348,54 @@ class $AgentEntitiesOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get agentId => $composableBuilder(
-      column: $table.agentId, builder: (column) => ColumnOrderings(column));
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get subtype => $composableBuilder(
-      column: $table.subtype, builder: (column) => ColumnOrderings(column));
+    column: $table.subtype,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get threadId => $composableBuilder(
-      column: $table.threadId, builder: (column) => ColumnOrderings(column));
+    column: $table.threadId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-      column: $table.deletedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $AgentEntitiesAnnotationComposer
@@ -2960,26 +3432,37 @@ class $AgentEntitiesAnnotationComposer
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => column);
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
 }
 
-class $AgentEntitiesTableManager extends RootTableManager<
-    _$AgentDatabase,
-    AgentEntities,
-    AgentEntity,
-    $AgentEntitiesFilterComposer,
-    $AgentEntitiesOrderingComposer,
-    $AgentEntitiesAnnotationComposer,
-    $AgentEntitiesCreateCompanionBuilder,
-    $AgentEntitiesUpdateCompanionBuilder,
-    (AgentEntity, BaseReferences<_$AgentDatabase, AgentEntities, AgentEntity>),
-    AgentEntity,
-    PrefetchHooks Function()> {
+class $AgentEntitiesTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          AgentEntities,
+          AgentEntity,
+          $AgentEntitiesFilterComposer,
+          $AgentEntitiesOrderingComposer,
+          $AgentEntitiesAnnotationComposer,
+          $AgentEntitiesCreateCompanionBuilder,
+          $AgentEntitiesUpdateCompanionBuilder,
+          (
+            AgentEntity,
+            BaseReferences<_$AgentDatabase, AgentEntities, AgentEntity>,
+          ),
+          AgentEntity,
+          PrefetchHooks Function()
+        > {
   $AgentEntitiesTableManager(_$AgentDatabase db, AgentEntities table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -2988,101 +3471,109 @@ class $AgentEntitiesTableManager extends RootTableManager<
               $AgentEntitiesOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $AgentEntitiesAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> agentId = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String?> subtype = const Value.absent(),
-            Value<String?> threadId = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<DateTime?> deletedAt = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> schemaVersion = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              AgentEntitiesCompanion(
-            id: id,
-            agentId: agentId,
-            type: type,
-            subtype: subtype,
-            threadId: threadId,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deletedAt: deletedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String agentId,
-            required String type,
-            Value<String?> subtype = const Value.absent(),
-            Value<String?> threadId = const Value.absent(),
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<DateTime?> deletedAt = const Value.absent(),
-            required String serialized,
-            Value<int> schemaVersion = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              AgentEntitiesCompanion.insert(
-            id: id,
-            agentId: agentId,
-            type: type,
-            subtype: subtype,
-            threadId: threadId,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deletedAt: deletedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> subtype = const Value.absent(),
+                Value<String?> threadId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentEntitiesCompanion(
+                id: id,
+                agentId: agentId,
+                type: type,
+                subtype: subtype,
+                threadId: threadId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String agentId,
+                required String type,
+                Value<String?> subtype = const Value.absent(),
+                Value<String?> threadId = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                required String serialized,
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentEntitiesCompanion.insert(
+                id: id,
+                agentId: agentId,
+                type: type,
+                subtype: subtype,
+                threadId: threadId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $AgentEntitiesProcessedTableManager = ProcessedTableManager<
-    _$AgentDatabase,
-    AgentEntities,
-    AgentEntity,
-    $AgentEntitiesFilterComposer,
-    $AgentEntitiesOrderingComposer,
-    $AgentEntitiesAnnotationComposer,
-    $AgentEntitiesCreateCompanionBuilder,
-    $AgentEntitiesUpdateCompanionBuilder,
-    (AgentEntity, BaseReferences<_$AgentDatabase, AgentEntities, AgentEntity>),
-    AgentEntity,
-    PrefetchHooks Function()>;
-typedef $AgentLinksCreateCompanionBuilder = AgentLinksCompanion Function({
-  required String id,
-  required String fromId,
-  required String toId,
-  required String type,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<DateTime?> deletedAt,
-  required String serialized,
-  Value<int> schemaVersion,
-  Value<int> rowid,
-});
-typedef $AgentLinksUpdateCompanionBuilder = AgentLinksCompanion Function({
-  Value<String> id,
-  Value<String> fromId,
-  Value<String> toId,
-  Value<String> type,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<DateTime?> deletedAt,
-  Value<String> serialized,
-  Value<int> schemaVersion,
-  Value<int> rowid,
-});
+typedef $AgentEntitiesProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      AgentEntities,
+      AgentEntity,
+      $AgentEntitiesFilterComposer,
+      $AgentEntitiesOrderingComposer,
+      $AgentEntitiesAnnotationComposer,
+      $AgentEntitiesCreateCompanionBuilder,
+      $AgentEntitiesUpdateCompanionBuilder,
+      (
+        AgentEntity,
+        BaseReferences<_$AgentDatabase, AgentEntities, AgentEntity>,
+      ),
+      AgentEntity,
+      PrefetchHooks Function()
+    >;
+typedef $AgentLinksCreateCompanionBuilder =
+    AgentLinksCompanion Function({
+      required String id,
+      required String fromId,
+      required String toId,
+      required String type,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      required String serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
+typedef $AgentLinksUpdateCompanionBuilder =
+    AgentLinksCompanion Function({
+      Value<String> id,
+      Value<String> fromId,
+      Value<String> toId,
+      Value<String> type,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<String> serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
 
 class $AgentLinksFilterComposer extends Composer<_$AgentDatabase, AgentLinks> {
   $AgentLinksFilterComposer({
@@ -3093,31 +3584,49 @@ class $AgentLinksFilterComposer extends Composer<_$AgentDatabase, AgentLinks> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get fromId => $composableBuilder(
-      column: $table.fromId, builder: (column) => ColumnFilters(column));
+    column: $table.fromId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get toId => $composableBuilder(
-      column: $table.toId, builder: (column) => ColumnFilters(column));
+    column: $table.toId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-      column: $table.deletedAt, builder: (column) => ColumnFilters(column));
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => ColumnFilters(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $AgentLinksOrderingComposer
@@ -3130,32 +3639,49 @@ class $AgentLinksOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get fromId => $composableBuilder(
-      column: $table.fromId, builder: (column) => ColumnOrderings(column));
+    column: $table.fromId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get toId => $composableBuilder(
-      column: $table.toId, builder: (column) => ColumnOrderings(column));
+    column: $table.toId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-      column: $table.deletedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $AgentLinksAnnotationComposer
@@ -3189,26 +3715,34 @@ class $AgentLinksAnnotationComposer
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => column);
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
 }
 
-class $AgentLinksTableManager extends RootTableManager<
-    _$AgentDatabase,
-    AgentLinks,
-    AgentLink,
-    $AgentLinksFilterComposer,
-    $AgentLinksOrderingComposer,
-    $AgentLinksAnnotationComposer,
-    $AgentLinksCreateCompanionBuilder,
-    $AgentLinksUpdateCompanionBuilder,
-    (AgentLink, BaseReferences<_$AgentDatabase, AgentLinks, AgentLink>),
-    AgentLink,
-    PrefetchHooks Function()> {
+class $AgentLinksTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          AgentLinks,
+          AgentLink,
+          $AgentLinksFilterComposer,
+          $AgentLinksOrderingComposer,
+          $AgentLinksAnnotationComposer,
+          $AgentLinksCreateCompanionBuilder,
+          $AgentLinksUpdateCompanionBuilder,
+          (AgentLink, BaseReferences<_$AgentDatabase, AgentLinks, AgentLink>),
+          AgentLink,
+          PrefetchHooks Function()
+        > {
   $AgentLinksTableManager(_$AgentDatabase db, AgentLinks table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -3217,109 +3751,114 @@ class $AgentLinksTableManager extends RootTableManager<
               $AgentLinksOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $AgentLinksAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> fromId = const Value.absent(),
-            Value<String> toId = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<DateTime?> deletedAt = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> schemaVersion = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              AgentLinksCompanion(
-            id: id,
-            fromId: fromId,
-            toId: toId,
-            type: type,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deletedAt: deletedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String fromId,
-            required String toId,
-            required String type,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<DateTime?> deletedAt = const Value.absent(),
-            required String serialized,
-            Value<int> schemaVersion = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              AgentLinksCompanion.insert(
-            id: id,
-            fromId: fromId,
-            toId: toId,
-            type: type,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deletedAt: deletedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> fromId = const Value.absent(),
+                Value<String> toId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentLinksCompanion(
+                id: id,
+                fromId: fromId,
+                toId: toId,
+                type: type,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String fromId,
+                required String toId,
+                required String type,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                required String serialized,
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentLinksCompanion.insert(
+                id: id,
+                fromId: fromId,
+                toId: toId,
+                type: type,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $AgentLinksProcessedTableManager = ProcessedTableManager<
-    _$AgentDatabase,
-    AgentLinks,
-    AgentLink,
-    $AgentLinksFilterComposer,
-    $AgentLinksOrderingComposer,
-    $AgentLinksAnnotationComposer,
-    $AgentLinksCreateCompanionBuilder,
-    $AgentLinksUpdateCompanionBuilder,
-    (AgentLink, BaseReferences<_$AgentDatabase, AgentLinks, AgentLink>),
-    AgentLink,
-    PrefetchHooks Function()>;
-typedef $WakeRunLogCreateCompanionBuilder = WakeRunLogCompanion Function({
-  required String runKey,
-  required String agentId,
-  required String reason,
-  Value<String?> reasonId,
-  required String threadId,
-  required String status,
-  Value<String?> logicalChangeKey,
-  required DateTime createdAt,
-  Value<DateTime?> startedAt,
-  Value<DateTime?> completedAt,
-  Value<String?> errorMessage,
-  Value<String?> templateId,
-  Value<String?> templateVersionId,
-  Value<double?> userRating,
-  Value<DateTime?> ratedAt,
-  Value<int> rowid,
-});
-typedef $WakeRunLogUpdateCompanionBuilder = WakeRunLogCompanion Function({
-  Value<String> runKey,
-  Value<String> agentId,
-  Value<String> reason,
-  Value<String?> reasonId,
-  Value<String> threadId,
-  Value<String> status,
-  Value<String?> logicalChangeKey,
-  Value<DateTime> createdAt,
-  Value<DateTime?> startedAt,
-  Value<DateTime?> completedAt,
-  Value<String?> errorMessage,
-  Value<String?> templateId,
-  Value<String?> templateVersionId,
-  Value<double?> userRating,
-  Value<DateTime?> ratedAt,
-  Value<int> rowid,
-});
+typedef $AgentLinksProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      AgentLinks,
+      AgentLink,
+      $AgentLinksFilterComposer,
+      $AgentLinksOrderingComposer,
+      $AgentLinksAnnotationComposer,
+      $AgentLinksCreateCompanionBuilder,
+      $AgentLinksUpdateCompanionBuilder,
+      (AgentLink, BaseReferences<_$AgentDatabase, AgentLinks, AgentLink>),
+      AgentLink,
+      PrefetchHooks Function()
+    >;
+typedef $WakeRunLogCreateCompanionBuilder =
+    WakeRunLogCompanion Function({
+      required String runKey,
+      required String agentId,
+      required String reason,
+      Value<String?> reasonId,
+      required String threadId,
+      required String status,
+      Value<String?> logicalChangeKey,
+      required DateTime createdAt,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> completedAt,
+      Value<String?> errorMessage,
+      Value<String?> templateId,
+      Value<String?> templateVersionId,
+      Value<double?> userRating,
+      Value<DateTime?> ratedAt,
+      Value<int> rowid,
+    });
+typedef $WakeRunLogUpdateCompanionBuilder =
+    WakeRunLogCompanion Function({
+      Value<String> runKey,
+      Value<String> agentId,
+      Value<String> reason,
+      Value<String?> reasonId,
+      Value<String> threadId,
+      Value<String> status,
+      Value<String?> logicalChangeKey,
+      Value<DateTime> createdAt,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> completedAt,
+      Value<String?> errorMessage,
+      Value<String?> templateId,
+      Value<String?> templateVersionId,
+      Value<double?> userRating,
+      Value<DateTime?> ratedAt,
+      Value<int> rowid,
+    });
 
 class $WakeRunLogFilterComposer extends Composer<_$AgentDatabase, WakeRunLog> {
   $WakeRunLogFilterComposer({
@@ -3330,51 +3869,79 @@ class $WakeRunLogFilterComposer extends Composer<_$AgentDatabase, WakeRunLog> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get runKey => $composableBuilder(
-      column: $table.runKey, builder: (column) => ColumnFilters(column));
+    column: $table.runKey,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get agentId => $composableBuilder(
-      column: $table.agentId, builder: (column) => ColumnFilters(column));
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get reason => $composableBuilder(
-      column: $table.reason, builder: (column) => ColumnFilters(column));
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get reasonId => $composableBuilder(
-      column: $table.reasonId, builder: (column) => ColumnFilters(column));
+    column: $table.reasonId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get threadId => $composableBuilder(
-      column: $table.threadId, builder: (column) => ColumnFilters(column));
+    column: $table.threadId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnFilters(column));
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get logicalChangeKey => $composableBuilder(
-      column: $table.logicalChangeKey,
-      builder: (column) => ColumnFilters(column));
+    column: $table.logicalChangeKey,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get startedAt => $composableBuilder(
-      column: $table.startedAt, builder: (column) => ColumnFilters(column));
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get completedAt => $composableBuilder(
-      column: $table.completedAt, builder: (column) => ColumnFilters(column));
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get errorMessage => $composableBuilder(
-      column: $table.errorMessage, builder: (column) => ColumnFilters(column));
+    column: $table.errorMessage,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get templateId => $composableBuilder(
-      column: $table.templateId, builder: (column) => ColumnFilters(column));
+    column: $table.templateId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get templateVersionId => $composableBuilder(
-      column: $table.templateVersionId,
-      builder: (column) => ColumnFilters(column));
+    column: $table.templateVersionId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<double> get userRating => $composableBuilder(
-      column: $table.userRating, builder: (column) => ColumnFilters(column));
+    column: $table.userRating,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get ratedAt => $composableBuilder(
-      column: $table.ratedAt, builder: (column) => ColumnFilters(column));
+    column: $table.ratedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $WakeRunLogOrderingComposer
@@ -3387,52 +3954,79 @@ class $WakeRunLogOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get runKey => $composableBuilder(
-      column: $table.runKey, builder: (column) => ColumnOrderings(column));
+    column: $table.runKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get agentId => $composableBuilder(
-      column: $table.agentId, builder: (column) => ColumnOrderings(column));
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get reason => $composableBuilder(
-      column: $table.reason, builder: (column) => ColumnOrderings(column));
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get reasonId => $composableBuilder(
-      column: $table.reasonId, builder: (column) => ColumnOrderings(column));
+    column: $table.reasonId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get threadId => $composableBuilder(
-      column: $table.threadId, builder: (column) => ColumnOrderings(column));
+    column: $table.threadId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnOrderings(column));
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get logicalChangeKey => $composableBuilder(
-      column: $table.logicalChangeKey,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.logicalChangeKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get startedAt => $composableBuilder(
-      column: $table.startedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get completedAt => $composableBuilder(
-      column: $table.completedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get errorMessage => $composableBuilder(
-      column: $table.errorMessage,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.errorMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get templateId => $composableBuilder(
-      column: $table.templateId, builder: (column) => ColumnOrderings(column));
+    column: $table.templateId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get templateVersionId => $composableBuilder(
-      column: $table.templateVersionId,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.templateVersionId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<double> get userRating => $composableBuilder(
-      column: $table.userRating, builder: (column) => ColumnOrderings(column));
+    column: $table.userRating,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get ratedAt => $composableBuilder(
-      column: $table.ratedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.ratedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $WakeRunLogAnnotationComposer
@@ -3463,7 +4057,9 @@ class $WakeRunLogAnnotationComposer
       $composableBuilder(column: $table.status, builder: (column) => column);
 
   GeneratedColumn<String> get logicalChangeKey => $composableBuilder(
-      column: $table.logicalChangeKey, builder: (column) => column);
+    column: $table.logicalChangeKey,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3472,41 +4068,55 @@ class $WakeRunLogAnnotationComposer
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get completedAt => $composableBuilder(
-      column: $table.completedAt, builder: (column) => column);
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get errorMessage => $composableBuilder(
-      column: $table.errorMessage, builder: (column) => column);
+    column: $table.errorMessage,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get templateId => $composableBuilder(
-      column: $table.templateId, builder: (column) => column);
+    column: $table.templateId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get templateVersionId => $composableBuilder(
-      column: $table.templateVersionId, builder: (column) => column);
+    column: $table.templateVersionId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<double> get userRating => $composableBuilder(
-      column: $table.userRating, builder: (column) => column);
+    column: $table.userRating,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get ratedAt =>
       $composableBuilder(column: $table.ratedAt, builder: (column) => column);
 }
 
-class $WakeRunLogTableManager extends RootTableManager<
-    _$AgentDatabase,
-    WakeRunLog,
-    WakeRunLogData,
-    $WakeRunLogFilterComposer,
-    $WakeRunLogOrderingComposer,
-    $WakeRunLogAnnotationComposer,
-    $WakeRunLogCreateCompanionBuilder,
-    $WakeRunLogUpdateCompanionBuilder,
-    (
-      WakeRunLogData,
-      BaseReferences<_$AgentDatabase, WakeRunLog, WakeRunLogData>
-    ),
-    WakeRunLogData,
-    PrefetchHooks Function()> {
+class $WakeRunLogTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          WakeRunLog,
+          WakeRunLogData,
+          $WakeRunLogFilterComposer,
+          $WakeRunLogOrderingComposer,
+          $WakeRunLogAnnotationComposer,
+          $WakeRunLogCreateCompanionBuilder,
+          $WakeRunLogUpdateCompanionBuilder,
+          (
+            WakeRunLogData,
+            BaseReferences<_$AgentDatabase, WakeRunLog, WakeRunLogData>,
+          ),
+          WakeRunLogData,
+          PrefetchHooks Function()
+        > {
   $WakeRunLogTableManager(_$AgentDatabase db, WakeRunLog table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -3515,124 +4125,129 @@ class $WakeRunLogTableManager extends RootTableManager<
               $WakeRunLogOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $WakeRunLogAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> runKey = const Value.absent(),
-            Value<String> agentId = const Value.absent(),
-            Value<String> reason = const Value.absent(),
-            Value<String?> reasonId = const Value.absent(),
-            Value<String> threadId = const Value.absent(),
-            Value<String> status = const Value.absent(),
-            Value<String?> logicalChangeKey = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime?> startedAt = const Value.absent(),
-            Value<DateTime?> completedAt = const Value.absent(),
-            Value<String?> errorMessage = const Value.absent(),
-            Value<String?> templateId = const Value.absent(),
-            Value<String?> templateVersionId = const Value.absent(),
-            Value<double?> userRating = const Value.absent(),
-            Value<DateTime?> ratedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              WakeRunLogCompanion(
-            runKey: runKey,
-            agentId: agentId,
-            reason: reason,
-            reasonId: reasonId,
-            threadId: threadId,
-            status: status,
-            logicalChangeKey: logicalChangeKey,
-            createdAt: createdAt,
-            startedAt: startedAt,
-            completedAt: completedAt,
-            errorMessage: errorMessage,
-            templateId: templateId,
-            templateVersionId: templateVersionId,
-            userRating: userRating,
-            ratedAt: ratedAt,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String runKey,
-            required String agentId,
-            required String reason,
-            Value<String?> reasonId = const Value.absent(),
-            required String threadId,
-            required String status,
-            Value<String?> logicalChangeKey = const Value.absent(),
-            required DateTime createdAt,
-            Value<DateTime?> startedAt = const Value.absent(),
-            Value<DateTime?> completedAt = const Value.absent(),
-            Value<String?> errorMessage = const Value.absent(),
-            Value<String?> templateId = const Value.absent(),
-            Value<String?> templateVersionId = const Value.absent(),
-            Value<double?> userRating = const Value.absent(),
-            Value<DateTime?> ratedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              WakeRunLogCompanion.insert(
-            runKey: runKey,
-            agentId: agentId,
-            reason: reason,
-            reasonId: reasonId,
-            threadId: threadId,
-            status: status,
-            logicalChangeKey: logicalChangeKey,
-            createdAt: createdAt,
-            startedAt: startedAt,
-            completedAt: completedAt,
-            errorMessage: errorMessage,
-            templateId: templateId,
-            templateVersionId: templateVersionId,
-            userRating: userRating,
-            ratedAt: ratedAt,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> runKey = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> reason = const Value.absent(),
+                Value<String?> reasonId = const Value.absent(),
+                Value<String> threadId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> logicalChangeKey = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<String?> templateId = const Value.absent(),
+                Value<String?> templateVersionId = const Value.absent(),
+                Value<double?> userRating = const Value.absent(),
+                Value<DateTime?> ratedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WakeRunLogCompanion(
+                runKey: runKey,
+                agentId: agentId,
+                reason: reason,
+                reasonId: reasonId,
+                threadId: threadId,
+                status: status,
+                logicalChangeKey: logicalChangeKey,
+                createdAt: createdAt,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                errorMessage: errorMessage,
+                templateId: templateId,
+                templateVersionId: templateVersionId,
+                userRating: userRating,
+                ratedAt: ratedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String runKey,
+                required String agentId,
+                required String reason,
+                Value<String?> reasonId = const Value.absent(),
+                required String threadId,
+                required String status,
+                Value<String?> logicalChangeKey = const Value.absent(),
+                required DateTime createdAt,
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<String?> templateId = const Value.absent(),
+                Value<String?> templateVersionId = const Value.absent(),
+                Value<double?> userRating = const Value.absent(),
+                Value<DateTime?> ratedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WakeRunLogCompanion.insert(
+                runKey: runKey,
+                agentId: agentId,
+                reason: reason,
+                reasonId: reasonId,
+                threadId: threadId,
+                status: status,
+                logicalChangeKey: logicalChangeKey,
+                createdAt: createdAt,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                errorMessage: errorMessage,
+                templateId: templateId,
+                templateVersionId: templateVersionId,
+                userRating: userRating,
+                ratedAt: ratedAt,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $WakeRunLogProcessedTableManager = ProcessedTableManager<
-    _$AgentDatabase,
-    WakeRunLog,
-    WakeRunLogData,
-    $WakeRunLogFilterComposer,
-    $WakeRunLogOrderingComposer,
-    $WakeRunLogAnnotationComposer,
-    $WakeRunLogCreateCompanionBuilder,
-    $WakeRunLogUpdateCompanionBuilder,
-    (
+typedef $WakeRunLogProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      WakeRunLog,
       WakeRunLogData,
-      BaseReferences<_$AgentDatabase, WakeRunLog, WakeRunLogData>
-    ),
-    WakeRunLogData,
-    PrefetchHooks Function()>;
-typedef $SagaLogCreateCompanionBuilder = SagaLogCompanion Function({
-  required String operationId,
-  required String agentId,
-  required String runKey,
-  required String phase,
-  required String status,
-  required String toolName,
-  Value<String?> lastError,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<int> rowid,
-});
-typedef $SagaLogUpdateCompanionBuilder = SagaLogCompanion Function({
-  Value<String> operationId,
-  Value<String> agentId,
-  Value<String> runKey,
-  Value<String> phase,
-  Value<String> status,
-  Value<String> toolName,
-  Value<String?> lastError,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<int> rowid,
-});
+      $WakeRunLogFilterComposer,
+      $WakeRunLogOrderingComposer,
+      $WakeRunLogAnnotationComposer,
+      $WakeRunLogCreateCompanionBuilder,
+      $WakeRunLogUpdateCompanionBuilder,
+      (
+        WakeRunLogData,
+        BaseReferences<_$AgentDatabase, WakeRunLog, WakeRunLogData>,
+      ),
+      WakeRunLogData,
+      PrefetchHooks Function()
+    >;
+typedef $SagaLogCreateCompanionBuilder =
+    SagaLogCompanion Function({
+      required String operationId,
+      required String agentId,
+      required String runKey,
+      required String phase,
+      required String status,
+      required String toolName,
+      Value<String?> lastError,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $SagaLogUpdateCompanionBuilder =
+    SagaLogCompanion Function({
+      Value<String> operationId,
+      Value<String> agentId,
+      Value<String> runKey,
+      Value<String> phase,
+      Value<String> status,
+      Value<String> toolName,
+      Value<String?> lastError,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
 
 class $SagaLogFilterComposer extends Composer<_$AgentDatabase, SagaLog> {
   $SagaLogFilterComposer({
@@ -3643,31 +4258,49 @@ class $SagaLogFilterComposer extends Composer<_$AgentDatabase, SagaLog> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get operationId => $composableBuilder(
-      column: $table.operationId, builder: (column) => ColumnFilters(column));
+    column: $table.operationId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get agentId => $composableBuilder(
-      column: $table.agentId, builder: (column) => ColumnFilters(column));
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get runKey => $composableBuilder(
-      column: $table.runKey, builder: (column) => ColumnFilters(column));
+    column: $table.runKey,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get phase => $composableBuilder(
-      column: $table.phase, builder: (column) => ColumnFilters(column));
+    column: $table.phase,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnFilters(column));
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get toolName => $composableBuilder(
-      column: $table.toolName, builder: (column) => ColumnFilters(column));
+    column: $table.toolName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get lastError => $composableBuilder(
-      column: $table.lastError, builder: (column) => ColumnFilters(column));
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $SagaLogOrderingComposer extends Composer<_$AgentDatabase, SagaLog> {
@@ -3679,31 +4312,49 @@ class $SagaLogOrderingComposer extends Composer<_$AgentDatabase, SagaLog> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get operationId => $composableBuilder(
-      column: $table.operationId, builder: (column) => ColumnOrderings(column));
+    column: $table.operationId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get agentId => $composableBuilder(
-      column: $table.agentId, builder: (column) => ColumnOrderings(column));
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get runKey => $composableBuilder(
-      column: $table.runKey, builder: (column) => ColumnOrderings(column));
+    column: $table.runKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get phase => $composableBuilder(
-      column: $table.phase, builder: (column) => ColumnOrderings(column));
+    column: $table.phase,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnOrderings(column));
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get toolName => $composableBuilder(
-      column: $table.toolName, builder: (column) => ColumnOrderings(column));
+    column: $table.toolName,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get lastError => $composableBuilder(
-      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $SagaLogAnnotationComposer extends Composer<_$AgentDatabase, SagaLog> {
@@ -3715,7 +4366,9 @@ class $SagaLogAnnotationComposer extends Composer<_$AgentDatabase, SagaLog> {
     super.$removeJoinBuilderFromRootComposer,
   });
   GeneratedColumn<String> get operationId => $composableBuilder(
-      column: $table.operationId, builder: (column) => column);
+    column: $table.operationId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get agentId =>
       $composableBuilder(column: $table.agentId, builder: (column) => column);
@@ -3742,20 +4395,24 @@ class $SagaLogAnnotationComposer extends Composer<_$AgentDatabase, SagaLog> {
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $SagaLogTableManager extends RootTableManager<
-    _$AgentDatabase,
-    SagaLog,
-    SagaLogData,
-    $SagaLogFilterComposer,
-    $SagaLogOrderingComposer,
-    $SagaLogAnnotationComposer,
-    $SagaLogCreateCompanionBuilder,
-    $SagaLogUpdateCompanionBuilder,
-    (SagaLogData, BaseReferences<_$AgentDatabase, SagaLog, SagaLogData>),
-    SagaLogData,
-    PrefetchHooks Function()> {
+class $SagaLogTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          SagaLog,
+          SagaLogData,
+          $SagaLogFilterComposer,
+          $SagaLogOrderingComposer,
+          $SagaLogAnnotationComposer,
+          $SagaLogCreateCompanionBuilder,
+          $SagaLogUpdateCompanionBuilder,
+          (SagaLogData, BaseReferences<_$AgentDatabase, SagaLog, SagaLogData>),
+          SagaLogData,
+          PrefetchHooks Function()
+        > {
   $SagaLogTableManager(_$AgentDatabase db, SagaLog table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -3764,73 +4421,76 @@ class $SagaLogTableManager extends RootTableManager<
               $SagaLogOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $SagaLogAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> operationId = const Value.absent(),
-            Value<String> agentId = const Value.absent(),
-            Value<String> runKey = const Value.absent(),
-            Value<String> phase = const Value.absent(),
-            Value<String> status = const Value.absent(),
-            Value<String> toolName = const Value.absent(),
-            Value<String?> lastError = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SagaLogCompanion(
-            operationId: operationId,
-            agentId: agentId,
-            runKey: runKey,
-            phase: phase,
-            status: status,
-            toolName: toolName,
-            lastError: lastError,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String operationId,
-            required String agentId,
-            required String runKey,
-            required String phase,
-            required String status,
-            required String toolName,
-            Value<String?> lastError = const Value.absent(),
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SagaLogCompanion.insert(
-            operationId: operationId,
-            agentId: agentId,
-            runKey: runKey,
-            phase: phase,
-            status: status,
-            toolName: toolName,
-            lastError: lastError,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> operationId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> runKey = const Value.absent(),
+                Value<String> phase = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> toolName = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SagaLogCompanion(
+                operationId: operationId,
+                agentId: agentId,
+                runKey: runKey,
+                phase: phase,
+                status: status,
+                toolName: toolName,
+                lastError: lastError,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String operationId,
+                required String agentId,
+                required String runKey,
+                required String phase,
+                required String status,
+                required String toolName,
+                Value<String?> lastError = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SagaLogCompanion.insert(
+                operationId: operationId,
+                agentId: agentId,
+                runKey: runKey,
+                phase: phase,
+                status: status,
+                toolName: toolName,
+                lastError: lastError,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $SagaLogProcessedTableManager = ProcessedTableManager<
-    _$AgentDatabase,
-    SagaLog,
-    SagaLogData,
-    $SagaLogFilterComposer,
-    $SagaLogOrderingComposer,
-    $SagaLogAnnotationComposer,
-    $SagaLogCreateCompanionBuilder,
-    $SagaLogUpdateCompanionBuilder,
-    (SagaLogData, BaseReferences<_$AgentDatabase, SagaLog, SagaLogData>),
-    SagaLogData,
-    PrefetchHooks Function()>;
+typedef $SagaLogProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      SagaLog,
+      SagaLogData,
+      $SagaLogFilterComposer,
+      $SagaLogOrderingComposer,
+      $SagaLogAnnotationComposer,
+      $SagaLogCreateCompanionBuilder,
+      $SagaLogUpdateCompanionBuilder,
+      (SagaLogData, BaseReferences<_$AgentDatabase, SagaLog, SagaLogData>),
+      SagaLogData,
+      PrefetchHooks Function()
+    >;
 
 class $AgentDatabaseManager {
   final _$AgentDatabase _db;

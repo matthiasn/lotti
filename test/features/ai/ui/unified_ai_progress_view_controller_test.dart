@@ -37,19 +37,21 @@ void main() {
 
   setUp(() {
     final now = DateTime.now();
-    testPromptConfig = AiConfig.prompt(
-      id: 'test-prompt-1',
-      name: 'Test Prompt',
-      systemMessage: 'You are a helpful assistant',
-      userMessage: 'Please help with this task',
-      defaultModelId: 'model-1',
-      modelIds: ['model-1'],
-      createdAt: now,
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-      description: 'A test prompt for testing purposes',
-    ) as AiConfigPrompt;
+    testPromptConfig =
+        AiConfig.prompt(
+              id: 'test-prompt-1',
+              name: 'Test Prompt',
+              systemMessage: 'You are a helpful assistant',
+              userMessage: 'Please help with this task',
+              defaultModelId: 'model-1',
+              modelIds: ['model-1'],
+              createdAt: now,
+              useReasoning: false,
+              requiredInputData: [InputDataType.task],
+              aiResponseType: AiResponseType.taskSummary,
+              description: 'A test prompt for testing purposes',
+            )
+            as AiConfigPrompt;
 
     mockRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
@@ -105,8 +107,9 @@ void main() {
     ).thenAnswer((invocation) async {
       final onProgress =
           invocation.namedArguments[#onProgress] as void Function(String);
-      final onStatusChange = invocation.namedArguments[#onStatusChange] as void
-          Function(InferenceStatus);
+      final onStatusChange =
+          invocation.namedArguments[#onStatusChange]
+              as void Function(InferenceStatus);
 
       // Simulate inference
       onStatusChange(InferenceStatus.running);
@@ -118,26 +121,30 @@ void main() {
       completer.complete();
     });
 
-    final container = ProviderContainer(
-      overrides: [
-        unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
-        cloudInferenceRepositoryProvider.overrideWithValue(mockCloudRepository),
-        aiConfigByIdProvider(testPromptId).overrideWith(
-          (ref) => Future.value(testPromptConfig),
-        ),
-      ],
-    )
-
-      // Listen to state changes
-      ..listen(
-        unifiedAiControllerProvider((
-          entityId: testEntityId,
-          promptId: testPromptId,
-        )),
-        (previous, next) {
-          stateChanges.add(next.message);
-        },
-      );
+    final container =
+        ProviderContainer(
+            overrides: [
+              unifiedAiInferenceRepositoryProvider.overrideWithValue(
+                mockRepository,
+              ),
+              cloudInferenceRepositoryProvider.overrideWithValue(
+                mockCloudRepository,
+              ),
+              aiConfigByIdProvider(testPromptId).overrideWith(
+                (ref) => Future.value(testPromptConfig),
+              ),
+            ],
+          )
+          // Listen to state changes
+          ..listen(
+            unifiedAiControllerProvider((
+              entityId: testEntityId,
+              promptId: testPromptId,
+            )),
+            (previous, next) {
+              stateChanges.add(next.message);
+            },
+          );
 
     // Get initial state
     final initialState = container.read(

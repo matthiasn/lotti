@@ -86,8 +86,9 @@ void main() {
       expect(dismissCalled, isTrue);
     });
 
-    testWidgets('static show method displays modal and calls onSetUp',
-        (tester) async {
+    testWidgets('static show method displays modal and calls onSetUp', (
+      tester,
+    ) async {
       var setUpCalled = false;
 
       await tester.pumpWidget(
@@ -122,45 +123,46 @@ void main() {
     });
 
     testWidgets(
-        'tapping outside modal dismisses temporarily without calling callbacks',
-        (tester) async {
-      var setUpCalled = false;
-      var dismissCalled = false;
+      'tapping outside modal dismisses temporarily without calling callbacks',
+      (tester) async {
+        var setUpCalled = false;
+        var dismissCalled = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                GeminiSetupPromptModal.show(
-                  context,
-                  onSetUp: () => setUpCalled = true,
-                  onDismiss: () => dismissCalled = true,
-                );
-              },
-              child: const Text('Open Modal'),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  GeminiSetupPromptModal.show(
+                    context,
+                    onSetUp: () => setUpCalled = true,
+                    onDismiss: () => dismissCalled = true,
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
+        expect(find.text('Set Up AI Features?'), findsOneWidget);
 
-      // Tap outside the modal (on the barrier)
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
+        // Tap outside the modal (on the barrier)
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pumpAndSettle();
 
-      // Extra pump to process the post-frame callback
-      await tester.pump();
+        // Extra pump to process the post-frame callback
+        await tester.pump();
 
-      // Modal should be dismissed but neither callback should be called
-      // This allows the modal to reappear on next app start
-      expect(find.text('Set Up AI Features?'), findsNothing);
-      expect(setUpCalled, isFalse);
-      expect(dismissCalled, isFalse);
-    });
+        // Modal should be dismissed but neither callback should be called
+        // This allows the modal to reappear on next app start
+        expect(find.text('Set Up AI Features?'), findsNothing);
+        expect(setUpCalled, isFalse);
+        expect(dismissCalled, isFalse);
+      },
+    );
   });
 }

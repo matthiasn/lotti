@@ -32,8 +32,9 @@ class ProfileSelector extends ConsumerWidget {
     };
 
     // Filter desktop-only on mobile.
-    final filtered =
-        isDesktop ? profiles : profiles.where((p) => !p.desktopOnly).toList();
+    final filtered = isDesktop
+        ? profiles
+        : profiles.where((p) => !p.desktopOnly).toList();
 
     final selected = selectedProfileId != null
         ? filtered.where((p) => p.id == selectedProfileId).firstOrNull
@@ -152,8 +153,9 @@ class _ProfilePickerContent extends StatelessWidget {
                             Text(
                               profile.thinkingModelId,
                               style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: context.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                                 fontFamily: 'monospace',
                               ),
                             ),

@@ -75,12 +75,14 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       taskId: task.id,
     );
     if (success) {
-      _updatedItems.add(UpdatedItemDetail(
-        id: id,
-        title: newTitle,
-        isChecked: currentIsChecked,
-        changes: ['title'],
-      ));
+      _updatedItems.add(
+        UpdatedItemDetail(
+          id: id,
+          title: newTitle,
+          isChecked: currentIsChecked,
+          changes: ['title'],
+        ),
+      );
       return true;
     }
     return false;
@@ -303,8 +305,9 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       }
 
       // Check item belongs to task's checklists
-      final belongsToTask =
-          entity.data.linkedChecklists.any(allowedChecklistIds.contains);
+      final belongsToTask = entity.data.linkedChecklists.any(
+        allowedChecklistIds.contains,
+      );
       if (!belongsToTask) {
         _skip(id, 'Item does not belong to this task');
         continue;
@@ -334,11 +337,13 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         String? skipReason;
         if (trimmedReason.isEmpty) {
-          skipReason = 'User set this item at $checkedAtStr. Provide a reason '
+          skipReason =
+              'User set this item at $checkedAtStr. Provide a reason '
               '(>= $minReasonLength chars) citing evidence from after '
               'that time to override.';
         } else if (trimmedReason.length < minReasonLength) {
-          skipReason = 'Reason too short (${trimmedReason.length} chars, '
+          skipReason =
+              'Reason too short (${trimmedReason.length} chars, '
               'minimum $minReasonLength). Provide a substantive reason '
               'citing specific evidence from after $checkedAtStr.';
         }
@@ -369,8 +374,9 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final updatedData = entity.data.copyWith(
         isChecked: newIsChecked ?? currentIsChecked,
         title: newTitle ?? currentTitle,
-        checkedBy:
-            isCheckedChanged ? CheckedBySource.agent : entity.data.checkedBy,
+        checkedBy: isCheckedChanged
+            ? CheckedBySource.agent
+            : entity.data.checkedBy,
         checkedAt: isCheckedChanged ? _clock() : entity.data.checkedAt,
       );
 
@@ -386,12 +392,14 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           if (isCheckedChanged) 'isChecked',
           if (titleChanged) 'title',
         ];
-        _updatedItems.add(UpdatedItemDetail(
-          id: id,
-          title: updatedData.title,
-          isChecked: updatedData.isChecked,
-          changes: changes,
-        ));
+        _updatedItems.add(
+          UpdatedItemDetail(
+            id: id,
+            title: updatedData.title,
+            isChecked: updatedData.isChecked,
+            changes: changes,
+          ),
+        );
 
         developer.log(
           'Updated checklist item $id: changes=$changes',
@@ -437,9 +445,11 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     required List<FunctionCallResult> failedItems,
     required List<String> successfulDescriptions,
   }) {
-    final errorSummary = failedItems.map((item) {
-      return '- ${item.error}';
-    }).join('\n');
+    final errorSummary = failedItems
+        .map((item) {
+          return '- ${item.error}';
+        })
+        .join('\n');
 
     return '''
 I noticed errors in your checklist update call:
@@ -465,10 +475,12 @@ Please retry with the correct format.''';
     final parts = <String>[];
 
     if (_updatedItems.isNotEmpty) {
-      final descriptions = _updatedItems.map((item) {
-        final changeSummary = item.changes.join(' & ');
-        return '"${item.title}" ($changeSummary)';
-      }).join(', ');
+      final descriptions = _updatedItems
+          .map((item) {
+            final changeSummary = item.changes.join(' & ');
+            return '"${item.title}" ($changeSummary)';
+          })
+          .join(', ');
       parts.add(
         'Updated ${_updatedItems.length} '
         'item${_updatedItems.length == 1 ? '' : 's'}: $descriptions.',
@@ -476,8 +488,9 @@ Please retry with the correct format.''';
     }
 
     if (_skippedItems.isNotEmpty) {
-      final reasons =
-          _skippedItems.map((item) => '${item.id}: ${item.reason}').join(', ');
+      final reasons = _skippedItems
+          .map((item) => '${item.id}: ${item.reason}')
+          .join(', ');
       parts.add(
         'Skipped ${_skippedItems.length} '
         'item${_skippedItems.length == 1 ? '' : 's'}: $reasons.',

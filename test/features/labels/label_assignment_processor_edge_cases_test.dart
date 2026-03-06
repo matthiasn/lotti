@@ -44,26 +44,29 @@ void main() {
   });
 
   LabelDefinition makeLabel(String id) => LabelDefinition(
-        id: id,
-        name: id,
-        color: '#000',
-        description: null,
-        sortOrder: null,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        private: false,
-      );
+    id: id,
+    name: id,
+    color: '#000',
+    description: null,
+    sortOrder: null,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    vectorClock: null,
+    private: false,
+  );
 
   test('concurrent assignments to same task do not duplicate labels', () async {
-    when(() => mockDb.getLabelDefinitionById('a'))
-        .thenAnswer((_) async => makeLabel('a'));
+    when(
+      () => mockDb.getLabelDefinitionById('a'),
+    ).thenAnswer((_) async => makeLabel('a'));
 
     // Delay persistence to increase overlap
-    when(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).thenAnswer((_) async {
+    when(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    ).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       return true;
     });
@@ -85,49 +88,57 @@ void main() {
     expect(results[1].assigned, ['a']);
     // Repository is called for both (current behavior), but labels API
     // remains de-duplicating internally.
-    verify(() => mockRepo.addLabels(
-          journalEntityId: 't1',
-          addedLabelIds: ['a'],
-        )).called(2);
+    verify(
+      () => mockRepo.addLabels(
+        journalEntityId: 't1',
+        addedLabelIds: ['a'],
+      ),
+    ).called(2);
   });
 
-  test('assignment when task is deleted mid-operation (persistence fails)',
-      () async {
-    when(() => mockDb.getLabelDefinitionById('a'))
-        .thenAnswer((_) async => makeLabel('a'));
+  test(
+    'assignment when task is deleted mid-operation (persistence fails)',
+    () async {
+      when(
+        () => mockDb.getLabelDefinitionById('a'),
+      ).thenAnswer((_) async => makeLabel('a'));
+      when(
+        () => mockRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      ).thenAnswer((_) async => false); // simulate deleted task
+
+      final events = getIt<LabelAssignmentEventService>();
+      final received = <LabelAssignmentEvent>[];
+      final sub = events.stream.listen(received.add);
+
+      final result = await processor.processAssignment(
+        taskId: 't1',
+        proposedIds: const ['a'],
+        existingIds: const [],
+      );
+      // Allow asynchronous stream delivery
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      // Even if persistence fails, current behavior publishes event and records rate limit
+      expect(result.assigned, ['a']);
+      expect(received.length, 1);
+      expect(limiter.isRateLimited('t1'), isTrue);
+    },
+  );
+
+  test('rate limiter clear allows subsequent assignments', () async {
+    when(
+      () => mockDb.getLabelDefinitionById('a'),
+    ).thenAnswer((_) async => makeLabel('a'));
     when(
       () => mockRepo.addLabels(
         journalEntityId: any(named: 'journalEntityId'),
         addedLabelIds: any(named: 'addedLabelIds'),
       ),
-    ).thenAnswer((_) async => false); // simulate deleted task
-
-    final events = getIt<LabelAssignmentEventService>();
-    final received = <LabelAssignmentEvent>[];
-    final sub = events.stream.listen(received.add);
-
-    final result = await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const ['a'],
-      existingIds: const [],
-    );
-    // Allow asynchronous stream delivery
-    await Future<void>.delayed(Duration.zero);
-    await sub.cancel();
-
-    // Even if persistence fails, current behavior publishes event and records rate limit
-    expect(result.assigned, ['a']);
-    expect(received.length, 1);
-    expect(limiter.isRateLimited('t1'), isTrue);
-  });
-
-  test('rate limiter clear allows subsequent assignments', () async {
-    when(() => mockDb.getLabelDefinitionById('a'))
-        .thenAnswer((_) async => makeLabel('a'));
-    when(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => true);
 
     // First assignment records in limiter
     final first = await processor.processAssignment(
@@ -150,13 +161,16 @@ void main() {
 
   test('supports special characters in label IDs (spaces, unicode)', () async {
     for (final id in const ['with space', 'ünicode', 'emoji😀']) {
-      when(() => mockDb.getLabelDefinitionById(id))
-          .thenAnswer((_) async => makeLabel(id));
+      when(
+        () => mockDb.getLabelDefinitionById(id),
+      ).thenAnswer((_) async => makeLabel(id));
     }
-    when(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    ).thenAnswer((_) async => true);
 
     final result = await processor.processAssignment(
       taskId: 't3',

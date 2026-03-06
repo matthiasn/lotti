@@ -7,13 +7,13 @@ part of 'chat_message.dart';
 // **************************************************************************
 
 _ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => _ChatMessage(
-      id: json['id'] as String,
-      content: json['content'] as String,
-      role: $enumDecode(_$ChatMessageRoleEnumMap, json['role']),
-      timestamp: DateTime.parse(json['timestamp'] as String),
-      isStreaming: json['isStreaming'] as bool? ?? false,
-      metadata: json['metadata'] as Map<String, dynamic>?,
-    );
+  id: json['id'] as String,
+  content: json['content'] as String,
+  role: $enumDecode(_$ChatMessageRoleEnumMap, json['role']),
+  timestamp: DateTime.parse(json['timestamp'] as String),
+  isStreaming: json['isStreaming'] as bool? ?? false,
+  metadata: json['metadata'] as Map<String, dynamic>?,
+);
 
 Map<String, dynamic> _$ChatMessageToJson(_ChatMessage instance) =>
     <String, dynamic>{

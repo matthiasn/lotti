@@ -43,8 +43,9 @@ class AgentConversationLog extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          context.messages
-              .agentMessagesErrorLoading(threadsAsync.error.toString()),
+          context.messages.agentMessagesErrorLoading(
+            threadsAsync.error.toString(),
+          ),
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -126,8 +127,9 @@ class _ThreadTile extends ConsumerWidget {
     }
     final firstMsg = messages.first;
     final lastMsg = messages.last;
-    final toolCallCount =
-        messages.where((m) => m.kind == AgentMessageKind.action).length;
+    final toolCallCount = messages
+        .where((m) => m.kind == AgentMessageKind.action)
+        .length;
     final startTimestamp = formatAgentDateTime(firstMsg.createdAt);
     final duration = lastMsg.createdAt.difference(firstMsg.createdAt);
     final durationStr = _formatDuration(duration);
@@ -147,8 +149,9 @@ class _ThreadTile extends ConsumerWidget {
     // Per-thread token usage.
     final locale = Localizations.localeOf(context).toString();
     final tokenNumberFormat = NumberFormat.decimalPattern(locale);
-    final tokenUsageAsync =
-        ref.watch(tokenUsageForThreadProvider(agentId, threadId));
+    final tokenUsageAsync = ref.watch(
+      tokenUsageForThreadProvider(agentId, threadId),
+    );
     final tokenUsage = tokenUsageAsync.value;
 
     return ExpansionTile(

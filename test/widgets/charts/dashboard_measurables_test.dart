@@ -36,8 +36,9 @@ void main() {
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SecureStorage>(mockSecureStorage);
 
-      when(() => mockJournalDb.getConfigFlag(any()))
-          .thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.getConfigFlag(any()),
+      ).thenAnswer((_) async => false);
     });
     tearDown(getIt.reset);
 
@@ -63,67 +64,69 @@ void main() {
         '${measurablePullUps.displayName} [dailyMax]',
       ),
     ]) {
-      final expectedChartType =
-          testCase.$2 == AggregationType.none ? 'line' : 'bar';
+      final expectedChartType = testCase.$2 == AggregationType.none
+          ? 'line'
+          : 'bar';
       testWidgets(
-          'renders chart with ${testCase.$2.name} aggregation and $expectedChartType chart',
-          (tester) async {
-        final measurable = testCase.$2 == AggregationType.none
-            ? testCase.$1
-            : testCase.$1.copyWith(aggregationType: testCase.$2);
+        'renders chart with ${testCase.$2.name} aggregation and $expectedChartType chart',
+        (tester) async {
+          final measurable = testCase.$2 == AggregationType.none
+              ? testCase.$1
+              : testCase.$1.copyWith(aggregationType: testCase.$2);
 
-        when(
-          () => mockJournalDb.getMeasurementsByType(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-            type: testCase.$1.id,
-          ),
-        ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
-
-        when(
-          () => mockJournalDb.getMeasurableDataTypeById(testCase.$1.id),
-        ).thenAnswer((_) async => measurable);
-
-        final needsBeamer = testCase.$2 == AggregationType.dailyMax;
-
-        Widget chart = MeasurablesBarChart(
-          dashboardId: 'dashboardId',
-          rangeStart: DateTime(2022),
-          rangeEnd: DateTime(2023),
-          measurableDataTypeId: testCase.$1.id,
-          enableCreate: needsBeamer,
-        );
-
-        if (needsBeamer) {
-          chart = BeamerProvider(
-            routerDelegate: BeamerDelegate(
-              locationBuilder: RoutesLocationBuilder(
-                routes: {
-                  '/': (context, state, data) => Container(),
-                },
-              ).call,
+          when(
+            () => mockJournalDb.getMeasurementsByType(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+              type: testCase.$1.id,
             ),
-            child: chart,
+          ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
+
+          when(
+            () => mockJournalDb.getMeasurableDataTypeById(testCase.$1.id),
+          ).thenAnswer((_) async => measurable);
+
+          final needsBeamer = testCase.$2 == AggregationType.dailyMax;
+
+          Widget chart = MeasurablesBarChart(
+            dashboardId: 'dashboardId',
+            rangeStart: DateTime(2022),
+            rangeEnd: DateTime(2023),
+            measurableDataTypeId: testCase.$1.id,
+            enableCreate: needsBeamer,
           );
-        }
 
-        await tester.pumpWidget(makeTestableWidgetWithScaffold(chart));
-        await tester.pump(const Duration(milliseconds: 50));
-        await tester.pump();
+          if (needsBeamer) {
+            chart = BeamerProvider(
+              routerDelegate: BeamerDelegate(
+                locationBuilder: RoutesLocationBuilder(
+                  routes: {
+                    '/': (context, state, data) => Container(),
+                  },
+                ).call,
+              ),
+              child: chart,
+            );
+          }
 
-        expect(find.text(testCase.$3), findsOneWidget);
-        // 'none' aggregation uses line chart, all others use bar chart
-        if (testCase.$2 == AggregationType.none) {
-          expect(find.byType(TimeSeriesLineChart), findsOneWidget);
-        } else {
-          expect(find.byType(TimeSeriesBarChart), findsOneWidget);
-        }
+          await tester.pumpWidget(makeTestableWidgetWithScaffold(chart));
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.pump();
 
-        expect(
-          find.byType(MeasurablesBarChart),
-          findsOneWidget,
-        );
-      });
+          expect(find.text(testCase.$3), findsOneWidget);
+          // 'none' aggregation uses line chart, all others use bar chart
+          if (testCase.$2 == AggregationType.none) {
+            expect(find.byType(TimeSeriesLineChart), findsOneWidget);
+          } else {
+            expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+          }
+
+          expect(
+            find.byType(MeasurablesBarChart),
+            findsOneWidget,
+          );
+        },
+      );
     }
 
     testWidgets('displays description stacked under title', (tester) async {
@@ -135,8 +138,9 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      when(() => mockJournalDb.getMeasurableDataTypeById(measurableWater.id))
-          .thenAnswer((_) async => measurableWater);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(measurableWater.id),
+      ).thenAnswer((_) async => measurableWater);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

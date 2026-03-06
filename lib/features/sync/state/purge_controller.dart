@@ -4,8 +4,9 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-final purgeControllerProvider =
-    NotifierProvider<PurgeController, PurgeState>(PurgeController.new);
+final purgeControllerProvider = NotifierProvider<PurgeController, PurgeState>(
+  PurgeController.new,
+);
 
 class PurgeState {
   const PurgeState({

@@ -16,8 +16,9 @@ class AssistantSettingsSheet extends ConsumerWidget {
     final eligibleAsync = ref.watch(
       eligibleChatModelsForCategoryProvider(categoryId),
     );
-    final sessionController =
-        ref.read(chatSessionControllerProvider(categoryId).notifier);
+    final sessionController = ref.read(
+      chatSessionControllerProvider(categoryId).notifier,
+    );
     final sessionState = ref.watch(chatSessionControllerProvider(categoryId));
     final isStreaming = sessionState.isStreaming;
     final includeThoughts = ref.watch(geminiIncludeThoughtsProvider);
@@ -26,8 +27,9 @@ class AssistantSettingsSheet extends ConsumerWidget {
       constraints: const BoxConstraints(maxWidth: 680),
       child: Container(
         decoration: BoxDecoration(
-          color:
-              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.98),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.98,
+          ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: theme.colorScheme.outlineVariant,
@@ -85,8 +87,8 @@ class AssistantSettingsSheet extends ConsumerWidget {
                   // previously selected model is not in the eligible list.
                   final safeSelectedId =
                       models.any((m) => m.id == sessionState.selectedModelId)
-                          ? sessionState.selectedModelId
-                          : null;
+                      ? sessionState.selectedModelId
+                      : null;
                   return DropdownButtonFormField<String>(
                     initialValue: safeSelectedId,
                     decoration: InputDecoration(
@@ -132,17 +134,21 @@ class AssistantSettingsSheet extends ConsumerWidget {
                 },
                 loading: () => const SizedBox(
                   height: 48,
-                  child:
-                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
                 error: (err, __) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Failed to load models'),
                     const SizedBox(height: 8),
-                    Text('$err',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.colorScheme.error)),
+                    Text(
+                      '$err',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -152,9 +158,11 @@ class AssistantSettingsSheet extends ConsumerWidget {
                 value: includeThoughts,
                 onChanged: isStreaming
                     ? null
-                    : (v) => ref
-                        .read(geminiIncludeThoughtsProvider.notifier)
-                        .includeThoughts = v,
+                    : (v) =>
+                          ref
+                                  .read(geminiIncludeThoughtsProvider.notifier)
+                                  .includeThoughts =
+                              v,
               ),
               const SizedBox(height: 8),
             ],

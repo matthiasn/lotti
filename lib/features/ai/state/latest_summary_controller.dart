@@ -15,8 +15,8 @@ typedef LatestSummaryParams = ({String id, AiResponseType aiResponseType});
 /// Provider for the latest AI summary controller.
 final latestSummaryControllerProvider = AsyncNotifierProvider.autoDispose
     .family<LatestSummaryController, AiResponseEntry?, LatestSummaryParams>(
-  LatestSummaryController.new,
-);
+      LatestSummaryController.new,
+    );
 
 /// Fetches all AI response entries of the given type linked to [id].
 /// Used for bulk operations like counting or deleting all task summaries.
@@ -25,8 +25,9 @@ Future<List<AiResponseEntry>> allAiResponses(
   required String id,
   required AiResponseType aiResponseType,
 }) async {
-  final linked =
-      await ref.read(journalRepositoryProvider).getLinkedEntities(linkedTo: id);
+  final linked = await ref
+      .read(journalRepositoryProvider)
+      .getLinkedEntities(linkedTo: id);
 
   return linked
       .whereType<AiResponseEntry>()
@@ -56,8 +57,9 @@ class LatestSummaryController extends AsyncNotifier<AiResponseEntry?> {
   }
 
   void _listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
         _fetch().then((latest) {
           if (ref.mounted && latest != state.value) {

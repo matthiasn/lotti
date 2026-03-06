@@ -82,15 +82,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     (widget.journalDb ?? getIt<JournalDb>())
         .watchActiveConfigFlagNames()
         .forEach((configFlags) {
-      if (mounted) {
-        setState(() {
-          _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
-          _isDashboardsPageEnabled =
-              configFlags.contains(enableDashboardsPageFlag);
-          _isDailyOsPageEnabled = configFlags.contains(enableDailyOsPageFlag);
+          if (mounted) {
+            setState(() {
+              _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
+              _isDashboardsPageEnabled = configFlags.contains(
+                enableDashboardsPageFlag,
+              );
+              _isDailyOsPageEnabled = configFlags.contains(
+                enableDailyOsPageFlag,
+              );
+            });
+          }
         });
-      }
-    });
   }
 
   void _showNotLoggedInToast(BuildContext context) {
@@ -377,7 +380,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
       initialPath: effectiveNavService.currentPath,
       locationBuilder: RoutesLocationBuilder(
         routes: {
-          '*': (context, state, data) => AppScreen(journalDb: widget.journalDb)
+          '*': (context, state, data) => AppScreen(journalDb: widget.journalDb),
         },
       ).call,
     );
@@ -397,8 +400,9 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     if (themingState.darkTheme == null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme:
-            ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black87),
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: Colors.black87,
+        ),
         home: const EmptyScaffoldWithTitle(
           'Loading...',
         ),

@@ -2,8 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/providers/service_providers.dart';
 
-final fts5ControllerProvider =
-    NotifierProvider<Fts5Controller, Fts5State>(Fts5Controller.new);
+final fts5ControllerProvider = NotifierProvider<Fts5Controller, Fts5State>(
+  Fts5Controller.new,
+);
 
 class Fts5State {
   const Fts5State({

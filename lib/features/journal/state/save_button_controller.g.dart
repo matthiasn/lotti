@@ -14,16 +14,16 @@ final saveButtonControllerProvider = SaveButtonControllerFamily._();
 
 final class SaveButtonControllerProvider
     extends $AsyncNotifierProvider<SaveButtonController, bool?> {
-  SaveButtonControllerProvider._(
-      {required SaveButtonControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'saveButtonControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  SaveButtonControllerProvider._({
+    required SaveButtonControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'saveButtonControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$saveButtonControllerHash();
@@ -55,21 +55,25 @@ String _$saveButtonControllerHash() =>
 
 final class SaveButtonControllerFamily extends $Family
     with
-        $ClassFamilyOverride<SaveButtonController, AsyncValue<bool?>, bool?,
-            FutureOr<bool?>, String> {
+        $ClassFamilyOverride<
+          SaveButtonController,
+          AsyncValue<bool?>,
+          bool?,
+          FutureOr<bool?>,
+          String
+        > {
   SaveButtonControllerFamily._()
-      : super(
-          retry: null,
-          name: r'saveButtonControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'saveButtonControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   SaveButtonControllerProvider call({
     required String id,
-  }) =>
-      SaveButtonControllerProvider._(argument: id, from: this);
+  }) => SaveButtonControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'saveButtonControllerProvider';
@@ -86,15 +90,19 @@ abstract class _$SaveButtonController extends $AsyncNotifier<bool?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<bool?>, bool?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<bool?>, bool?>,
-        AsyncValue<bool?>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool?>, bool?>,
+              AsyncValue<bool?>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+      ref,
+      () => build(
+        id: _$args,
+      ),
+    );
   }
 }

@@ -14,8 +14,9 @@ class DaySummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final budgetStatsAsync =
-        ref.watch(dayBudgetStatsProvider(date: selectedDate));
+    final budgetStatsAsync = ref.watch(
+      dayBudgetStatsProvider(date: selectedDate),
+    );
 
     return budgetStatsAsync.when(
       data: (stats) {
@@ -67,13 +68,16 @@ class DaySummary extends ConsumerWidget {
                       label: stats.isOverBudget
                           ? context.messages.dailyOsOver
                           : context.messages.dailyOsRemaining,
-                      value:
-                          _formatDuration(context, stats.totalRemaining.abs()),
+                      value: _formatDuration(
+                        context,
+                        stats.totalRemaining.abs(),
+                      ),
                       icon: stats.isOverBudget
                           ? MdiIcons.alertCircle
                           : MdiIcons.clockOutline,
-                      valueColor:
-                          stats.isOverBudget ? context.colorScheme.error : null,
+                      valueColor: stats.isOverBudget
+                          ? context.colorScheme.error
+                          : null,
                     ),
                   ),
                 ],
@@ -184,8 +188,10 @@ class _OverallProgressBar extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final maxWidth = constraints.maxWidth;
-              final fillWidth =
-                  (fraction.clamp(0.0, 1.0) * maxWidth).clamp(0.0, maxWidth);
+              final fillWidth = (fraction.clamp(0.0, 1.0) * maxWidth).clamp(
+                0.0,
+                maxWidth,
+              );
 
               return Stack(
                 children: [

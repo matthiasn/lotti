@@ -54,12 +54,14 @@ void main() {
       service = ScreenshotPortalService();
 
       // Setup default mock behaviors
-      when(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
 
       when(() => mockDBusClient.close()).thenAnswer((_) async {});
     });
@@ -107,10 +109,14 @@ void main() {
 
     group('Constants', () {
       test('should have correct screenshot portal constants', () {
-        expect(ScreenshotPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Screenshot'));
         expect(
-            ScreenshotPortalConstants.screenshotMethod, equals('Screenshot'));
+          ScreenshotPortalConstants.interfaceName,
+          equals('org.freedesktop.portal.Screenshot'),
+        );
+        expect(
+          ScreenshotPortalConstants.screenshotMethod,
+          equals('Screenshot'),
+        );
       });
     });
 
@@ -158,7 +164,9 @@ void main() {
           await service.initialize();
 
           await expectLater(
-              service.takeScreenshot(interactive: true), throwsA(anything));
+            service.takeScreenshot(interactive: true),
+            throwsA(anything),
+          );
         } catch (e) {
           // Expected in test environment
         }
@@ -173,11 +181,12 @@ void main() {
           await service.initialize();
 
           await expectLater(
-              service.takeScreenshot(
-                directory: '/test/dir',
-                filename: 'test.jpg',
-              ),
-              throwsA(anything));
+            service.takeScreenshot(
+              directory: '/test/dir',
+              filename: 'test.jpg',
+            ),
+            throwsA(anything),
+          );
         } catch (e) {
           // Expected in test environment
         }
@@ -192,12 +201,13 @@ void main() {
           await service.initialize();
 
           await expectLater(
-              service.takeScreenshot(
-                interactive: true,
-                directory: '/test/dir',
-                filename: 'test.jpg',
-              ),
-              throwsA(anything));
+            service.takeScreenshot(
+              interactive: true,
+              directory: '/test/dir',
+              filename: 'test.jpg',
+            ),
+            throwsA(anything),
+          );
         } catch (e) {
           // Expected in test environment
         }
@@ -259,10 +269,14 @@ void main() {
 
     group('Portal Integration', () {
       test('should use correct portal interface and method', () {
-        expect(ScreenshotPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Screenshot'));
         expect(
-            ScreenshotPortalConstants.screenshotMethod, equals('Screenshot'));
+          ScreenshotPortalConstants.interfaceName,
+          equals('org.freedesktop.portal.Screenshot'),
+        );
+        expect(
+          ScreenshotPortalConstants.screenshotMethod,
+          equals('Screenshot'),
+        );
       });
 
       test('should handle portal response parsing', () async {
@@ -406,11 +420,13 @@ void main() {
 
         await expectLater(
           future,
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Screenshot portal request timed out'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Screenshot portal request timed out'),
+            ),
+          ),
         );
       });
     });

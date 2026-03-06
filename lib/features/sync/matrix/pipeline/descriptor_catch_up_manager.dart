@@ -29,12 +29,12 @@ class DescriptorCatchUpManager {
     required void Function() scheduleLiveScan,
     required Future<void> Function() retryNow,
     DateTime Function()? now,
-  })  : _logging = logging,
-        _attachmentIndex = attachmentIndex,
-        _roomManager = roomManager,
-        _scheduleLiveScan = scheduleLiveScan,
-        _retryNow = retryNow,
-        _now = now ?? DateTime.now;
+  }) : _logging = logging,
+       _attachmentIndex = attachmentIndex,
+       _roomManager = roomManager,
+       _scheduleLiveScan = scheduleLiveScan,
+       _retryNow = retryNow,
+       _now = now ?? DateTime.now;
 
   final LoggingService _logging;
   final AttachmentIndex _attachmentIndex;

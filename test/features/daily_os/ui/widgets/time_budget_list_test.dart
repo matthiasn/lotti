@@ -307,8 +307,9 @@ void main() {
       expect(find.byType(TimeBudgetList), findsOneWidget);
     });
 
-    testWidgets('renders correctly with focus state from provider',
-        (tester) async {
+    testWidgets('renders correctly with focus state from provider', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           budgets: [

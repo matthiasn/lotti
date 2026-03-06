@@ -45,8 +45,9 @@ void main() {
 
       test('ModelDescription validation', () {
         const description = ModelDescription.dirty('Some description');
-        final longDescription =
-            ModelDescription.dirty('A very long description ' * 50);
+        final longDescription = ModelDescription.dirty(
+          'A very long description ' * 50,
+        );
         const emptyDescription = ModelDescription.dirty();
 
         expect(description.isValid, isTrue);
@@ -113,8 +114,10 @@ void main() {
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isFalse);
         expect(state.supportsFunctionCalling, isFalse);
-        expect(state.isValid,
-            isFalse); // Invalid because required fields are empty
+        expect(
+          state.isValid,
+          isFalse,
+        ); // Invalid because required fields are empty
       });
 
       test('Constructor with all parameters', () {
@@ -159,10 +162,14 @@ void main() {
         expect(copied.name, equals(original.name));
         expect(copied.providerModelId, equals(original.providerModelId));
         expect(
-            copied.inferenceProviderId, equals(original.inferenceProviderId));
+          copied.inferenceProviderId,
+          equals(original.inferenceProviderId),
+        );
         expect(copied.isReasoningModel, equals(original.isReasoningModel));
-        expect(copied.supportsFunctionCalling,
-            equals(original.supportsFunctionCalling));
+        expect(
+          copied.supportsFunctionCalling,
+          equals(original.supportsFunctionCalling),
+        );
       });
 
       test('copyWith updates specified values', () {
@@ -188,9 +195,13 @@ void main() {
         expect(updated.maxCompletionTokens.value, equals('3000'));
         expect(updated.inferenceProviderId, equals('new-provider'));
         expect(
-            updated.inputModalities, equals([Modality.text, Modality.audio]));
+          updated.inputModalities,
+          equals([Modality.text, Modality.audio]),
+        );
         expect(
-            updated.outputModalities, equals([Modality.text, Modality.image]));
+          updated.outputModalities,
+          equals([Modality.text, Modality.image]),
+        );
         expect(updated.isReasoningModel, isTrue);
         expect(updated.supportsFunctionCalling, isTrue);
       });
@@ -257,8 +268,10 @@ void main() {
           expect(modelConfig.providerModelId, equals('test-model-id'));
           expect(modelConfig.description, equals('Test description'));
           expect(modelConfig.inferenceProviderId, equals('provider-id'));
-          expect(modelConfig.inputModalities,
-              equals([Modality.text, Modality.image]));
+          expect(
+            modelConfig.inputModalities,
+            equals([Modality.text, Modality.image]),
+          );
           expect(modelConfig.outputModalities, equals([Modality.text]));
           expect(modelConfig.isReasoningModel, isTrue);
           expect(modelConfig.supportsFunctionCalling, isTrue);
@@ -318,7 +331,7 @@ void main() {
             ([Modality.text, Modality.audio], [Modality.text]),
             (
               [Modality.text, Modality.image, Modality.audio],
-              [Modality.text, Modality.image]
+              [Modality.text, Modality.image],
             ),
           ];
 

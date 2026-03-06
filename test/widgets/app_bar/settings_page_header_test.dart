@@ -92,8 +92,9 @@ void main() {
       },
     );
 
-    testWidgets('renders across common text scales (1.0, 1.2, 2.0)',
-        (tester) async {
+    testWidgets('renders across common text scales (1.0, 1.2, 2.0)', (
+      tester,
+    ) async {
       Future<void> pumpWithScale(double scale) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -129,8 +130,9 @@ void main() {
       }
     });
 
-    testWidgets('lays out on varied screen widths without errors',
-        (tester) async {
+    testWidgets('lays out on varied screen widths without errors', (
+      tester,
+    ) async {
       Future<void> pumpWithWidth(double width) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -192,8 +194,10 @@ void main() {
 
       // Title and subtitle initially visible
       expect(find.text('Matrix Sync Maintenance'), findsOneWidget);
-      expect(find.text('Run Matrix maintenance tasks and recovery tools'),
-          findsOneWidget);
+      expect(
+        find.text('Run Matrix maintenance tasks and recovery tools'),
+        findsOneWidget,
+      );
 
       // Scroll repeatedly to ensure full collapse
       for (var i = 0; i < 3; i++) {

@@ -54,12 +54,16 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
     final height = (widget.compact ? 40 : 48).toDouble();
 
     final progressRatio = _hasTotal
-        ? (widget.progress.inMilliseconds / widget.total.inMilliseconds)
-            .clamp(0.0, 1.0)
+        ? (widget.progress.inMilliseconds / widget.total.inMilliseconds).clamp(
+            0.0,
+            1.0,
+          )
         : 0.0;
     final bufferedRatio = _hasTotal
-        ? (widget.buffered.inMilliseconds / widget.total.inMilliseconds)
-            .clamp(0.0, 1.0)
+        ? (widget.buffered.inMilliseconds / widget.total.inMilliseconds).clamp(
+            0.0,
+            1.0,
+          )
         : 0.0;
 
     final waveform = SizedBox(
@@ -118,8 +122,9 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
 
     final valueLabel =
         '${formatAudioDuration(widget.progress)} of ${formatAudioDuration(widget.total)}';
-    final hintLabel =
-        widget.enabled ? 'Tap to seek, drag to scrub' : 'Playback disabled';
+    final hintLabel = widget.enabled
+        ? 'Tap to seek, drag to scrub'
+        : 'Playback disabled';
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -251,8 +256,8 @@ class _WaveformPainter extends CustomPainter {
       final paint = progressThreshold <= progressRatio
           ? progressPaint
           : progressThreshold <= bufferedRatio
-              ? bufferedPaint
-              : trackPaint;
+          ? bufferedPaint
+          : trackPaint;
 
       if (x + barWidth > size.width) {
         break;

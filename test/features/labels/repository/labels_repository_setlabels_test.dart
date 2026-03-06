@@ -80,193 +80,236 @@ void main() {
     });
 
     LabelDefinition def(String id) => LabelDefinition(
-          id: id,
-          name: id,
-          color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
+      id: id,
+      name: id,
+      color: '#000',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+      private: false,
+    );
+
+    test(
+      'removed labels are added to suppression; added are unsuppressed',
+      () async {
+        // Task has a,b,c assigned; suppression already has x
+        var current = Task(
+          meta: Metadata(
+            id: 't1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            labelIds: const ['a', 'b', 'c'],
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 's',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            statusHistory: const [],
+            title: 't',
+            aiSuppressedLabelIds: const {'x'},
+          ),
         );
 
-    test('removed labels are added to suppression; added are unsuppressed',
-        () async {
-      // Task has a,b,c assigned; suppression already has x
-      var current = Task(
-        meta: Metadata(
-          id: 't1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          labelIds: const ['a', 'b', 'c'],
-        ),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 's',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+        when(
+          () => mockDb.journalEntityById('t1'),
+        ).thenAnswer((_) async => current);
+        // Resolve labels via cache for speed
+        when(() => mockCache.getLabelById(any())).thenReturn(def('a'));
+        when(
+          () => mockDb.getLabelDefinitionById(any()),
+        ).thenAnswer((_) async => def('a'));
+        when(
+          () => mockPl.updateMetadata(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            clearCategoryId: any(named: 'clearCategoryId'),
+            deletedAt: any(named: 'deletedAt'),
+            labelIds: any<List<String>?>(named: 'labelIds'),
+            clearLabelIds: any<bool>(named: 'clearLabelIds'),
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          statusHistory: const [],
-          title: 't',
-          aiSuppressedLabelIds: const {'x'},
-        ),
-      );
+        ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
+        when(
+          () => mockPl.updateDbEntity(
+            any(),
+            linkedId: any<String?>(named: 'linkedId'),
+            enqueueSync: any<bool>(named: 'enqueueSync'),
+            overrideComparison: any<bool>(named: 'overrideComparison'),
+          ),
+        ).thenAnswer((inv) async {
+          current = inv.positionalArguments.first as Task;
+          return true;
+        });
 
-      when(() => mockDb.journalEntityById('t1'))
-          .thenAnswer((_) async => current);
-      // Resolve labels via cache for speed
-      when(() => mockCache.getLabelById(any())).thenReturn(def('a'));
-      when(() => mockDb.getLabelDefinitionById(any()))
-          .thenAnswer((_) async => def('a'));
-      when(() => mockPl.updateMetadata(
-                any(),
-                dateFrom: any(named: 'dateFrom'),
-                dateTo: any(named: 'dateTo'),
-                categoryId: any(named: 'categoryId'),
-                clearCategoryId: any(named: 'clearCategoryId'),
-                deletedAt: any(named: 'deletedAt'),
-                labelIds: any<List<String>?>(named: 'labelIds'),
-                clearLabelIds: any<bool>(named: 'clearLabelIds'),
-              ))
-          .thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
-      when(() => mockPl.updateDbEntity(any(),
-              linkedId: any<String?>(named: 'linkedId'),
-              enqueueSync: any<bool>(named: 'enqueueSync'),
-              overrideComparison: any<bool>(named: 'overrideComparison')))
-          .thenAnswer((inv) async {
-        current = inv.positionalArguments.first as Task;
-        return true;
-      });
+        // New set removes b and adds none
+        await repo.setLabels(journalEntityId: 't1', labelIds: const ['a', 'c']);
 
-      // New set removes b and adds none
-      await repo.setLabels(journalEntityId: 't1', labelIds: const ['a', 'c']);
+        // Suppression should be {'x','b'}
+        expect(current.data.aiSuppressedLabelIds, containsAll({'x', 'b'}));
 
-      // Suppression should be {'x','b'}
-      expect(current.data.aiSuppressedLabelIds, containsAll({'x', 'b'}));
+        // Now unsuppress by adding b back
+        when(
+          () => mockDb.journalEntityById('t1'),
+        ).thenAnswer((_) async => current);
+        await repo.setLabels(
+          journalEntityId: 't1',
+          labelIds: const ['a', 'b', 'c'],
+        );
+        expect(
+          current.data.aiSuppressedLabelIds?.contains('b') ?? false,
+          isFalse,
+        );
+      },
+    );
 
-      // Now unsuppress by adding b back
-      when(() => mockDb.journalEntityById('t1'))
-          .thenAnswer((_) async => current);
-      await repo
-          .setLabels(journalEntityId: 't1', labelIds: const ['a', 'b', 'c']);
-      expect(
-          current.data.aiSuppressedLabelIds?.contains('b') ?? false, isFalse);
-    });
+    test(
+      'non-Task entities do not touch suppression for add/remove/set',
+      () async {
+        final img = JournalImage(
+          meta: Metadata(
+            id: 'img1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: ImageData(
+            capturedAt: DateTime.now(),
+            imageId: 'i',
+            imageFile: 'f',
+            imageDirectory: 'd',
+          ),
+        );
+        when(
+          () => mockDb.journalEntityById('img1'),
+        ).thenAnswer((_) async => img);
+        when(
+          () => mockPl.updateMetadata(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            clearCategoryId: any(named: 'clearCategoryId'),
+            deletedAt: any(named: 'deletedAt'),
+            labelIds: any<List<String>?>(named: 'labelIds'),
+            clearLabelIds: any<bool>(named: 'clearLabelIds'),
+          ),
+        ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
+        when(
+          () => mockPl.updateDbEntity(
+            any(),
+            linkedId: any<String?>(named: 'linkedId'),
+            enqueueSync: any<bool>(named: 'enqueueSync'),
+            overrideComparison: any<bool>(named: 'overrideComparison'),
+          ),
+        ).thenAnswer((_) async => true);
+        // Also handle calls without named args
+        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => true);
 
-    test('non-Task entities do not touch suppression for add/remove/set',
-        () async {
-      final img = JournalImage(
-        meta: Metadata(
-          id: 'img1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: ImageData(
-          capturedAt: DateTime.now(),
-          imageId: 'i',
-          imageFile: 'f',
-          imageDirectory: 'd',
-        ),
-      );
-      when(() => mockDb.journalEntityById('img1')).thenAnswer((_) async => img);
-      when(() => mockPl.updateMetadata(any(),
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-              categoryId: any(named: 'categoryId'),
-              clearCategoryId: any(named: 'clearCategoryId'),
-              deletedAt: any(named: 'deletedAt'),
-              labelIds: any<List<String>?>(named: 'labelIds'),
-              clearLabelIds: any<bool>(named: 'clearLabelIds')))
-          .thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
-      when(() => mockPl.updateDbEntity(any(),
-              linkedId: any<String?>(named: 'linkedId'),
-              enqueueSync: any<bool>(named: 'enqueueSync'),
-              overrideComparison: any<bool>(named: 'overrideComparison')))
-          .thenAnswer((_) async => true);
-      // Also handle calls without named args
-      when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => true);
-
-      // addLabels/removeLabel/setLabels: all should call updateDbEntity without named args
-      await repo.addLabels(journalEntityId: 'img1', addedLabelIds: ['a']);
-      await repo.removeLabel(journalEntityId: 'img1', labelId: 'a');
-      await repo.setLabels(journalEntityId: 'img1', labelIds: const ['a']);
-      verify(() => mockPl.updateDbEntity(any())).called(2);
-    });
+        // addLabels/removeLabel/setLabels: all should call updateDbEntity without named args
+        await repo.addLabels(journalEntityId: 'img1', addedLabelIds: ['a']);
+        await repo.removeLabel(journalEntityId: 'img1', labelId: 'a');
+        await repo.setLabels(journalEntityId: 'img1', labelIds: const ['a']);
+        verify(() => mockPl.updateDbEntity(any())).called(2);
+      },
+    );
 
     test('error handling returns false and logs', () async {
       when(() => mockDb.journalEntityById('bad')).thenThrow(Exception('db'));
-      when(() => mockLog.captureException(any<dynamic>(),
+      when(
+        () => mockLog.captureException(
+          any<dynamic>(),
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
 
-      expect(await repo.addLabels(journalEntityId: 'bad', addedLabelIds: ['x']),
-          isFalse);
-      expect(await repo.removeLabel(journalEntityId: 'bad', labelId: 'x'),
-          isFalse);
-      expect(await repo.setLabels(journalEntityId: 'bad', labelIds: const []),
-          isFalse);
+      expect(
+        await repo.addLabels(journalEntityId: 'bad', addedLabelIds: ['x']),
+        isFalse,
+      );
+      expect(
+        await repo.removeLabel(journalEntityId: 'bad', labelId: 'x'),
+        isFalse,
+      );
+      expect(
+        await repo.setLabels(journalEntityId: 'bad', labelIds: const []),
+        isFalse,
+      );
 
-      verify(() => mockLog.captureException(any<dynamic>(),
-              domain: 'labels_repository',
-              subDomain: any<String>(named: 'subDomain'),
-              stackTrace: any<StackTrace?>(named: 'stackTrace')))
-          .called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockLog.captureException(
+          any<dynamic>(),
+          domain: 'labels_repository',
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(greaterThanOrEqualTo(1));
     });
 
-    test('setLabels retries with overrideComparison when first update fails',
-        () async {
-      final current = Task(
-        meta: Metadata(
-          id: 't4',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 's',
+    test(
+      'setLabels retries with overrideComparison when first update fails',
+      () async {
+        final current = Task(
+          meta: Metadata(
+            id: 't4',
             createdAt: DateTime.now(),
-            utcOffset: 0,
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          statusHistory: const [],
-          title: 't',
-        ),
-      );
-      when(() => mockDb.journalEntityById('t4'))
-          .thenAnswer((_) async => current);
-      when(() => mockCache.getLabelById(any())).thenReturn(def('a'));
-      when(() => mockPl.updateMetadata(any(),
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-              categoryId: any(named: 'categoryId'),
-              clearCategoryId: any(named: 'clearCategoryId'),
-              deletedAt: any(named: 'deletedAt'),
-              labelIds: any<List<String>?>(named: 'labelIds'),
-              clearLabelIds: any<bool>(named: 'clearLabelIds')))
-          .thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 's',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            statusHistory: const [],
+            title: 't',
+          ),
+        );
+        when(
+          () => mockDb.journalEntityById('t4'),
+        ).thenAnswer((_) async => current);
+        when(() => mockCache.getLabelById(any())).thenReturn(def('a'));
+        when(
+          () => mockPl.updateMetadata(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            clearCategoryId: any(named: 'clearCategoryId'),
+            deletedAt: any(named: 'deletedAt'),
+            labelIds: any<List<String>?>(named: 'labelIds'),
+            clearLabelIds: any<bool>(named: 'clearLabelIds'),
+          ),
+        ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
 
-      // First attempt without override -> false to trigger fallback
-      when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
-      // First normal update (without named args) should fail to trigger fallback
-      when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
+        // First attempt without override -> false to trigger fallback
+        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
+        // First normal update (without named args) should fail to trigger fallback
+        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
 
-      await repo.setLabels(
-        journalEntityId: 't4',
-        labelIds: const ['a'],
-      );
-      // Verify: first normal call and then fallback with overrideComparison
-      verify(() => mockPl.updateDbEntity(any())).called(1);
-      verify(() => mockPl.updateDbEntity(any(), overrideComparison: true))
-          .called(1);
-    });
+        await repo.setLabels(
+          journalEntityId: 't4',
+          labelIds: const ['a'],
+        );
+        // Verify: first normal call and then fallback with overrideComparison
+        verify(() => mockPl.updateDbEntity(any())).called(1);
+        verify(
+          () => mockPl.updateDbEntity(any(), overrideComparison: true),
+        ).called(1);
+      },
+    );
   });
 }

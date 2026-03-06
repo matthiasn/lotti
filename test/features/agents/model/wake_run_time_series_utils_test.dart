@@ -109,28 +109,30 @@ void main() {
         expect(result.dailyBuckets.first.successCount, 1);
       });
 
-      test('handles runs with pending status (neither success nor failure)',
-          () {
-        final day = DateTime(2024, 3, 15);
-        final runs = [
-          makeTestWakeRun(
-            runKey: 'r1',
-            createdAt: day,
-          ),
-          makeTestWakeRun(
-            runKey: 'r2',
-            status: 'completed',
-            createdAt: day,
-          ),
-        ];
+      test(
+        'handles runs with pending status (neither success nor failure)',
+        () {
+          final day = DateTime(2024, 3, 15);
+          final runs = [
+            makeTestWakeRun(
+              runKey: 'r1',
+              createdAt: day,
+            ),
+            makeTestWakeRun(
+              runKey: 'r2',
+              status: 'completed',
+              createdAt: day,
+            ),
+          ];
 
-        final result = computeTimeSeries(runs);
-        final bucket = result.dailyBuckets.first;
-        expect(bucket.successCount, 1);
-        expect(bucket.failureCount, 0);
-        // pending doesn't count toward success/failure total
-        expect(bucket.successRate, 1.0);
-      });
+          final result = computeTimeSeries(runs);
+          final bucket = result.dailyBuckets.first;
+          expect(bucket.successCount, 1);
+          expect(bucket.failureCount, 0);
+          // pending doesn't count toward success/failure total
+          expect(bucket.successRate, 1.0);
+        },
+      );
 
       test('computes zero duration when startedAt/completedAt are null', () {
         final day = DateTime(2024, 3, 15);
@@ -257,8 +259,9 @@ void main() {
 
         final result = computeTimeSeries(runs);
         final ids = result.versionBuckets.map((b) => b.versionId).toList();
-        final numbers =
-            result.versionBuckets.map((b) => b.versionNumber).toList();
+        final numbers = result.versionBuckets
+            .map((b) => b.versionNumber)
+            .toList();
 
         // Ordered by earliest run date, not lexicographically.
         expect(ids, ['version-1', 'version-2', 'version-10']);

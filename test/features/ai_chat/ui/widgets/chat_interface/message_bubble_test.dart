@@ -11,11 +11,11 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   Widget wrap(Widget child) => makeTestableWidgetWithScaffold(
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: child,
-        ),
-      );
+    Padding(
+      padding: const EdgeInsets.all(16),
+      child: child,
+    ),
+  );
 
   group('MessageBubble', () {
     testWidgets('renders user and assistant content', (tester) async {
@@ -23,12 +23,14 @@ void main() {
       final ai = ChatMessage.assistant('Assistant replies');
 
       await tester.pumpWidget(
-        wrap(Column(
-          children: [
-            MessageBubble(message: user),
-            MessageBubble(message: ai),
-          ],
-        )),
+        wrap(
+          Column(
+            children: [
+              MessageBubble(message: user),
+              MessageBubble(message: ai),
+            ],
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -45,8 +47,9 @@ void main() {
       expect(find.byType(MessageTimestamp), findsNothing);
     });
 
-    testWidgets('shows copy action for assistant visible content',
-        (tester) async {
+    testWidgets('shows copy action for assistant visible content', (
+      tester,
+    ) async {
       final ai = ChatMessage.assistant('Visible content');
       await tester.pumpWidget(wrap(MessageBubble(message: ai)));
       await tester.pumpAndSettle();

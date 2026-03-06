@@ -52,8 +52,9 @@ void main() {
     }
 
     group('Basic Rendering', () {
-      testWidgets('displays SettingsPageHeader with correct title',
-          (tester) async {
+      testWidgets('displays SettingsPageHeader with correct title', (
+        tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(items: []));
         await tester.pumpAndSettle();
 
@@ -292,8 +293,9 @@ void main() {
         expect(find.text('New Item'), findsOneWidget);
       });
 
-      testWidgets('maintains search filter when stream updates',
-          (tester) async {
+      testWidgets('maintains search filter when stream updates', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(items: [TestItem('Apple'), TestItem('Banana')]),
         );

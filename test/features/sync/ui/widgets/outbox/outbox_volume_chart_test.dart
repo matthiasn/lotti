@@ -27,8 +27,9 @@ void main() {
     setUp(setUpTestGetIt);
     tearDown(tearDownTestGetIt);
 
-    testWidgets('shows loading indicator while provider is loading',
-        (tester) async {
+    testWidgets('shows loading indicator while provider is loading', (
+      tester,
+    ) async {
       final completer = Completer<List<Observation>>();
 
       await _pumpVolumeChart(
@@ -65,8 +66,9 @@ void main() {
       expect(find.text('Daily sync volume'), findsOneWidget);
     });
 
-    testWidgets('passes correct properties to TimeSeriesBarChart',
-        (tester) async {
+    testWidgets('passes correct properties to TimeSeriesBarChart', (
+      tester,
+    ) async {
       final observations = [
         Observation(DateTime(2024, 3, 15), 100),
         Observation(DateTime(2024, 3, 16), 200),

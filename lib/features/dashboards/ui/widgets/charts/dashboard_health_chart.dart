@@ -85,7 +85,8 @@ class DashboardHealthChart extends ConsumerWidget {
       );
     }
 
-    final data = ref
+    final data =
+        ref
             .watch(
               healthObservationsControllerProvider(
                 healthDataType: chartConfig.healthType,

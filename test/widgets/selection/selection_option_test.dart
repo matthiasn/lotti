@@ -29,12 +29,14 @@ void main() {
 
     group('Rendering', () {
       testWidgets('renders all required elements', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         expect(find.text('Test Option'), findsOneWidget);
         expect(find.byIcon(Icons.settings), findsOneWidget);
@@ -43,25 +45,30 @@ void main() {
       });
 
       testWidgets('renders description when provided', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          description: 'This is a description',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            description: 'This is a description',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         expect(find.text('This is a description'), findsOneWidget);
       });
 
-      testWidgets('does not render description when not provided',
-          (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+      testWidgets('does not render description when not provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         expect(find.text('This is a description'), findsNothing);
       });
@@ -69,15 +76,17 @@ void main() {
       testWidgets('truncates long description with ellipsis', (tester) async {
         final longDescription =
             'This is a very long description that should be truncated after two lines. ' *
-                10;
+            10;
 
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          description: longDescription,
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            description: longDescription,
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         final textWidget = tester.widget<Text>(
           find.descendant(
@@ -92,49 +101,57 @@ void main() {
     });
 
     group('Selection State', () {
-      testWidgets('shows checkmark when selected with default indicator',
-          (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: true,
-          onTap: () {},
-        ));
+      testWidgets('shows checkmark when selected with default indicator', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: true,
+            onTap: () {},
+          ),
+        );
 
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       });
 
-      testWidgets('shows empty circle when not selected with default indicator',
-          (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+      testWidgets(
+        'shows empty circle when not selected with default indicator',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              title: 'Test Option',
+              icon: Icons.settings,
+              isSelected: false,
+              onTap: () {},
+            ),
+          );
 
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
+          expect(find.byIcon(Icons.check_rounded), findsNothing);
 
-        // Find the empty circle container
-        final circleContainers = tester
-            .widgetList<Container>(
-          find.descendant(
-            of: find.byType(SelectionOption),
-            matching: find.byType(Container),
-          ),
-        )
-            .where((container) {
-          final decoration = container.decoration as BoxDecoration?;
-          return decoration != null &&
-              decoration.border != null &&
-              decoration.borderRadius == BorderRadius.circular(20);
-        });
+          // Find the empty circle container
+          final circleContainers = tester
+              .widgetList<Container>(
+                find.descendant(
+                  of: find.byType(SelectionOption),
+                  matching: find.byType(Container),
+                ),
+              )
+              .where((container) {
+                final decoration = container.decoration as BoxDecoration?;
+                return decoration != null &&
+                    decoration.border != null &&
+                    decoration.borderRadius == BorderRadius.circular(20);
+              });
 
-        expect(circleContainers.isNotEmpty, true);
-      });
+          expect(circleContainers.isNotEmpty, true);
+        },
+      );
 
-      testWidgets('uses custom selection indicator when provided',
-          (tester) async {
+      testWidgets('uses custom selection indicator when provided', (
+        tester,
+      ) async {
         final customIndicator = Container(
           width: 20,
           height: 20,
@@ -142,25 +159,29 @@ void main() {
           key: const Key('custom_indicator'),
         );
 
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: true,
-          onTap: () {},
-          selectionIndicator: customIndicator,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: true,
+            onTap: () {},
+            selectionIndicator: customIndicator,
+          ),
+        );
 
         expect(find.byKey(const Key('custom_indicator')), findsOneWidget);
         expect(find.byIcon(Icons.check_rounded), findsNothing);
       });
 
       testWidgets('applies different styling when selected', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: true,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: true,
+            onTap: () {},
+          ),
+        );
 
         final container = tester.widget<Container>(
           find
@@ -183,24 +204,28 @@ void main() {
       testWidgets('calls onTap when tapped', (tester) async {
         var tapped = false;
 
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () => tapped = true,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () => tapped = true,
+          ),
+        );
 
         await tester.tap(find.byType(InkWell));
         expect(tapped, true);
       });
 
       testWidgets('shows ink splash on tap', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         final inkWell = tester.widget<InkWell>(find.byType(InkWell));
         expect(inkWell.borderRadius, BorderRadius.circular(16));
@@ -209,12 +234,14 @@ void main() {
       testWidgets('handles rapid taps correctly', (tester) async {
         var tapCount = 0;
 
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () => tapCount++,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () => tapCount++,
+          ),
+        );
 
         // Rapid taps
         for (var i = 0; i < 5; i++) {
@@ -250,12 +277,14 @@ void main() {
       });
 
       testWidgets('uses correct icon size', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         final icon = tester.widget<Icon>(
           find.descendant(
@@ -270,25 +299,29 @@ void main() {
 
     group('Accessibility', () {
       testWidgets('has proper touch target size', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         final inkWellSize = tester.getSize(find.byType(InkWell));
         expect(inkWellSize.height, greaterThanOrEqualTo(48));
       });
 
       testWidgets('maintains readable text contrast', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Option',
-          description: 'Test description',
-          icon: Icons.settings,
-          isSelected: true,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Option',
+            description: 'Test description',
+            icon: Icons.settings,
+            isSelected: true,
+            onTap: () {},
+          ),
+        );
 
         // The widget should maintain readable contrast
         // This is ensured by the theme system
@@ -299,12 +332,14 @@ void main() {
 
     group('Edge Cases', () {
       testWidgets('handles empty title', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: '',
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: '',
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         expect(find.text(''), findsOneWidget);
       });
@@ -312,12 +347,14 @@ void main() {
       testWidgets('handles very long title', (tester) async {
         const longTitle = 'This is a very long title that might need to wrap';
 
-        await tester.pumpWidget(createTestWidget(
-          title: longTitle,
-          icon: Icons.settings,
-          isSelected: false,
-          onTap: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: longTitle,
+            icon: Icons.settings,
+            isSelected: false,
+            onTap: () {},
+          ),
+        );
 
         expect(find.text(longTitle), findsOneWidget);
       });
@@ -383,8 +420,9 @@ void main() {
     testWidgets('has correct dimensions', (tester) async {
       await tester.pumpWidget(createTestWidget(isSelected: true));
 
-      final outerContainer =
-          tester.widget<Container>(find.byType(Container).first);
+      final outerContainer = tester.widget<Container>(
+        find.byType(Container).first,
+      );
       expect(outerContainer.constraints?.maxWidth, 20);
       expect(outerContainer.constraints?.maxHeight, 20);
     });

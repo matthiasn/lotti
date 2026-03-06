@@ -70,13 +70,16 @@ class _ChecklistItemWithSuggestionWidgetState
       vsync: this,
     );
 
-    _pulseAnimation = Tween<double>(
-      begin: 1,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation =
+        Tween<double>(
+          begin: 1,
+          end: 1.2,
+        ).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     _lastHideCompleted = widget.hideCompleted;
     _lastIsChecked = widget.isChecked;
@@ -178,8 +181,9 @@ class _ChecklistItemWithSuggestionWidgetState
   Widget build(BuildContext context) {
     final completionService = ref.watch(checklistCompletionServiceProvider);
     final suggestion = completionService.whenOrNull(
-      data: (suggestions) => suggestions
-          .firstWhereOrNull((s) => s.checklistItemId == widget.itemId),
+      data: (suggestions) => suggestions.firstWhereOrNull(
+        (s) => s.checklistItemId == widget.itemId,
+      ),
     );
 
     // Start pulsing animation if there's a suggestion
@@ -246,8 +250,9 @@ class _ChecklistItemWithSuggestionWidgetState
       return AnimatedCrossFade(
         duration: checklistCompletionFadeDuration,
         sizeCurve: Curves.easeInOut,
-        crossFadeState:
-            _showRow ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+        crossFadeState: _showRow
+            ? CrossFadeState.showFirst
+            : CrossFadeState.showSecond,
         firstChild: content,
         secondChild: const SizedBox.shrink(),
       );

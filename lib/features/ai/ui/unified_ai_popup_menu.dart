@@ -49,11 +49,11 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
       );
 
       void onTap() => UnifiedAiModal.show<void>(
-            context: context,
-            journalEntity: journalEntity,
-            linkedFromId: linkedFromId,
-            ref: ref,
-          );
+        context: context,
+        journalEntity: journalEntity,
+        linkedFromId: linkedFromId,
+        ref: ref,
+      );
 
       // Use GlassActionButton for proper clipped splash effect when iconColor
       // is specified (used over images), otherwise use standard IconButton
@@ -106,8 +106,9 @@ class UnifiedAiModal {
             return;
           }
 
-          final targetLinkedEntityId =
-              journalEntity is Task ? linkedFromId : journalEntity.id;
+          final targetLinkedEntityId = journalEntity is Task
+              ? linkedFromId
+              : journalEntity.id;
 
           // Trigger inference in the background
           unawaited(
@@ -168,14 +169,16 @@ class UnifiedAiModal {
     final journalRepo = ref.read(journalRepositoryProvider);
 
     // First try: find tasks that this entry links TO (entry → task)
-    final linkedEntities =
-        await journalRepo.getLinkedEntities(linkedTo: audioEntry.id);
+    final linkedEntities = await journalRepo.getLinkedEntities(
+      linkedTo: audioEntry.id,
+    );
     var linkedTask = linkedEntities.whereType<Task>().firstOrNull;
 
     // Fallback: find tasks that link TO this entry (task → entry)
     if (linkedTask == null) {
-      final fallbackEntities =
-          await journalRepo.getLinkedToEntities(linkedTo: audioEntry.id);
+      final fallbackEntities = await journalRepo.getLinkedToEntities(
+        linkedTo: audioEntry.id,
+      );
       linkedTask = fallbackEntities.whereType<Task>().firstOrNull;
     }
 
@@ -219,11 +222,12 @@ class UnifiedAiPromptsList extends ConsumerWidget {
   final JournalEntity journalEntity;
   final String? linkedFromId;
   final Future<void> Function(AiConfigPrompt prompt, int index)
-      onPromptSelected;
+  onPromptSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prompts = ref
+    final prompts =
+        ref
             .watch(
               availablePromptsProvider(journalEntity.id),
             )

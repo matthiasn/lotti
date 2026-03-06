@@ -58,8 +58,9 @@ Widget _buildSubject({
 }
 
 void main() {
-  testWidgets('two templates shows template selection page first',
-      (tester) async {
+  testWidgets('two templates shows template selection page first', (
+    tester,
+  ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile();
 
@@ -111,8 +112,9 @@ void main() {
     expect(find.text('Fast Flash'), findsOneWidget);
   });
 
-  testWidgets('selecting template then profile returns correct result',
-      (tester) async {
+  testWidgets('selecting template then profile returns correct result', (
+    tester,
+  ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile(id: 'prof-x', name: 'Pro X');
 
@@ -140,8 +142,9 @@ void main() {
     expect(resultNotifier.value!.profileId, 'prof-x');
   });
 
-  testWidgets('single template + profile selection returns correct result',
-      (tester) async {
+  testWidgets('single template + profile selection returns correct result', (
+    tester,
+  ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile(id: 'solo-prof', name: 'Solo');
 
@@ -188,8 +191,9 @@ void main() {
     );
   });
 
-  testWidgets('template page shows localized template kind subtitles',
-      (tester) async {
+  testWidgets('template page shows localized template kind subtitles', (
+    tester,
+  ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile();
 
@@ -213,8 +217,9 @@ void main() {
     );
   });
 
-  testWidgets('profile page shows thinking model ID as subtitle',
-      (tester) async {
+  testWidgets('profile page shows thinking model ID as subtitle', (
+    tester,
+  ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile(
       name: 'Test Prof',
@@ -262,8 +267,9 @@ void main() {
     );
   });
 
-  testWidgets('back button on profile page returns to template page',
-      (tester) async {
+  testWidgets('back button on profile page returns to template page', (
+    tester,
+  ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile(name: 'Pro X');
 

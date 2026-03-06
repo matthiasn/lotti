@@ -15,14 +15,14 @@ class SettingsDb extends _$SettingsDb {
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
-          openDbConnection(
-            settingsDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-            background: background,
-            documentsDirectoryProvider: documentsDirectoryProvider,
-            tempDirectoryProvider: tempDirectoryProvider,
-          ),
-        );
+         openDbConnection(
+           settingsDbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           background: background,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   bool inMemoryDatabase = false;
 

@@ -114,126 +114,134 @@ void main() {
         expect(result?.data.autoTranscribeWasActive, isFalse);
       });
 
-      test('successfully creates audio entry with linkedId and categoryId',
-          () async {
-        // Arrange
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-            flag: any(named: 'flag'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (_) async => testMetadata.copyWith(categoryId: testCategoryId),
-        );
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(that: isA<JournalAudio>()),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
+      test(
+        'successfully creates audio entry with linkedId and categoryId',
+        () async {
+          // Arrange
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => testMetadata.copyWith(categoryId: testCategoryId),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(that: isA<JournalAudio>()),
+              linkedId: any(named: 'linkedId'),
+            ),
+          ).thenAnswer((_) async => true);
 
-        // Act
-        final result = await SpeechRepository.createAudioEntry(
-          testAudioNote,
-          linkedId: testLinkedId,
-          categoryId: testCategoryId,
-        );
-
-        // Assert
-        expect(result, isA<JournalAudio>());
-        expect(result?.meta.categoryId, testCategoryId);
-
-        final capturedEntity = verify(
-          () => mockPersistenceLogic.createDbEntity(
-            captureAny(that: isA<JournalAudio>()),
+          // Act
+          final result = await SpeechRepository.createAudioEntry(
+            testAudioNote,
             linkedId: testLinkedId,
-          ),
-        ).captured.single as JournalAudio;
-        expect(capturedEntity.meta.categoryId, testCategoryId);
-
-        verify(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-            flag: EntryFlag.import,
             categoryId: testCategoryId,
-          ),
-        ).called(1);
-      });
+          );
 
-      test('returns null and logs exception when createMetadata throws',
-          () async {
-        // Arrange
-        final exception = Exception('Metadata creation error');
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-            flag: any(named: 'flag'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenThrow(exception);
+          // Assert
+          expect(result, isA<JournalAudio>());
+          expect(result?.meta.categoryId, testCategoryId);
 
-        // Act
-        final result = await SpeechRepository.createAudioEntry(testAudioNote);
+          final capturedEntity =
+              verify(
+                    () => mockPersistenceLogic.createDbEntity(
+                      captureAny(that: isA<JournalAudio>()),
+                      linkedId: testLinkedId,
+                    ),
+                  ).captured.single
+                  as JournalAudio;
+          expect(capturedEntity.meta.categoryId, testCategoryId);
 
-        // Assert
-        expect(result, isNull);
-        verify(
-          () => mockLoggingService.captureException(
-            exception,
-            domain: 'persistence_logic',
-            subDomain: 'createAudioEntry',
-            stackTrace: any(named: 'stackTrace'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockPersistenceLogic.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        );
-      });
+          verify(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: EntryFlag.import,
+              categoryId: testCategoryId,
+            ),
+          ).called(1);
+        },
+      );
 
-      test('returns null and logs exception when createDbEntity throws',
-          () async {
-        // Arrange
-        final exception = Exception('DB entity creation error');
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-            flag: any(named: 'flag'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(that: isA<JournalAudio>()),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenThrow(exception);
+      test(
+        'returns null and logs exception when createMetadata throws',
+        () async {
+          // Arrange
+          final exception = Exception('Metadata creation error');
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenThrow(exception);
 
-        // Act
-        final result = await SpeechRepository.createAudioEntry(testAudioNote);
+          // Act
+          final result = await SpeechRepository.createAudioEntry(testAudioNote);
 
-        // Assert
-        expect(result, isNull);
-        verify(
-          () => mockLoggingService.captureException(
-            exception,
-            domain: 'persistence_logic',
-            subDomain: 'createAudioEntry',
-            stackTrace: any(named: 'stackTrace'),
-          ),
-        ).called(1);
-      });
+          // Assert
+          expect(result, isNull);
+          verify(
+            () => mockLoggingService.captureException(
+              exception,
+              domain: 'persistence_logic',
+              subDomain: 'createAudioEntry',
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'returns null and logs exception when createDbEntity throws',
+        () async {
+          // Arrange
+          final exception = Exception('DB entity creation error');
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => testMetadata);
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(that: isA<JournalAudio>()),
+              linkedId: any(named: 'linkedId'),
+            ),
+          ).thenThrow(exception);
+
+          // Act
+          final result = await SpeechRepository.createAudioEntry(testAudioNote);
+
+          // Assert
+          expect(result, isNull);
+          verify(
+            () => mockLoggingService.captureException(
+              exception,
+              domain: 'persistence_logic',
+              subDomain: 'createAudioEntry',
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('updateLanguage', () {
@@ -261,10 +269,12 @@ void main() {
 
       test('successfully updates language for a JournalAudio entry', () async {
         // Arrange
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => testJournalAudioEntry);
-        when(() => mockPersistenceLogic.updateMetadata(initialMetadata))
-            .thenAnswer(
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => testJournalAudioEntry);
+        when(
+          () => mockPersistenceLogic.updateMetadata(initialMetadata),
+        ).thenAnswer(
           (_) async => initialMetadata.copyWith(
             updatedAt: DateTime.now(),
           ),
@@ -283,11 +293,13 @@ void main() {
 
         // Assert
         verify(() => mockJournalDb.journalEntityById(testEntryId)).called(1);
-        verify(() => mockPersistenceLogic.updateMetadata(initialMetadata))
-            .called(1);
+        verify(
+          () => mockPersistenceLogic.updateMetadata(initialMetadata),
+        ).called(1);
         final captured = verify(
-          () => mockPersistenceLogic
-              .updateDbEntity(captureAny(that: isA<JournalAudio>())),
+          () => mockPersistenceLogic.updateDbEntity(
+            captureAny(that: isA<JournalAudio>()),
+          ),
         ).captured;
         expect(captured.length, 1);
         final updatedEntry = captured.first as JournalAudio;
@@ -301,8 +313,9 @@ void main() {
           meta: initialMetadata,
           entryText: const EntryText(plainText: 'text'),
         );
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => notAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => notAudioEntry);
 
         // Act
         await SpeechRepository.updateLanguage(
@@ -326,8 +339,9 @@ void main() {
 
       test('does nothing if journal entity is not found', () async {
         // Arrange
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => null);
 
         // Act
         await SpeechRepository.updateLanguage(
@@ -352,8 +366,9 @@ void main() {
       test('logs exception if journalEntityById throws', () async {
         // Arrange
         final exception = Exception('DB fetch error');
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenThrow(exception);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenThrow(exception);
 
         // Act
         await SpeechRepository.updateLanguage(
@@ -378,10 +393,12 @@ void main() {
       test('logs exception if updateMetadata throws', () async {
         // Arrange
         final exception = Exception('Metadata update error');
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => testJournalAudioEntry);
-        when(() => mockPersistenceLogic.updateMetadata(initialMetadata))
-            .thenThrow(exception);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => testJournalAudioEntry);
+        when(
+          () => mockPersistenceLogic.updateMetadata(initialMetadata),
+        ).thenThrow(exception);
 
         // Act
         await SpeechRepository.updateLanguage(
@@ -404,10 +421,12 @@ void main() {
       test('logs exception if updateDbEntity throws', () async {
         // Arrange
         final exception = Exception('DB entity update error');
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => testJournalAudioEntry);
-        when(() => mockPersistenceLogic.updateMetadata(initialMetadata))
-            .thenAnswer(
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => testJournalAudioEntry);
+        when(
+          () => mockPersistenceLogic.updateMetadata(initialMetadata),
+        ).thenAnswer(
           (_) async => initialMetadata.copyWith(updatedAt: DateTime.now()),
         );
         when(
@@ -454,7 +473,9 @@ void main() {
       final transcriptToKeep = transcript2; // The one that should remain
       final nonExistingTranscript = AudioTranscript(
         created: DateTime(2023, 1, 3, 12), // Different created time
-        library: 'lib_other', model: 'mod_other', detectedLanguage: 'fr',
+        library: 'lib_other',
+        model: 'mod_other',
+        detectedLanguage: 'fr',
         transcript: 'Non-existing',
       );
 
@@ -482,8 +503,9 @@ void main() {
 
       setUp(() {
         // Common stubs for this group
-        when(() => mockPersistenceLogic.updateMetadata(any<Metadata>()))
-            .thenAnswer((invocation) async {
+        when(
+          () => mockPersistenceLogic.updateMetadata(any<Metadata>()),
+        ).thenAnswer((invocation) async {
           final originalMeta = invocation.positionalArguments[0] as Metadata;
           return originalMeta.copyWith(updatedAt: DateTime.now());
         });
@@ -496,8 +518,9 @@ void main() {
 
       test('successfully removes an existing transcript', () async {
         // Arrange
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
 
         // Act
         final result = await SpeechRepository.removeAudioTranscript(
@@ -508,8 +531,9 @@ void main() {
         // Assert
         expect(result, isTrue);
         final captured = verify(
-          () => mockPersistenceLogic
-              .updateDbEntity(captureAny(that: isA<JournalAudio>())),
+          () => mockPersistenceLogic.updateDbEntity(
+            captureAny(that: isA<JournalAudio>()),
+          ),
         ).captured;
         expect(captured.length, 1);
         final updatedEntry = captured.first as JournalAudio;
@@ -523,38 +547,42 @@ void main() {
       });
 
       test(
-          'does nothing if transcript to remove does not exist (based on created time)',
-          () async {
-        // Arrange
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
+        'does nothing if transcript to remove does not exist (based on created time)',
+        () async {
+          // Arrange
+          when(
+            () => mockJournalDb.journalEntityById(testEntryId),
+          ).thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
 
-        // Act
-        final result = await SpeechRepository.removeAudioTranscript(
-          journalEntityId: testEntryId,
-          transcript: nonExistingTranscript,
-        );
+          // Act
+          final result = await SpeechRepository.removeAudioTranscript(
+            journalEntityId: testEntryId,
+            transcript: nonExistingTranscript,
+          );
 
-        // Assert
-        expect(result, isTrue);
-        final captured = verify(
-          () => mockPersistenceLogic
-              .updateDbEntity(captureAny(that: isA<JournalAudio>())),
-        ).captured;
-        expect(captured.length, 1);
-        final updatedEntry = captured.first as JournalAudio;
-        expect(
-          updatedEntry.data.transcripts?.length,
-          2,
-        ); // Should remain unchanged
-        expect(updatedEntry.data.transcripts, contains(transcriptToRemove));
-        expect(updatedEntry.data.transcripts, contains(transcriptToKeep));
-      });
+          // Assert
+          expect(result, isTrue);
+          final captured = verify(
+            () => mockPersistenceLogic.updateDbEntity(
+              captureAny(that: isA<JournalAudio>()),
+            ),
+          ).captured;
+          expect(captured.length, 1);
+          final updatedEntry = captured.first as JournalAudio;
+          expect(
+            updatedEntry.data.transcripts?.length,
+            2,
+          ); // Should remain unchanged
+          expect(updatedEntry.data.transcripts, contains(transcriptToRemove));
+          expect(updatedEntry.data.transcripts, contains(transcriptToKeep));
+        },
+      );
 
       test('returns false if journal entity is not found', () async {
         // Arrange
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await SpeechRepository.removeAudioTranscript(
@@ -573,8 +601,9 @@ void main() {
           meta: initialMetadata,
           entryText: const EntryText(plainText: 'text'),
         );
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => notAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => notAudioEntry);
 
         // Act
         final result = await SpeechRepository.removeAudioTranscript(
@@ -600,8 +629,9 @@ void main() {
       test('logs exception if journalEntityById throws', () async {
         // Arrange
         final exception = Exception('DB fetch error for transcript removal');
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenThrow(exception);
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenThrow(exception);
 
         // Act
         final result = await SpeechRepository.removeAudioTranscript(
@@ -624,10 +654,12 @@ void main() {
 
       test('logs exception if updateDbEntity throws', () async {
         // Arrange
-        final exception =
-            Exception('DB entity update error for transcript removal');
-        when(() => mockJournalDb.journalEntityById(testEntryId))
-            .thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
+        final exception = Exception(
+          'DB entity update error for transcript removal',
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testEntryId),
+        ).thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
         when(
           () => mockPersistenceLogic.updateDbEntity(
             any(that: isA<JournalAudio>()),

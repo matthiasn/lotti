@@ -20,16 +20,18 @@ void main() {
   late MockEntitiesCacheService mockEntitiesCacheService;
   const testCategoryId = 'test-category-id';
 
-  final testCategory = EntityDefinition.categoryDefinition(
-    id: testCategoryId,
-    name: 'Test Category',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    vectorClock: null,
-    private: false,
-    active: true,
-    color: '#FF5733',
-  ) as CategoryDefinition;
+  final testCategory =
+      EntityDefinition.categoryDefinition(
+            id: testCategoryId,
+            name: 'Test Category',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+            color: '#FF5733',
+          )
+          as CategoryDefinition;
 
   setUp(() {
     mockSaveCallback = MockCategoryCallback();
@@ -106,50 +108,54 @@ void main() {
   });
 
   testWidgets(
-      'onCategorySelected callback calls onSave with correct parameters',
-      (tester) async {
-    // Arrange - create a new category to be selected
-    final selectedCategory = EntityDefinition.categoryDefinition(
-      id: 'selected-category-id',
-      name: 'Selected Category',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      vectorClock: null,
-      private: false,
-      active: true,
-      color: '#00FF00',
-    ) as CategoryDefinition;
+    'onCategorySelected callback calls onSave with correct parameters',
+    (tester) async {
+      // Arrange - create a new category to be selected
+      final selectedCategory =
+          EntityDefinition.categoryDefinition(
+                id: 'selected-category-id',
+                name: 'Selected Category',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                vectorClock: null,
+                private: false,
+                active: true,
+                color: '#00FF00',
+              )
+              as CategoryDefinition;
 
-    // Add the selected category to the mock cache service
-    final categories = [selectedCategory];
-    when(() => mockEntitiesCacheService.sortedCategories)
-        .thenReturn(categories);
+      // Add the selected category to the mock cache service
+      final categories = [selectedCategory];
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(categories);
 
-    // Pump the widget
-    await tester.pumpWidget(
-      WidgetTestBench(
-        child: TaskCategoryWidget(
-          category: testCategory,
-          onSave: mockSaveCallback.call,
+      // Pump the widget
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: TaskCategoryWidget(
+            category: testCategory,
+            onSave: mockSaveCallback.call,
+          ),
         ),
-      ),
-    );
+      );
 
-    // Open the modal
-    await tester.tap(find.byType(InkWell));
-    await tester.pumpAndSettle();
+      // Open the modal
+      await tester.tap(find.byType(InkWell));
+      await tester.pumpAndSettle();
 
-    // Find the CategorySelectionModalContent widget
-    final modalContent = tester.widget<CategorySelectionModalContent>(
-      find.byType(CategorySelectionModalContent),
-    );
+      // Find the CategorySelectionModalContent widget
+      final modalContent = tester.widget<CategorySelectionModalContent>(
+        find.byType(CategorySelectionModalContent),
+      );
 
-    // Directly invoke the onCategorySelected callback with the selectedCategory
-    modalContent.onCategorySelected(selectedCategory);
+      // Directly invoke the onCategorySelected callback with the selectedCategory
+      modalContent.onCategorySelected(selectedCategory);
 
-    // Verify onSave was called with the selected category ID
-    verify(() => mockSaveCallback(selectedCategory.id)).called(1);
-  });
+      // Verify onSave was called with the selected category ID
+      verify(() => mockSaveCallback(selectedCategory.id)).called(1);
+    },
+  );
 
   test('calls onSave with selected category id', () async {
     // Arrange

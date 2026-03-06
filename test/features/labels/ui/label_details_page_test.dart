@@ -64,20 +64,44 @@ void main() {
   });
   setUp(() {
     // Larger viewport to keep bottom bar and sliver content within view
-    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
-        .physicalSize = const Size(1024, 1400);
     TestWidgetsFlutterBinding
-        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .physicalSize = const Size(
+      1024,
+      1400,
+    );
+    TestWidgetsFlutterBinding
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .devicePixelRatio =
+        1.0;
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
     }
   });
 
   tearDown(() async {
-    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
-        .physicalSize = const Size(800, 600);
     TestWidgetsFlutterBinding
-        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .physicalSize = const Size(
+      800,
+      600,
+    );
+    TestWidgetsFlutterBinding
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .devicePixelRatio =
+        1.0;
     if (getIt.isRegistered<EntitiesCacheService>()) {
       await getIt.reset(dispose: false);
     }
@@ -114,8 +138,9 @@ void main() {
       expect(tester.widget<LottiPrimaryButton>(saveButton).onPressed, isNull);
     });
 
-    testWidgets('create mode: tapping Save calls controller.save',
-        (tester) async {
+    testWidgets('create mode: tapping Save calls controller.save', (
+      tester,
+    ) async {
       var saved = false;
       const state = LabelEditorState(
         name: 'Urgent',
@@ -150,7 +175,9 @@ void main() {
 
       final saveButton = find.byType(LottiPrimaryButton);
       expect(
-          tester.widget<LottiPrimaryButton>(saveButton).onPressed, isNotNull);
+        tester.widget<LottiPrimaryButton>(saveButton).onPressed,
+        isNotNull,
+      );
 
       await tester.tap(saveButton);
       await tester.pump();
@@ -158,20 +185,23 @@ void main() {
       expect(saved, isTrue);
     });
 
-    testWidgets('edit mode: delete flow calls repository.deleteLabel',
-        (tester) async {
+    testWidgets('edit mode: delete flow calls repository.deleteLabel', (
+      tester,
+    ) async {
       final repo = _MockLabelsRepository();
       when(() => repo.watchLabel('label-1')).thenAnswer(
         (_) => Stream<LabelDefinition?>.value(
-            testLabelDefinition1.copyWith(id: 'label-1')),
+          testLabelDefinition1.copyWith(id: 'label-1'),
+        ),
       );
       when(() => repo.deleteLabel('label-1')).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
-          child:
-              makeTestableWidget2(const LabelDetailsPage(labelId: 'label-1')),
+          child: makeTestableWidget2(
+            const LabelDetailsPage(labelId: 'label-1'),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -240,8 +270,9 @@ void main() {
 
       // Stub sortedCategories for the modal
       final cacheService = getIt<EntitiesCacheService>();
-      when(() => (cacheService as MockEntitiesCacheService).sortedCategories)
-          .thenReturn(<CategoryDefinition>[]);
+      when(
+        () => (cacheService as MockEntitiesCacheService).sortedCategories,
+      ).thenReturn(<CategoryDefinition>[]);
 
       final container = ProviderContainer(
         overrides: [
@@ -458,8 +489,9 @@ void main() {
       expect(tester.widget<Switch>(switchFinder).value, isTrue);
     });
 
-    testWidgets('category chip delete removes it via controller',
-        (tester) async {
+    testWidgets('category chip delete removes it via controller', (
+      tester,
+    ) async {
       // Prepare categories
       final catWork = CategoryDefinition(
         id: 'cat-work',
@@ -528,8 +560,9 @@ void main() {
       expect(find.text('Life'), findsWidgets);
     });
 
-    testWidgets('controllers seed once and do not reseed on rebuild',
-        (tester) async {
+    testWidgets('controllers seed once and do not reseed on rebuild', (
+      tester,
+    ) async {
       const state = LabelEditorState(
         name: 'Alpha',
         colorHex: '#00FF00',

@@ -82,15 +82,16 @@ class _GameyProgressBarState extends State<GameyProgressBar>
       duration: widget.animationDuration ?? GameyAnimations.normal,
     );
 
-    _progressAnimation = Tween<double>(
-      begin: 0,
-      end: _currentProgress,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: widget.animationCurve ?? GameyAnimations.smooth,
-      ),
-    );
+    _progressAnimation =
+        Tween<double>(
+          begin: 0,
+          end: _currentProgress,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: widget.animationCurve ?? GameyAnimations.smooth,
+          ),
+        );
 
     if (widget.animateOnChange) {
       _controller.forward();
@@ -108,15 +109,16 @@ class _GameyProgressBarState extends State<GameyProgressBar>
       final oldProgress = _currentProgress;
       _currentProgress = newProgress;
 
-      _progressAnimation = Tween<double>(
-        begin: oldProgress,
-        end: newProgress,
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: widget.animationCurve ?? GameyAnimations.smooth,
-        ),
-      );
+      _progressAnimation =
+          Tween<double>(
+            begin: oldProgress,
+            end: newProgress,
+          ).animate(
+            CurvedAnimation(
+              parent: _controller,
+              curve: widget.animationCurve ?? GameyAnimations.smooth,
+            ),
+          );
 
       if (widget.animateOnChange) {
         _controller
@@ -139,7 +141,8 @@ class _GameyProgressBarState extends State<GameyProgressBar>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveRadius = widget.borderRadius ?? widget.height / 2;
     final effectiveGradient = widget.gradient ?? GameyGradients.xpProgress;
-    final effectiveBackgroundColor = widget.backgroundColor ??
+    final effectiveBackgroundColor =
+        widget.backgroundColor ??
         (isDark
             ? Colors.white.withValues(alpha: 0.1)
             : Colors.black.withValues(alpha: 0.08));
@@ -179,7 +182,8 @@ class _GameyProgressBarState extends State<GameyProgressBar>
                 Center(
                   child: Text(
                     '${(progress * 100).round()}%',
-                    style: widget.textStyle ??
+                    style:
+                        widget.textStyle ??
                         TextStyle(
                           color: Colors.white,
                           fontSize: widget.height * 0.65,
@@ -237,7 +241,8 @@ class GameyLabeledProgressBar extends StatelessWidget {
           children: [
             Text(
               label,
-              style: labelStyle ??
+              style:
+                  labelStyle ??
                   theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -245,7 +250,8 @@ class GameyLabeledProgressBar extends StatelessWidget {
             if (valueText != null)
               Text(
                 valueText!,
-                style: valueStyle ??
+                style:
+                    valueStyle ??
                     theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -308,15 +314,16 @@ class _GameyCircularProgressState extends State<GameyCircularProgress>
       duration: GameyAnimations.normal,
     );
 
-    _progressAnimation = Tween<double>(
-      begin: 0,
-      end: _currentProgress,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: GameyAnimations.smooth,
-      ),
-    );
+    _progressAnimation =
+        Tween<double>(
+          begin: 0,
+          end: _currentProgress,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: GameyAnimations.smooth,
+          ),
+        );
 
     if (widget.animateOnChange) {
       _controller.forward();
@@ -334,15 +341,16 @@ class _GameyCircularProgressState extends State<GameyCircularProgress>
       final oldProgress = _currentProgress;
       _currentProgress = newProgress;
 
-      _progressAnimation = Tween<double>(
-        begin: oldProgress,
-        end: newProgress,
-      ).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: GameyAnimations.smooth,
-        ),
-      );
+      _progressAnimation =
+          Tween<double>(
+            begin: oldProgress,
+            end: newProgress,
+          ).animate(
+            CurvedAnimation(
+              parent: _controller,
+              curve: GameyAnimations.smooth,
+            ),
+          );
 
       if (widget.animateOnChange) {
         _controller
@@ -364,7 +372,8 @@ class _GameyCircularProgressState extends State<GameyCircularProgress>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveBackgroundColor = widget.backgroundColor ??
+    final effectiveBackgroundColor =
+        widget.backgroundColor ??
         (isDark
             ? Colors.white.withValues(alpha: 0.1)
             : Colors.black.withValues(alpha: 0.08));
@@ -386,8 +395,9 @@ class _GameyCircularProgressState extends State<GameyCircularProgress>
                   value: 1,
                   strokeWidth: widget.strokeWidth,
                   backgroundColor: Colors.transparent,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(effectiveBackgroundColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    effectiveBackgroundColor,
+                  ),
                 ),
               ),
               // Progress circle
@@ -416,7 +426,8 @@ class _GameyCircularProgressState extends State<GameyCircularProgress>
               else if (widget.showText)
                 Text(
                   '${(_progressAnimation.value * 100).round()}%',
-                  style: widget.textStyle ??
+                  style:
+                      widget.textStyle ??
                       TextStyle(
                         fontSize: widget.size * 0.22,
                         fontWeight: FontWeight.bold,

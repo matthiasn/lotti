@@ -40,8 +40,9 @@ class TaskLabelsWrapper extends ConsumerWidget {
             .whereType<LabelDefinition>()
             .toList();
 
-        final assignedNames =
-            assignedLabelsForToast.map((l) => l.name).toList(growable: false);
+        final assignedNames = assignedLabelsForToast
+            .map((l) => l.name)
+            .toList(growable: false);
 
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
@@ -82,8 +83,9 @@ class TaskLabelsWrapper extends ConsumerWidget {
         messenger.showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             elevation: 6,
             margin: EdgeInsets.only(
               left: 12,
@@ -134,14 +136,15 @@ class TaskLabelsWrapper extends ConsumerWidget {
     final cache = getIt<EntitiesCacheService>();
     final assignedIds = task.meta.labelIds ?? <String>[];
     final showPrivate = cache.showPrivateEntries;
-    final assignedLabels = assignedIds
-        .map(cache.getLabelById)
-        .whereType<LabelDefinition>()
-        .where((label) => showPrivate || !(label.private ?? false))
-        .toList()
-      ..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+    final assignedLabels =
+        assignedIds
+            .map(cache.getLabelById)
+            .whereType<LabelDefinition>()
+            .where((label) => showPrivate || !(label.private ?? false))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     final estimate = task.data.estimate;
     final hasEstimate = estimate != null && estimate != Duration.zero;
@@ -267,9 +270,11 @@ class _EditableEstimateChip extends ConsumerWidget {
 
     // Show progress bar when there's an estimate, wrapped in subtle chip
     if (hasEstimate) {
-      final progressState =
-          ref.watch(taskProgressControllerProvider(id: taskId)).value;
-      final isOvertime = progressState != null &&
+      final progressState = ref
+          .watch(taskProgressControllerProvider(id: taskId))
+          .value;
+      final isOvertime =
+          progressState != null &&
           progressState.progress > progressState.estimate;
 
       return GestureDetector(

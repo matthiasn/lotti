@@ -24,8 +24,10 @@ void main() {
     });
 
     test('handles mixed grouping with parentheses inside brackets', () {
-      expect(parseItemListString('[item (with, nested), groups], next'),
-          ['[item (with, nested), groups]', 'next']);
+      expect(parseItemListString('[item (with, nested), groups], next'), [
+        '[item (with, nested), groups]',
+        'next',
+      ]);
     });
 
     test('returns empty list for empty input', () {
@@ -43,13 +45,16 @@ void main() {
     });
 
     test('unbalanced grouping keeps commas unsplit', () {
-      expect(parseItemListString('(unclosed, bracket, next'),
-          ['(unclosed, bracket, next']);
+      expect(parseItemListString('(unclosed, bracket, next'), [
+        '(unclosed, bracket, next',
+      ]);
     });
 
     test('quotes in the middle of items', () {
-      expect(parseItemListString('item "middle, part" end, next'),
-          ['item middle, part end', 'next']);
+      expect(parseItemListString('item "middle, part" end, next'), [
+        'item middle, part end',
+        'next',
+      ]);
     });
 
     test('handles newlines and tabs around commas', () {

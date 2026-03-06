@@ -19,15 +19,17 @@ void main() {
   group('ConflictsPage Widget Tests - ', () {
     setUp(() {
       getIt.registerSingleton<UserActivityService>(UserActivityService());
-      when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))
-          .thenAnswer(
+      when(
+        () => mockJournalDb.watchConflicts(ConflictStatus.resolved),
+      ).thenAnswer(
         (_) => Stream<List<Conflict>>.fromIterable([
           [resolvedConflict],
         ]),
       );
 
-      when(() => mockJournalDb.watchConflicts(ConflictStatus.unresolved))
-          .thenAnswer(
+      when(
+        () => mockJournalDb.watchConflicts(ConflictStatus.unresolved),
+      ).thenAnswer(
         (_) => Stream<List<Conflict>>.fromIterable([
           [unresolvedConflict],
         ]),
@@ -54,7 +56,9 @@ void main() {
 
       expect(find.text('Sync Conflicts'), findsOneWidget);
       expect(
-          find.byKey(const ValueKey('syncFilter-unresolved')), findsOneWidget);
+        find.byKey(const ValueKey('syncFilter-unresolved')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('syncFilter-resolved')), findsOneWidget);
 
       expect(find.text('Unresolved · 1 item'), findsOneWidget);
@@ -69,8 +73,9 @@ void main() {
       expect(find.textContaining('ID: id'), findsOneWidget);
     });
 
-    testWidgets('segmented filters stay pinned while scrolling',
-        (tester) async {
+    testWidgets('segmented filters stay pinned while scrolling', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const SizedBox(
@@ -96,17 +101,20 @@ void main() {
 
       expect(find.textContaining('Resolved · 1 item'), findsOneWidget);
     });
-    testWidgets('shows empty state when streams emit no conflicts',
-        (tester) async {
-      when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))
-          .thenAnswer(
+    testWidgets('shows empty state when streams emit no conflicts', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.watchConflicts(ConflictStatus.resolved),
+      ).thenAnswer(
         (_) => Stream<List<Conflict>>.fromIterable([
           <Conflict>[],
         ]),
       );
 
-      when(() => mockJournalDb.watchConflicts(ConflictStatus.unresolved))
-          .thenAnswer(
+      when(
+        () => mockJournalDb.watchConflicts(ConflictStatus.unresolved),
+      ).thenAnswer(
         (_) => Stream<List<Conflict>>.fromIterable([
           <Conflict>[],
         ]),
@@ -128,15 +136,18 @@ void main() {
       expect(find.textContaining('0 items'), findsWidgets);
     });
 
-    testWidgets('shows loader before the first conflict snapshot',
-        (tester) async {
+    testWidgets('shows loader before the first conflict snapshot', (
+      tester,
+    ) async {
       final unresolvedController = StreamController<List<Conflict>>();
       final resolvedController = StreamController<List<Conflict>>();
 
-      when(() => mockJournalDb.watchConflicts(ConflictStatus.unresolved))
-          .thenAnswer((_) => unresolvedController.stream);
-      when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))
-          .thenAnswer((_) => resolvedController.stream);
+      when(
+        () => mockJournalDb.watchConflicts(ConflictStatus.unresolved),
+      ).thenAnswer((_) => unresolvedController.stream);
+      when(
+        () => mockJournalDb.watchConflicts(ConflictStatus.resolved),
+      ).thenAnswer((_) => resolvedController.stream);
 
       await tester.pumpWidget(
         makeTestableWidget(

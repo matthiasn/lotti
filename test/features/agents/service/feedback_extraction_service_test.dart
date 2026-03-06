@@ -63,8 +63,9 @@ void main() {
     // Default: no entity found for payload lookups.
     when(() => mockRepo.getEntity(any())).thenAnswer((_) async => null);
     // Template kind check: null → not an improver, skips evolution feedback.
-    when(() => mockTemplateService.getTemplate(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockTemplateService.getTemplate(any()),
+    ).thenAnswer((_) async => null);
   }
 
   /// Stubs decisions for decision classification tests.
@@ -333,8 +334,7 @@ void main() {
       expect(result.totalObservationsScanned, 1);
     });
 
-    test(
-        'classifies critical grievance observation as negative '
+    test('classifies critical grievance observation as negative '
         'with full confidence', () async {
       stubEmptyData();
       final observation = makeTestMessage(
@@ -356,8 +356,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-grievance'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-grievance'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -373,8 +374,7 @@ void main() {
       expect(item.category, FeedbackCategory.prioritization);
     });
 
-    test(
-        'classifies critical excellence observation as positive '
+    test('classifies critical excellence observation as positive '
         'with full confidence', () async {
       stubEmptyData();
       final observation = makeTestMessage(
@@ -396,8 +396,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-excellence'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-excellence'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -433,8 +434,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-routine'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-routine'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -467,8 +469,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-enrich-1'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-enrich-1'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -501,8 +504,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-long'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-long'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -533,8 +537,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-empty'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-empty'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -563,8 +568,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-positive'))
-          .thenAnswer((_) async => payload);
+      when(
+        () => mockRepo.getEntity('payload-positive'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -593,40 +599,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-negative'))
-          .thenAnswer((_) async => payload);
-
-      final result = await service.extract(
-        templateId: kTestTemplateId,
-        since: windowStart,
-        until: windowEnd,
-      );
-
-      expect(result.items, hasLength(1));
-      expect(result.items.first.sentiment, FeedbackSentiment.negative);
-    });
-
-    test('classifies observation with mixed keywords as dominant sentiment',
-        () async {
-      stubEmptyData();
-      final observation = makeTestMessage(
-        kind: AgentMessageKind.observation,
-        createdAt: DateTime(2024, 3, 15),
-        contentEntryId: 'payload-mixed',
-      );
-      // Two negative keywords (error, crash) vs one positive (resolved)
-      final payload = makeTestMessagePayload(
-        id: 'payload-mixed',
-        content: {'text': 'System error caused a crash but was resolved.'},
-      );
       when(
-        () => mockTemplateService.getRecentInstanceObservations(
-          any(),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-mixed'))
-          .thenAnswer((_) async => payload);
+        () => mockRepo.getEntity('payload-negative'),
+      ).thenAnswer((_) async => payload);
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -635,9 +610,44 @@ void main() {
       );
 
       expect(result.items, hasLength(1));
-      // 2 negative > 1 positive → negative
       expect(result.items.first.sentiment, FeedbackSentiment.negative);
     });
+
+    test(
+      'classifies observation with mixed keywords as dominant sentiment',
+      () async {
+        stubEmptyData();
+        final observation = makeTestMessage(
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 3, 15),
+          contentEntryId: 'payload-mixed',
+        );
+        // Two negative keywords (error, crash) vs one positive (resolved)
+        final payload = makeTestMessagePayload(
+          id: 'payload-mixed',
+          content: {'text': 'System error caused a crash but was resolved.'},
+        );
+        when(
+          () => mockTemplateService.getRecentInstanceObservations(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [observation]);
+        when(
+          () => mockRepo.getEntity('payload-mixed'),
+        ).thenAnswer((_) async => payload);
+
+        final result = await service.extract(
+          templateId: kTestTemplateId,
+          since: windowStart,
+          until: windowEnd,
+        );
+
+        expect(result.items, hasLength(1));
+        // 2 negative > 1 positive → negative
+        expect(result.items.first.sentiment, FeedbackSentiment.negative);
+      },
+    );
 
     test('uses humanSummary in decision detail when available', () async {
       stubEmptyData();
@@ -660,8 +670,7 @@ void main() {
       );
     });
 
-    test(
-        'uses change-set item summary when decision humanSummary '
+    test('uses change-set item summary when decision humanSummary '
         'is missing', () async {
       stubEmptyData();
       final decision = makeTestChangeDecision(
@@ -686,8 +695,7 @@ void main() {
       expect(result.items.first.detail, 'confirmed: Set estimate to 2 hours');
     });
 
-    test(
-        'falls back to toolName and includes rejection reason '
+    test('falls back to toolName and includes rejection reason '
         'when no summary exists', () async {
       stubEmptyData();
       final decision = makeTestChangeDecision(
@@ -747,8 +755,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(() => mockRepo.getEntity('payload-fail'))
-          .thenThrow(Exception('payload read failed'));
+      when(
+        () => mockRepo.getEntity('payload-fail'),
+      ).thenThrow(Exception('payload read failed'));
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -922,32 +931,34 @@ void main() {
       expect(feedback.byCategory, isEmpty);
     });
 
-    test('critical getter filters items with critical observation priority',
-        () {
-      final feedback = makeTestClassifiedFeedback(
-        items: [
-          makeTestClassifiedFeedbackItem(
-            detail: 'grievance',
-            sentiment: FeedbackSentiment.negative,
-            observationPriority: ObservationPriority.critical,
-          ),
-          makeTestClassifiedFeedbackItem(
-            detail: 'routine observation',
-            observationPriority: ObservationPriority.routine,
-          ),
-          makeTestClassifiedFeedbackItem(
-            detail: 'excellence note',
-            observationPriority: ObservationPriority.critical,
-          ),
-        ],
-      );
+    test(
+      'critical getter filters items with critical observation priority',
+      () {
+        final feedback = makeTestClassifiedFeedback(
+          items: [
+            makeTestClassifiedFeedbackItem(
+              detail: 'grievance',
+              sentiment: FeedbackSentiment.negative,
+              observationPriority: ObservationPriority.critical,
+            ),
+            makeTestClassifiedFeedbackItem(
+              detail: 'routine observation',
+              observationPriority: ObservationPriority.routine,
+            ),
+            makeTestClassifiedFeedbackItem(
+              detail: 'excellence note',
+              observationPriority: ObservationPriority.critical,
+            ),
+          ],
+        );
 
-      expect(feedback.critical, hasLength(2));
-      expect(
-        feedback.critical.map((i) => i.detail),
-        containsAll(['grievance', 'excellence note']),
-      );
-    });
+        expect(feedback.critical, hasLength(2));
+        expect(
+          feedback.critical.map((i) => i.detail),
+          containsAll(['grievance', 'excellence note']),
+        );
+      },
+    );
 
     test('grievances filters critical + negative items', () {
       final feedback = makeTestClassifiedFeedback(
@@ -1015,8 +1026,9 @@ void main() {
       String agentId = 'improver-agent-1',
       String activeTemplateId = taskTplId,
     }) {
-      when(() => mockTemplateService.getAgentsForTemplate(improverTplId))
-          .thenAnswer(
+      when(
+        () => mockTemplateService.getAgentsForTemplate(improverTplId),
+      ).thenAnswer(
         (_) async => [
           makeTestIdentity(
             id: agentId,
@@ -1081,28 +1093,30 @@ void main() {
       );
     });
 
-    test('extracts no evolution feedback when template has no agents',
-        () async {
-      stubEmptyImproverData();
-      when(() => mockTemplateService.getAgentsForTemplate(improverTplId))
-          .thenAnswer((_) async => []);
-
-      final result = await service.extract(
-        templateId: improverTplId,
-        since: windowStart,
-        until: windowEnd,
-      );
-
-      expect(
-        result.items.where(
-          (i) => i.source == FeedbackSources.evolutionSession,
-        ),
-        isEmpty,
-      );
-    });
-
     test(
-        'classifies completed sessions with high rating '
+      'extracts no evolution feedback when template has no agents',
+      () async {
+        stubEmptyImproverData();
+        when(
+          () => mockTemplateService.getAgentsForTemplate(improverTplId),
+        ).thenAnswer((_) async => []);
+
+        final result = await service.extract(
+          templateId: improverTplId,
+          since: windowStart,
+          until: windowEnd,
+        );
+
+        expect(
+          result.items.where(
+            (i) => i.source == FeedbackSources.evolutionSession,
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('classifies completed sessions with high rating '
         'as positive', () async {
       stubEmptyImproverData();
       stubImproverAgentInstances();
@@ -1130,8 +1144,7 @@ void main() {
       expect(evoItems.first.detail, contains('4.5'));
     });
 
-    test(
-        'classifies completed sessions with low rating '
+    test('classifies completed sessions with low rating '
         'as negative', () async {
       stubEmptyImproverData();
       stubImproverAgentInstances();
@@ -1250,8 +1263,7 @@ void main() {
       expect(evoItems.first.sourceEntityId, 'session-inside');
     });
 
-    test(
-        'flags excessive directive churn when version count '
+    test('flags excessive directive churn when version count '
         'exceeds threshold', () async {
       stubEmptyImproverData();
       stubImproverAgentInstances();
@@ -1283,8 +1295,7 @@ void main() {
       expect(churnItems.first.detail, contains('Excessive directive churn'));
     });
 
-    test(
-        'does not flag directive churn when version count '
+    test('does not flag directive churn when version count '
         'is within threshold', () async {
       stubEmptyImproverData();
       stubImproverAgentInstances();
@@ -1316,8 +1327,9 @@ void main() {
 
     test('skips agents without activeTemplateId in state', () async {
       stubEmptyImproverData();
-      when(() => mockTemplateService.getAgentsForTemplate(improverTplId))
-          .thenAnswer(
+      when(
+        () => mockTemplateService.getAgentsForTemplate(improverTplId),
+      ).thenAnswer(
         (_) async => [
           makeTestIdentity(
             id: 'agent-no-target',

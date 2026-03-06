@@ -48,7 +48,8 @@ class FtueSetupConfig {
   static const mistral = FtueSetupConfig(
     providerName: 'Mistral',
     modelCount: 3,
-    modelDescription: 'Magistral Medium (reasoning), Mistral Small (fast), '
+    modelDescription:
+        'Magistral Medium (reasoning), Mistral Small (fast), '
         'Voxtral Small (audio)',
     promptCount: 8,
     promptDescription:
@@ -102,7 +103,8 @@ class FtueSetupDialog extends StatelessWidget {
     required String providerName,
     FtueSetupConfig? config,
   }) async {
-    final effectiveConfig = config ??
+    final effectiveConfig =
+        config ??
         switch (providerName) {
           'OpenAI' => FtueSetupConfig.openAi,
           'Mistral' => FtueSetupConfig.mistral,
@@ -204,8 +206,9 @@ class FtueSetupDialog extends StatelessWidget {
             "We'll set up models, prompts, and a test category so you can "
             'start using AI features right away.',
             style: context.textTheme.bodySmall?.copyWith(
-              color:
-                  context.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+              color: context.colorScheme.onPrimaryContainer.withValues(
+                alpha: 0.8,
+              ),
             ),
           ),
         ],
@@ -217,8 +220,9 @@ class FtueSetupDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:
-            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: context.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.5,
+        ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: context.colorScheme.outline.withValues(alpha: 0.2),

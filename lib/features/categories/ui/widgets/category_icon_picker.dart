@@ -37,8 +37,9 @@ class CategoryIconPicker extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.all(CategoryIconConstants.pickerPadding),
+              padding: const EdgeInsets.all(
+                CategoryIconConstants.pickerPadding,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -57,8 +58,9 @@ class CategoryIconPicker extends StatelessWidget {
             const Divider(height: 1),
             Expanded(
               child: GridView.builder(
-                padding:
-                    const EdgeInsets.all(CategoryIconConstants.pickerPadding),
+                padding: const EdgeInsets.all(
+                  CategoryIconConstants.pickerPadding,
+                ),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: CategoryIconConstants.pickerGridColumns,
                   crossAxisSpacing: CategoryIconConstants.pickerGridSpacing,
@@ -79,7 +81,8 @@ class CategoryIconPicker extends StatelessWidget {
                         color: isSelected
                             ? Theme.of(context).colorScheme.primary.withValues(
                                 alpha: CategoryIconConstants
-                                    .selectedBackgroundAlpha)
+                                    .selectedBackgroundAlpha,
+                              )
                             : Colors.transparent,
                         border: Border.all(
                           color: isSelected
@@ -102,7 +105,8 @@ class CategoryIconPicker extends StatelessWidget {
                                 : Colors.grey.shade700,
                           ),
                           const SizedBox(
-                              height: CategoryIconConstants.iconTextSpacing),
+                            height: CategoryIconConstants.iconTextSpacing,
+                          ),
                           Text(
                             icon.displayName,
                             style: TextStyle(

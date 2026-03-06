@@ -75,11 +75,13 @@ void main() {
 
   /// Stubs for the full happy-path scenario.
   void stubHappyPath({int feedbackCount = 5}) {
-    when(() => mockRepository.getAgentState(any()))
-        .thenAnswer((_) async => makeImproverState());
+    when(
+      () => mockRepository.getAgentState(any()),
+    ).thenAnswer((_) async => makeImproverState());
 
-    when(() => mockTemplateService.getTemplate(targetTemplateId))
-        .thenAnswer((_) async => makeTestTemplate(id: targetTemplateId));
+    when(
+      () => mockTemplateService.getTemplate(targetTemplateId),
+    ).thenAnswer((_) async => makeTestTemplate(id: targetTemplateId));
 
     when(
       () => mockFeedbackService.extract(
@@ -96,11 +98,13 @@ void main() {
       ),
     );
 
-    when(() => mockTemplateService.getActiveVersion(targetTemplateId))
-        .thenAnswer((_) async => makeTestTemplateVersion());
+    when(
+      () => mockTemplateService.getActiveVersion(targetTemplateId),
+    ).thenAnswer((_) async => makeTestTemplateVersion());
 
-    when(() => mockTemplateService.gatherEvolutionData(targetTemplateId))
-        .thenAnswer((_) async => makeTestEvolutionDataBundle());
+    when(
+      () => mockTemplateService.gatherEvolutionData(targetTemplateId),
+    ).thenAnswer((_) async => makeTestEvolutionDataBundle());
 
     when(
       () => mockEvolutionWorkflow.startSession(
@@ -110,8 +114,9 @@ void main() {
       ),
     ).thenAnswer((_) async => 'LLM response');
 
-    when(() => mockImproverService.scheduleNextRitual(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockImproverService.scheduleNextRitual(any()),
+    ).thenAnswer((_) async {});
   }
 
   group('execute', () {
@@ -145,8 +150,9 @@ void main() {
       ).called(1);
 
       // Verify state was updated with lastFeedbackScanAt.
-      final captured =
-          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
       final stateUpdates = captured.whereType<AgentStateEntity>().toList();
       expect(stateUpdates, isNotEmpty);
       final lastUpdate = stateUpdates.last;
@@ -175,20 +181,23 @@ void main() {
       );
 
       // Should schedule next wake.
-      verify(() => mockImproverService.scheduleNextRitual(kTestAgentId))
-          .called(1);
+      verify(
+        () => mockImproverService.scheduleNextRitual(kTestAgentId),
+      ).called(1);
 
       // Should update lastFeedbackScanAt.
-      final captured =
-          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
       final stateUpdates = captured.whereType<AgentStateEntity>().toList();
       expect(stateUpdates, hasLength(1));
       expect(stateUpdates.first.slots.lastFeedbackScanAt, isNotNull);
     });
 
     test('returns failure when no agent state found', () async {
-      when(() => mockRepository.getAgentState(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getAgentState(any()),
+      ).thenAnswer((_) async => null);
 
       final result = await workflow.execute(
         agentIdentity: makeImproverIdentity(),
@@ -201,8 +210,9 @@ void main() {
     });
 
     test('returns failure when no activeTemplateId in slots', () async {
-      when(() => mockRepository.getAgentState(any()))
-          .thenAnswer((_) async => makeImproverState(activeTemplateId: null));
+      when(
+        () => mockRepository.getAgentState(any()),
+      ).thenAnswer((_) async => makeImproverState(activeTemplateId: null));
 
       final result = await workflow.execute(
         agentIdentity: makeImproverIdentity(),
@@ -215,11 +225,13 @@ void main() {
     });
 
     test('returns failure when target template not found', () async {
-      when(() => mockRepository.getAgentState(any()))
-          .thenAnswer((_) async => makeImproverState());
+      when(
+        () => mockRepository.getAgentState(any()),
+      ).thenAnswer((_) async => makeImproverState());
 
-      when(() => mockTemplateService.getTemplate(targetTemplateId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockTemplateService.getTemplate(targetTemplateId),
+      ).thenAnswer((_) async => null);
 
       final result = await workflow.execute(
         agentIdentity: makeImproverIdentity(),
@@ -251,8 +263,9 @@ void main() {
       expect(result.error, contains('Failed to start evolution session'));
 
       // Should still schedule next wake.
-      verify(() => mockImproverService.scheduleNextRitual(kTestAgentId))
-          .called(1);
+      verify(
+        () => mockImproverService.scheduleNextRitual(kTestAgentId),
+      ).called(1);
     });
 
     test('uses lastFeedbackScanAt as feedback window start', () async {
@@ -279,59 +292,65 @@ void main() {
       expect(captured.first, scanDate);
     });
 
-    test('falls back to lastOneOnOneAt when lastFeedbackScanAt is null',
-        () async {
-      final oneOnOneDate = DateTime(2024, 3, 5);
-      stubHappyPath();
-      when(() => mockRepository.getAgentState(any())).thenAnswer(
-        (_) async => makeImproverState(lastOneOnOneAt: oneOnOneDate),
-      );
+    test(
+      'falls back to lastOneOnOneAt when lastFeedbackScanAt is null',
+      () async {
+        final oneOnOneDate = DateTime(2024, 3, 5);
+        stubHappyPath();
+        when(() => mockRepository.getAgentState(any())).thenAnswer(
+          (_) async => makeImproverState(lastOneOnOneAt: oneOnOneDate),
+        );
 
-      await workflow.execute(
-        agentIdentity: makeImproverIdentity(),
-        runKey: 'run-001',
-        threadId: 'thread-001',
-      );
+        await workflow.execute(
+          agentIdentity: makeImproverIdentity(),
+          runKey: 'run-001',
+          threadId: 'thread-001',
+        );
 
-      final captured = verify(
-        () => mockFeedbackService.extract(
-          templateId: targetTemplateId,
-          since: captureAny(named: 'since'),
-          until: any(named: 'until'),
-        ),
-      ).captured;
+        final captured = verify(
+          () => mockFeedbackService.extract(
+            templateId: targetTemplateId,
+            since: captureAny(named: 'since'),
+            until: any(named: 'until'),
+          ),
+        ).captured;
 
-      expect(captured.first, oneOnOneDate);
-    });
+        expect(captured.first, oneOnOneDate);
+      },
+    );
 
-    test('falls back to agent createdAt when both scan dates are null',
-        () async {
-      stubHappyPath();
-      when(() => mockRepository.getAgentState(any()))
-          .thenAnswer((_) async => makeImproverState());
+    test(
+      'falls back to agent createdAt when both scan dates are null',
+      () async {
+        stubHappyPath();
+        when(
+          () => mockRepository.getAgentState(any()),
+        ).thenAnswer((_) async => makeImproverState());
 
-      final identity = makeImproverIdentity();
-      await workflow.execute(
-        agentIdentity: identity,
-        runKey: 'run-001',
-        threadId: 'thread-001',
-      );
+        final identity = makeImproverIdentity();
+        await workflow.execute(
+          agentIdentity: identity,
+          runKey: 'run-001',
+          threadId: 'thread-001',
+        );
 
-      final captured = verify(
-        () => mockFeedbackService.extract(
-          templateId: targetTemplateId,
-          since: captureAny(named: 'since'),
-          until: any(named: 'until'),
-        ),
-      ).captured;
+        final captured = verify(
+          () => mockFeedbackService.extract(
+            templateId: targetTemplateId,
+            since: captureAny(named: 'since'),
+            until: any(named: 'until'),
+          ),
+        ).captured;
 
-      expect(captured.first, identity.createdAt);
-    });
+        expect(captured.first, identity.createdAt);
+      },
+    );
 
     test('returns failure when no active version for template', () async {
       stubHappyPath();
-      when(() => mockTemplateService.getActiveVersion(targetTemplateId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockTemplateService.getActiveVersion(targetTemplateId),
+      ).thenAnswer((_) async => null);
 
       final result = await workflow.execute(
         agentIdentity: makeImproverIdentity(),
@@ -363,8 +382,9 @@ void main() {
       expect(result.error, contains('Ritual workflow failed'));
 
       // Should still schedule next wake.
-      verify(() => mockImproverService.scheduleNextRitual(kTestAgentId))
-          .called(1);
+      verify(
+        () => mockImproverService.scheduleNextRitual(kTestAgentId),
+      ).called(1);
     });
 
     test('returns failure when scheduleNextRitual also throws', () async {
@@ -376,8 +396,9 @@ void main() {
           sessionNumberOverride: any(named: 'sessionNumberOverride'),
         ),
       ).thenThrow(Exception('LLM error'));
-      when(() => mockImproverService.scheduleNextRitual(any()))
-          .thenThrow(Exception('Schedule also failed'));
+      when(
+        () => mockImproverService.scheduleNextRitual(any()),
+      ).thenThrow(Exception('Schedule also failed'));
 
       final result = await workflow.execute(
         agentIdentity: makeImproverIdentity(),
@@ -389,8 +410,7 @@ void main() {
       expect(result.error, contains('Ritual workflow failed'));
     });
 
-    test(
-        'passes isMetaLevel=true to context builder when '
+    test('passes isMetaLevel=true to context builder when '
         'recursionDepth > 0', () async {
       stubHappyPath();
       when(() => mockRepository.getAgentState(any())).thenAnswer(
@@ -417,8 +437,7 @@ void main() {
       ).called(1);
     });
 
-    test(
-        'passes isMetaLevel=false to context builder when '
+    test('passes isMetaLevel=false to context builder when '
         'recursionDepth is 0', () async {
       stubHappyPath();
       when(() => mockRepository.getAgentState(any())).thenAnswer(
@@ -445,8 +464,9 @@ void main() {
     test('passes isMetaLevel=false when recursionDepth is null', () async {
       stubHappyPath();
       // Default makeImproverState has null recursionDepth.
-      when(() => mockRepository.getAgentState(any()))
-          .thenAnswer((_) async => makeImproverState());
+      when(
+        () => mockRepository.getAgentState(any()),
+      ).thenAnswer((_) async => makeImproverState());
 
       final result = await workflow.execute(
         agentIdentity: makeImproverIdentity(),

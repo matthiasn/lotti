@@ -65,7 +65,9 @@ void main() {
     test('publishJournalFocus sets intent', () {
       final provider = journalFocusControllerProvider(id: testJournalId);
 
-      container.read(provider.notifier).publishJournalFocus(
+      container
+          .read(provider.notifier)
+          .publishJournalFocus(
             entryId: testEntryId,
           );
 
@@ -79,7 +81,9 @@ void main() {
     test('publishJournalFocus with custom alignment', () {
       final provider = journalFocusControllerProvider(id: testJournalId);
 
-      container.read(provider.notifier).publishJournalFocus(
+      container
+          .read(provider.notifier)
+          .publishJournalFocus(
             entryId: testEntryId,
             alignment: 0.5,
           );
@@ -153,11 +157,15 @@ void main() {
       final provider1 = journalFocusControllerProvider(id: journalId1);
       final provider2 = journalFocusControllerProvider(id: journalId2);
 
-      container.read(provider1.notifier).publishJournalFocus(
+      container
+          .read(provider1.notifier)
+          .publishJournalFocus(
             entryId: 'entry1',
           );
 
-      container.read(provider2.notifier).publishJournalFocus(
+      container
+          .read(provider2.notifier)
+          .publishJournalFocus(
             entryId: 'entry2',
           );
 
@@ -183,7 +191,9 @@ void main() {
       // Direct test without the helper function since it requires WidgetRef
       // We'll test the functionality directly through the controller
       final provider = journalFocusControllerProvider(id: journalId);
-      container.read(provider.notifier).publishJournalFocus(
+      container
+          .read(provider.notifier)
+          .publishJournalFocus(
             entryId: entryId,
             alignment: alignment,
           );
@@ -203,7 +213,9 @@ void main() {
 
       // Direct test without the helper function since it requires WidgetRef
       final provider = journalFocusControllerProvider(id: journalId);
-      container.read(provider.notifier).publishJournalFocus(
+      container
+          .read(provider.notifier)
+          .publishJournalFocus(
             entryId: entryId,
           );
 
@@ -224,7 +236,9 @@ void main() {
       final provider = journalFocusControllerProvider(id: journalId);
 
       // This simulates what the helper function does internally
-      container.read(provider.notifier).publishJournalFocus(
+      container
+          .read(provider.notifier)
+          .publishJournalFocus(
             entryId: entryId,
             alignment: alignment,
           );

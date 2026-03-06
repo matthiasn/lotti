@@ -12,20 +12,24 @@ part of 'ai_input_repository.dart';
 @ProviderFor(aiInputRepository)
 final aiInputRepositoryProvider = AiInputRepositoryProvider._();
 
-final class AiInputRepositoryProvider extends $FunctionalProvider<
-    AiInputRepository,
-    AiInputRepository,
-    AiInputRepository> with $Provider<AiInputRepository> {
+final class AiInputRepositoryProvider
+    extends
+        $FunctionalProvider<
+          AiInputRepository,
+          AiInputRepository,
+          AiInputRepository
+        >
+    with $Provider<AiInputRepository> {
   AiInputRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'aiInputRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'aiInputRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$aiInputRepositoryHash();
@@ -33,8 +37,8 @@ final class AiInputRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<AiInputRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   AiInputRepository create(Ref ref) {

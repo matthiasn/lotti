@@ -28,7 +28,8 @@ void main() {
       // Verify helper text is shown (actual l10n string)
       expect(
         find.text(
-            'Semicolon-separated terms (max 50 chars) for better speech recognition'),
+          'Semicolon-separated terms (max 50 chars) for better speech recognition',
+        ),
         findsOneWidget,
       );
 
@@ -73,8 +74,9 @@ void main() {
       expect(changedTerms, equals(['term1', 'term2']));
     });
 
-    testWidgets('parses terms correctly with various whitespace',
-        (tester) async {
+    testWidgets('parses terms correctly with various whitespace', (
+      tester,
+    ) async {
       List<String>? changedTerms;
 
       await tester.pumpWidget(
@@ -263,8 +265,9 @@ void main() {
       expect(find.text('updated; terms'), findsOneWidget);
     });
 
-    testWidgets('does not update when dictionary is same as current text',
-        (tester) async {
+    testWidgets('does not update when dictionary is same as current text', (
+      tester,
+    ) async {
       // This tests the _listsEqual logic - when user has typed same terms,
       // didUpdateWidget should not clobber the text field
       await tester.pumpWidget(
@@ -321,8 +324,9 @@ void main() {
       expect(find.text('term1; term2; term3'), findsOneWidget);
     });
 
-    testWidgets('updates when dictionary item differs at index',
-        (tester) async {
+    testWidgets('updates when dictionary item differs at index', (
+      tester,
+    ) async {
       // Tests _listsEqual loop finding difference
       await tester.pumpWidget(
         WidgetTestBench(
@@ -428,8 +432,9 @@ void main() {
   });
 
   group('Large dictionary warning', () {
-    testWidgets('shows warning when dictionary exceeds threshold',
-        (tester) async {
+    testWidgets('shows warning when dictionary exceeds threshold', (
+      tester,
+    ) async {
       // Create a dictionary with more than 500 terms
       final largeDict = List.generate(505, (i) => 'term$i');
 
@@ -446,8 +451,9 @@ void main() {
       expect(find.textContaining('505'), findsOneWidget);
     });
 
-    testWidgets('shows normal helper text when below threshold',
-        (tester) async {
+    testWidgets('shows normal helper text when below threshold', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: CategorySpeechDictionary(
@@ -460,7 +466,8 @@ void main() {
       // Verify normal helper text is shown
       expect(
         find.text(
-            'Semicolon-separated terms (max 50 chars) for better speech recognition'),
+          'Semicolon-separated terms (max 50 chars) for better speech recognition',
+        ),
         findsOneWidget,
       );
     });

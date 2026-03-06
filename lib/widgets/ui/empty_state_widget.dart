@@ -38,8 +38,8 @@ class EmptyStateWidget extends StatelessWidget {
           Text(
             description!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).disabledColor,
-                ),
+              color: Theme.of(context).disabledColor,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -53,10 +53,9 @@ class EmptyStateWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.3),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Theme.of(context).dividerColor,

@@ -156,8 +156,9 @@ void main() {
       expect(drafts.length, 2);
 
       // Verify the new draft exists
-      final testEntryDrafts =
-          drafts.where((d) => d.entryId == entryId).toList();
+      final testEntryDrafts = drafts
+          .where((d) => d.entryId == entryId)
+          .toList();
       expect(testEntryDrafts.length, 1);
       expect(testEntryDrafts.first.delta, contains('second'));
     });

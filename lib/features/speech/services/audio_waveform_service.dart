@@ -88,16 +88,16 @@ class _AudioWaveformCachePayload {
   final int requestedBucketCount;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'version': version,
-        'audioFileRelativePath': audioFileRelativePath,
-        'audioFileSizeBytes': audioFileSizeBytes,
-        'audioFileModifiedAt': audioFileModifiedAt.millisecondsSinceEpoch,
-        'audioDurationMs': audioDurationMs,
-        'bucketDurationMicros': bucketDurationMicros,
-        'amplitudes': amplitudes,
-        'sampleCount': actualSampleCount,
-        'requestedBucketCount': requestedBucketCount,
-      };
+    'version': version,
+    'audioFileRelativePath': audioFileRelativePath,
+    'audioFileSizeBytes': audioFileSizeBytes,
+    'audioFileModifiedAt': audioFileModifiedAt.millisecondsSinceEpoch,
+    'audioDurationMs': audioDurationMs,
+    'bucketDurationMicros': bucketDurationMicros,
+    'amplitudes': amplitudes,
+    'sampleCount': actualSampleCount,
+    'requestedBucketCount': requestedBucketCount,
+  };
 }
 
 class _DatedCacheFile {
@@ -110,19 +110,21 @@ class _DatedCacheFile {
   final DateTime modified;
 }
 
-typedef AudioWaveformExtractor = Future<Waveform> Function({
-  required File audioFile,
-  required File waveOutFile,
-  required WaveformZoom zoom,
-});
+typedef AudioWaveformExtractor =
+    Future<Waveform> Function({
+      required File audioFile,
+      required File waveOutFile,
+      required WaveformZoom zoom,
+    });
 
 Future<Waveform> _defaultWaveformExtractor({
   required File audioFile,
   required File waveOutFile,
   required WaveformZoom zoom,
 }) async {
-  final logging =
-      getIt.isRegistered<LoggingService>() ? getIt<LoggingService>() : null;
+  final logging = getIt.isRegistered<LoggingService>()
+      ? getIt<LoggingService>()
+      : null;
   try {
     Waveform? waveform;
     final stream = JustWaveform.extract(
@@ -162,8 +164,8 @@ class AudioWaveformService {
   AudioWaveformService({
     AudioWaveformExtractor? extractor,
     WaveformZoom zoom = _defaultZoom,
-  })  : _extractor = extractor ?? _defaultWaveformExtractor,
-        _zoom = zoom;
+  }) : _extractor = extractor ?? _defaultWaveformExtractor,
+       _zoom = zoom;
 
   final AudioWaveformExtractor _extractor;
   final WaveformZoom _zoom;

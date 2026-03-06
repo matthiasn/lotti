@@ -32,10 +32,12 @@ void main() {
     // Miss logs a miss
     final miss = index.find('/images/missing.jpg');
     expect(miss, isNull);
-    verify(() => logging.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'attachmentIndex.find',
-        )).called(greaterThanOrEqualTo(1));
+    verify(
+      () => logging.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: 'attachmentIndex.find',
+      ),
+    ).called(greaterThanOrEqualTo(1));
   });
 }

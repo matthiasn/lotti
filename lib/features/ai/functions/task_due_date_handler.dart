@@ -197,7 +197,8 @@ class TaskDueDateHandler {
       final parsed = DateTime.tryParse(dueDateStr);
 
       if (!isDateOnly || parsed == null) {
-        final message = 'Invalid due date format. Use YYYY-MM-DD (e.g., '
+        final message =
+            'Invalid due date format. Use YYYY-MM-DD (e.g., '
             '2024-01-19). Received: $dueDateStr';
         _sendResponse(call.id, message, manager);
         return TaskDueDateResult(

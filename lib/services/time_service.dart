@@ -25,8 +25,9 @@ class TimeService {
       return value;
     }
 
-    _periodicSubscription =
-        Stream<int>.periodic(interval, callback).listen((i) {
+    _periodicSubscription = Stream<int>.periodic(interval, callback).listen((
+      i,
+    ) {
       if (_current != null) {
         _controller.add(
           _current!.copyWith(

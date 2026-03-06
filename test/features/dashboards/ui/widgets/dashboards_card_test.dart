@@ -57,8 +57,9 @@ void main() {
       expect(find.text('Track your health metrics'), findsOneWidget);
     });
 
-    testWidgets('does not show subtitle when description is empty',
-        (tester) async {
+    testWidgets('does not show subtitle when description is empty', (
+      tester,
+    ) async {
       final emptyDesc = DashboardDefinition(
         id: 'test-id',
         name: 'Empty',

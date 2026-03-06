@@ -22,8 +22,10 @@ List<LabelDefinition> buildUnionLabels(
   return byId.values.toList();
 }
 
-String? buildLabelSubtitleText(LabelDefinition label,
-    {required bool outOfCategory}) {
+String? buildLabelSubtitleText(
+  LabelDefinition label, {
+  required bool outOfCategory,
+}) {
   final desc = label.description?.trim();
   final note = outOfCategory ? 'Out of category' : null;
   if (note != null && (desc != null && desc.isNotEmpty)) return '$note • $desc';
@@ -41,16 +43,16 @@ LabelListBuildResult buildSelectorLabelList({
   final availableIds = available.map((e) => e.id).toSet();
   final union = buildUnionLabels(available, assignedDefs);
 
-  final filtered = union.where((label) {
-    if (searchLower.isEmpty) return true;
-    return label.name.toLowerCase().contains(searchLower) ||
-        (label.description?.toLowerCase().contains(searchLower) ?? false);
-  }).toList()
-    ..sort((a, b) {
-      // Sort strictly A–Z by name, independent of selection state.
-      // Use compareAsciiLowerCase to avoid allocating new strings.
-      return compareAsciiLowerCase(a.name, b.name);
-    });
+  final filtered =
+      union.where((label) {
+        if (searchLower.isEmpty) return true;
+        return label.name.toLowerCase().contains(searchLower) ||
+            (label.description?.toLowerCase().contains(searchLower) ?? false);
+      }).toList()..sort((a, b) {
+        // Sort strictly A–Z by name, independent of selection state.
+        // Use compareAsciiLowerCase to avoid allocating new strings.
+        return compareAsciiLowerCase(a.name, b.name);
+      });
 
   return LabelListBuildResult(items: filtered, availableIds: availableIds);
 }

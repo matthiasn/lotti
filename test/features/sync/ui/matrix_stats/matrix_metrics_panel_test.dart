@@ -23,14 +23,16 @@ void main() {
         'failures': 0,
       }),
     );
-    when(() => mockMatrixService.getSyncDiagnosticsText())
-        .thenAnswer((_) async => 'diagnostics');
+    when(
+      () => mockMatrixService.getSyncDiagnosticsText(),
+    ).thenAnswer((_) async => 'diagnostics');
     when(() => mockMatrixService.forceRescan()).thenAnswer((_) async {});
     when(() => mockMatrixService.retryNow()).thenAnswer((_) async {});
   });
 
-  testWidgets('MatrixSyncMetricsPanel renders metrics and handles actions',
-      (tester) async {
+  testWidgets('MatrixSyncMetricsPanel renders metrics and handles actions', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const MatrixSyncMetricsPanel(),

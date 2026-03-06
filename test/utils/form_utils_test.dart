@@ -31,24 +31,27 @@ void main() {
     });
 
     testWidgets(
-        'should return default error message for invalid numeric strings',
-        (tester) async {
-      await tester.pumpWidget(widget);
-      final validator = numericValidator();
-      final localizations =
-          FormBuilderLocalizations.of(tester.element(find.byType(Container)));
-      expect(validator('abc'), localizations.numericErrorText);
-      expect(validator('12a'), localizations.numericErrorText);
-    });
+      'should return default error message for invalid numeric strings',
+      (tester) async {
+        await tester.pumpWidget(widget);
+        final validator = numericValidator();
+        final localizations = FormBuilderLocalizations.of(
+          tester.element(find.byType(Container)),
+        );
+        expect(validator('abc'), localizations.numericErrorText);
+        expect(validator('12a'), localizations.numericErrorText);
+      },
+    );
 
     testWidgets(
-        'should return custom error message for invalid numeric strings',
-        (tester) async {
-      await tester.pumpWidget(widget);
-      const customError = 'Custom error message';
-      final validator = numericValidator(errorText: customError);
-      expect(validator('abc'), customError);
-    });
+      'should return custom error message for invalid numeric strings',
+      (tester) async {
+        await tester.pumpWidget(widget);
+        const customError = 'Custom error message';
+        final validator = numericValidator(errorText: customError);
+        expect(validator('abc'), customError);
+      },
+    );
 
     testWidgets('should return null for empty or null strings', (tester) async {
       await tester.pumpWidget(widget);

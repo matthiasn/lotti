@@ -86,7 +86,8 @@ Just a header with no sections.
       expect(
         content.sections[0],
         contains(
-            '![Feature Image]($baseUrl/${release.folder}/images/feature.png)'),
+          '![Feature Image]($baseUrl/${release.folder}/images/feature.png)',
+        ),
       );
     });
 

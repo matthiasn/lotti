@@ -36,8 +36,9 @@ void main() {
       );
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -49,16 +50,19 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
 
       ensureThemingServicesRegistered();
 
-      when(() => secureStorageMock.readValue(lastRouteKey))
-          .thenAnswer((_) async => '/settings');
+      when(
+        () => secureStorageMock.readValue(lastRouteKey),
+      ).thenAnswer((_) async => '/settings');
 
-      when(() => secureStorageMock.writeValue(lastRouteKey, any()))
-          .thenAnswer((_) async {});
+      when(
+        () => secureStorageMock.writeValue(lastRouteKey, any()),
+      ).thenAnswer((_) async {});
 
       when(mockJournalDb.getAllTags).thenAnswer(
         (_) async => [
@@ -68,8 +72,9 @@ void main() {
         ],
       );
 
-      when(() => mockJournalDb.upsertTagEntity(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockJournalDb.upsertTagEntity(any()),
+      ).thenAnswer((_) async => 1);
     });
     tearDown(getIt.reset);
 

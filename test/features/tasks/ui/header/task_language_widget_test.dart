@@ -23,8 +23,9 @@ void main() {
       );
     });
 
-    testWidgets('displays language placeholder when no language is set',
-        (tester) async {
+    testWidgets('displays language placeholder when no language is set', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: TaskLanguageWidget(
@@ -185,8 +186,9 @@ void main() {
       expect(flagContainer.decoration, isNotNull);
     });
 
-    testWidgets('flag container provides visibility in dark mode',
-        (tester) async {
+    testWidgets('flag container provides visibility in dark mode', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: TaskLanguageWidget(

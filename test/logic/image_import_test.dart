@@ -427,14 +427,20 @@ void main() {
     });
 
     test('returns callback when analysisTrigger is provided', () {
-      final callback =
-          createAnalysisCallback(mockTrigger, 'category', 'linked');
+      final callback = createAnalysisCallback(
+        mockTrigger,
+        'category',
+        'linked',
+      );
       expect(callback, isNotNull);
     });
 
     test('callback triggers analysis with correct parameters', () {
-      final callback =
-          createAnalysisCallback(mockTrigger, 'cat-123', 'linked-456');
+      final callback = createAnalysisCallback(
+        mockTrigger,
+        'cat-123',
+        'linked-456',
+      );
 
       final testEntity = JournalImage(
         meta: Metadata(

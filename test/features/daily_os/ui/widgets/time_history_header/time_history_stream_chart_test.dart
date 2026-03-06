@@ -201,8 +201,9 @@ void main() {
       expect(result.length, equals(4));
 
       // Check uncategorized items exist for both days
-      final uncategorizedItems =
-          result.where((item) => item.categoryId == '__uncategorized__');
+      final uncategorizedItems = result.where(
+        (item) => item.categoryId == '__uncategorized__',
+      );
       expect(uncategorizedItems.length, equals(2));
 
       // First day has 30 minutes uncategorized

@@ -139,10 +139,12 @@ class _TemplateListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeVersionAsync =
-        ref.watch(activeTemplateVersionProvider(template.id));
-    final versionNumber = activeVersionAsync.value
-        ?.mapOrNull(agentTemplateVersion: (v) => v.version);
+    final activeVersionAsync = ref.watch(
+      activeTemplateVersionProvider(template.id),
+    );
+    final versionNumber = activeVersionAsync.value?.mapOrNull(
+      agentTemplateVersion: (v) => v.version,
+    );
     final hasPending = ref.watch(
       templatesPendingReviewProvider.select(
         (async) => async.value?.contains(template.id) ?? false,

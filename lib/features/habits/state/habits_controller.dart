@@ -46,10 +46,12 @@ class HabitsController extends _$HabitsController {
   }
 
   Future<void> _init() async {
-    _definitionsSubscription =
-        _repository.watchHabitDefinitions().listen((habitDefinitions) {
-      _habitDefinitions =
-          habitDefinitions.where((habit) => habit.active).toList();
+    _definitionsSubscription = _repository.watchHabitDefinitions().listen((
+      habitDefinitions,
+    ) {
+      _habitDefinitions = habitDefinitions
+          .where((habit) => habit.active)
+          .toList();
 
       _habitDefinitionsMap = <String, HabitDefinition>{};
 
@@ -78,8 +80,8 @@ class HabitsController extends _$HabitsController {
 
   Future<void> _fetchHabitCompletions() async {
     final rangeStart = DateTime.now().dayAtMidnight.subtract(
-          Duration(days: state.timeSpanDays),
-        );
+      Duration(days: state.timeSpanDays),
+    );
     _habitCompletions = await _repository.getHabitCompletionsInRange(
       rangeStart: rangeStart,
     );
@@ -201,26 +203,26 @@ class HabitsController extends _$HabitsController {
     final filteredOpenNow = selectedCategoryIds.isEmpty
         ? openNow
         : openNow
-            .where(
-              (habit) => selectedCategoryIds.contains(habit.categoryId),
-            )
-            .toList();
+              .where(
+                (habit) => selectedCategoryIds.contains(habit.categoryId),
+              )
+              .toList();
 
     final filteredPendingLater = selectedCategoryIds.isEmpty
         ? pendingLater
         : pendingLater
-            .where(
-              (habit) => selectedCategoryIds.contains(habit.categoryId),
-            )
-            .toList();
+              .where(
+                (habit) => selectedCategoryIds.contains(habit.categoryId),
+              )
+              .toList();
 
     final filteredCompleted = selectedCategoryIds.isEmpty
         ? completed
         : completed
-            .where(
-              (habit) => selectedCategoryIds.contains(habit.categoryId),
-            )
-            .toList();
+              .where(
+                (habit) => selectedCategoryIds.contains(habit.categoryId),
+              )
+              .toList();
 
     final days = getHabitDays(state.timeSpanDays);
 
@@ -317,8 +319,10 @@ class HabitsController extends _$HabitsController {
   /// Sets the selected day for info display in the chart.
   void setInfoYmd(String ymd) {
     final newState = state.copyWith(selectedInfoYmd: ymd);
-    final successPercentage =
-        completionRate(newState, newState.successfulByDay);
+    final successPercentage = completionRate(
+      newState,
+      newState.successfulByDay,
+    );
     final skippedPercentage = completionRate(newState, newState.skippedByDay);
     final failedPercentage = min(
       completionRate(newState, newState.failedByDay),

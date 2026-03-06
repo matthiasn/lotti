@@ -79,36 +79,39 @@ void main() {
         );
       });
 
-      test('records denial in audit log as action message with payload',
-          () async {
-        await executor.execute(
-          toolName: 'set_task_title',
-          args: {'title': 'New Title'},
-          targetEntityId: targetEntityId,
-          resolveCategoryId: (_) async => null,
-          executeHandler: () async => const ToolExecutionResult(
-            success: true,
-            output: 'unreachable',
-          ),
-          readVectorClock: (_) async => null,
-        );
+      test(
+        'records denial in audit log as action message with payload',
+        () async {
+          await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'New Title'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => null,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'unreachable',
+            ),
+            readVectorClock: (_) async => null,
+          );
 
-        // Two upsertEntity calls: payload + action message.
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
-        expect(captured, hasLength(2));
+          // Two upsertEntity calls: payload + action message.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(captured, hasLength(2));
 
-        final payload = captured[0] as AgentMessagePayloadEntity;
-        expect(payload.agentId, equals(agentId));
+          final payload = captured[0] as AgentMessagePayloadEntity;
+          expect(payload.agentId, equals(agentId));
 
-        final message = captured[1] as AgentMessageEntity;
-        expect(message.agentId, equals(agentId));
-        expect(message.threadId, equals(threadId));
-        expect(message.metadata.policyDenied, isTrue);
-        expect(message.metadata.denialReason, isNotNull);
-        expect(message.metadata.toolName, equals('set_task_title'));
-        expect(message.contentEntryId, equals(payload.id));
-      });
+          final message = captured[1] as AgentMessageEntity;
+          expect(message.agentId, equals(agentId));
+          expect(message.threadId, equals(threadId));
+          expect(message.metadata.policyDenied, isTrue);
+          expect(message.metadata.denialReason, isNotNull);
+          expect(message.metadata.toolName, equals('set_task_title'));
+          expect(message.contentEntryId, equals(payload.id));
+        },
+      );
 
       test('does not call executeHandler when denied', () async {
         var handlerCalled = false;
@@ -165,8 +168,9 @@ void main() {
         );
 
         // 4 calls: actionPayload + action + resultPayload + toolResult.
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
         expect(captured, hasLength(4));
 
         final actionPayload = captured[0] as AgentMessagePayloadEntity;
@@ -189,35 +193,38 @@ void main() {
         expect(resultPayload.content['text'], equals('done'));
       });
 
-      test('result message contains error when handler returns error',
-          () async {
-        await executor.execute(
-          toolName: 'set_task_title',
-          args: {'title': ''},
-          targetEntityId: targetEntityId,
-          resolveCategoryId: (_) async => allowedCategoryId,
-          executeHandler: () async => const ToolExecutionResult(
-            success: false,
-            output: 'Invalid title',
-            errorMessage: 'Title must not be empty',
-          ),
-          readVectorClock: (_) async => null,
-        );
+      test(
+        'result message contains error when handler returns error',
+        () async {
+          await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': ''},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: false,
+              output: 'Invalid title',
+              errorMessage: 'Title must not be empty',
+            ),
+            readVectorClock: (_) async => null,
+          );
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
-        // 4 calls: actionPayload + action + resultPayload + toolResult.
-        expect(captured, hasLength(4));
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          // 4 calls: actionPayload + action + resultPayload + toolResult.
+          expect(captured, hasLength(4));
 
-        final resultMessage = captured[3] as AgentMessageEntity;
-        expect(
-          resultMessage.metadata.errorMessage,
-          equals('Title must not be empty'),
-        );
+          final resultMessage = captured[3] as AgentMessageEntity;
+          expect(
+            resultMessage.metadata.errorMessage,
+            equals('Title must not be empty'),
+          );
 
-        final resultPayload = captured[2] as AgentMessagePayloadEntity;
-        expect(resultPayload.content['text'], equals('Invalid title'));
-      });
+          final resultPayload = captured[2] as AgentMessagePayloadEntity;
+          expect(resultPayload.content['text'], equals('Invalid title'));
+        },
+      );
     });
 
     group('vector clock capture', () {
@@ -297,28 +304,30 @@ void main() {
         expect(executor.mutatedEntries, isEmpty);
       });
 
-      test('readVectorClock failure does not mask successful execution',
-          () async {
-        final result = await executor.execute(
-          toolName: 'set_task_title',
-          args: {'title': 'New Title'},
-          targetEntityId: targetEntityId,
-          resolveCategoryId: (_) async => allowedCategoryId,
-          executeHandler: () async => const ToolExecutionResult(
-            success: true,
-            output: 'done',
-            mutatedEntityId: targetEntityId,
-          ),
-          readVectorClock: (_) async => throw Exception('vc read failed'),
-        );
+      test(
+        'readVectorClock failure does not mask successful execution',
+        () async {
+          final result = await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'New Title'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'done',
+              mutatedEntityId: targetEntityId,
+            ),
+            readVectorClock: (_) async => throw Exception('vc read failed'),
+          );
 
-        // The tool execution succeeded — the result should reflect that,
-        // even though readVectorClock threw.
-        expect(result.success, isTrue);
-        expect(result.output, 'done');
-        // Vector clock was not captured due to the error.
-        expect(executor.mutatedEntries, isEmpty);
-      });
+          // The tool execution succeeded — the result should reflect that,
+          // even though readVectorClock threw.
+          expect(result.success, isTrue);
+          expect(result.output, 'done');
+          // Vector clock was not captured due to the error.
+          expect(executor.mutatedEntries, isEmpty);
+        },
+      );
 
       test('mutatedEntries is unmodifiable', () {
         expect(
@@ -390,8 +399,9 @@ void main() {
           readVectorClock: (_) async => null,
         );
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
         // actionPayload + action + errorPayload + toolResult (with error)
         expect(captured, hasLength(4));
 
@@ -408,95 +418,101 @@ void main() {
     });
 
     group('audit write resilience', () {
-      test('success result is preserved when post-success audit write fails',
-          () async {
-        // With payloads: calls are actionPayload(1), action(2),
-        // resultPayload(3), result(4).
-        // Throw on the result payload write (3rd call).
-        var callCount = 0;
-        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
-          callCount++;
-          if (callCount == 3) {
-            throw Exception('DB write failed');
-          }
-        });
+      test(
+        'success result is preserved when post-success audit write fails',
+        () async {
+          // With payloads: calls are actionPayload(1), action(2),
+          // resultPayload(3), result(4).
+          // Throw on the result payload write (3rd call).
+          var callCount = 0;
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 3) {
+              throw Exception('DB write failed');
+            }
+          });
 
-        final result = await executor.execute(
-          toolName: 'set_task_title',
-          args: {'title': 'New Title'},
-          targetEntityId: targetEntityId,
-          resolveCategoryId: (_) async => allowedCategoryId,
-          executeHandler: () async => const ToolExecutionResult(
-            success: true,
-            output: 'Title updated',
-            mutatedEntityId: targetEntityId,
-          ),
-          readVectorClock: (_) async => null,
-        );
+          final result = await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'New Title'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'Title updated',
+              mutatedEntityId: targetEntityId,
+            ),
+            readVectorClock: (_) async => null,
+          );
 
-        // The original successful result must be returned unchanged.
-        expect(result.success, isTrue);
-        expect(result.output, equals('Title updated'));
-        expect(result.mutatedEntityId, equals(targetEntityId));
-      });
+          // The original successful result must be returned unchanged.
+          expect(result.success, isTrue);
+          expect(result.output, equals('Title updated'));
+          expect(result.mutatedEntityId, equals(targetEntityId));
+        },
+      );
 
-      test('policy denial result is preserved when denial audit write fails',
-          () async {
-        // The upsertEntity call (denial audit message) throws.
-        when(() => mockSyncService.upsertEntity(any()))
-            .thenThrow(Exception('DB down'));
+      test(
+        'policy denial result is preserved when denial audit write fails',
+        () async {
+          // The upsertEntity call (denial audit message) throws.
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenThrow(Exception('DB down'));
 
-        final result = await executor.execute(
-          toolName: 'set_task_title',
-          args: {'title': 'New Title'},
-          targetEntityId: targetEntityId,
-          resolveCategoryId: (_) async => 'wrong-category',
-          executeHandler: () async => const ToolExecutionResult(
-            success: true,
-            output: 'should not be reached',
-          ),
-          readVectorClock: (_) async => null,
-        );
+          final result = await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'New Title'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => 'wrong-category',
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'should not be reached',
+            ),
+            readVectorClock: (_) async => null,
+          );
 
-        // The policy denial result must be returned despite audit failure.
-        expect(result.success, isFalse);
-        expect(result.policyDenied, isTrue);
-        expect(result.denialReason, contains('wrong-category'));
-      });
+          // The policy denial result must be returned despite audit failure.
+          expect(result.success, isFalse);
+          expect(result.policyDenied, isTrue);
+          expect(result.denialReason, contains('wrong-category'));
+        },
+      );
 
-      test('error result is preserved when post-exception audit write fails',
-          () async {
-        // With payloads: calls are actionPayload(1), action(2),
-        // errorPayload(3), errorResult(4).
-        // Throw on the error payload write (3rd call).
-        var callCount = 0;
-        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
-          callCount++;
-          if (callCount == 3) {
-            throw Exception('Audit DB also down');
-          }
-        });
+      test(
+        'error result is preserved when post-exception audit write fails',
+        () async {
+          // With payloads: calls are actionPayload(1), action(2),
+          // errorPayload(3), errorResult(4).
+          // Throw on the error payload write (3rd call).
+          var callCount = 0;
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 3) {
+              throw Exception('Audit DB also down');
+            }
+          });
 
-        final result = await executor.execute(
-          toolName: 'set_task_title',
-          args: {'title': 'New Title'},
-          targetEntityId: targetEntityId,
-          resolveCategoryId: (_) async => allowedCategoryId,
-          executeHandler: () async => throw Exception('Handler explosion'),
-          readVectorClock: (_) async => null,
-        );
+          final result = await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'New Title'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => throw Exception('Handler explosion'),
+            readVectorClock: (_) async => null,
+          );
 
-        // The original error result must be returned, not the audit write
-        // error.
-        expect(result.success, isFalse);
-        expect(result.output, contains('Handler explosion'));
-        expect(result.errorMessage, contains('Handler explosion'));
-      });
+          // The original error result must be returned, not the audit write
+          // error.
+          expect(result.success, isFalse);
+          expect(result.output, contains('Handler explosion'));
+          expect(result.errorMessage, contains('Handler explosion'));
+        },
+      );
     });
 
     group('operation ID determinism', () {
-      test(
-          'two executions with identical tool/args/target produce same '
+      test('two executions with identical tool/args/target produce same '
           'operationId', () async {
         final operationIds = <String>[];
 

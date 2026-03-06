@@ -47,7 +47,8 @@ class MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature,
     ConversationStrategy? strategy,
-  })? sendMessageDelegate;
+  })?
+  sendMessageDelegate;
 
   @override
   void build() {}
@@ -192,23 +193,24 @@ void stubSendMessageToInvokeStrategy({
   required ConversationManager manager,
   required List<ChatCompletionMessageToolCall> toolCalls,
 }) {
-  repo.sendMessageDelegate = ({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    double temperature = 0.7,
-    ConversationStrategy? strategy,
-  }) async {
-    if (strategy != null) {
-      await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: manager,
-      );
-    }
-  };
+  repo.sendMessageDelegate =
+      ({
+        required String conversationId,
+        required String message,
+        required String model,
+        required AiConfigInferenceProvider provider,
+        required InferenceRepositoryInterface inferenceRepo,
+        List<ChatCompletionTool>? tools,
+        double temperature = 0.7,
+        ConversationStrategy? strategy,
+      }) async {
+        if (strategy != null) {
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: manager,
+          );
+        }
+      };
 }
 
 void main() {
@@ -229,20 +231,24 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(DateTime.now());
-    registerFallbackValue(AiConfigInferenceProvider(
-      id: 'ollama',
-      baseUrl: 'http://localhost:11434',
-      apiKey: '',
-      name: 'Ollama',
-      createdAt: DateTime.now(),
-      inferenceProviderType: InferenceProviderType.ollama,
-    ));
+    registerFallbackValue(
+      AiConfigInferenceProvider(
+        id: 'ollama',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      ),
+    );
     registerFallbackValue(TestDataFactory.createTask());
     registerFallbackValue(ConversationAction.complete);
     registerFallbackValue(<ChatCompletionMessageToolCall>[]);
-    registerFallbackValue(const ChatCompletionMessage.user(
-      content: ChatCompletionUserMessageContent.string('test'),
-    ));
+    registerFallbackValue(
+      const ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string('test'),
+      ),
+    );
     registerFallbackValue(MockOllamaInferenceRepository());
   });
 
@@ -310,13 +316,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -329,11 +338,13 @@ void main() {
       );
 
       // Mock journal repo update
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepo.updateJournalEntity(any()),
+      ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -350,16 +361,18 @@ void main() {
       );
 
       // Assert - capture and verify in one call
-      final captured =
-          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-              .captured;
+      final captured = verify(
+        () => mockJournalRepo.updateJournalEntity(captureAny()),
+      ).captured;
       expect(captured, hasLength(1));
       final updatedTask = captured.first as Task;
       expect(updatedTask.data.estimate, equals(const Duration(minutes: 120)));
 
       // Verify tool response
-      expect(capturedToolResponses['tool-1'],
-          contains('Task estimate updated to 120 minutes'));
+      expect(
+        capturedToolResponses['tool-1'],
+        contains('Task estimate updated to 120 minutes'),
+      );
     });
 
     test('should no-op when estimate matches current value', () async {
@@ -387,13 +400,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -405,8 +421,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -426,8 +443,10 @@ void main() {
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
 
       // Verify tool response indicates no-op
-      expect(capturedToolResponses['tool-1'],
-          contains('already set to 60 minutes'));
+      expect(
+        capturedToolResponses['tool-1'],
+        contains('already set to 60 minutes'),
+      );
       expect(capturedToolResponses['tool-1'], contains('No change needed'));
     });
 
@@ -454,13 +473,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -472,8 +494,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -494,87 +517,98 @@ void main() {
 
       // Verify tool response indicates error
       expect(capturedToolResponses['tool-1'], contains('Invalid estimate'));
-      expect(capturedToolResponses['tool-1'],
-          contains('minutes must be a positive integer'));
+      expect(
+        capturedToolResponses['tool-1'],
+        contains('minutes must be a positive integer'),
+      );
     });
 
-    test('should update task estimate when currently zero (treat as not set)',
-        () async {
-      // Arrange - task with zero duration (should be treated as "not set")
-      final task = TestDataFactory.createTask(
-        estimate: Duration.zero,
-      );
-      final model = TestDataFactory.createModel();
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'This will take about 1 hour';
+    test(
+      'should update task estimate when currently zero (treat as not set)',
+      () async {
+        // Arrange - task with zero duration (should be treated as "not set")
+        final task = TestDataFactory.createTask(
+          estimate: Duration.zero,
+        );
+        final model = TestDataFactory.createModel();
+        final promptConfig = TestDataFactory.createPromptConfig();
+        const prompt = 'This will take about 1 hour';
 
-      when(() => mockConversationManager.messages).thenReturn([]);
+        when(() => mockConversationManager.messages).thenReturn([]);
 
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'update_task_estimate',
-          arguments:
-              '{"minutes": 60, "reason": "User said 1 hour", "confidence": "high"}',
-        ),
-      );
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_estimate',
+            arguments:
+                '{"minutes": 60, "reason": "User said 1 hour", "confidence": "high"}',
+          ),
+        );
 
-      final streamController = StreamController<ConversationEvent>();
-      addTearDown(() {
-        unawaited(streamController.close());
-      });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+        final streamController = StreamController<ConversationEvent>();
+        addTearDown(() {
+          unawaited(streamController.close());
+        });
+        when(
+          () => mockConversationManager.events,
+        ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((invocation) {
-        final toolCallId = invocation.namedArguments[#toolCallId] as String;
-        final response = invocation.namedArguments[#response] as String;
-        capturedToolResponses[toolCallId] = response;
-      });
+          ),
+        ).thenAnswer((invocation) {
+          final toolCallId = invocation.namedArguments[#toolCallId] as String;
+          final response = invocation.namedArguments[#response] as String;
+          capturedToolResponses[toolCallId] = response;
+        });
 
-      stubSendMessageToInvokeStrategy(
-        repo: mockConversationRepo,
-        manager: mockConversationManager,
-        toolCalls: const [toolCall],
-      );
+        stubSendMessageToInvokeStrategy(
+          repo: mockConversationRepo,
+          manager: mockConversationManager,
+          toolCalls: const [toolCall],
+        );
 
-      // Mock journal repo update
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+        // Mock journal repo update
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+        when(
+          () => mockJournalDb.journalEntityById(task.meta.id),
+        ).thenAnswer((_) async => task);
 
-      // Act
-      await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: TestDataFactory.createProvider(),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
+        // Act
+        await processor.processPromptWithConversation(
+          prompt: prompt,
+          entity: task,
+          task: task,
+          model: model,
+          provider: TestDataFactory.createProvider(),
+          promptConfig: promptConfig,
+          systemMessage: checklistUpdatesPrompt.systemMessage,
+          tools: [],
+          inferenceRepo: mockOllamaRepo,
+          autoChecklistService: mockAutoChecklistService,
+        );
 
-      // Assert - should update because zero is treated as "not set"
-      final captured =
-          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-              .captured;
-      expect(captured, hasLength(1));
-      final updatedTask = captured.first as Task;
-      expect(updatedTask.data.estimate, equals(const Duration(minutes: 60)));
+        // Assert - should update because zero is treated as "not set"
+        final captured = verify(
+          () => mockJournalRepo.updateJournalEntity(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final updatedTask = captured.first as Task;
+        expect(updatedTask.data.estimate, equals(const Duration(minutes: 60)));
 
-      // Verify tool response
-      expect(capturedToolResponses['tool-1'],
-          contains('Task estimate updated to 60 minutes'));
-    });
+        // Verify tool response
+        expect(
+          capturedToolResponses['tool-1'],
+          contains('Task estimate updated to 60 minutes'),
+        );
+      },
+    );
 
     test('should reject zero minutes', () async {
       // Arrange
@@ -599,13 +633,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -617,8 +654,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -666,13 +704,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -684,11 +725,13 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepo.updateJournalEntity(any()),
+      ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -705,20 +748,21 @@ void main() {
       );
 
       // Assert - capture and verify in one call
-      final captured =
-          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-              .captured;
+      final captured = verify(
+        () => mockJournalRepo.updateJournalEntity(captureAny()),
+      ).captured;
       expect(captured, hasLength(1));
       final updatedTask = captured.first as Task;
       expect(updatedTask.data.due, equals(DateTime(2024, 1, 19)));
 
       // Verify tool response
-      expect(capturedToolResponses['tool-1'],
-          contains('Task due date updated to 2024-01-19'));
+      expect(
+        capturedToolResponses['tool-1'],
+        contains('Task due date updated to 2024-01-19'),
+      );
     });
 
-    test('should no-op when due date already matches requested value',
-        () async {
+    test('should no-op when due date already matches requested value', () async {
       // Arrange - task already has the same due date the AI requests
       final existingDueDate = DateTime(2024, 1, 20);
       final task = TestDataFactory.createTask(due: existingDueDate);
@@ -742,13 +786,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -760,8 +807,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -781,8 +829,10 @@ void main() {
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
 
       // Verify tool response indicates no-op
-      expect(capturedToolResponses['tool-1'],
-          contains('already set to 2024-01-20'));
+      expect(
+        capturedToolResponses['tool-1'],
+        contains('already set to 2024-01-20'),
+      );
       expect(capturedToolResponses['tool-1'], contains('No change needed'));
     });
 
@@ -809,13 +859,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -827,8 +880,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -849,7 +903,9 @@ void main() {
 
       // Verify tool response indicates error
       expect(
-          capturedToolResponses['tool-1'], contains('Invalid due date format'));
+        capturedToolResponses['tool-1'],
+        contains('Invalid due date format'),
+      );
       expect(capturedToolResponses['tool-1'], contains('YYYY-MM-DD'));
     });
 
@@ -876,13 +932,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -894,8 +953,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -917,89 +977,99 @@ void main() {
       // Verify tool response indicates error
       expect(capturedToolResponses['tool-1'], contains('Invalid due date'));
       expect(
-          capturedToolResponses['tool-1'], contains('date string is required'));
+        capturedToolResponses['tool-1'],
+        contains('date string is required'),
+      );
     });
   });
 
   group('update_task_priority', () {
-    test('should update task priority when currently default (p2Medium)',
-        () async {
-      // Arrange
-      final task = TestDataFactory.createTask();
-      final model = TestDataFactory.createModel();
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'This is urgent priority';
+    test(
+      'should update task priority when currently default (p2Medium)',
+      () async {
+        // Arrange
+        final task = TestDataFactory.createTask();
+        final model = TestDataFactory.createModel();
+        final promptConfig = TestDataFactory.createPromptConfig();
+        const prompt = 'This is urgent priority';
 
-      when(() => mockConversationManager.messages).thenReturn([]);
+        when(() => mockConversationManager.messages).thenReturn([]);
 
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'update_task_priority',
-          arguments:
-              '{"priority": "P0", "reason": "User said urgent", "confidence": "high"}',
-        ),
-      );
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_priority',
+            arguments:
+                '{"priority": "P0", "reason": "User said urgent", "confidence": "high"}',
+          ),
+        );
 
-      final streamController = StreamController<ConversationEvent>();
-      addTearDown(() {
-        unawaited(streamController.close());
-      });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+        final streamController = StreamController<ConversationEvent>();
+        addTearDown(() {
+          unawaited(streamController.close());
+        });
+        when(
+          () => mockConversationManager.events,
+        ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((invocation) {
-        final toolCallId = invocation.namedArguments[#toolCallId] as String;
-        final response = invocation.namedArguments[#response] as String;
-        capturedToolResponses[toolCallId] = response;
-      });
+          ),
+        ).thenAnswer((invocation) {
+          final toolCallId = invocation.namedArguments[#toolCallId] as String;
+          final response = invocation.namedArguments[#response] as String;
+          capturedToolResponses[toolCallId] = response;
+        });
 
-      stubSendMessageToInvokeStrategy(
-        repo: mockConversationRepo,
-        manager: mockConversationManager,
-        toolCalls: const [toolCall],
-      );
+        stubSendMessageToInvokeStrategy(
+          repo: mockConversationRepo,
+          manager: mockConversationManager,
+          toolCalls: const [toolCall],
+        );
 
-      // Mock journal repo update
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+        // Mock journal repo update
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+        when(
+          () => mockJournalDb.journalEntityById(task.meta.id),
+        ).thenAnswer((_) async => task);
 
-      // Act
-      await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: TestDataFactory.createProvider(),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
+        // Act
+        await processor.processPromptWithConversation(
+          prompt: prompt,
+          entity: task,
+          task: task,
+          model: model,
+          provider: TestDataFactory.createProvider(),
+          promptConfig: promptConfig,
+          systemMessage: checklistUpdatesPrompt.systemMessage,
+          tools: [],
+          inferenceRepo: mockOllamaRepo,
+          autoChecklistService: mockAutoChecklistService,
+        );
 
-      // Assert - capture and verify in one call
-      final captured =
-          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-              .captured;
-      expect(captured, hasLength(1));
-      final updatedTask = captured.first as Task;
-      expect(updatedTask.data.priority, equals(TaskPriority.p0Urgent));
+        // Assert - capture and verify in one call
+        final captured = verify(
+          () => mockJournalRepo.updateJournalEntity(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final updatedTask = captured.first as Task;
+        expect(updatedTask.data.priority, equals(TaskPriority.p0Urgent));
 
-      // Verify tool response
-      expect(
-          capturedToolResponses['tool-1'], contains('priority updated to P0'));
-    });
+        // Verify tool response
+        expect(
+          capturedToolResponses['tool-1'],
+          contains('priority updated to P0'),
+        );
+      },
+    );
 
-    test('should no-op when priority already matches requested value',
-        () async {
+    test('should no-op when priority already matches requested value', () async {
       // Arrange - task already has the same priority the AI requests
       final task = TestDataFactory.createTask(priority: TaskPriority.p1High);
       final model = TestDataFactory.createModel();
@@ -1022,13 +1092,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -1040,8 +1113,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -1088,13 +1162,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -1106,8 +1183,9 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -1154,13 +1232,16 @@ void main() {
       addTearDown(() {
         unawaited(streamController.close());
       });
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((invocation) {
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
         final toolCallId = invocation.namedArguments[#toolCallId] as String;
         final response = invocation.namedArguments[#response] as String;
         capturedToolResponses[toolCallId] = response;
@@ -1172,11 +1253,13 @@ void main() {
         toolCalls: const [toolCall],
       );
 
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepo.updateJournalEntity(any()),
+      ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Act
       await processor.processPromptWithConversation(
@@ -1193,9 +1276,9 @@ void main() {
       );
 
       // Assert
-      final captured =
-          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-              .captured;
+      final captured = verify(
+        () => mockJournalRepo.updateJournalEntity(captureAny()),
+      ).captured;
       final updatedTask = captured.first as Task;
       expect(updatedTask.data.priority, equals(TaskPriority.p3Low));
     });
@@ -1213,11 +1296,17 @@ void main() {
       expect(estimateTool.function.description, contains('time estimate'));
       expect(estimateTool.function.parameters, isNotNull);
       expect(
-          estimateTool.function.parameters!['properties'], contains('minutes'));
+        estimateTool.function.parameters!['properties'],
+        contains('minutes'),
+      );
       expect(
-          estimateTool.function.parameters!['properties'], contains('reason'));
-      expect(estimateTool.function.parameters!['properties'],
-          contains('confidence'));
+        estimateTool.function.parameters!['properties'],
+        contains('reason'),
+      );
+      expect(
+        estimateTool.function.parameters!['properties'],
+        contains('confidence'),
+      );
     });
 
     test('should include update_task_due_date function', () {
@@ -1232,11 +1321,17 @@ void main() {
       expect(dueDateTool.function.description, contains('Current date:'));
       expect(dueDateTool.function.parameters, isNotNull);
       expect(
-          dueDateTool.function.parameters!['properties'], contains('dueDate'));
+        dueDateTool.function.parameters!['properties'],
+        contains('dueDate'),
+      );
       expect(
-          dueDateTool.function.parameters!['properties'], contains('reason'));
-      expect(dueDateTool.function.parameters!['properties'],
-          contains('confidence'));
+        dueDateTool.function.parameters!['properties'],
+        contains('reason'),
+      );
+      expect(
+        dueDateTool.function.parameters!['properties'],
+        contains('confidence'),
+      );
     });
 
     test('should inject current date into due date function description', () {
@@ -1261,12 +1356,18 @@ void main() {
       expect(priorityTool.function.description, contains('priority'));
       expect(priorityTool.function.description, contains('urgency'));
       expect(priorityTool.function.parameters, isNotNull);
-      expect(priorityTool.function.parameters!['properties'],
-          contains('priority'));
       expect(
-          priorityTool.function.parameters!['properties'], contains('reason'));
-      expect(priorityTool.function.parameters!['properties'],
-          contains('confidence'));
+        priorityTool.function.parameters!['properties'],
+        contains('priority'),
+      );
+      expect(
+        priorityTool.function.parameters!['properties'],
+        contains('reason'),
+      );
+      expect(
+        priorityTool.function.parameters!['properties'],
+        contains('confidence'),
+      );
     });
 
     test('update_task_priority should have valid priority enum values', () {

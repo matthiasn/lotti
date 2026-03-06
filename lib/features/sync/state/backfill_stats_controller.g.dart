@@ -15,15 +15,15 @@ final backfillStatsControllerProvider = BackfillStatsControllerProvider._();
 final class BackfillStatsControllerProvider
     extends $NotifierProvider<BackfillStatsController, BackfillStatsState> {
   BackfillStatsControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'backfillStatsControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'backfillStatsControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$backfillStatsControllerHash();
@@ -50,11 +50,14 @@ abstract class _$BackfillStatsController extends $Notifier<BackfillStatsState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<BackfillStatsState, BackfillStatsState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<BackfillStatsState, BackfillStatsState>,
-        BackfillStatsState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<BackfillStatsState, BackfillStatsState>,
+              BackfillStatsState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

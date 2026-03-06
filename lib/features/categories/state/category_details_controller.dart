@@ -22,17 +22,17 @@ abstract class CategoryDetailsState with _$CategoryDetailsState {
   }) = _CategoryDetailsState;
 
   factory CategoryDetailsState.initial() => const CategoryDetailsState(
-        category: null,
-        isLoading: true,
-        isSaving: false,
-        hasChanges: false,
-      );
+    category: null,
+    isLoading: true,
+    isSaving: false,
+    hasChanges: false,
+  );
 }
 
 final categoryDetailsControllerProvider = NotifierProvider.autoDispose
     .family<CategoryDetailsController, CategoryDetailsState, String>(
-  CategoryDetailsController.new,
-);
+      CategoryDetailsController.new,
+    );
 
 class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   CategoryDetailsController(this._categoryId);
@@ -56,31 +56,33 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   }
 
   void _init() {
-    _subscription = _repository.watchCategory(_categoryId).listen(
-      (category) {
-        if (_originalCategory == null && category != null) {
-          _originalCategory = category;
-          _pendingCategory = category;
-        }
+    _subscription = _repository
+        .watchCategory(_categoryId)
+        .listen(
+          (category) {
+            if (_originalCategory == null && category != null) {
+              _originalCategory = category;
+              _pendingCategory = category;
+            }
 
-        if (ref.mounted) {
-          state = state.copyWith(
-            category: state.hasChanges ? _pendingCategory : category,
-            isLoading: false,
-            hasChanges: _hasChanges(_pendingCategory),
-            errorMessage: null,
-          );
-        }
-      },
-      onError: (Object error) {
-        if (ref.mounted) {
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: 'Failed to load category data.',
-          );
-        }
-      },
-    );
+            if (ref.mounted) {
+              state = state.copyWith(
+                category: state.hasChanges ? _pendingCategory : category,
+                isLoading: false,
+                hasChanges: _hasChanges(_pendingCategory),
+                errorMessage: null,
+              );
+            }
+          },
+          onError: (Object error) {
+            if (ref.mounted) {
+              state = state.copyWith(
+                isLoading: false,
+                errorMessage: 'Failed to load category data.',
+              );
+            }
+          },
+        );
   }
 
   bool _hasChanges(CategoryDefinition? current) {
@@ -99,14 +101,22 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.icon != _originalCategory!.icon ||
         _pendingCategory!.defaultLanguageCode !=
             _originalCategory!.defaultLanguageCode ||
-        _hasListChanges(_pendingCategory!.allowedPromptIds,
-            _originalCategory!.allowedPromptIds) ||
-        _hasListChanges(_pendingCategory!.speechDictionary,
-            _originalCategory!.speechDictionary) ||
-        _hasCorrectionExamplesChanges(_pendingCategory!.correctionExamples,
-            _originalCategory!.correctionExamples) ||
-        _hasMapChanges(_pendingCategory!.automaticPrompts,
-            _originalCategory!.automaticPrompts);
+        _hasListChanges(
+          _pendingCategory!.allowedPromptIds,
+          _originalCategory!.allowedPromptIds,
+        ) ||
+        _hasListChanges(
+          _pendingCategory!.speechDictionary,
+          _originalCategory!.speechDictionary,
+        ) ||
+        _hasCorrectionExamplesChanges(
+          _pendingCategory!.correctionExamples,
+          _originalCategory!.correctionExamples,
+        ) ||
+        _hasMapChanges(
+          _pendingCategory!.automaticPrompts,
+          _originalCategory!.automaticPrompts,
+        );
   }
 
   bool _hasCorrectionExamplesChanges(
@@ -206,8 +216,9 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
 
         // Start with the latest examples from DB (includes background additions)
         // and remove the ones the user explicitly deleted
-        final finalExamples =
-            latestExamples.where((ex) => !deletedByUser.contains(ex)).toList();
+        final finalExamples = latestExamples
+            .where((ex) => !deletedByUser.contains(ex))
+            .toList();
 
         _pendingCategory = _pendingCategory!.copyWith(
           correctionExamples: finalExamples.isEmpty ? null : finalExamples,
@@ -268,8 +279,9 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     if (_pendingCategory == null) return;
 
     final currentPrompts = _pendingCategory!.automaticPrompts ?? {};
-    final updatedPrompts =
-        Map<AiResponseType, List<String>>.from(currentPrompts);
+    final updatedPrompts = Map<AiResponseType, List<String>>.from(
+      currentPrompts,
+    );
 
     if (promptIds.isEmpty) {
       updatedPrompts.remove(responseType);

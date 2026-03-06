@@ -13,18 +13,22 @@ part of 'checklist_completion_service.dart';
 final checklistCompletionServiceProvider =
     ChecklistCompletionServiceProvider._();
 
-final class ChecklistCompletionServiceProvider extends $AsyncNotifierProvider<
-    ChecklistCompletionService, List<ChecklistCompletionSuggestion>> {
+final class ChecklistCompletionServiceProvider
+    extends
+        $AsyncNotifierProvider<
+          ChecklistCompletionService,
+          List<ChecklistCompletionSuggestion>
+        > {
   ChecklistCompletionServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'checklistCompletionServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'checklistCompletionServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$checklistCompletionServiceHash();
@@ -43,15 +47,23 @@ abstract class _$ChecklistCompletionService
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<
-        AsyncValue<List<ChecklistCompletionSuggestion>>,
-        List<ChecklistCompletionSuggestion>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<ChecklistCompletionSuggestion>>,
-            List<ChecklistCompletionSuggestion>>,
-        AsyncValue<List<ChecklistCompletionSuggestion>>,
-        Object?,
-        Object?>;
+    final ref =
+        this.ref
+            as $Ref<
+              AsyncValue<List<ChecklistCompletionSuggestion>>,
+              List<ChecklistCompletionSuggestion>
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<List<ChecklistCompletionSuggestion>>,
+                List<ChecklistCompletionSuggestion>
+              >,
+              AsyncValue<List<ChecklistCompletionSuggestion>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

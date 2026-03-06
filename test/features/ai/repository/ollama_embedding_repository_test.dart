@@ -104,29 +104,31 @@ void main() {
         expect(body['input'], 'hello world');
       });
 
-      test('throws ModelNotInstalledException on 404 with model not found',
-          () async {
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            '{"error":"model \'$model\' not found"}',
-            404,
-          ),
-        );
+      test(
+        'throws ModelNotInstalledException on 404 with model not found',
+        () async {
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              '{"error":"model \'$model\' not found"}',
+              404,
+            ),
+          );
 
-        await expectLater(
-          () => repository.embed(
-            input: 'test',
-            baseUrl: baseUrl,
-          ),
-          throwsA(isA<ModelNotInstalledException>()),
-        );
-      });
+          await expectLater(
+            () => repository.embed(
+              input: 'test',
+              baseUrl: baseUrl,
+            ),
+            throwsA(isA<ModelNotInstalledException>()),
+          );
+        },
+      );
 
       test('throws on non-200 non-404 status', () async {
         when(
@@ -341,33 +343,35 @@ void main() {
     });
 
     group('retry logic', () {
-      test('retries on TimeoutException and throws after max retries',
-          () async {
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenThrow(TimeoutException('timed out'));
+      test(
+        'retries on TimeoutException and throws after max retries',
+        () async {
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenThrow(TimeoutException('timed out'));
 
-        await expectLater(
-          () => repository.embed(
-            input: 'test text',
-            baseUrl: baseUrl,
-          ),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              allOf(
-                contains('timed out'),
-                contains('3 attempts'),
+          await expectLater(
+            () => repository.embed(
+              input: 'test text',
+              baseUrl: baseUrl,
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                allOf(
+                  contains('timed out'),
+                  contains('3 attempts'),
+                ),
               ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
 
       test('retries on SocketException and throws after max retries', () async {
         when(

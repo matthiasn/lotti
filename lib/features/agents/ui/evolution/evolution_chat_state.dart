@@ -63,8 +63,9 @@ class EvolutionChatState extends _$EvolutionChatState {
     final workflow = ref.read(templateEvolutionWorkflowProvider);
 
     // Load current directives for display in proposal cards.
-    final versionData =
-        await ref.read(activeTemplateVersionProvider(templateId).future);
+    final versionData = await ref.read(
+      activeTemplateVersionProvider(templateId).future,
+    );
     final currentDirectives = versionData is AgentTemplateVersionEntity
         ? versionData.directives
         : null;
@@ -168,8 +169,9 @@ class EvolutionChatState extends _$EvolutionChatState {
   /// widget. Formats the ratings as a user message and sends it to the LLM
   /// so it can proceed to Phase 2 (proposal).
   void _handleRatingsSubmitted(Map<String, int> ratings) {
-    final formatted =
-        ratings.entries.map((e) => '${e.key}: ${e.value}/5').join(', ');
+    final formatted = ratings.entries
+        .map((e) => '${e.key}: ${e.value}/5')
+        .join(', ');
     final message = 'My category ratings: $formatted';
     sendMessage(message);
   }

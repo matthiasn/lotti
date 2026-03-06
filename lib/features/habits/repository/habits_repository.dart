@@ -68,8 +68,8 @@ class HabitsRepositoryImpl implements HabitsRepository {
   HabitsRepositoryImpl({
     required JournalDb journalDb,
     required UpdateNotifications updateNotifications,
-  })  : _journalDb = journalDb,
-        _updateNotifications = updateNotifications;
+  }) : _journalDb = journalDb,
+       _updateNotifications = updateNotifications;
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;

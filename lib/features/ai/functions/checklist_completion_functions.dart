@@ -69,7 +69,7 @@ class ChecklistCompletionFunctions {
                     'isChecked': {
                       'type': 'boolean',
                       'description':
-                          'Whether the item is already checked (default: false)'
+                          'Whether the item is already checked (default: false)',
                     },
                   },
                   'required': ['title'],
@@ -111,9 +111,9 @@ class ChecklistCompletionFunctions {
                       'type': 'boolean',
                       'description':
                           'New checked status. For items last set by the user, '
-                              'you must also provide a reason citing post-dated '
-                              'evidence. Without a reason, isChecked changes on '
-                              'user-set items will be rejected.',
+                          'you must also provide a reason citing post-dated '
+                          'evidence. Without a reason, isChecked changes on '
+                          'user-set items will be rejected.',
                     },
                     'title': {
                       'type': 'string',
@@ -121,22 +121,22 @@ class ChecklistCompletionFunctions {
                       'maxLength': 400,
                       'description':
                           'Updated title text. Use to fix transcription errors '
-                              'or clarify wording.',
+                          'or clarify wording.',
                     },
                     'reason': {
                       'type': 'string',
                       'description':
                           'Required when changing isChecked on a user-set '
-                              'item. Must cite specific evidence (e.g. a '
-                              'recording or note) that postdates the '
-                              "user's last toggle.",
+                          'item. Must cite specific evidence (e.g. a '
+                          'recording or note) that postdates the '
+                          "user's last toggle.",
                     },
                   },
                   'required': ['id'],
                 },
                 'description':
                     'Array of updates. Each must have id and at least one of '
-                        'isChecked or title.',
+                    'isChecked or title.',
               },
             },
             'required': ['items'],

@@ -15,8 +15,9 @@ import 'mocks/mocks.dart';
 void main() {
   setUpAll(() {
     // Register fallback values for complex types used with any()
-    registerFallbackValue(const Stream<
-        List<({String id, Map<String, int>? vectorClock})>>.empty());
+    registerFallbackValue(
+      const Stream<List<({String id, Map<String, int>? vectorClock})>>.empty(),
+    );
     registerFallbackValue(() async => 0);
   });
   setUp(() async {
@@ -157,8 +158,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<String>(
-              that:
-                  contains('Failed to create lazy instance of BrokenService')),
+            that: contains('Failed to create lazy instance of BrokenService'),
+          ),
           domain: 'SERVICE_REGISTRATION',
           subDomain: 'error',
         ),
@@ -191,9 +192,8 @@ void main() {
 
       expect(
         captured.cast<String>().any(
-              (message) =>
-                  message.contains('Failed to register lazy DupService'),
-            ),
+          (message) => message.contains('Failed to register lazy DupService'),
+        ),
         isTrue,
       );
     });
@@ -238,8 +238,9 @@ void main() {
     });
 
     test('skips when flag already set', () async {
-      when(() => settingsDb.itemByKey('maintenance_sequenceLogPopulated'))
-          .thenAnswer((_) async => 'true');
+      when(
+        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+      ).thenAnswer((_) async => 'true');
 
       await checkAndPopulateSequenceLogForTesting();
 
@@ -247,41 +248,48 @@ void main() {
       verifyNever(() => journalDb.countAllJournalEntries());
     });
 
-    test('marks done and skips when sequence log already has entries',
-        () async {
-      when(() => settingsDb.itemByKey('maintenance_sequenceLogPopulated'))
-          .thenAnswer((_) async => null);
-      when(() => syncDatabase.getSequenceLogCount())
-          .thenAnswer((_) async => 150);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+    test(
+      'marks done and skips when sequence log already has entries',
+      () async {
+        when(
+          () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => syncDatabase.getSequenceLogCount(),
+        ).thenAnswer((_) async => 150);
+        when(
+          () => settingsDb.saveSettingsItem(any(), any()),
+        ).thenAnswer((_) async => 1);
 
-      await checkAndPopulateSequenceLogForTesting();
+        await checkAndPopulateSequenceLogForTesting();
 
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'maintenance_sequenceLogPopulated',
-          'true',
-        ),
-      ).called(1);
-      verify(
-        () => loggingService.captureEvent(
-          any<String>(that: contains('Sequence log already has 150 entries')),
-          domain: 'MAINTENANCE',
-          subDomain: 'sequenceLogPopulation',
-        ),
-      ).called(1);
-      verifyNever(() => journalDb.countAllJournalEntries());
-    });
+        verify(
+          () => settingsDb.saveSettingsItem(
+            'maintenance_sequenceLogPopulated',
+            'true',
+          ),
+        ).called(1);
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(that: contains('Sequence log already has 150 entries')),
+            domain: 'MAINTENANCE',
+            subDomain: 'sequenceLogPopulation',
+          ),
+        ).called(1);
+        verifyNever(() => journalDb.countAllJournalEntries());
+      },
+    );
 
     test('marks done when journal and links are empty', () async {
-      when(() => settingsDb.itemByKey('maintenance_sequenceLogPopulated'))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+      ).thenAnswer((_) async => null);
       when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
       when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
       when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
 
       await checkAndPopulateSequenceLogForTesting();
 
@@ -294,10 +302,12 @@ void main() {
     });
 
     test('logs exception when population fails', () async {
-      when(() => settingsDb.itemByKey('maintenance_sequenceLogPopulated'))
-          .thenAnswer((_) async => null);
-      when(() => syncDatabase.getSequenceLogCount())
-          .thenThrow(Exception('db error'));
+      when(
+        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => syncDatabase.getSequenceLogCount(),
+      ).thenThrow(Exception('db error'));
 
       await checkAndPopulateSequenceLogForTesting();
 
@@ -305,31 +315,42 @@ void main() {
     });
 
     test('populates from journal and links when needed', () async {
-      when(() => settingsDb.itemByKey('maintenance_sequenceLogPopulated'))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+      ).thenAnswer((_) async => null);
       when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
-      when(() => journalDb.countAllJournalEntries())
-          .thenAnswer((_) async => 100);
+      when(
+        () => journalDb.countAllJournalEntries(),
+      ).thenAnswer((_) async => 100);
       when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 50);
-      when(() => journalDb.streamEntriesWithVectorClock())
-          .thenAnswer((_) => const Stream.empty());
-      when(() => journalDb.streamEntryLinksWithVectorClock())
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => journalDb.streamEntriesWithVectorClock(),
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => journalDb.streamEntryLinksWithVectorClock(),
+      ).thenAnswer((_) => const Stream.empty());
       // Use specific callback matching instead of any() for complex types
-      when(() => sequenceLogService.populateFromJournal(
-            entryStream:
-                any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
-                    named: 'entryStream'),
-            getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
-          )).thenAnswer((_) async => 100);
-      when(() => sequenceLogService.populateFromEntryLinks(
-            linkStream:
-                any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
-                    named: 'linkStream'),
-            getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
-          )).thenAnswer((_) async => 50);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => sequenceLogService.populateFromJournal(
+          entryStream:
+              any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
+                named: 'entryStream',
+              ),
+          getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
+        ),
+      ).thenAnswer((_) async => 100);
+      when(
+        () => sequenceLogService.populateFromEntryLinks(
+          linkStream:
+              any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
+                named: 'linkStream',
+              ),
+          getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
+        ),
+      ).thenAnswer((_) async => 50);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
 
       await checkAndPopulateSequenceLogForTesting();
 

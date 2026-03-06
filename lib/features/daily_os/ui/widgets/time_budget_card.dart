@@ -124,8 +124,9 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          border:
-              isHighlighted ? Border.all(color: categoryColor, width: 2) : null,
+          border: isHighlighted
+              ? Border.all(color: categoryColor, width: 2)
+              : null,
           boxShadow: isHighlighted
               ? [
                   BoxShadow(
@@ -471,8 +472,11 @@ class _TaskListContent extends ConsumerWidget {
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => ref
-                    .read(taskViewPreferenceProvider(categoryId: categoryId)
-                        .notifier)
+                    .read(
+                      taskViewPreferenceProvider(
+                        categoryId: categoryId,
+                      ).notifier,
+                    )
                     .toggle(),
                 child: Padding(
                   padding: const EdgeInsets.all(4),
@@ -491,8 +495,9 @@ class _TaskListContent extends ConsumerWidget {
         // Task content
         if (viewMode == TaskViewMode.list)
           Column(
-            children:
-                tasks.map((item) => _TaskProgressRow(item: item)).toList(),
+            children: tasks
+                .map((item) => _TaskProgressRow(item: item))
+                .toList(),
           )
         else
           _buildGrid(context),
@@ -504,8 +509,9 @@ class _TaskListContent extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const minTileWidth = 100.0;
-        final crossAxisCount =
-            (constraints.maxWidth / minTileWidth).floor().clamp(2, 4);
+        final crossAxisCount = (constraints.maxWidth / minTileWidth)
+            .floor()
+            .clamp(2, 4);
 
         return GridView.builder(
           shrinkWrap: true,
@@ -790,8 +796,8 @@ class _PriorityGridBadge extends StatelessWidget {
     final color = priority.colorForBrightness(Theme.of(context).brightness);
     final textColor =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-            ? Colors.white
-            : Colors.black;
+        ? Colors.white
+        : Colors.black;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -930,7 +936,9 @@ class _TaskGridTile extends StatelessWidget {
             if (task.data.priority != TaskPriority.p2Medium)
               Positioned(
                 top: _calculatePriorityBadgeTop(
-                    isCompleted, item.isDueOrOverdue),
+                  isCompleted,
+                  item.isDueOrOverdue,
+                ),
                 left: 4,
                 child: _PriorityGridBadge(priority: task.data.priority),
               ),

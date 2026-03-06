@@ -12,15 +12,17 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   /// Creates a set of fake template IDs with the given size.
-  Set<String> templateIds(int count) =>
-      {for (var i = 0; i < count; i++) 'template-$i'};
+  Set<String> templateIds(int count) => {
+    for (var i = 0; i < count; i++) 'template-$i',
+  };
 
   Widget buildSubject({required int count}) {
     return makeTestableWidgetWithScaffold(
       const RitualPendingIndicator(),
       overrides: [
-        templatesPendingReviewProvider
-            .overrideWith((ref) async => templateIds(count)),
+        templatesPendingReviewProvider.overrideWith(
+          (ref) async => templateIds(count),
+        ),
       ],
     );
   }
@@ -61,8 +63,9 @@ void main() {
       expect(find.byType(Container), findsNothing);
     });
 
-    testWidgets('renders a Container with circular decoration when count > 0',
-        (tester) async {
+    testWidgets('renders a Container with circular decoration when count > 0', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(count: 3));
       await pumpUntilResolved(tester);
 
@@ -87,8 +90,9 @@ void main() {
       expect(decoration.shape, BoxShape.circle);
     });
 
-    testWidgets('dot Container has 10×10 rendered size when count > 0',
-        (tester) async {
+    testWidgets('dot Container has 10×10 rendered size when count > 0', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(count: 1));
       await pumpUntilResolved(tester);
       await tester.pump(const Duration(milliseconds: 16));

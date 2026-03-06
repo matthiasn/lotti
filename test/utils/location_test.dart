@@ -11,16 +11,18 @@ void main() {
   });
 
   group('getGeoHash', () {
-    test('should return the correct geohash for a given latitude and longitude',
-        () {
-      const lat = 52.205;
-      const lon = 0.119;
-      const expectedGeohash = 'u120fxwshvkg';
+    test(
+      'should return the correct geohash for a given latitude and longitude',
+      () {
+        const lat = 52.205;
+        const lon = 0.119;
+        const expectedGeohash = 'u120fxwshvkg';
 
-      final fullGeohash = getGeoHash(latitude: lat, longitude: lon);
+        final fullGeohash = getGeoHash(latitude: lat, longitude: lon);
 
-      expect(fullGeohash, expectedGeohash);
-    });
+        expect(fullGeohash, expectedGeohash);
+      },
+    );
 
     test('should handle coordinates at the equator', () {
       const lat = 0.0;

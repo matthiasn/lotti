@@ -132,101 +132,104 @@ class CategorySelectionModalContentState
     final maxHeight = math.min(screenHeight * 0.9, 640).toDouble();
 
     return ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: LottiSearchBar(
-                controller: searchController,
-                hintText: context.messages.categorySearchPlaceholder,
-                onChanged: (value) {
-                  setState(() {
-                    searchQuery = value;
-                  });
-                },
-                onSubmitted: (value) {
-                  if (filteredCategories.isEmpty && value.isNotEmpty) {
-                    _showColorPicker(value);
-                  }
-                },
-                onClear: () {
-                  setState(() {
-                    searchQuery = '';
-                  });
-                },
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: LottiSearchBar(
+              controller: searchController,
+              hintText: context.messages.categorySearchPlaceholder,
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
+              },
+              onSubmitted: (value) {
+                if (filteredCategories.isEmpty && value.isNotEmpty) {
+                  _showColorPicker(value);
+                }
+              },
+              onClear: () {
+                setState(() {
+                  searchQuery = '';
+                });
+              },
+            ),
+          ),
+          if (!widget.multiSelect && initialCategory != null)
+            CategoryTypeCard(
+              initialCategory,
+              onTap: () => Navigator.pop(context),
+              selected: true,
+            ),
+          if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
+            SettingsCard(
+              onTap: () => _showColorPicker(searchQuery),
+              title: searchQuery,
+              titleColor: context.colorScheme.outline,
+              leading: Icon(
+                Icons.add_circle_outline,
+                color: context.colorScheme.outline,
+              ),
+            )
+          else
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  for (final category in favoriteCategories)
+                    CategoryTypeCard(
+                      category,
+                      selected:
+                          widget.multiSelect &&
+                          selectedIds.contains(category.id),
+                      onTap: () => _onCategoryTap(category),
+                    ),
+                  for (final category in otherCategories)
+                    CategoryTypeCard(
+                      category,
+                      selected:
+                          widget.multiSelect &&
+                          selectedIds.contains(category.id),
+                      onTap: () => _onCategoryTap(category),
+                    ),
+                ],
               ),
             ),
-            if (!widget.multiSelect && initialCategory != null)
-              CategoryTypeCard(
-                initialCategory,
-                onTap: () => Navigator.pop(context),
-                selected: true,
+          if (!widget.multiSelect && widget.initialCategoryId != null)
+            SettingsCard(
+              onTap: () => widget.onCategorySelected(null),
+              title: 'clear',
+              titleColor: context.colorScheme.outline,
+              leading: Icon(
+                Icons.clear,
+                color: context.colorScheme.outline,
               ),
-            if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
-              SettingsCard(
-                onTap: () => _showColorPicker(searchQuery),
-                title: searchQuery,
-                titleColor: context.colorScheme.outline,
-                leading: Icon(
-                  Icons.add_circle_outline,
-                  color: context.colorScheme.outline,
-                ),
-              )
-            else
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    for (final category in favoriteCategories)
-                      CategoryTypeCard(
-                        category,
-                        selected: widget.multiSelect &&
-                            selectedIds.contains(category.id),
-                        onTap: () => _onCategoryTap(category),
-                      ),
-                    for (final category in otherCategories)
-                      CategoryTypeCard(
-                        category,
-                        selected: widget.multiSelect &&
-                            selectedIds.contains(category.id),
-                        onTap: () => _onCategoryTap(category),
-                      ),
-                  ],
-                ),
-              ),
-            if (!widget.multiSelect && widget.initialCategoryId != null)
-              SettingsCard(
-                onTap: () => widget.onCategorySelected(null),
-                title: 'clear',
-                titleColor: context.colorScheme.outline,
-                leading: Icon(
-                  Icons.clear,
-                  color: context.colorScheme.outline,
-                ),
-              ),
-            if (widget.multiSelect && widget.showDoneButton)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () {
-                          final cache = getIt<EntitiesCacheService>();
-                          final categories = selectedIds
-                              .map(cache.getCategoryById)
-                              .whereType<CategoryDefinition>()
-                              .toList();
-                          Navigator.of(context).pop(categories);
-                        },
-                        child: Text(context.messages.doneButton),
-                      ),
+            ),
+          if (widget.multiSelect && widget.showDoneButton)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        final cache = getIt<EntitiesCacheService>();
+                        final categories = selectedIds
+                            .map(cache.getCategoryById)
+                            .whereType<CategoryDefinition>()
+                            .toList();
+                        Navigator.of(context).pop(categories);
+                      },
+                      child: Text(context.messages.doneButton),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-          ],
-        ));
+            ),
+        ],
+      ),
+    );
   }
 }

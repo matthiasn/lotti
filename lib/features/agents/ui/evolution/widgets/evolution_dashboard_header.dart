@@ -31,8 +31,9 @@ class _EvolutionDashboardHeaderState
 
   @override
   Widget build(BuildContext context) {
-    final metricsAsync =
-        ref.watch(templatePerformanceMetricsProvider(widget.templateId));
+    final metricsAsync = ref.watch(
+      templatePerformanceMetricsProvider(widget.templateId),
+    );
 
     return Column(
       children: [

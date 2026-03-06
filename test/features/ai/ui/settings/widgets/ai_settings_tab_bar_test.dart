@@ -37,7 +37,8 @@ void main() {
               return Scaffold(
                 body: AiSettingsTabBar(
                   controller: tabController,
-                  onTabChanged: onTabChanged ??
+                  onTabChanged:
+                      onTabChanged ??
                       (tab) {
                         tabChanges.add(tab);
                       },
@@ -50,8 +51,9 @@ void main() {
     }
 
     group('rendering', () {
-      testWidgets('displays all tab labels correctly',
-          (WidgetTester tester) async {
+      testWidgets('displays all tab labels correctly', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
         await tester.pumpAndSettle(); // Wait for localization to load
 
@@ -74,8 +76,9 @@ void main() {
         expect(tabs, findsNWidgets(AiSettingsTab.values.length));
       });
 
-      testWidgets('has proper Material Design 3 styling',
-          (WidgetTester tester) async {
+      testWidgets('has proper Material Design 3 styling', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final container = find.byType(Container).first;
@@ -92,8 +95,9 @@ void main() {
     });
 
     group('tab selection', () {
-      testWidgets('calls onTabChanged when tab is tapped',
-          (WidgetTester tester) async {
+      testWidgets('calls onTabChanged when tab is tapped', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
         await tester.pumpAndSettle();
 
@@ -105,8 +109,9 @@ void main() {
         expect(tabChanges.first, AiSettingsTab.models);
       });
 
-      testWidgets('calls onTabChanged with correct tab for each tab',
-          (WidgetTester tester) async {
+      testWidgets('calls onTabChanged with correct tab for each tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
         await tester.pumpAndSettle();
 
@@ -137,8 +142,9 @@ void main() {
         expect(tabChanges, hasLength(4));
       });
 
-      testWidgets('updates visual selection when tab changes',
-          (WidgetTester tester) async {
+      testWidgets('updates visual selection when tab changes', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Initially first tab should be selected
@@ -153,32 +159,35 @@ void main() {
     });
 
     group('controller integration', () {
-      testWidgets('respects initial tab controller index',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: DefaultTabController(
-            length: AiSettingsTab.values.length,
-            initialIndex: 1, // Start with Models tab
-            child: Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return Scaffold(
-                  body: AiSettingsTabBar(
-                    controller: controller,
-                    onTabChanged: (_) {},
-                  ),
-                );
-              },
+      testWidgets('respects initial tab controller index', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DefaultTabController(
+              length: AiSettingsTab.values.length,
+              initialIndex: 1, // Start with Models tab
+              child: Builder(
+                builder: (context) {
+                  final controller = DefaultTabController.of(context);
+                  return Scaffold(
+                    body: AiSettingsTabBar(
+                      controller: controller,
+                      onTabChanged: (_) {},
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-        ));
+        );
 
         await tester.pump();
 
@@ -187,49 +196,52 @@ void main() {
         expect(tabBarWidget.controller?.index, 1);
       });
 
-      testWidgets('syncs with external controller changes',
-          (WidgetTester tester) async {
+      testWidgets('syncs with external controller changes', (
+        WidgetTester tester,
+      ) async {
         late TabController externalController;
 
-        await tester.pumpWidget(MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: StatefulBuilder(
-            builder: (context, setState) {
-              return DefaultTabController(
-                length: AiSettingsTab.values.length,
-                child: Builder(
-                  builder: (context) {
-                    externalController = DefaultTabController.of(context);
-                    return Scaffold(
-                      body: Column(
-                        children: [
-                          AiSettingsTabBar(
-                            controller: externalController,
-                            onTabChanged: (_) {},
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                externalController.animateTo(2);
-                              });
-                            },
-                            child: const Text('Go to Prompts'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: StatefulBuilder(
+              builder: (context, setState) {
+                return DefaultTabController(
+                  length: AiSettingsTab.values.length,
+                  child: Builder(
+                    builder: (context) {
+                      externalController = DefaultTabController.of(context);
+                      return Scaffold(
+                        body: Column(
+                          children: [
+                            AiSettingsTabBar(
+                              controller: externalController,
+                              onTabChanged: (_) {},
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  externalController.animateTo(2);
+                                });
+                              },
+                              child: const Text('Go to Prompts'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-        ));
+        );
 
         // Initially on first tab
         expect(externalController.index, 0);
@@ -273,8 +285,9 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('provides proper semantic labels for tabs',
-          (WidgetTester tester) async {
+      testWidgets('provides proper semantic labels for tabs', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Each tab should exist
@@ -303,30 +316,33 @@ void main() {
     });
 
     group('edge cases', () {
-      testWidgets('handles null onTabChanged callback',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: DefaultTabController(
-            length: AiSettingsTab.values.length,
-            child: Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return Scaffold(
-                  body: AiSettingsTabBar(
-                    controller: controller,
-                  ),
-                );
-              },
+      testWidgets('handles null onTabChanged callback', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DefaultTabController(
+              length: AiSettingsTab.values.length,
+              child: Builder(
+                builder: (context) {
+                  final controller = DefaultTabController.of(context);
+                  return Scaffold(
+                    body: AiSettingsTabBar(
+                      controller: controller,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-        ));
+        );
 
         // Should not throw when tab is tapped
         await tester.tap(find.byType(Tab).at(1));
@@ -355,8 +371,9 @@ void main() {
         ]);
       });
 
-      testWidgets('maintains correct state after rebuild',
-          (WidgetTester tester) async {
+      testWidgets('maintains correct state after rebuild', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Change to second tab
@@ -374,8 +391,9 @@ void main() {
     });
 
     group('layout and responsiveness', () {
-      testWidgets('adapts to narrow screen widths',
-          (WidgetTester tester) async {
+      testWidgets('adapts to narrow screen widths', (
+        WidgetTester tester,
+      ) async {
         tester.view.physicalSize = const Size(400, 800); // Narrow screen
         tester.view.devicePixelRatio = 1.0;
 
@@ -388,8 +406,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('maintains proper margins and padding',
-          (WidgetTester tester) async {
+      testWidgets('maintains proper margins and padding', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final containerFinder = find.byType(Container);
@@ -407,38 +426,42 @@ void main() {
     });
 
     group('theme variations', () {
-      testWidgets('renders correctly in light theme',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          theme: ThemeData.light(),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: DefaultTabController(
-            length: AiSettingsTab.values.length,
-            child: Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return Scaffold(
-                  body: AiSettingsTabBar(
-                    controller: controller,
-                  ),
-                );
-              },
+      testWidgets('renders correctly in light theme', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.light(),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DefaultTabController(
+              length: AiSettingsTab.values.length,
+              child: Builder(
+                builder: (context) {
+                  final controller = DefaultTabController.of(context);
+                  return Scaffold(
+                    body: AiSettingsTabBar(
+                      controller: controller,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-        ));
+        );
 
         // Should render without errors
         expect(find.byType(TabBar), findsOneWidget);
 
         // Check light theme specific styling
-        final container =
-            tester.widget<Container>(find.byType(Container).first);
+        final container = tester.widget<Container>(
+          find.byType(Container).first,
+        );
         final decoration = container.decoration as BoxDecoration?;
         expect(decoration?.color, isNotNull);
 
@@ -448,38 +471,42 @@ void main() {
         expect(indicatorDecoration?.boxShadow, isEmpty);
       });
 
-      testWidgets('renders correctly in dark theme',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          theme: ThemeData.dark(),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: DefaultTabController(
-            length: AiSettingsTab.values.length,
-            child: Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return Scaffold(
-                  body: AiSettingsTabBar(
-                    controller: controller,
-                  ),
-                );
-              },
+      testWidgets('renders correctly in dark theme', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.dark(),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DefaultTabController(
+              length: AiSettingsTab.values.length,
+              child: Builder(
+                builder: (context) {
+                  final controller = DefaultTabController.of(context);
+                  return Scaffold(
+                    body: AiSettingsTabBar(
+                      controller: controller,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-        ));
+        );
 
         // Should render without errors
         expect(find.byType(TabBar), findsOneWidget);
 
         // Check dark theme specific styling
-        final container =
-            tester.widget<Container>(find.byType(Container).first);
+        final container = tester.widget<Container>(
+          find.byType(Container).first,
+        );
         final decoration = container.decoration as BoxDecoration?;
         expect(decoration?.color, isNotNull);
 
@@ -529,8 +556,9 @@ void main() {
         }
       });
 
-      testWidgets('tab names match AiSettingsTab enum order',
-          (WidgetTester tester) async {
+      testWidgets('tab names match AiSettingsTab enum order', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
         await tester.pumpAndSettle();
 
@@ -547,8 +575,9 @@ void main() {
     });
 
     group('widget state properties', () {
-      testWidgets('overlay color is transparent for all states',
-          (WidgetTester tester) async {
+      testWidgets('overlay color is transparent for all states', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
@@ -567,8 +596,9 @@ void main() {
         }
       });
 
-      testWidgets('label styles have correct font weights',
-          (WidgetTester tester) async {
+      testWidgets('label styles have correct font weights', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
@@ -577,8 +607,9 @@ void main() {
         expect(tabBar.unselectedLabelStyle?.fontWeight, FontWeight.w500);
       });
 
-      testWidgets('label styles have correct font sizes',
-          (WidgetTester tester) async {
+      testWidgets('label styles have correct font sizes', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
@@ -587,8 +618,9 @@ void main() {
         expect(tabBar.unselectedLabelStyle?.fontSize, 14);
       });
 
-      testWidgets('label styles have correct letter spacing',
-          (WidgetTester tester) async {
+      testWidgets('label styles have correct letter spacing', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));

@@ -115,7 +115,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           key: const Key('measurable_description_field'),
                           initialValue: item.description,
                           labelText: context
-                              .messages.settingsMeasurableDescriptionLabel,
+                              .messages
+                              .settingsMeasurableDescriptionLabel,
                           fieldRequired: false,
                           name: 'description',
                           semanticsLabel: 'Measurable - description field',
@@ -143,7 +144,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           initialValue: item.aggregationType,
                           decoration: inputDecoration(
                             labelText: context
-                                .messages.settingsMeasurableAggregationLabel,
+                                .messages
+                                .settingsMeasurableAggregationLabel,
                             suffixIcon: const Padding(
                               padding: EdgeInsets.only(right: 8),
                               child: Icon(Icons.close_rounded),
@@ -237,20 +239,23 @@ class EditMeasurablePage extends StatelessWidget {
         notificationKeys: {measurablesNotification, privateToggleNotification},
         fetcher: () => _db.getMeasurableDataTypeById(measurableId),
       ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<MeasurableDataType?> snapshot,
-      ) {
-        final dataType = snapshot.data;
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<MeasurableDataType?> snapshot,
+          ) {
+            final dataType = snapshot.data;
 
-        if (dataType == null) {
-          return EmptyScaffoldWithTitle(context.messages.measurableNotFound);
-        }
+            if (dataType == null) {
+              return EmptyScaffoldWithTitle(
+                context.messages.measurableNotFound,
+              );
+            }
 
-        return MeasurableDetailsPage(
-          dataType: dataType,
-        );
-      },
+            return MeasurableDetailsPage(
+              dataType: dataType,
+            );
+          },
     );
   }
 }

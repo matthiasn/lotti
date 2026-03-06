@@ -109,8 +109,9 @@ void main() {
     late Directory tempDir;
 
     setUp(() {
-      tempDir = Directory.systemTemp
-          .createTempSync('embeddings_production_init_test_');
+      tempDir = Directory.systemTemp.createTempSync(
+        'embeddings_production_init_test_',
+      );
     });
 
     tearDown(() {

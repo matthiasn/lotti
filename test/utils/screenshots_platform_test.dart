@@ -27,8 +27,9 @@ void main() {
 
     setUpAll(() async {
       registerFallbackValue(StackTrace.current);
-      testTempDir =
-          await Directory.systemTemp.createTemp('platform_screenshot_test');
+      testTempDir = await Directory.systemTemp.createTemp(
+        'platform_screenshot_test',
+      );
     });
 
     tearDownAll(() async {
@@ -49,18 +50,22 @@ void main() {
       when(() => mockWindowManager.minimize()).thenAnswer((_) async {});
       when(() => mockWindowManager.show()).thenAnswer((_) async {});
 
-      when(() => mockLoggingService.captureEvent(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureEvent(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
 
-      when(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
     });
 
     tearDown(getIt.reset);
@@ -70,7 +75,8 @@ void main() {
         final usePortal = PortalService.shouldUsePortal;
 
         if (Platform.isLinux) {
-          final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+          final hasFlatpakId =
+              Platform.environment['FLATPAK_ID'] != null &&
               Platform.environment['FLATPAK_ID']!.isNotEmpty;
           expect(usePortal, equals(hasFlatpakId));
         } else {
@@ -151,7 +157,9 @@ void main() {
         expect(config, isNotNull);
         expect(config!.arguments, equals(scrotArguments));
         expect(
-            config.arguments, isEmpty); // scrot uses filename as positional arg
+          config.arguments,
+          isEmpty,
+        ); // scrot uses filename as positional arg
       });
 
       test('import (ImageMagick) configuration is correct', () {
@@ -172,8 +180,11 @@ void main() {
 
       test('all tools have configurations', () {
         for (final tool in linuxScreenshotTools) {
-          expect(screenshotToolConfigs.containsKey(tool), isTrue,
-              reason: 'Tool $tool should have a configuration');
+          expect(
+            screenshotToolConfigs.containsKey(tool),
+            isTrue,
+            reason: 'Tool $tool should have a configuration',
+          );
         }
       });
     });
@@ -203,8 +214,9 @@ void main() {
           final lsAvailable = await isCommandAvailable('ls');
           expect(lsAvailable, isTrue);
 
-          final fakeCommandAvailable =
-              await isCommandAvailable('fake_command_xyz');
+          final fakeCommandAvailable = await isCommandAvailable(
+            'fake_command_xyz',
+          );
           expect(fakeCommandAvailable, isFalse);
         }
       });
@@ -373,14 +385,20 @@ void main() {
 
       test('validates portal bus names and paths', () {
         // Security: Ensure we're talking to the correct portal service
-        expect(PortalConstants.portalBusName,
-            equals('org.freedesktop.portal.Desktop'));
-        expect(PortalConstants.portalPath,
-            equals('/org/freedesktop/portal/desktop'));
+        expect(
+          PortalConstants.portalBusName,
+          equals('org.freedesktop.portal.Desktop'),
+        );
+        expect(
+          PortalConstants.portalPath,
+          equals('/org/freedesktop/portal/desktop'),
+        );
 
         // These should never change as they're part of the XDG spec
-        expect(ScreenshotPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Screenshot'));
+        expect(
+          ScreenshotPortalConstants.interfaceName,
+          equals('org.freedesktop.portal.Screenshot'),
+        );
       });
 
       test('verifies sandbox restrictions are enforced', () {

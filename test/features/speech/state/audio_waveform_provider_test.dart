@@ -122,8 +122,10 @@ void main() {
       late ProviderContainer container;
       async.run((_) async {
         container = ProviderContainer();
-        final sub =
-            container.listen(audioWaveformProvider(request), (_, __) {});
+        final sub = container.listen(
+          audioWaveformProvider(request),
+          (_, __) {},
+        );
         await container.read(audioWaveformProvider(request).future);
         sub.close();
       });
@@ -144,8 +146,9 @@ void main() {
         ..elapse(const Duration(minutes: 14, seconds: 50))
         ..flushMicrotasks()
         ..run((_) async {
-          final result =
-              await container.read(audioWaveformProvider(request).future);
+          final result = await container.read(
+            audioWaveformProvider(request).future,
+          );
           expect(result, same(expected));
         });
 
@@ -185,8 +188,9 @@ void main() {
         ..elapse(const Duration(minutes: 15, seconds: 1))
         ..flushMicrotasks()
         ..run((_) async {
-          final result =
-              await container.read(audioWaveformProvider(request).future);
+          final result = await container.read(
+            audioWaveformProvider(request).future,
+          );
           expect(result, same(second));
         });
 
@@ -254,7 +258,8 @@ void main() {
         targetBuckets: requestA.bucketCount,
       ),
     ).thenAnswer(
-        (_) async => createWaveformData(amplitudes: const <double>[0.2]));
+      (_) async => createWaveformData(amplitudes: const <double>[0.2]),
+    );
 
     when(
       () => mockService.loadWaveform(
@@ -262,7 +267,8 @@ void main() {
         targetBuckets: requestB.bucketCount,
       ),
     ).thenAnswer(
-        (_) async => createWaveformData(amplitudes: const <double>[0.6]));
+      (_) async => createWaveformData(amplitudes: const <double>[0.6]),
+    );
 
     final container = ProviderContainer();
     addTearDown(container.dispose);

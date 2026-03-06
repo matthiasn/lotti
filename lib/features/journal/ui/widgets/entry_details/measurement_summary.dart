@@ -18,8 +18,9 @@ class MeasurementSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = measurementEntry.data;
 
-    final dataType =
-        getIt<EntitiesCacheService>().getDataTypeById(data.dataTypeId);
+    final dataType = getIt<EntitiesCacheService>().getDataTypeById(
+      data.dataTypeId,
+    );
 
     if (dataType == null) {
       return const SizedBox.shrink();

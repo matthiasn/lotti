@@ -203,7 +203,9 @@ void main() {
       final slots = [
         createActualSlot(hour: 9, durationMinutes: 60),
         createActualSlot(
-            hour: 12, durationMinutes: 60), // 2 hour gap (10-12), < 4
+          hour: 12,
+          durationMinutes: 60,
+        ), // 2 hour gap (10-12), < 4
       ];
       final state = calculateFoldingState(
         plannedSlots: [],
@@ -903,7 +905,9 @@ void main() {
 
       // 9:59 and 10:00 should be almost equal (1 minute apart)
       expect(
-          (pos1000 - pos959).abs(), lessThan(1.0)); // Less than 1px difference
+        (pos1000 - pos959).abs(),
+        lessThan(1.0),
+      ); // Less than 1px difference
     });
   });
 
@@ -1109,32 +1113,34 @@ void main() {
       );
     });
 
-    test('minute-accurate: block ending 1 minute into compressed returns true',
-        () {
-      const foldingState = TimelineFoldingState(
-        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
-        compressedRegions: [
-          CompressedRegion(startHour: 17, endHour: 24),
-        ],
-      );
+    test(
+      'minute-accurate: block ending 1 minute into compressed returns true',
+      () {
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+          compressedRegions: [
+            CompressedRegion(startHour: 17, endHour: 24),
+          ],
+        );
 
-      // Block 16:00-17:01 overlaps compressed region by 1 minute
-      final block = createBlock(
-        startHour: 16,
-        startMinute: 0,
-        endHour: 17,
-        endMinute: 1,
-      );
+        // Block 16:00-17:01 overlaps compressed region by 1 minute
+        final block = createBlock(
+          startHour: 16,
+          startMinute: 0,
+          endHour: 17,
+          endMinute: 1,
+        );
 
-      expect(
-        blockOverlapsCompressedRegion(
-          block: block,
-          foldingState: foldingState,
-          expandedRegions: {},
-        ),
-        isTrue,
-      );
-    });
+        expect(
+          blockOverlapsCompressedRegion(
+            block: block,
+            foldingState: foldingState,
+            expandedRegions: {},
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('expanded region does not count as compressed', () {
       const foldingState = TimelineFoldingState(
@@ -1417,29 +1423,31 @@ void main() {
       expect(bounds.endHour, 18);
     });
 
-    test('expands bounds in both directions with multiple expanded regions',
-        () {
-      const foldingState = TimelineFoldingState(
-        visibleClusters: [VisibleCluster(startHour: 10, endHour: 14)],
-        compressedRegions: [
-          CompressedRegion(startHour: 0, endHour: 6),
-          CompressedRegion(startHour: 6, endHour: 10),
-          CompressedRegion(startHour: 14, endHour: 20),
-          CompressedRegion(startHour: 20, endHour: 24),
-        ],
-      );
+    test(
+      'expands bounds in both directions with multiple expanded regions',
+      () {
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [VisibleCluster(startHour: 10, endHour: 14)],
+          compressedRegions: [
+            CompressedRegion(startHour: 0, endHour: 6),
+            CompressedRegion(startHour: 6, endHour: 10),
+            CompressedRegion(startHour: 14, endHour: 20),
+            CompressedRegion(startHour: 20, endHour: 24),
+          ],
+        );
 
-      // Expand regions on both sides
-      final bounds = calculateContiguousDragBounds(
-        sectionStartHour: 10,
-        sectionEndHour: 14,
-        foldingState: foldingState,
-        expandedRegions: {6, 14},
-      );
+        // Expand regions on both sides
+        final bounds = calculateContiguousDragBounds(
+          sectionStartHour: 10,
+          sectionEndHour: 14,
+          foldingState: foldingState,
+          expandedRegions: {6, 14},
+        );
 
-      expect(bounds.startHour, 6); // Extended backward
-      expect(bounds.endHour, 20); // Extended forward
-    });
+        expect(bounds.startHour, 6); // Extended backward
+        expect(bounds.endHour, 20); // Extended forward
+      },
+    );
 
     test('stops at collapsed region even with expanded region beyond', () {
       const foldingState = TimelineFoldingState(

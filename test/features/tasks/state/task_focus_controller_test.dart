@@ -65,7 +65,9 @@ void main() {
     test('publishTaskFocus sets intent', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
 
-      container.read(provider.notifier).publishTaskFocus(
+      container
+          .read(provider.notifier)
+          .publishTaskFocus(
             entryId: testEntryId,
           );
 
@@ -79,7 +81,9 @@ void main() {
     test('publishTaskFocus with custom alignment', () {
       final provider = taskFocusControllerProvider(id: testTaskId);
 
-      container.read(provider.notifier).publishTaskFocus(
+      container
+          .read(provider.notifier)
+          .publishTaskFocus(
             entryId: testEntryId,
             alignment: 0.5,
           );
@@ -153,11 +157,15 @@ void main() {
       final provider1 = taskFocusControllerProvider(id: taskId1);
       final provider2 = taskFocusControllerProvider(id: taskId2);
 
-      container.read(provider1.notifier).publishTaskFocus(
+      container
+          .read(provider1.notifier)
+          .publishTaskFocus(
             entryId: 'entry1',
           );
 
-      container.read(provider2.notifier).publishTaskFocus(
+      container
+          .read(provider2.notifier)
+          .publishTaskFocus(
             entryId: 'entry2',
           );
 

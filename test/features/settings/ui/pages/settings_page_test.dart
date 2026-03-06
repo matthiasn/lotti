@@ -37,8 +37,9 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('main page is displayed with gated cards enabled',
-        (tester) async {
+    testWidgets('main page is displayed with gated cards enabled', (
+      tester,
+    ) async {
       // Enable flags for habits and dashboards
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -53,7 +54,7 @@ void main() {
               description: 'Enable Dashboards Page?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -62,8 +63,9 @@ void main() {
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider
-                .overrideWith(_TestWhatsNewController.new),
+            whatsNewControllerProvider.overrideWith(
+              _TestWhatsNewController.new,
+            ),
           ],
         ),
       );
@@ -97,19 +99,21 @@ void main() {
               description: 'Enable Dashboards Page?',
               status: true,
             ),
-          }
+          },
         ]),
       );
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider
-                .overrideWith(_TestWhatsNewController.new),
+            whatsNewControllerProvider.overrideWith(
+              _TestWhatsNewController.new,
+            ),
           ],
         ),
       );
@@ -119,8 +123,9 @@ void main() {
       expect(find.text('Sync Settings'), findsOneWidget);
     });
 
-    testWidgets('hides Habits when enableHabitsPageFlag is OFF',
-        (tester) async {
+    testWidgets('hides Habits when enableHabitsPageFlag is OFF', (
+      tester,
+    ) async {
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           {
@@ -134,7 +139,7 @@ void main() {
               description: 'Enable Dashboards Page?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -143,8 +148,9 @@ void main() {
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider
-                .overrideWith(_TestWhatsNewController.new),
+            whatsNewControllerProvider.overrideWith(
+              _TestWhatsNewController.new,
+            ),
           ],
         ),
       );
@@ -157,8 +163,9 @@ void main() {
       expect(find.text('Measurable Types'), findsOneWidget);
     });
 
-    testWidgets('shows Agents card when enableAgentsFlag is ON',
-        (tester) async {
+    testWidgets('shows Agents card when enableAgentsFlag is ON', (
+      tester,
+    ) async {
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           {
@@ -167,7 +174,7 @@ void main() {
               description: 'Enable Agents?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -176,8 +183,9 @@ void main() {
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider
-                .overrideWith(_TestWhatsNewController.new),
+            whatsNewControllerProvider.overrideWith(
+              _TestWhatsNewController.new,
+            ),
           ],
         ),
       );
@@ -192,8 +200,9 @@ void main() {
       );
     });
 
-    testWidgets('hides Agents card when enableAgentsFlag is OFF',
-        (tester) async {
+    testWidgets('hides Agents card when enableAgentsFlag is OFF', (
+      tester,
+    ) async {
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
       );
@@ -203,8 +212,9 @@ void main() {
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider
-                .overrideWith(_TestWhatsNewController.new),
+            whatsNewControllerProvider.overrideWith(
+              _TestWhatsNewController.new,
+            ),
           ],
         ),
       );
@@ -220,43 +230,45 @@ void main() {
     });
 
     testWidgets(
-        'hides Dashboards and Measurable Types when enableDashboardsPageFlag is OFF',
-        (tester) async {
-      when(mockJournalDb.watchConfigFlags).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          {
-            const ConfigFlag(
-              name: enableHabitsPageFlag,
-              description: 'Enable Habits Page?',
-              status: true,
-            ),
-            const ConfigFlag(
-              name: enableDashboardsPageFlag,
-              description: 'Enable Dashboards Page?',
-              status: false,
-            ),
-          }
-        ]),
-      );
+      'hides Dashboards and Measurable Types when enableDashboardsPageFlag is OFF',
+      (tester) async {
+        when(mockJournalDb.watchConfigFlags).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: enableHabitsPageFlag,
+                description: 'Enable Habits Page?',
+                status: true,
+              ),
+              const ConfigFlag(
+                name: enableDashboardsPageFlag,
+                description: 'Enable Dashboards Page?',
+                status: false,
+              ),
+            },
+          ]),
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SettingsPage(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider
-                .overrideWith(_TestWhatsNewController.new),
-          ],
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SettingsPage(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              whatsNewControllerProvider.overrideWith(
+                _TestWhatsNewController.new,
+              ),
+            ],
+          ),
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Habits still visible when habits enabled
-      expect(find.text('Habits'), findsOneWidget);
-      // Dashboards and Measurables hidden
-      expect(find.text('Dashboards'), findsNothing);
-      expect(find.text('Measurable Types'), findsNothing);
-    });
+        // Habits still visible when habits enabled
+        expect(find.text('Habits'), findsOneWidget);
+        // Dashboards and Measurables hidden
+        expect(find.text('Dashboards'), findsNothing);
+        expect(find.text('Measurable Types'), findsNothing);
+      },
+    );
   });
 }

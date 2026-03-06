@@ -116,20 +116,22 @@ void main() {
     overrideTempDirs = <Directory>[];
     when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
-    when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+    ).thenAnswer((_) async => false);
 
     // Default mock for getLinkedEntities - returns empty so fallback to getLinkedToEntities
-    when(() =>
-            mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
-        .thenAnswer((_) async => <JournalEntity>[]);
+    when(
+      () => mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')),
+    ).thenAnswer((_) async => <JournalEntity>[]);
 
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
-        cloudInferenceRepositoryProvider
-            .overrideWithValue(mockCloudInferenceRepo),
+        cloudInferenceRepositoryProvider.overrideWithValue(
+          mockCloudInferenceRepo,
+        ),
         journalRepositoryProvider.overrideWithValue(mockJournalRepo),
         checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
@@ -175,100 +177,108 @@ void main() {
 
   group('Real Concurrent Scenarios Integration Tests', () {
     test(
-        'Concurrent task summary: AI preserves user title changes during processing',
-        () async {
-      // Setup: Create initial task with short title
-      const taskId = 'test-task-123';
-      final originalTask = Task(
-        meta: _createMetadata(id: taskId),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+      'Concurrent task summary: AI preserves user title changes during processing',
+      () async {
+        // Setup: Create initial task with short title
+        const taskId = 'test-task-123';
+        final originalTask = Task(
+          meta: _createMetadata(id: taskId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now().add(const Duration(hours: 1)),
+            statusHistory: [],
+            title: 'Old', // Short title that would normally be updated by AI
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now().add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'Old', // Short title that would normally be updated by AI
-        ),
-      );
+        );
 
-      // Task that user updates while AI is processing
-      final userUpdatedTask = Task(
-        meta: _createMetadata(id: taskId),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+        // Task that user updates while AI is processing
+        final userUpdatedTask = Task(
+          meta: _createMetadata(id: taskId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now().add(const Duration(hours: 1)),
+            statusHistory: [],
+            title:
+                'User updated this title during AI processing', // User changed title
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now().add(const Duration(hours: 1)),
-          statusHistory: [],
-          title:
-              'User updated this title during AI processing', // User changed title
-        ),
-      );
+        );
 
-      // Setup: AI config
-      final promptConfig = _createPrompt(
-        id: 'summary-prompt',
-        requiredInputData: [InputDataType.task],
-      );
-      final model = _createModel(id: 'model-1');
-      final provider = _createProvider(id: 'provider-1');
+        // Setup: AI config
+        final promptConfig = _createPrompt(
+          id: 'summary-prompt',
+          requiredInputData: [InputDataType.task],
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
 
-      // Setup: Mock repository responses
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+        // Setup: Mock repository responses
+        when(
+          () => mockAiConfigRepo.getConfigById('summary-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => jsonEncode({
-                'title': originalTask.data.title,
-                'status': 'IN PROGRESS',
-              }));
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId)).thenAnswer(
+          (_) async => jsonEncode({
+            'title': originalTask.data.title,
+            'status': 'IN PROGRESS',
+          }),
+        );
 
-      when(() => mockAiInputRepo.createAiResponseEntry(
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
             data: any(named: 'data'),
             start: any(named: 'start'),
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+          ),
+        ).thenAnswer((_) async => null);
 
-      // Setup: Simulate concurrent access - user updates task during AI processing
-      var getEntityCallCount = 0;
-      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
-        getEntityCallCount++;
-        if (getEntityCallCount == 1) {
-          // First call: AI captures initial task state
-          return originalTask;
-        } else {
-          // Second call: AI reads current state in post-processing
-          // This simulates user having updated the task during AI processing
-          return userUpdatedTask;
-        }
-      });
+        // Setup: Simulate concurrent access - user updates task during AI processing
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          if (getEntityCallCount == 1) {
+            // First call: AI captures initial task state
+            return originalTask;
+          } else {
+            // Second call: AI reads current state in post-processing
+            // This simulates user having updated the task during AI processing
+            return userUpdatedTask;
+          }
+        });
 
-      // Setup: Track journal update calls
-      final updatedTasks = <Task>[];
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((invocation) async {
-        final task = invocation.positionalArguments[0] as Task;
-        updatedTasks.add(task);
-        return true;
-      });
+        // Setup: Track journal update calls
+        final updatedTasks = <Task>[];
+        when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final task = invocation.positionalArguments[0] as Task;
+          updatedTasks.add(task);
+          return true;
+        });
 
-      // Setup: AI response with suggested title
-      final mockStream = _createDelayedStream([
-        '# AI Suggested Title\n\nThis is a great summary of the task.'
-      ]); // Simulate processing time
+        // Setup: AI response with suggested title
+        final mockStream = _createDelayedStream([
+          '# AI Suggested Title\n\nThis is a great summary of the task.',
+        ]); // Simulate processing time
 
-      when(() => mockCloudInferenceRepo.generate(
+        when(
+          () => mockCloudInferenceRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -276,231 +286,76 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
             provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
+          ),
+        ).thenAnswer((_) => mockStream);
 
-      // Execute: Start AI inference and simulate concurrent user modification
-      final progressUpdates = <String>[];
-      final statusChanges = <InferenceStatus>[];
+        // Execute: Start AI inference and simulate concurrent user modification
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
 
-      // Start AI processing (this captures original task state)
-      final aiTask = repository.runInference(
-        entityId: taskId,
-        promptConfig: promptConfig,
-        onProgress: progressUpdates.add,
-        onStatusChange: statusChanges.add,
-      );
+        // Start AI processing (this captures original task state)
+        final aiTask = repository.runInference(
+          entityId: taskId,
+          promptConfig: promptConfig,
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
+        );
 
-      // Wait for AI to complete
-      await aiTask;
+        // Wait for AI to complete
+        await aiTask;
 
-      // Verify: AI should have made two getEntity calls (initial + post-processing)
-      verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
+        // Verify: AI should have made two getEntity calls (initial + post-processing)
+        verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
 
-      // Verify: AI should NOT update title because current task has long title
-      // This proves the Read-Current-Write pattern is working
-      expect(updatedTasks, isEmpty,
-          reason:
-              'AI should not update title when current task has long title');
+        // Verify: AI should NOT update title because current task has long title
+        // This proves the Read-Current-Write pattern is working
+        expect(
+          updatedTasks,
+          isEmpty,
+          reason: 'AI should not update title when current task has long title',
+        );
 
-      // Verify: AI processed correctly and got the response
-      expect(progressUpdates.isNotEmpty, true);
-      expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
-    });
+        // Verify: AI processed correctly and got the response
+        expect(progressUpdates.isNotEmpty, true);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+      },
+    );
 
     test(
-        'Concurrent task summary: AI updates title when user makes compatible changes',
-        () async {
-      // Test scenario: User changes status but keeps short title, AI should still update title
-      const taskId = 'test-task-456';
-      final originalTask = Task(
-        meta: _createMetadata(id: taskId),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+      'Concurrent task summary: AI updates title when user makes compatible changes',
+      () async {
+        // Test scenario: User changes status but keeps short title, AI should still update title
+        const taskId = 'test-task-456';
+        final originalTask = Task(
+          meta: _createMetadata(id: taskId),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now().add(const Duration(hours: 1)),
+            statusHistory: [],
+            title: 'Fix', // Short title that should be updated
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now().add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'Fix', // Short title that should be updated
-        ),
-      );
+        );
 
-      // User changes status but keeps short title
-      final userUpdatedTask = Task(
-        meta: _createMetadata(id: taskId),
-        data: TaskData(
-          status: TaskStatus.done(
-            id: 'status-2',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+        // User changes status but keeps short title
+        final userUpdatedTask = Task(
+          meta: _createMetadata(id: taskId),
+          data: TaskData(
+            status: TaskStatus.done(
+              id: 'status-2',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now().add(const Duration(hours: 1)),
+            statusHistory: [],
+            title: 'Fix', // Still short, AI should update this
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now().add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'Fix', // Still short, AI should update this
-        ),
-      );
-
-      final promptConfig = _createPrompt(
-        id: 'summary-prompt',
-        requiredInputData: [InputDataType.task],
-      );
-      final model = _createModel(id: 'model-1');
-      final provider = _createProvider(id: 'provider-1');
-
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => jsonEncode({
-                'title': originalTask.data.title,
-                'status': 'IN PROGRESS',
-              }));
-
-      when(() => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
-
-      // Simulate user updating task status but keeping short title
-      var getEntityCallCount = 0;
-      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
-        getEntityCallCount++;
-        return getEntityCallCount == 1 ? originalTask : userUpdatedTask;
-      });
-
-      final updatedTasks = <Task>[];
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((invocation) async {
-        final task = invocation.positionalArguments[0] as Task;
-        updatedTasks.add(task);
-        return true;
-      });
-
-      final mockStream = _createDelayedStream([
-        '# AI Generated Detailed Title\n\nThis is a comprehensive summary.'
-      ]);
-
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
-
-      await repository.runInference(
-        entityId: taskId,
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
-
-      // Verify: AI should update title since current task still has short title
-      expect(updatedTasks.length, 1);
-      expect(updatedTasks.first.data.title, 'AI Generated Detailed Title');
-      expect(updatedTasks.first.data.status.runtimeType,
-          userUpdatedTask.data.status.runtimeType,
-          reason: "AI should preserve user's status change");
-    });
-
-    test('Multiple rapid concurrent title changes: AI uses final state',
-        () async {
-      // Test multiple rapid changes during AI processing
-      const taskId = 'test-task-rapid';
-      final tasks = [
-        _createTaskWithTitle(taskId, 'V1'), // Original
-        _createTaskWithTitle(taskId, 'V2'), // User change 1
-        _createTaskWithTitle(taskId, 'V3'), // User change 2
-        _createTaskWithTitle(taskId,
-            'Final long title that should prevent AI update'), // Final state
-      ];
-
-      final promptConfig = _createPrompt(
-        id: 'summary-prompt',
-        requiredInputData: [InputDataType.task],
-      );
-      final model = _createModel(id: 'model-1');
-      final provider = _createProvider(id: 'provider-1');
-
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => jsonEncode({'title': tasks[0].data.title}));
-
-      when(() => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
-
-      // Simulate rapid changes - AI gets final state in post-processing
-      var getEntityCallCount = 0;
-      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
-        getEntityCallCount++;
-        if (getEntityCallCount == 1) {
-          return tasks[0]; // AI captures original state
-        } else {
-          return tasks[3]; // AI gets final state with long title
-        }
-      });
-
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
-
-      final mockStream = _createDelayedStream(
-          ['# AI Suggested Title\n\nSummary content.'],
-          delayMs: 200);
-
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
-
-      await repository.runInference(
-        entityId: taskId,
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
-
-      // Verify: AI should respect final long title and not update
-      verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
-      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-    });
-
-    test(
-        'Database transaction simulation: AI handles concurrent database operations',
-        () {
-      fakeAsync((async) {
-        // Test that our Read-Current-Write pattern works even with database-level concurrency
-        const taskId = 'test-task-db';
-        final originalTask =
-            _createTaskWithTitle(taskId, 'DB', checklistIds: []);
-        final updatedTask = _createTaskWithTitle(
-            taskId, 'Database updated task with longer title',
-            checklistIds: []);
+        );
 
         final promptConfig = _createPrompt(
           id: 'summary-prompt',
@@ -509,50 +364,249 @@ void main() {
         final model = _createModel(id: 'model-1');
         final provider = _createProvider(id: 'provider-1');
 
-        when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-            .thenAnswer((_) async => promptConfig);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockAiConfigRepo.getConfigById('summary-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
 
         when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId)).thenAnswer(
-            (_) async => jsonEncode({'title': originalTask.data.title}));
+          (_) async => jsonEncode({
+            'title': originalTask.data.title,
+            'status': 'IN PROGRESS',
+          }),
+        );
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
 
-        // Simulate database-level concurrent modifications
+        // Simulate user updating task status but keeping short title
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          return getEntityCallCount == 1 ? originalTask : userUpdatedTask;
+        });
+
+        final updatedTasks = <Task>[];
+        when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final task = invocation.positionalArguments[0] as Task;
+          updatedTasks.add(task);
+          return true;
+        });
+
+        final mockStream = _createDelayedStream([
+          '# AI Generated Detailed Title\n\nThis is a comprehensive summary.',
+        ]);
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: taskId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: AI should update title since current task still has short title
+        expect(updatedTasks.length, 1);
+        expect(updatedTasks.first.data.title, 'AI Generated Detailed Title');
+        expect(
+          updatedTasks.first.data.status.runtimeType,
+          userUpdatedTask.data.status.runtimeType,
+          reason: "AI should preserve user's status change",
+        );
+      },
+    );
+
+    test(
+      'Multiple rapid concurrent title changes: AI uses final state',
+      () async {
+        // Test multiple rapid changes during AI processing
+        const taskId = 'test-task-rapid';
+        final tasks = [
+          _createTaskWithTitle(taskId, 'V1'), // Original
+          _createTaskWithTitle(taskId, 'V2'), // User change 1
+          _createTaskWithTitle(taskId, 'V3'), // User change 2
+          _createTaskWithTitle(
+            taskId,
+            'Final long title that should prevent AI update',
+          ), // Final state
+        ];
+
+        final promptConfig = _createPrompt(
+          id: 'summary-prompt',
+          requiredInputData: [InputDataType.task],
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        when(
+          () => mockAiConfigRepo.getConfigById('summary-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => jsonEncode({'title': tasks[0].data.title}));
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Simulate rapid changes - AI gets final state in post-processing
         var getEntityCallCount = 0;
         when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
           getEntityCallCount++;
           if (getEntityCallCount == 1) {
-            return originalTask;
+            return tasks[0]; // AI captures original state
           } else {
-            // Simulate small DB delay deterministically
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-            return updatedTask;
+            return tasks[3]; // AI gets final state with long title
           }
         });
 
-        // Track update attempts
-        final updateAttempts = <Task>[];
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((invocation) async {
-          final task = invocation.positionalArguments[0] as Task;
-          updateAttempts.add(task);
-          // Simulate constraint check with a deterministic timer
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-          return true;
-        });
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
-        final mockStream = _createDelayedStream(['# AI Title\n\nSummary.']);
+        final mockStream = _createDelayedStream([
+          '# AI Suggested Title\n\nSummary content.',
+        ], delayMs: 200);
 
-        when(() => mockCloudInferenceRepo.generate(
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        await repository.runInference(
+          entityId: taskId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Verify: AI should respect final long title and not update
+        verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      },
+    );
+
+    test(
+      'Database transaction simulation: AI handles concurrent database operations',
+      () {
+        fakeAsync((async) {
+          // Test that our Read-Current-Write pattern works even with database-level concurrency
+          const taskId = 'test-task-db';
+          final originalTask = _createTaskWithTitle(
+            taskId,
+            'DB',
+            checklistIds: [],
+          );
+          final updatedTask = _createTaskWithTitle(
+            taskId,
+            'Database updated task with longer title',
+            checklistIds: [],
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'summary-prompt',
+            requiredInputData: [InputDataType.task],
+          );
+          final model = _createModel(id: 'model-1');
+          final provider = _createProvider(id: 'provider-1');
+
+          when(
+            () => mockAiConfigRepo.getConfigById('summary-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer(
+            (_) async => jsonEncode({'title': originalTask.data.title}),
+          );
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Simulate database-level concurrent modifications
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            if (getEntityCallCount == 1) {
+              return originalTask;
+            } else {
+              // Simulate small DB delay deterministically
+              await Future<void>.delayed(const Duration(milliseconds: 10));
+              return updatedTask;
+            }
+          });
+
+          // Track update attempts
+          final updateAttempts = <Task>[];
+          when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final task = invocation.positionalArguments[0] as Task;
+            updateAttempts.add(task);
+            // Simulate constraint check with a deterministic timer
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return true;
+          });
+
+          final mockStream = _createDelayedStream(['# AI Title\n\nSummary.']);
+
+          when(
+            () => mockCloudInferenceRepo.generate(
               any(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
@@ -560,95 +614,202 @@ void main() {
               apiKey: any(named: 'apiKey'),
               systemMessage: any(named: 'systemMessage'),
               provider: any(named: 'provider'),
-            )).thenAnswer((_) => mockStream);
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        // Kick off inference; drive time with fake clock
-        repository.runInference(
+          // Kick off inference; drive time with fake clock
+          repository.runInference(
+            entityId: taskId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Allow queued microtasks, then elapse DB + stream delays
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 10))
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          // Verify: AI should not update because final state has long title
+          verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
+          expect(
+            updateAttempts,
+            isEmpty,
+            reason: 'AI should not attempt update when current title is long',
+          );
+        });
+      },
+    );
+
+    test(
+      'High-frequency concurrent modifications: AI handles rapid user changes gracefully',
+      () async {
+        // Setup: Task that changes multiple times during AI processing
+        const taskId = 'test-task-789';
+        final tasks = List.generate(
+          5,
+          (index) => Task(
+            meta: _createMetadata(id: taskId),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now().add(const Duration(hours: 1)),
+              statusHistory: [],
+              title: 'Rapidly changing title #$index',
+            ),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'summary-prompt',
+          requiredInputData: [InputDataType.task],
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
+
+        // Setup: Mock repository responses
+        when(
+          () => mockAiConfigRepo.getConfigById('summary-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => jsonEncode({'title': tasks[0].data.title}));
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Setup: Simulate rapid task changes during AI processing
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+          final taskIndex = getEntityCallCount % tasks.length;
+          getEntityCallCount++;
+          return tasks[taskIndex];
+        });
+
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        // Setup: Slow AI response to allow for multiple task changes
+        final mockStream = _createDelayedStream([
+          '# AI Title\n\nSummary content.',
+        ], delayMs: 300);
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        // Execute: AI should handle multiple rapid task changes gracefully
+        await repository.runInference(
           entityId: taskId,
           promptConfig: promptConfig,
           onProgress: (_) {},
           onStatusChange: (_) {},
         );
 
-        // Allow queued microtasks, then elapse DB + stream delays
-        async
-          ..flushMicrotasks()
-          ..elapse(const Duration(milliseconds: 10))
-          ..flushMicrotasks()
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        // Verify: AI should have called getEntity at least twice (initial + post-processing)
+        verify(
+          () => mockAiInputRepo.getEntity(taskId),
+        ).called(greaterThanOrEqualTo(2));
 
-        // Verify: AI should not update because final state has long title
-        verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
-        expect(updateAttempts, isEmpty,
-            reason: 'AI should not attempt update when current title is long');
-      });
-    });
+        // Verify: No crashes or exceptions occurred
+        // If we reach this point, the rapid changes were handled gracefully
+        expect(true, true); // Test passes if no exceptions were thrown
+      },
+    );
 
     test(
-        'High-frequency concurrent modifications: AI handles rapid user changes gracefully',
-        () async {
-      // Setup: Task that changes multiple times during AI processing
-      const taskId = 'test-task-789';
-      final tasks = List.generate(
-          5,
-          (index) => Task(
-                meta: _createMetadata(id: taskId),
-                data: TaskData(
-                  status: TaskStatus.inProgress(
-                    id: 'status-1',
-                    createdAt: DateTime.now(),
-                    utcOffset: 0,
-                  ),
-                  dateFrom: DateTime.now(),
-                  dateTo: DateTime.now().add(const Duration(hours: 1)),
-                  statusHistory: [],
-                  title: 'Rapidly changing title #$index',
-                ),
-              ));
+      'handles type safety when _getCurrentEntityState returns wrong type',
+      () async {
+        // Setup: Initial task
+        const taskId = 'test-task-type-safety';
+        final task = _createTaskWithTitle(taskId, 'Test');
 
-      final promptConfig = _createPrompt(
-        id: 'summary-prompt',
-        requiredInputData: [InputDataType.task],
-      );
-      final model = _createModel(id: 'model-1');
-      final provider = _createProvider(id: 'provider-1');
+        final promptConfig = _createPrompt(
+          id: 'summary-prompt',
+          requiredInputData: [InputDataType.task],
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
 
-      // Setup: Mock repository responses
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+        when(
+          () => mockAiConfigRepo.getConfigById('summary-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => jsonEncode({'title': tasks[0].data.title}));
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => jsonEncode({'title': 'Test'}));
 
-      when(() => mockAiInputRepo.createAiResponseEntry(
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
             data: any(named: 'data'),
             start: any(named: 'start'),
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+          ),
+        ).thenAnswer((_) async => null);
 
-      // Setup: Simulate rapid task changes during AI processing
-      var getEntityCallCount = 0;
-      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
-        final taskIndex = getEntityCallCount % tasks.length;
-        getEntityCallCount++;
-        return tasks[taskIndex];
-      });
+        // Create a journal entry (not a task) to simulate wrong type
+        final journalEntry = JournalEntity.journalEntry(
+          meta: _createMetadata(id: taskId),
+          entryText: const EntryText(plainText: 'This is a journal entry'),
+        );
 
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+        // Mock getEntity to first return task, then journal entry
+        var callCount = 0;
+        when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1 ? task : journalEntry;
+        });
 
-      // Setup: Slow AI response to allow for multiple task changes
-      final mockStream = _createDelayedStream(
-          ['# AI Title\n\nSummary content.'],
-          delayMs: 300);
+        final updateCalls = <JournalEntity>[];
+        when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          updateCalls.add(invocation.positionalArguments[0] as JournalEntity);
+          return true;
+        });
 
-      when(() => mockCloudInferenceRepo.generate(
+        final mockStream = _createDelayedStream([
+          '# AI Title\n\nSummary content.',
+        ]);
+
+        when(
+          () => mockCloudInferenceRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -656,99 +817,21 @@ void main() {
             apiKey: any(named: 'apiKey'),
             systemMessage: any(named: 'systemMessage'),
             provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
+          ),
+        ).thenAnswer((_) => mockStream);
 
-      // Execute: AI should handle multiple rapid task changes gracefully
-      await repository.runInference(
-        entityId: taskId,
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        // Execute: Should handle type mismatch gracefully
+        await repository.runInference(
+          entityId: taskId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Verify: AI should have called getEntity at least twice (initial + post-processing)
-      verify(() => mockAiInputRepo.getEntity(taskId))
-          .called(greaterThanOrEqualTo(2));
-
-      // Verify: No crashes or exceptions occurred
-      // If we reach this point, the rapid changes were handled gracefully
-      expect(true, true); // Test passes if no exceptions were thrown
-    });
-
-    test('handles type safety when _getCurrentEntityState returns wrong type',
-        () async {
-      // Setup: Initial task
-      const taskId = 'test-task-type-safety';
-      final task = _createTaskWithTitle(taskId, 'Test');
-
-      final promptConfig = _createPrompt(
-        id: 'summary-prompt',
-        requiredInputData: [InputDataType.task],
-      );
-      final model = _createModel(id: 'model-1');
-      final provider = _createProvider(id: 'provider-1');
-
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => jsonEncode({'title': 'Test'}));
-
-      when(() => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
-
-      // Create a journal entry (not a task) to simulate wrong type
-      final journalEntry = JournalEntity.journalEntry(
-        meta: _createMetadata(id: taskId),
-        entryText: const EntryText(plainText: 'This is a journal entry'),
-      );
-
-      // Mock getEntity to first return task, then journal entry
-      var callCount = 0;
-      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
-        callCount++;
-        return callCount == 1 ? task : journalEntry;
-      });
-
-      final updateCalls = <JournalEntity>[];
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((invocation) async {
-        updateCalls.add(invocation.positionalArguments[0] as JournalEntity);
-        return true;
-      });
-
-      final mockStream =
-          _createDelayedStream(['# AI Title\n\nSummary content.']);
-
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
-
-      // Execute: Should handle type mismatch gracefully
-      await repository.runInference(
-        entityId: taskId,
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
-
-      // Verify: No task updates should occur due to type mismatch
-      expect(updateCalls.whereType<Task>(), isEmpty);
-    });
+        // Verify: No task updates should occur due to type mismatch
+        expect(updateCalls.whereType<Task>(), isEmpty);
+      },
+    );
 
     test('handles null return from _getCurrentEntityState', () async {
       // Setup: Initial task
@@ -762,22 +845,28 @@ void main() {
       final model = _createModel(id: 'model-1');
       final provider = _createProvider(id: 'provider-1');
 
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+      when(
+        () => mockAiConfigRepo.getConfigById('summary-prompt'),
+      ).thenAnswer((_) async => promptConfig);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => jsonEncode({'title': 'Test'}));
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+      ).thenAnswer((_) async => jsonEncode({'title': 'Test'}));
 
-      when(() => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
 
       // Mock getEntity to first return task, then null
       var callCount = 0;
@@ -787,24 +876,28 @@ void main() {
       });
 
       final updateCalls = <JournalEntity>[];
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((invocation) async {
+      when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+        invocation,
+      ) async {
         updateCalls.add(invocation.positionalArguments[0] as JournalEntity);
         return true;
       });
 
-      final mockStream =
-          _createDelayedStream(['# AI Title\n\nSummary content.']);
+      final mockStream = _createDelayedStream([
+        '# AI Title\n\nSummary content.',
+      ]);
 
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          provider: any(named: 'provider'),
+        ),
+      ).thenAnswer((_) => mockStream);
 
       // Execute: Should handle null gracefully
       await repository.runInference(
@@ -821,83 +914,97 @@ void main() {
 
   group('Read-Current-Write Pattern Verification', () {
     test(
-        'Concurrent audio transcription: AI preserves user changes during processing',
-        () async {
-      // Create temporary directory and files
-      final tempDir = Directory.systemTemp.createTempSync('audio_test');
-      overrideTempDirs.add(tempDir);
+      'Concurrent audio transcription: AI preserves user changes during processing',
+      () async {
+        // Create temporary directory and files
+        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        overrideTempDirs.add(tempDir);
 
-      try {
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+        try {
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        // Create the directory structure and file
-        Directory('${tempDir.path}/audio').createSync(recursive: true);
-        File('${tempDir.path}/audio/test-audio.wav')
-            .writeAsBytesSync([1, 2, 3, 4, 5, 6]);
+          // Create the directory structure and file
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          File(
+            '${tempDir.path}/audio/test-audio.wav',
+          ).writeAsBytesSync([1, 2, 3, 4, 5, 6]);
 
-        const audioId = 'test-audio-123';
-        final originalAudio = _createJournalAudio(audioId);
+          const audioId = 'test-audio-123';
+          final originalAudio = _createJournalAudio(audioId);
 
-        // User adds entry text while AI is processing
-        final userUpdatedAudio = _createJournalAudio(
-          audioId,
-          entryText: const EntryText(
-            plainText: 'User added this text during AI processing',
-            markdown: 'User added this text during AI processing',
-          ),
-        );
+          // User adds entry text while AI is processing
+          final userUpdatedAudio = _createJournalAudio(
+            audioId,
+            entryText: const EntryText(
+              plainText: 'User added this text during AI processing',
+              markdown: 'User added this text during AI processing',
+            ),
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'audio-prompt',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-        final model = _createModel(id: 'model-1');
-        final provider = _createProvider(id: 'provider-1');
+          final promptConfig = _createPrompt(
+            id: 'audio-prompt',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+          final model = _createModel(id: 'model-1');
+          final provider = _createProvider(id: 'provider-1');
 
-        when(() => mockAiConfigRepo.getConfigById('audio-prompt'))
-            .thenAnswer((_) async => promptConfig);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
+          when(
+            () => mockAiConfigRepo.getConfigById('audio-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
 
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: audioId))
-            .thenAnswer((_) async => jsonEncode({
-                  'audioFile': 'test-audio.wav',
-                  'duration': '00:05:00',
-                }));
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: audioId),
+          ).thenAnswer(
+            (_) async => jsonEncode({
+              'audioFile': 'test-audio.wav',
+              'duration': '00:05:00',
+            }),
+          );
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
               data: any(named: 'data'),
               start: any(named: 'start'),
               linkedId: any(named: 'linkedId'),
               categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
 
-        // Simulate user modifying audio during AI processing
-        var getEntityCallCount = 0;
-        when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
-          getEntityCallCount++;
-          return getEntityCallCount == 1 ? originalAudio : userUpdatedAudio;
-        });
+          // Simulate user modifying audio during AI processing
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            return getEntityCallCount == 1 ? originalAudio : userUpdatedAudio;
+          });
 
-        final updatedAudios = <JournalAudio>[];
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((invocation) async {
-          final audio = invocation.positionalArguments[0] as JournalAudio;
-          updatedAudios.add(audio);
-          return true;
-        });
+          final updatedAudios = <JournalAudio>[];
+          when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final audio = invocation.positionalArguments[0] as JournalAudio;
+            updatedAudios.add(audio);
+            return true;
+          });
 
-        final mockStream =
-            _createDelayedStream(['Hello, this is the transcription.']);
+          final mockStream = _createDelayedStream([
+            'Hello, this is the transcription.',
+          ]);
 
-        when(() => mockCloudInferenceRepo.generateWithAudio(
+          when(
+            () => mockCloudInferenceRepo.generateWithAudio(
               provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
@@ -906,32 +1013,38 @@ void main() {
               apiKey: any(named: 'apiKey'),
               stream: any(named: 'stream'),
               audioFormat: any(named: 'audioFormat'),
-            )).thenAnswer((_) => mockStream);
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        await repository.runInference(
-          entityId: audioId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
+          await repository.runInference(
+            entityId: audioId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
 
-        // Verify: AI used current state, preserving user's entry text changes
-        expect(updatedAudios.length, 1);
-        final updatedAudio = updatedAudios.first;
+          // Verify: AI used current state, preserving user's entry text changes
+          expect(updatedAudios.length, 1);
+          final updatedAudio = updatedAudios.first;
 
-        // Should have added transcript
-        expect(updatedAudio.data.transcripts?.length, 1);
-        expect(updatedAudio.data.transcripts?.first.transcript,
-            'Hello, this is the transcription.');
+          // Should have added transcript
+          expect(updatedAudio.data.transcripts?.length, 1);
+          expect(
+            updatedAudio.data.transcripts?.first.transcript,
+            'Hello, this is the transcription.',
+          );
 
-        // Should use transcription as entry text (AI overwrites for transcription)
-        expect(updatedAudio.entryText?.plainText,
-            'Hello, this is the transcription.');
-      } finally {
-        // Cleanup - this will always run even if test fails
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+          // Should use transcription as entry text (AI overwrites for transcription)
+          expect(
+            updatedAudio.entryText?.plainText,
+            'Hello, this is the transcription.',
+          );
+        } finally {
+          // Cleanup - this will always run even if test fails
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
 
     test('Audio transcription handles entity not found gracefully', () async {
       // Create temporary directory and files
@@ -943,8 +1056,9 @@ void main() {
 
         // Create the directory structure and file
         Directory('${tempDir.path}/audio').createSync(recursive: true);
-        File('${tempDir.path}/audio/test-audio.wav')
-            .writeAsBytesSync([1, 2, 3, 4, 5, 6]);
+        File(
+          '${tempDir.path}/audio/test-audio.wav',
+        ).writeAsBytesSync([1, 2, 3, 4, 5, 6]);
 
         const audioId = 'test-audio-missing';
         final originalAudio = _createJournalAudio(audioId);
@@ -957,29 +1071,39 @@ void main() {
         final model = _createModel(id: 'model-1');
         final provider = _createProvider(id: 'provider-1');
 
-        when(() => mockAiConfigRepo.getConfigById('audio-prompt'))
-            .thenAnswer((_) async => promptConfig);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockAiConfigRepo.getConfigById('audio-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
 
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: audioId))
-            .thenAnswer((_) async => jsonEncode({
-                  'audioFile': 'test-audio.wav',
-                  'duration': '00:05:00',
-                }));
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: audioId),
+        ).thenAnswer(
+          (_) async => jsonEncode({
+            'audioFile': 'test-audio.wav',
+            'duration': '00:05:00',
+          }),
+        );
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(
+            linkedTo: any(named: 'linkedTo'),
+          ),
+        ).thenAnswer((_) async => <JournalEntity>[]);
 
         // First call returns audio, second call (during post-processing) returns null
         var getEntityCallCount = 0;
@@ -989,24 +1113,27 @@ void main() {
         });
 
         final updateCalls = <dynamic>[];
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((invocation) async {
+        when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+          invocation,
+        ) async {
           updateCalls.add(invocation.positionalArguments[0]);
           return true;
         });
 
         final mockStream = _createDelayedStream(['Transcription text']);
 
-        when(() => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            )).thenAnswer((_) => mockStream);
+        when(
+          () => mockCloudInferenceRepo.generateWithAudio(
+            provider: any(named: 'provider'),
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
+          ),
+        ).thenAnswer((_) => mockStream);
 
         await repository.runInference(
           entityId: audioId,
@@ -1026,83 +1153,97 @@ void main() {
 
   group('Image Analysis Concurrent Scenarios', () {
     test(
-        'Concurrent image analysis: AI preserves user text changes during processing',
-        () async {
-      // Create temporary directory and files
-      final tempDir = Directory.systemTemp.createTempSync('image_test');
-      overrideTempDirs.add(tempDir);
+      'Concurrent image analysis: AI preserves user text changes during processing',
+      () async {
+        // Create temporary directory and files
+        final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
 
-      try {
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+        try {
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        // Create the directory structure and file
-        Directory('${tempDir.path}/images').createSync(recursive: true);
-        File('${tempDir.path}/images/test-image.jpg')
-            .writeAsBytesSync([1, 2, 3, 4]);
+          // Create the directory structure and file
+          Directory('${tempDir.path}/images').createSync(recursive: true);
+          File(
+            '${tempDir.path}/images/test-image.jpg',
+          ).writeAsBytesSync([1, 2, 3, 4]);
 
-        const imageId = 'test-image-123';
-        final originalImage = _createJournalImage(imageId);
+          const imageId = 'test-image-123';
+          final originalImage = _createJournalImage(imageId);
 
-        // User adds text while AI is processing
-        final userUpdatedImage = _createJournalImage(
-          imageId,
-          entryText: const EntryText(
-            plainText: 'User added this description',
-            markdown: 'User added this description',
-          ),
-        );
+          // User adds text while AI is processing
+          final userUpdatedImage = _createJournalImage(
+            imageId,
+            entryText: const EntryText(
+              plainText: 'User added this description',
+              markdown: 'User added this description',
+            ),
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'image-prompt',
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
-        final model = _createModel(id: 'model-1');
-        final provider = _createProvider(id: 'provider-1');
+          final promptConfig = _createPrompt(
+            id: 'image-prompt',
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
+          final model = _createModel(id: 'model-1');
+          final provider = _createProvider(id: 'provider-1');
 
-        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
-            .thenAnswer((_) async => promptConfig);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
+          when(
+            () => mockAiConfigRepo.getConfigById('image-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
 
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
-            .thenAnswer((_) async => jsonEncode({
-                  'imageFile': 'test-image.jpg',
-                  'capturedAt': DateTime.now().toIso8601String(),
-                }));
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: imageId),
+          ).thenAnswer(
+            (_) async => jsonEncode({
+              'imageFile': 'test-image.jpg',
+              'capturedAt': DateTime.now().toIso8601String(),
+            }),
+          );
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
               data: any(named: 'data'),
               start: any(named: 'start'),
               linkedId: any(named: 'linkedId'),
               categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
 
-        // Simulate user modifying image during AI processing
-        var getEntityCallCount = 0;
-        when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
-          getEntityCallCount++;
-          return getEntityCallCount == 1 ? originalImage : userUpdatedImage;
-        });
+          // Simulate user modifying image during AI processing
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            return getEntityCallCount == 1 ? originalImage : userUpdatedImage;
+          });
 
-        final updatedImages = <JournalImage>[];
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((invocation) async {
-          final image = invocation.positionalArguments[0] as JournalImage;
-          updatedImages.add(image);
-          return true;
-        });
+          final updatedImages = <JournalImage>[];
+          when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final image = invocation.positionalArguments[0] as JournalImage;
+            updatedImages.add(image);
+            return true;
+          });
 
-        final mockStream =
-            _createDelayedStream(['This image shows a beautiful sunset.']);
+          final mockStream = _createDelayedStream([
+            'This image shows a beautiful sunset.',
+          ]);
 
-        when(() => mockCloudInferenceRepo.generateWithImages(
+          when(
+            () => mockCloudInferenceRepo.generateWithImages(
               provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
@@ -1110,95 +1251,117 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
-            )).thenAnswer((_) => mockStream);
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        await repository.runInference(
-          entityId: imageId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
+          await repository.runInference(
+            entityId: imageId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
 
-        // Verify: AI should append to user's text, not overwrite it
-        expect(updatedImages.length, 1);
-        final updatedImage = updatedImages.first;
+          // Verify: AI should append to user's text, not overwrite it
+          expect(updatedImages.length, 1);
+          final updatedImage = updatedImages.first;
 
-        // Should append AI analysis to user's existing text
-        expect(updatedImage.entryText?.plainText,
-            'User added this description\n\nThis image shows a beautiful sunset.');
-        expect(updatedImage.entryText?.markdown,
-            'User added this description\n\nThis image shows a beautiful sunset.');
-      } finally {
-        // Cleanup - this will always run even if test fails
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+          // Should append AI analysis to user's existing text
+          expect(
+            updatedImage.entryText?.plainText,
+            'User added this description\n\nThis image shows a beautiful sunset.',
+          );
+          expect(
+            updatedImage.entryText?.markdown,
+            'User added this description\n\nThis image shows a beautiful sunset.',
+          );
+        } finally {
+          // Cleanup - this will always run even if test fails
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
 
-    test('Image analysis with empty initial text uses AI response directly',
-        () async {
-      // Create temporary directory and files
-      final tempDir = Directory.systemTemp.createTempSync('image_test');
-      overrideTempDirs.add(tempDir);
+    test(
+      'Image analysis with empty initial text uses AI response directly',
+      () async {
+        // Create temporary directory and files
+        final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
 
-      try {
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+        try {
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        // Create the directory structure and file
-        Directory('${tempDir.path}/images').createSync(recursive: true);
-        File('${tempDir.path}/images/test-image.jpg')
-            .writeAsBytesSync([1, 2, 3, 4]);
+          // Create the directory structure and file
+          Directory('${tempDir.path}/images').createSync(recursive: true);
+          File(
+            '${tempDir.path}/images/test-image.jpg',
+          ).writeAsBytesSync([1, 2, 3, 4]);
 
-        const imageId = 'test-image-empty';
-        // User doesn't add text, image stays empty during processing
-        final currentImage = _createJournalImage(imageId);
+          const imageId = 'test-image-empty';
+          // User doesn't add text, image stays empty during processing
+          final currentImage = _createJournalImage(imageId);
 
-        final promptConfig = _createPrompt(
-          id: 'image-prompt',
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
-        final model = _createModel(id: 'model-1');
-        final provider = _createProvider(id: 'provider-1');
+          final promptConfig = _createPrompt(
+            id: 'image-prompt',
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
+          final model = _createModel(id: 'model-1');
+          final provider = _createProvider(id: 'provider-1');
 
-        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
-            .thenAnswer((_) async => promptConfig);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
+          when(
+            () => mockAiConfigRepo.getConfigById('image-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
 
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
-            .thenAnswer((_) async => jsonEncode({
-                  'imageFile': 'test-image.jpg',
-                  'capturedAt': DateTime.now().toIso8601String(),
-                }));
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: imageId),
+          ).thenAnswer(
+            (_) async => jsonEncode({
+              'imageFile': 'test-image.jpg',
+              'capturedAt': DateTime.now().toIso8601String(),
+            }),
+          );
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
               data: any(named: 'data'),
               start: any(named: 'start'),
               linkedId: any(named: 'linkedId'),
               categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
 
-        when(() => mockAiInputRepo.getEntity(imageId))
-            .thenAnswer((_) async => currentImage);
+          when(
+            () => mockAiInputRepo.getEntity(imageId),
+          ).thenAnswer((_) async => currentImage);
 
-        final updatedImages = <JournalImage>[];
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((invocation) async {
-          final image = invocation.positionalArguments[0] as JournalImage;
-          updatedImages.add(image);
-          return true;
-        });
+          final updatedImages = <JournalImage>[];
+          when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final image = invocation.positionalArguments[0] as JournalImage;
+            updatedImages.add(image);
+            return true;
+          });
 
-        final mockStream =
-            _createDelayedStream(['AI generated image description.']);
+          final mockStream = _createDelayedStream([
+            'AI generated image description.',
+          ]);
 
-        when(() => mockCloudInferenceRepo.generateWithImages(
+          when(
+            () => mockCloudInferenceRepo.generateWithImages(
               provider: any(named: 'provider'),
               any(),
               model: any(named: 'model'),
@@ -1206,25 +1369,29 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               images: any(named: 'images'),
-            )).thenAnswer((_) => mockStream);
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        await repository.runInference(
-          entityId: imageId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
+          await repository.runInference(
+            entityId: imageId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
 
-        // Verify: Should use AI response directly when no existing text
-        expect(updatedImages.length, 1);
-        final updatedImage = updatedImages.first;
-        expect(updatedImage.entryText?.plainText,
-            'AI generated image description.');
-      } finally {
-        // Cleanup - this will always run even if test fails
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+          // Verify: Should use AI response directly when no existing text
+          expect(updatedImages.length, 1);
+          final updatedImage = updatedImages.first;
+          expect(
+            updatedImage.entryText?.plainText,
+            'AI generated image description.',
+          );
+        } finally {
+          // Cleanup - this will always run even if test fails
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
 
     test('Image analysis handles entity not found gracefully', () async {
       // Create temporary directory and files
@@ -1236,8 +1403,9 @@ void main() {
 
         // Create the directory structure and file
         Directory('${tempDir.path}/images').createSync(recursive: true);
-        File('${tempDir.path}/images/test-image.jpg')
-            .writeAsBytesSync([1, 2, 3, 4]);
+        File(
+          '${tempDir.path}/images/test-image.jpg',
+        ).writeAsBytesSync([1, 2, 3, 4]);
 
         const imageId = 'test-image-missing';
         final originalImage = _createJournalImage(imageId);
@@ -1250,29 +1418,39 @@ void main() {
         final model = _createModel(id: 'model-1');
         final provider = _createProvider(id: 'provider-1');
 
-        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
-            .thenAnswer((_) async => promptConfig);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockAiConfigRepo.getConfigById('image-prompt'),
+        ).thenAnswer((_) async => promptConfig);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
 
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
-            .thenAnswer((_) async => jsonEncode({
-                  'imageFile': 'test-image.jpg',
-                  'capturedAt': DateTime.now().toIso8601String(),
-                }));
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: imageId),
+        ).thenAnswer(
+          (_) async => jsonEncode({
+            'imageFile': 'test-image.jpg',
+            'capturedAt': DateTime.now().toIso8601String(),
+          }),
+        );
 
-        when(() => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(
+            linkedTo: any(named: 'linkedTo'),
+          ),
+        ).thenAnswer((_) async => <JournalEntity>[]);
 
         // First call returns image, second call (during post-processing) returns null
         var getEntityCallCount = 0;
@@ -1282,23 +1460,26 @@ void main() {
         });
 
         final updateCalls = <dynamic>[];
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((invocation) async {
+        when(() => mockJournalRepo.updateJournalEntity(any())).thenAnswer((
+          invocation,
+        ) async {
           updateCalls.add(invocation.positionalArguments[0]);
           return true;
         });
 
         final mockStream = _createDelayedStream(['Image analysis result']);
 
-        when(() => mockCloudInferenceRepo.generateWithImages(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              images: any(named: 'images'),
-            )).thenAnswer((_) => mockStream);
+        when(
+          () => mockCloudInferenceRepo.generateWithImages(
+            provider: any(named: 'provider'),
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            images: any(named: 'images'),
+          ),
+        ).thenAnswer((_) => mockStream);
 
         await repository.runInference(
           entityId: imageId,
@@ -1399,8 +1580,11 @@ Stream<CreateChatCompletionStreamResponse> _createDelayedStream(
   }
 }
 
-Task _createTaskWithTitle(String id, String title,
-    {List<String>? checklistIds}) {
+Task _createTaskWithTitle(
+  String id,
+  String title, {
+  List<String>? checklistIds,
+}) {
   return Task(
     meta: _createMetadata(id: id),
     data: TaskData(
@@ -1418,8 +1602,11 @@ Task _createTaskWithTitle(String id, String title,
   );
 }
 
-JournalAudio _createJournalAudio(String id,
-    {EntryText? entryText, List<AudioTranscript>? transcripts}) {
+JournalAudio _createJournalAudio(
+  String id, {
+  EntryText? entryText,
+  List<AudioTranscript>? transcripts,
+}) {
   return JournalAudio(
     meta: _createMetadata(id: id),
     data: AudioData(

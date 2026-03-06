@@ -9,10 +9,10 @@ class JournalLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
-        '/journal',
-        '/journal/:entryId',
-        '/journal/fill_survey/:surveyType',
-      ];
+    '/journal',
+    '/journal/:entryId',
+    '/journal/fill_survey/:surveyType',
+  ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {

@@ -65,8 +65,9 @@ void main() {
       expect(row.mainAxisAlignment, MainAxisAlignment.end);
     });
 
-    testWidgets('centers delete indicator vertically',
-        (WidgetTester tester) async {
+    testWidgets('centers delete indicator vertically', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       final column = tester.widget<Column>(
@@ -75,8 +76,9 @@ void main() {
       expect(column.mainAxisAlignment, MainAxisAlignment.center);
     });
 
-    testWidgets('delete icon has container with decoration',
-        (WidgetTester tester) async {
+    testWidgets('delete icon has container with decoration', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Find the container that directly contains the icon
@@ -103,8 +105,9 @@ void main() {
       expect(iconContainer.padding, const EdgeInsets.all(8));
     });
 
-    testWidgets('has proper spacing between icon and text',
-        (WidgetTester tester) async {
+    testWidgets('has proper spacing between icon and text', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Find the specific SizedBox that's between the icon container and text
@@ -139,8 +142,9 @@ void main() {
       expect(foundExpectedPadding, isTrue);
     });
 
-    testWidgets('delete text has proper font weight',
-        (WidgetTester tester) async {
+    testWidgets('delete text has proper font weight', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       final text = tester.widget<Text>(find.text('Delete'));

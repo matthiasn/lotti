@@ -41,8 +41,9 @@ void main() {
 
   /// Stubs a profile lookup by ID.
   void stubProfile(AiConfigInferenceProfile profile) {
-    when(() => mockAiConfig.getConfigById(profile.id))
-        .thenAnswer((_) async => profile);
+    when(
+      () => mockAiConfig.getConfigById(profile.id),
+    ).thenAnswer((_) async => profile);
   }
 
   group('ProfileResolver', () {
@@ -109,8 +110,9 @@ void main() {
     });
 
     test('falls back to legacy when profile not found', () async {
-      when(() => mockAiConfig.getConfigById('profile-missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfig.getConfigById('profile-missing'),
+      ).thenAnswer((_) async => null);
       stubModelResolution();
 
       final result = await resolver.resolve(
@@ -129,8 +131,9 @@ void main() {
         thinkingModelId: 'nonexistent-model',
       );
       stubProfile(profile);
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
 
       final result = await resolver.resolve(
         agentConfig: const AgentConfig(profileId: 'profile-bad'),
@@ -176,14 +179,18 @@ void main() {
           ),
         ],
       );
-      when(() => mockAiConfig.getConfigById('p1'))
-          .thenAnswer((_) async => testInferenceProvider(id: 'p1'));
-      when(() => mockAiConfig.getConfigById('p2'))
-          .thenAnswer((_) async => testInferenceProvider(id: 'p2'));
-      when(() => mockAiConfig.getConfigById('p3'))
-          .thenAnswer((_) async => testInferenceProvider(id: 'p3'));
-      when(() => mockAiConfig.getConfigById('p4'))
-          .thenAnswer((_) async => testInferenceProvider(id: 'p4'));
+      when(
+        () => mockAiConfig.getConfigById('p1'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'p1'));
+      when(
+        () => mockAiConfig.getConfigById('p2'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'p2'));
+      when(
+        () => mockAiConfig.getConfigById('p3'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'p3'));
+      when(
+        () => mockAiConfig.getConfigById('p4'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'p4'));
 
       final result = await resolver.resolve(
         agentConfig: const AgentConfig(profileId: 'profile-full'),
@@ -218,8 +225,9 @@ void main() {
           ),
         ],
       );
-      when(() => mockAiConfig.getConfigById('p1'))
-          .thenAnswer((_) async => testInferenceProvider(id: 'p1'));
+      when(
+        () => mockAiConfig.getConfigById('p1'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'p1'));
 
       final result = await resolver.resolve(
         agentConfig: const AgentConfig(profileId: 'profile-partial'),
@@ -248,8 +256,9 @@ void main() {
           ),
         ],
       );
-      when(() => mockAiConfig.getConfigById('provider-local'))
-          .thenAnswer((_) async => testLocalInferenceProvider());
+      when(
+        () => mockAiConfig.getConfigById('provider-local'),
+      ).thenAnswer((_) async => testLocalInferenceProvider());
 
       final result = await resolver.resolve(
         agentConfig: const AgentConfig(profileId: 'profile-local'),

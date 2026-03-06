@@ -33,8 +33,9 @@ void main() {
       expect(find.byIcon(MdiIcons.alertCircle), findsOneWidget);
     });
 
-    testWidgets('displays near limit indicator when close to budget',
-        (tester) async {
+    testWidgets('displays near limit indicator when close to budget', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           const DayBudgetStats(
@@ -52,8 +53,9 @@ void main() {
       expect(find.byIcon(MdiIcons.clockAlert), findsOneWidget);
     });
 
-    testWidgets('displays on track indicator when progress is high',
-        (tester) async {
+    testWidgets('displays on track indicator when progress is high', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           const DayBudgetStats(
@@ -88,8 +90,9 @@ void main() {
       expect(find.text('3 hours left'), findsOneWidget);
     });
 
-    testWidgets('displays hours with minutes in time remaining',
-        (tester) async {
+    testWidgets('displays hours with minutes in time remaining', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           const DayBudgetStats(
@@ -106,8 +109,9 @@ void main() {
       expect(find.text('2h 30m left'), findsOneWidget);
     });
 
-    testWidgets('displays minutes only when less than an hour remaining',
-        (tester) async {
+    testWidgets('displays minutes only when less than an hour remaining', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           const DayBudgetStats(

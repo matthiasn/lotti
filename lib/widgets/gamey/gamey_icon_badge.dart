@@ -72,15 +72,16 @@ class _GameyIconBadgeState extends State<GameyIconBadge>
       duration: GameyAnimations.pulse,
     );
 
-    _pulseAnimation = Tween<double>(
-      begin: 1,
-      end: GameyAnimations.pulseScaleMax,
-    ).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: GameyAnimations.symmetrical,
-      ),
-    );
+    _pulseAnimation =
+        Tween<double>(
+          begin: 1,
+          end: GameyAnimations.pulseScaleMax,
+        ).animate(
+          CurvedAnimation(
+            parent: _pulseController,
+            curve: GameyAnimations.symmetrical,
+          ),
+        );
 
     if (widget.isPulsing) {
       _pulseController.repeat(reverse: true);
@@ -125,12 +126,14 @@ class _GameyIconBadgeState extends State<GameyIconBadge>
     final iconColor = _getIconColor(primaryColor);
 
     // Default gradient if none provided
-    final effectiveGradient = widget.gradient ??
+    final effectiveGradient =
+        widget.gradient ??
         LinearGradient(
           colors: [
             widget.backgroundColor ?? GameyColors.primaryBlue,
-            (widget.backgroundColor ?? GameyColors.primaryBlue)
-                .withValues(alpha: 0.8),
+            (widget.backgroundColor ?? GameyColors.primaryBlue).withValues(
+              alpha: 0.8,
+            ),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

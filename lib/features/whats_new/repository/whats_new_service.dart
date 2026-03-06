@@ -20,7 +20,7 @@ class WhatsNewService {
   ///
   /// [httpClient] can be provided for testing purposes.
   WhatsNewService({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -37,10 +37,12 @@ class WhatsNewService {
   /// or `null` if the fetch fails.
   Future<List<WhatsNewRelease>?> fetchIndex() async {
     try {
-      final response = await _httpClient.get(
-        Uri.parse('$baseUrl/index.json'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(timeout);
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/index.json'),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(timeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -50,10 +52,11 @@ class WhatsNewService {
           return null;
         }
 
-        final releases = releasesJson
-            .map((e) => WhatsNewRelease.fromJson(e as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
+        final releases =
+            releasesJson
+                .map((e) => WhatsNewRelease.fromJson(e as Map<String, dynamic>))
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
 
         return releases;
       }
@@ -96,10 +99,12 @@ class WhatsNewService {
   /// or `null` if the fetch fails.
   Future<WhatsNewContent?> fetchContent(WhatsNewRelease release) async {
     try {
-      final response = await _httpClient.get(
-        Uri.parse('$baseUrl/${release.folder}/content.md'),
-        headers: {'Accept': 'text/plain'},
-      ).timeout(timeout);
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/${release.folder}/content.md'),
+            headers: {'Accept': 'text/plain'},
+          )
+          .timeout(timeout);
 
       if (response.statusCode == 200) {
         return WhatsNewMarkdownParser.parse(

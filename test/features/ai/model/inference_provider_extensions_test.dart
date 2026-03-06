@@ -41,8 +41,9 @@ void main() {
     });
 
     group('displayName', () {
-      testWidgets('returns localized name for alibaba',
-          (WidgetTester tester) async {
+      testWidgets('returns localized name for alibaba', (
+        WidgetTester tester,
+      ) async {
         late String name;
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -58,8 +59,9 @@ void main() {
         expect(name, contains('Alibaba'));
       });
 
-      testWidgets('returns localized name for all provider types',
-          (WidgetTester tester) async {
+      testWidgets('returns localized name for all provider types', (
+        WidgetTester tester,
+      ) async {
         final names = <InferenceProviderType, String>{};
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -84,8 +86,9 @@ void main() {
     });
 
     group('description', () {
-      testWidgets('returns localized description for alibaba',
-          (WidgetTester tester) async {
+      testWidgets('returns localized description for alibaba', (
+        WidgetTester tester,
+      ) async {
         late String desc;
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -101,8 +104,9 @@ void main() {
         expect(desc, contains('Qwen'));
       });
 
-      testWidgets('returns localized description for all provider types',
-          (WidgetTester tester) async {
+      testWidgets('returns localized description for all provider types', (
+        WidgetTester tester,
+      ) async {
         final descriptions = <InferenceProviderType, String>{};
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(

@@ -197,8 +197,10 @@ void main() {
         expect(roundtripped, equals(original));
         final msg = roundtripped as AgentMessageEntity;
         expect(msg.metadata.policyDenied, isTrue);
-        expect(msg.metadata.denialReason,
-            equals('Access not permitted for category'));
+        expect(
+          msg.metadata.denialReason,
+          equals('Access not permitted for category'),
+        );
       });
 
       test('roundtrips each AgentMessageKind variant', () {

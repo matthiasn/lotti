@@ -26,11 +26,13 @@ class LottiTertiaryButton extends StatelessWidget {
     final isEnabled = enabled && onPressed != null;
 
     // Determine text color based on state and destructive flag
-    final textColor =
-        isDestructive ? context.colorScheme.error : context.colorScheme.primary;
+    final textColor = isDestructive
+        ? context.colorScheme.error
+        : context.colorScheme.primary;
 
-    final disabledColor =
-        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+    final disabledColor = context.colorScheme.onSurfaceVariant.withValues(
+      alpha: 0.5,
+    );
     final effectiveColor = isEnabled ? textColor : disabledColor;
 
     final buttonChild = icon == null

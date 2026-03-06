@@ -37,8 +37,9 @@ void main() {
   group('TaskStatusHandler', () {
     group('handle', () {
       test('transitions to IN PROGRESS with didWrite=true', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -63,8 +64,9 @@ void main() {
       });
 
       test('transitions to GROOMED', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -79,8 +81,9 @@ void main() {
       });
 
       test('transitions to BLOCKED with reason', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -102,8 +105,9 @@ void main() {
       });
 
       test('transitions to ON HOLD with reason', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -125,8 +129,9 @@ void main() {
       });
 
       test('transitions back to OPEN from IN PROGRESS', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final inProgressTask = task.copyWith(
           data: task.data.copyWith(
@@ -151,8 +156,9 @@ void main() {
       });
 
       test('normalizes case for status string', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -271,8 +277,9 @@ void main() {
       });
 
       test('appends to statusHistory', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -293,8 +300,9 @@ void main() {
       test('uses clock.now() for status createdAt', () async {
         final fixedTime = DateTime(2024, 6, 15, 10, 30);
         await withClock(Clock.fixed(fixedTime), () async {
-          when(() => mockJournalRepo.updateJournalEntity(any()))
-              .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
           final handler = TaskStatusHandler(
             task: task,
@@ -309,8 +317,9 @@ void main() {
       });
 
       test('returns error when repository returns false', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => false);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => false);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -325,8 +334,9 @@ void main() {
       });
 
       test('returns error when repository throws', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('DB error'));
 
         final handler = TaskStatusHandler(
           task: task,
@@ -341,8 +351,9 @@ void main() {
       });
 
       test('updates local task field after successful write', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -357,8 +368,9 @@ void main() {
       });
 
       test('does not update local task field when write fails', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('fail'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('fail'));
 
         final handler = TaskStatusHandler(
           task: task,
@@ -476,8 +488,9 @@ void main() {
       });
 
       test('no overlap between allowed and terminal', () {
-        final intersection = TaskStatusHandler.allowedStatuses
-            .intersection(TaskStatusHandler.terminalStatuses);
+        final intersection = TaskStatusHandler.allowedStatuses.intersection(
+          TaskStatusHandler.terminalStatuses,
+        );
         expect(intersection, isEmpty);
       });
     });

@@ -109,8 +109,9 @@ class EntryController extends _$EntryController {
     focusNode.addListener(focusNodeListener);
     taskTitleFocusNode.addListener(taskTitleFocusNodeListener);
 
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(id)) {
         final latest = await _fetch();
         if (latest != state.value?.entry) {
@@ -147,9 +148,9 @@ class EntryController extends _$EntryController {
     final lastSaved = entry?.meta.updatedAt;
 
     if (lastSaved != null) {
-      _editorStateService
-          .getUnsavedStream(id, lastSaved)
-          .listen((bool dirtyFromEditorDrafts) {
+      _editorStateService.getUnsavedStream(id, lastSaved).listen((
+        bool dirtyFromEditorDrafts,
+      ) {
         setDirty(value: dirtyFromEditorDrafts);
       });
     }
@@ -171,7 +172,9 @@ class EntryController extends _$EntryController {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    return ref.read(journalRepositoryProvider).updateJournalEntityDate(
+    return ref
+        .read(journalRepositoryProvider)
+        .updateJournalEntityDate(
           id,
           dateFrom: dateFrom,
           dateTo: dateTo,
@@ -256,8 +259,9 @@ class EntryController extends _$EntryController {
         // Emit rating prompt if session was >= 1 minute and feature enabled
         final duration = DateTime.now().difference(entry.meta.dateFrom);
         if (duration >= const Duration(minutes: 1)) {
-          final flag =
-              await _journalDb.getConfigFlagByName(enableSessionRatingsFlag);
+          final flag = await _journalDb.getConfigFlagByName(
+            enableSessionRatingsFlag,
+          );
           if (flag?.status ?? false) {
             ref
                 .read(ratingPromptControllerProvider.notifier)
@@ -338,8 +342,9 @@ class EntryController extends _$EntryController {
   Future<bool> delete({
     required bool beamBack,
   }) async {
-    final res =
-        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
+    final res = await ref
+        .read(journalRepositoryProvider)
+        .deleteJournalEntity(id);
     if (beamBack) {
       getIt<NavService>().beamBack();
     }
@@ -527,8 +532,9 @@ class EntryController extends _$EntryController {
     final task = state.value?.entry;
 
     if (task != null && task is Task) {
-      final checklists =
-          await _journalDb.getJournalEntitiesForIds({...checklistIds});
+      final checklists = await _journalDb.getJournalEntitiesForIds({
+        ...checklistIds,
+      });
 
       final existingIds = checklists
           .where((item) => !item.isDeleted)

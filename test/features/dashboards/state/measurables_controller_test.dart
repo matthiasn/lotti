@@ -68,14 +68,16 @@ void main() {
         aggregationType: AggregationType.dailySum,
       );
 
-      when(() => mockEntitiesCacheService.getDataTypeById(testId))
-          .thenReturn(testDataType);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(testId),
+      ).thenReturn(testDataType);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final result = await container
-          .read(measurableDataTypeControllerProvider(testId).future);
+      final result = await container.read(
+        measurableDataTypeControllerProvider(testId).future,
+      );
 
       expect(result, equals(testDataType));
       expect(result?.id, testId);
@@ -97,16 +99,19 @@ void main() {
         aggregationType: AggregationType.dailyMax,
       );
 
-      when(() => mockEntitiesCacheService.getDataTypeById(testId))
-          .thenReturn(null);
-      when(() => mockJournalDb.getMeasurableDataTypeById(testId))
-          .thenAnswer((_) async => testDataType);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(testId),
+      ).thenReturn(null);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(testId),
+      ).thenAnswer((_) async => testDataType);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final result = await container
-          .read(measurableDataTypeControllerProvider(testId).future);
+      final result = await container.read(
+        measurableDataTypeControllerProvider(testId).future,
+      );
 
       expect(result, equals(testDataType));
       expect(result?.displayName, 'DB Measurable');
@@ -117,16 +122,19 @@ void main() {
     test('returns null when not found in cache or database', () async {
       const testId = 'non-existent-id';
 
-      when(() => mockEntitiesCacheService.getDataTypeById(testId))
-          .thenReturn(null);
-      when(() => mockJournalDb.getMeasurableDataTypeById(testId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(testId),
+      ).thenReturn(null);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(testId),
+      ).thenAnswer((_) async => null);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final result = await container
-          .read(measurableDataTypeControllerProvider(testId).future);
+      final result = await container.read(
+        measurableDataTypeControllerProvider(testId).future,
+      );
 
       expect(result, isNull);
     });
@@ -139,50 +147,57 @@ void main() {
         dashboardDefinedAggregationType: AggregationType.dailyMax,
       );
 
-      when(() => mockEntitiesCacheService.getDataTypeById('test-id'))
-          .thenReturn(null);
-      when(() => mockJournalDb.getMeasurableDataTypeById('test-id'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById('test-id'),
+      ).thenReturn(null);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById('test-id'),
+      ).thenAnswer((_) async => null);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final result = await container
-          .read(aggregationTypeControllerProvider(params).future);
+      final result = await container.read(
+        aggregationTypeControllerProvider(params).future,
+      );
 
       expect(result, AggregationType.dailyMax);
     });
 
-    test('returns data type aggregation type when dashboard type is null',
-        () async {
-      const params = (
-        measurableDataTypeId: 'test-id',
-        dashboardDefinedAggregationType: null,
-      );
+    test(
+      'returns data type aggregation type when dashboard type is null',
+      () async {
+        const params = (
+          measurableDataTypeId: 'test-id',
+          dashboardDefinedAggregationType: null,
+        );
 
-      final testDataType = MeasurableDataType(
-        id: 'test-id',
-        displayName: 'Test',
-        description: 'Test',
-        unitName: 'units',
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-        version: 1,
-        aggregationType: AggregationType.hourlySum,
-      );
+        final testDataType = MeasurableDataType(
+          id: 'test-id',
+          displayName: 'Test',
+          description: 'Test',
+          unitName: 'units',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          version: 1,
+          aggregationType: AggregationType.hourlySum,
+        );
 
-      when(() => mockEntitiesCacheService.getDataTypeById('test-id'))
-          .thenReturn(testDataType);
+        when(
+          () => mockEntitiesCacheService.getDataTypeById('test-id'),
+        ).thenReturn(testDataType);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final result = await container
-          .read(aggregationTypeControllerProvider(params).future);
+        final result = await container.read(
+          aggregationTypeControllerProvider(params).future,
+        );
 
-      expect(result, AggregationType.hourlySum);
-    });
+        expect(result, AggregationType.hourlySum);
+      },
+    );
 
     test('defaults to dailySum when no aggregation type specified', () async {
       const params = (
@@ -190,16 +205,19 @@ void main() {
         dashboardDefinedAggregationType: null,
       );
 
-      when(() => mockEntitiesCacheService.getDataTypeById('test-id'))
-          .thenReturn(null);
-      when(() => mockJournalDb.getMeasurableDataTypeById('test-id'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById('test-id'),
+      ).thenReturn(null);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById('test-id'),
+      ).thenAnswer((_) async => null);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final result = await container
-          .read(aggregationTypeControllerProvider(params).future);
+      final result = await container.read(
+        aggregationTypeControllerProvider(params).future,
+      );
 
       expect(result, AggregationType.dailySum);
     });

@@ -33,10 +33,12 @@ void main() {
       mockFts5Db = MockFts5Db();
       mockUpdateNotifications = MockUpdateNotifications();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
       when(
         () => mockJournalDb.getTasks(
           starredStatuses: any(named: 'starredStatuses'),
@@ -45,8 +47,9 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => <JournalEntity>[]);
-      when(() => mockFts5Db.watchFullTextMatches(any()))
-          .thenAnswer((_) => Stream.value(<String>[]));
+      when(
+        () => mockFts5Db.watchFullTextMatches(any()),
+      ).thenAnswer((_) => Stream.value(<String>[]));
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -126,8 +129,9 @@ void main() {
       expect(find.text('Create new linked task...'), findsOneWidget);
     });
 
-    testWidgets('shows Manage links menu item when hasLinkedTasks is true',
-        (tester) async {
+    testWidgets('shows Manage links menu item when hasLinkedTasks is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -152,30 +156,31 @@ void main() {
     });
 
     testWidgets(
-        'does not show Manage links menu item when hasLinkedTasks is false',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-1').overrideWith(
-              LinkedTasksController.new,
-            ),
-          ],
-          child: const WidgetTestBench(
-            mediaQueryData: _largeMediaQuery,
-            child: LinkedTasksHeader(
-              taskId: 'task-1',
-              hasLinkedTasks: false,
+      'does not show Manage links menu item when hasLinkedTasks is false',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              linkedTasksControllerProvider(taskId: 'task-1').overrideWith(
+                LinkedTasksController.new,
+              ),
+            ],
+            child: const WidgetTestBench(
+              mediaQueryData: _largeMediaQuery,
+              child: LinkedTasksHeader(
+                taskId: 'task-1',
+                hasLinkedTasks: false,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Manage links...'), findsNothing);
-    });
+        expect(find.text('Manage links...'), findsNothing);
+      },
+    );
 
     testWidgets('menu has link icon for Link existing task', (tester) async {
       await tester.pumpWidget(

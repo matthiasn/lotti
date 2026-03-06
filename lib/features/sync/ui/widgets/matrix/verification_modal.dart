@@ -178,7 +178,8 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       children: [
                         Text(
                           context
-                              .messages.settingsMatrixContinueVerificationLabel,
+                              .messages
+                              .settingsMatrixContinueVerificationLabel,
                         ),
                         const SizedBox(height: 12),
                         LottiPrimaryButton(
@@ -187,7 +188,8 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                               ? null
                               : () => unawaited(startVerification(retry: true)),
                           label: context
-                              .messages.settingsMatrixStartVerificationLabel,
+                              .messages
+                              .settingsMatrixStartVerificationLabel,
                         ),
                       ],
                     ),
@@ -200,13 +202,15 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       key: const Key('matrix_accept_verify'),
                       onPressed: () => _acceptEmojiVerification(runner),
                       label: context
-                          .messages.settingsMatrixAcceptVerificationLabel,
+                          .messages
+                          .settingsMatrixAcceptVerificationLabel,
                     ),
                   if (!isDone && emojis != null) ...[
                     if (_awaitingOtherDevice)
                       Text(
                         context
-                            .messages.settingsMatrixContinueVerificationLabel,
+                            .messages
+                            .settingsMatrixContinueVerificationLabel,
                         style: context.textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
@@ -241,8 +245,9 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                                 ? null
                                 : () => _acceptEmojiVerification(runner),
                             label: _awaitingOtherDevice
-                                ? context.messages
-                                    .settingsMatrixContinueVerificationLabel
+                                ? context
+                                      .messages
+                                      .settingsMatrixContinueVerificationLabel
                                 : context.messages.settingsMatrixAccept,
                           ),
                         ),
@@ -273,7 +278,8 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                             runner?.stopTimer();
                             pop();
                           },
-                          label: context.messages
+                          label: context
+                              .messages
                               .settingsMatrixVerificationSuccessConfirm,
                         ),
                       ],

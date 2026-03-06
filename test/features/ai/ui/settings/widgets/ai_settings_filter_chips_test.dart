@@ -31,7 +31,8 @@ void main() {
         ),
         child: AiSettingsFilterChips(
           filterState: filterState ?? initialFilterState,
-          onFilterChanged: onFilterChanged ??
+          onFilterChanged:
+              onFilterChanged ??
               (state) {
                 filterChanges.add(state);
               },
@@ -40,8 +41,9 @@ void main() {
     }
 
     group('rendering', () {
-      testWidgets('displays capability filter chips',
-          (WidgetTester tester) async {
+      testWidgets('displays capability filter chips', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Should show capability chips for text, image, audio
@@ -54,16 +56,18 @@ void main() {
         expect(find.byIcon(Icons.hearing), findsOneWidget);
       });
 
-      testWidgets('displays reasoning filter chip',
-          (WidgetTester tester) async {
+      testWidgets('displays reasoning filter chip', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         expect(find.text('Reasoning'), findsOneWidget);
         expect(find.byIcon(Icons.psychology), findsOneWidget);
       });
 
-      testWidgets('shows clear filters action when filters are active',
-          (WidgetTester tester) async {
+      testWidgets('shows clear filters action when filters are active', (
+        WidgetTester tester,
+      ) async {
         final filterState = initialFilterState.copyWith(
           selectedCapabilities: {Modality.image},
         );
@@ -75,8 +79,9 @@ void main() {
         expect(find.byIcon(Icons.clear), findsOneWidget);
       });
 
-      testWidgets('hides clear filters when no filters are active',
-          (WidgetTester tester) async {
+      testWidgets('hides clear filters when no filters are active', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
         await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
@@ -86,8 +91,9 @@ void main() {
     });
 
     group('capability filter interaction', () {
-      testWidgets('toggles image capability filter',
-          (WidgetTester tester) async {
+      testWidgets('toggles image capability filter', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Find the FilterChip that contains the Vision text
@@ -107,8 +113,9 @@ void main() {
         expect(filterChanges.first.selectedCapabilities, {Modality.image});
       });
 
-      testWidgets('toggles audio capability filter',
-          (WidgetTester tester) async {
+      testWidgets('toggles audio capability filter', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Find the FilterChip that contains the Audio text
@@ -128,8 +135,9 @@ void main() {
         expect(filterChanges.first.selectedCapabilities, {Modality.audio});
       });
 
-      testWidgets('toggles text capability filter',
-          (WidgetTester tester) async {
+      testWidgets('toggles text capability filter', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Find the FilterChip that contains the Text text
@@ -149,8 +157,9 @@ void main() {
         expect(filterChanges.first.selectedCapabilities, {Modality.text});
       });
 
-      testWidgets('can select multiple capabilities',
-          (WidgetTester tester) async {
+      testWidgets('can select multiple capabilities', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Select vision first
@@ -174,12 +183,15 @@ void main() {
         await tester.pump();
 
         expect(filterChanges, hasLength(2));
-        expect(filterChanges.last.selectedCapabilities,
-            {Modality.image, Modality.audio});
+        expect(filterChanges.last.selectedCapabilities, {
+          Modality.image,
+          Modality.audio,
+        });
       });
 
-      testWidgets('deselects capability when tapped again',
-          (WidgetTester tester) async {
+      testWidgets('deselects capability when tapped again', (
+        WidgetTester tester,
+      ) async {
         final filterState = initialFilterState.copyWith(
           selectedCapabilities: {Modality.image},
         );
@@ -237,8 +249,9 @@ void main() {
     });
 
     group('clear filters action', () {
-      testWidgets('clears all model filters when tapped',
-          (WidgetTester tester) async {
+      testWidgets('clears all model filters when tapped', (
+        WidgetTester tester,
+      ) async {
         const filterState = AiSettingsFilterState(
           searchQuery: 'test query', // Should be preserved
           selectedCapabilities: {Modality.image, Modality.audio},
@@ -268,8 +281,9 @@ void main() {
     });
 
     group('visual states', () {
-      testWidgets('shows selected state for active capability filters',
-          (WidgetTester tester) async {
+      testWidgets('shows selected state for active capability filters', (
+        WidgetTester tester,
+      ) async {
         final filterState = initialFilterState.copyWith(
           selectedCapabilities: {Modality.image, Modality.audio},
         );
@@ -301,8 +315,9 @@ void main() {
         expect(textChip.selected, isFalse);
       });
 
-      testWidgets('shows selected state for reasoning filter',
-          (WidgetTester tester) async {
+      testWidgets('shows selected state for reasoning filter', (
+        WidgetTester tester,
+      ) async {
         final filterState = initialFilterState.copyWith(
           reasoningFilter: true,
         );
@@ -321,8 +336,9 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('provides proper semantics for screen readers',
-          (WidgetTester tester) async {
+      testWidgets('provides proper semantics for screen readers', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Check that chips have proper icons and labels
@@ -336,8 +352,9 @@ void main() {
         expect(find.byIcon(Icons.psychology), findsOneWidget);
       });
 
-      testWidgets('maintains focus after chip selection',
-          (WidgetTester tester) async {
+      testWidgets('maintains focus after chip selection', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Focus and tap a chip
@@ -351,8 +368,9 @@ void main() {
     });
 
     group('edge cases', () {
-      testWidgets('handles rapid consecutive taps',
-          (WidgetTester tester) async {
+      testWidgets('handles rapid consecutive taps', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Rapidly tap the same chip multiple times
@@ -368,8 +386,9 @@ void main() {
         expect(filterChanges.last.selectedCapabilities, {Modality.image});
       });
 
-      testWidgets('handles all capabilities selected',
-          (WidgetTester tester) async {
+      testWidgets('handles all capabilities selected', (
+        WidgetTester tester,
+      ) async {
         final filterState = initialFilterState.copyWith(
           selectedCapabilities: {Modality.text, Modality.image, Modality.audio},
           reasoningFilter: true,
@@ -380,8 +399,10 @@ void main() {
 
         // All chips should be selected (providers load async, so just check capability + reasoning)
         final chips = find.byType(FilterChip);
-        expect(chips,
-            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
+        expect(
+          chips,
+          findsAtLeastNWidgets(4),
+        ); // At least 3 capabilities + 1 reasoning
 
         // Clear button should be visible
         expect(find.text('Clear'), findsOneWidget);
@@ -394,15 +415,18 @@ void main() {
 
         await tester.pumpWidget(createWidget(filterState: emptyState));
 
-        expect(find.byType(FilterChip),
-            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
+        expect(
+          find.byType(FilterChip),
+          findsAtLeastNWidgets(4),
+        ); // At least 3 capabilities + 1 reasoning
         expect(find.text('Clear'), findsNothing);
       });
     });
 
     group('layout and spacing', () {
-      testWidgets('wraps chips properly when space is constrained',
-          (WidgetTester tester) async {
+      testWidgets('wraps chips properly when space is constrained', (
+        WidgetTester tester,
+      ) async {
         // Create a narrow container to test wrapping
         await tester.pumpWidget(
           AiTestSetup.createTestApp(
@@ -420,21 +444,26 @@ void main() {
         );
 
         // Should show at least the capability chips (3 capabilities + 1 reasoning)
-        expect(find.byType(FilterChip),
-            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
+        expect(
+          find.byType(FilterChip),
+          findsAtLeastNWidgets(4),
+        ); // At least 3 capabilities + 1 reasoning
       });
 
-      testWidgets('maintains consistent spacing between chips',
-          (WidgetTester tester) async {
+      testWidgets('maintains consistent spacing between chips', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Check that Wrap widget is used for proper spacing
         expect(
-            find.byType(Wrap),
-            findsAtLeastNWidgets(
-                1)); // Provider and capability sections each use Wrap
-        expect(find.byType(FilterChip),
-            findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
+          find.byType(Wrap),
+          findsAtLeastNWidgets(1),
+        ); // Provider and capability sections each use Wrap
+        expect(
+          find.byType(FilterChip),
+          findsAtLeastNWidgets(4),
+        ); // At least 3 capabilities + 1 reasoning
       });
     });
 
@@ -457,7 +486,8 @@ void main() {
           ),
           child: AiSettingsFilterChips(
             filterState: filterState ?? promptsTabState,
-            onFilterChanged: onFilterChanged ??
+            onFilterChanged:
+                onFilterChanged ??
                 (state) {
                   filterChanges.add(state);
                 },
@@ -465,8 +495,9 @@ void main() {
         );
       }
 
-      testWidgets('displays response type filter chips on Prompts tab',
-          (WidgetTester tester) async {
+      testWidgets('displays response type filter chips on Prompts tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createPromptsTabWidget());
         await tester.pumpAndSettle();
 
@@ -480,8 +511,9 @@ void main() {
         expect(find.text('Generate Cover Art'), findsOneWidget);
       });
 
-      testWidgets('displays response type icons on Prompts tab',
-          (WidgetTester tester) async {
+      testWidgets('displays response type icons on Prompts tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createPromptsTabWidget());
 
         // Check for response type icons
@@ -494,8 +526,9 @@ void main() {
         expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
       });
 
-      testWidgets('does not show capability filters on Prompts tab',
-          (WidgetTester tester) async {
+      testWidgets('does not show capability filters on Prompts tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createPromptsTabWidget());
 
         // Should NOT show capability chips (Text, Vision, Audio, Reasoning)
@@ -505,8 +538,9 @@ void main() {
         expect(find.text('Reasoning'), findsNothing);
       });
 
-      testWidgets('toggles response type filter on selection',
-          (WidgetTester tester) async {
+      testWidgets('toggles response type filter on selection', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createPromptsTabWidget());
 
         // Find and tap the Task Summary chip
@@ -520,12 +554,14 @@ void main() {
         await tester.pump();
 
         expect(filterChanges, hasLength(1));
-        expect(filterChanges.first.selectedResponseTypes,
-            {AiResponseType.taskSummary});
+        expect(filterChanges.first.selectedResponseTypes, {
+          AiResponseType.taskSummary,
+        });
       });
 
-      testWidgets('can select multiple response types',
-          (WidgetTester tester) async {
+      testWidgets('can select multiple response types', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createPromptsTabWidget());
 
         // Select Task Summary first
@@ -549,18 +585,22 @@ void main() {
         await tester.pump();
 
         expect(filterChanges, hasLength(2));
-        expect(filterChanges.last.selectedResponseTypes,
-            {AiResponseType.taskSummary, AiResponseType.imageAnalysis});
+        expect(filterChanges.last.selectedResponseTypes, {
+          AiResponseType.taskSummary,
+          AiResponseType.imageAnalysis,
+        });
       });
 
-      testWidgets('deselects response type when tapped again',
-          (WidgetTester tester) async {
+      testWidgets('deselects response type when tapped again', (
+        WidgetTester tester,
+      ) async {
         final filterState = promptsTabState.copyWith(
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
 
-        await tester
-            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+        await tester.pumpWidget(
+          createPromptsTabWidget(filterState: filterState),
+        );
 
         // Tap Task Summary to deselect
         final taskSummaryChip = find.ancestor(
@@ -574,8 +614,9 @@ void main() {
         expect(filterChanges.first.selectedResponseTypes, isEmpty);
       });
 
-      testWidgets('shows selected state for active response type filters',
-          (WidgetTester tester) async {
+      testWidgets('shows selected state for active response type filters', (
+        WidgetTester tester,
+      ) async {
         final filterState = promptsTabState.copyWith(
           selectedResponseTypes: {
             AiResponseType.taskSummary,
@@ -583,8 +624,9 @@ void main() {
           },
         );
 
-        await tester
-            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+        await tester.pumpWidget(
+          createPromptsTabWidget(filterState: filterState),
+        );
 
         // Find FilterChip widgets
         final taskSummaryChip = tester.widget<FilterChip>(
@@ -611,22 +653,25 @@ void main() {
         expect(audioTranscriptionChip.selected, isFalse);
       });
 
-      testWidgets('shows clear filters button when response types selected',
-          (WidgetTester tester) async {
+      testWidgets('shows clear filters button when response types selected', (
+        WidgetTester tester,
+      ) async {
         final filterState = promptsTabState.copyWith(
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
 
-        await tester
-            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+        await tester.pumpWidget(
+          createPromptsTabWidget(filterState: filterState),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Clear'), findsOneWidget);
         expect(find.byIcon(Icons.clear), findsOneWidget);
       });
 
-      testWidgets('clears prompt filters when clear button tapped',
-          (WidgetTester tester) async {
+      testWidgets('clears prompt filters when clear button tapped', (
+        WidgetTester tester,
+      ) async {
         final filterState = promptsTabState.copyWith(
           searchQuery: 'test query',
           selectedProviders: {'provider1'},
@@ -636,8 +681,9 @@ void main() {
           },
         );
 
-        await tester
-            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+        await tester.pumpWidget(
+          createPromptsTabWidget(filterState: filterState),
+        );
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Clear'));
@@ -655,8 +701,9 @@ void main() {
         expect(clearedState.selectedResponseTypes, isEmpty);
       });
 
-      testWidgets('hides clear button when no prompt filters active',
-          (WidgetTester tester) async {
+      testWidgets('hides clear button when no prompt filters active', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createPromptsTabWidget());
         await tester.pumpAndSettle();
 
@@ -684,7 +731,8 @@ void main() {
           ),
           child: AiSettingsFilterChips(
             filterState: filterState ?? promptsTabState,
-            onFilterChanged: onFilterChanged ??
+            onFilterChanged:
+                onFilterChanged ??
                 (state) {
                   filterChanges.add(state);
                 },
@@ -693,8 +741,9 @@ void main() {
         );
       }
 
-      testWidgets('displays selection toggle chip on Prompts tab',
-          (WidgetTester tester) async {
+      testWidgets('displays selection toggle chip on Prompts tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createSelectionWidget());
         await tester.pumpAndSettle();
 
@@ -703,22 +752,25 @@ void main() {
         expect(find.byIcon(Icons.check_box_outline_blank), findsOneWidget);
       });
 
-      testWidgets('does not display selection toggle on Models tab',
-          (WidgetTester tester) async {
+      testWidgets('does not display selection toggle on Models tab', (
+        WidgetTester tester,
+      ) async {
         final modelsTabState = AiSettingsFilterState.initial().copyWith(
           activeTab: AiSettingsTab.models,
         );
 
-        await tester
-            .pumpWidget(createSelectionWidget(filterState: modelsTabState));
+        await tester.pumpWidget(
+          createSelectionWidget(filterState: modelsTabState),
+        );
         await tester.pumpAndSettle();
 
         // Should NOT show the Select chip on Models tab
         expect(find.text('Select'), findsNothing);
       });
 
-      testWidgets('toggles selection mode on when Select chip is tapped',
-          (WidgetTester tester) async {
+      testWidgets('toggles selection mode on when Select chip is tapped', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createSelectionWidget());
         await tester.pumpAndSettle();
 
@@ -736,49 +788,55 @@ void main() {
         expect(filterChanges.first.selectionMode, isTrue);
       });
 
-      testWidgets('toggles selection mode off when Select chip is tapped again',
-          (WidgetTester tester) async {
+      testWidgets(
+        'toggles selection mode off when Select chip is tapped again',
+        (WidgetTester tester) async {
+          final selectionOnState = promptsTabState.copyWith(
+            selectionMode: true,
+          );
+
+          await tester.pumpWidget(
+            createSelectionWidget(filterState: selectionOnState),
+          );
+          await tester.pumpAndSettle();
+
+          // Should show checked icon when selection mode is on
+          expect(find.byIcon(Icons.check_box), findsOneWidget);
+
+          // Tap to turn off
+          final selectChip = find.ancestor(
+            of: find.text('Select'),
+            matching: find.byType(FilterChip),
+          );
+          await tester.tap(selectChip);
+          await tester.pump();
+
+          expect(filterChanges, hasLength(1));
+          expect(filterChanges.first.selectionMode, isFalse);
+          // Should also clear selection when turning off
+          expect(filterChanges.first.selectedPromptIds, isEmpty);
+        },
+      );
+
+      testWidgets('shows checked icon when selection mode is active', (
+        WidgetTester tester,
+      ) async {
         final selectionOnState = promptsTabState.copyWith(
           selectionMode: true,
         );
 
-        await tester
-            .pumpWidget(createSelectionWidget(filterState: selectionOnState));
-        await tester.pumpAndSettle();
-
-        // Should show checked icon when selection mode is on
-        expect(find.byIcon(Icons.check_box), findsOneWidget);
-
-        // Tap to turn off
-        final selectChip = find.ancestor(
-          of: find.text('Select'),
-          matching: find.byType(FilterChip),
+        await tester.pumpWidget(
+          createSelectionWidget(filterState: selectionOnState),
         );
-        await tester.tap(selectChip);
-        await tester.pump();
-
-        expect(filterChanges, hasLength(1));
-        expect(filterChanges.first.selectionMode, isFalse);
-        // Should also clear selection when turning off
-        expect(filterChanges.first.selectedPromptIds, isEmpty);
-      });
-
-      testWidgets('shows checked icon when selection mode is active',
-          (WidgetTester tester) async {
-        final selectionOnState = promptsTabState.copyWith(
-          selectionMode: true,
-        );
-
-        await tester
-            .pumpWidget(createSelectionWidget(filterState: selectionOnState));
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.check_box), findsOneWidget);
         expect(find.byIcon(Icons.check_box_outline_blank), findsNothing);
       });
 
-      testWidgets('shows unchecked icon when selection mode is inactive',
-          (WidgetTester tester) async {
+      testWidgets('shows unchecked icon when selection mode is inactive', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createSelectionWidget());
         await tester.pumpAndSettle();
 
@@ -787,25 +845,27 @@ void main() {
       });
 
       testWidgets(
-          'Select chip has selected visual state when selection mode is on',
-          (WidgetTester tester) async {
-        final selectionOnState = promptsTabState.copyWith(
-          selectionMode: true,
-        );
+        'Select chip has selected visual state when selection mode is on',
+        (WidgetTester tester) async {
+          final selectionOnState = promptsTabState.copyWith(
+            selectionMode: true,
+          );
 
-        await tester
-            .pumpWidget(createSelectionWidget(filterState: selectionOnState));
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            createSelectionWidget(filterState: selectionOnState),
+          );
+          await tester.pumpAndSettle();
 
-        final selectChip = tester.widget<FilterChip>(
-          find.ancestor(
-            of: find.text('Select'),
-            matching: find.byType(FilterChip),
-          ),
-        );
+          final selectChip = tester.widget<FilterChip>(
+            find.ancestor(
+              of: find.text('Select'),
+              matching: find.byType(FilterChip),
+            ),
+          );
 
-        expect(selectChip.selected, isTrue);
-      });
+          expect(selectChip.selected, isTrue);
+        },
+      );
     });
 
     group('delete selected button (Prompts tab)', () {
@@ -837,52 +897,59 @@ void main() {
         );
       }
 
-      testWidgets('hides delete button when no prompts are selected',
-          (WidgetTester tester) async {
+      testWidgets('hides delete button when no prompts are selected', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createDeleteWidget());
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.delete_outline), findsNothing);
       });
 
-      testWidgets('shows delete button when prompts are selected',
-          (WidgetTester tester) async {
+      testWidgets('shows delete button when prompts are selected', (
+        WidgetTester tester,
+      ) async {
         final withSelectionState = promptsTabState.copyWith(
           selectionMode: true,
           selectedPromptIds: {'prompt-1', 'prompt-2'},
         );
 
-        await tester
-            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpWidget(
+          createDeleteWidget(filterState: withSelectionState),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.delete_outline), findsOneWidget);
       });
 
-      testWidgets('delete button shows correct count',
-          (WidgetTester tester) async {
+      testWidgets('delete button shows correct count', (
+        WidgetTester tester,
+      ) async {
         final withSelectionState = promptsTabState.copyWith(
           selectionMode: true,
           selectedPromptIds: {'prompt-1', 'prompt-2', 'prompt-3'},
         );
 
-        await tester
-            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpWidget(
+          createDeleteWidget(filterState: withSelectionState),
+        );
         await tester.pumpAndSettle();
 
         // Should show "Delete (3)" or similar localized text containing the count
         expect(find.textContaining('3'), findsOneWidget);
       });
 
-      testWidgets('calls onDeleteSelected when delete button is tapped',
-          (WidgetTester tester) async {
+      testWidgets('calls onDeleteSelected when delete button is tapped', (
+        WidgetTester tester,
+      ) async {
         final withSelectionState = promptsTabState.copyWith(
           selectionMode: true,
           selectedPromptIds: {'prompt-1'},
         );
 
-        await tester
-            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpWidget(
+          createDeleteWidget(filterState: withSelectionState),
+        );
         await tester.pumpAndSettle();
 
         // Find and tap the delete button (ActionChip)
@@ -898,8 +965,9 @@ void main() {
         expect(deletePressed, isTrue);
       });
 
-      testWidgets('delete button animates in when selection changes',
-          (WidgetTester tester) async {
+      testWidgets('delete button animates in when selection changes', (
+        WidgetTester tester,
+      ) async {
         // Start without selection
         await tester.pumpWidget(createDeleteWidget());
         await tester.pumpAndSettle();
@@ -912,8 +980,9 @@ void main() {
           selectedPromptIds: {'prompt-1'},
         );
 
-        await tester
-            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpWidget(
+          createDeleteWidget(filterState: withSelectionState),
+        );
         // Don't settle - check during animation
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -925,8 +994,9 @@ void main() {
         expect(find.byIcon(Icons.delete_outline), findsOneWidget);
       });
 
-      testWidgets('delete button works alongside response type filters',
-          (WidgetTester tester) async {
+      testWidgets('delete button works alongside response type filters', (
+        WidgetTester tester,
+      ) async {
         final withFiltersAndSelection = promptsTabState.copyWith(
           selectionMode: true,
           selectedPromptIds: {'prompt-1'},
@@ -934,7 +1004,8 @@ void main() {
         );
 
         await tester.pumpWidget(
-            createDeleteWidget(filterState: withFiltersAndSelection));
+          createDeleteWidget(filterState: withFiltersAndSelection),
+        );
         await tester.pumpAndSettle();
 
         // Both should be visible

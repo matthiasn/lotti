@@ -19,8 +19,9 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   final watchedIds = <String>{};
 
   void listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
         final includeHidden = ref.read(includeHiddenControllerProvider(id: id));
 
@@ -53,7 +54,9 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   Future<List<EntryLink>> _fetch({
     required bool includeHidden,
   }) async {
-    final res = await ref.read(journalRepositoryProvider).getLinksFromId(
+    final res = await ref
+        .read(journalRepositoryProvider)
+        .getLinksFromId(
           id,
           includeHidden: includeHidden,
         );
@@ -62,7 +65,9 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   }
 
   Future<void> removeLink({required String toId}) async {
-    await ref.read(journalRepositoryProvider).removeLink(
+    await ref
+        .read(journalRepositoryProvider)
+        .removeLink(
           fromId: id,
           toId: toId,
         );

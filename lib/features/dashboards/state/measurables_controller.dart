@@ -36,8 +36,8 @@ typedef MeasurableObservationsParams = ({
 // MeasurableDataTypeController - single param
 final measurableDataTypeControllerProvider = AsyncNotifierProvider.autoDispose
     .family<MeasurableDataTypeController, MeasurableDataType?, String>(
-  MeasurableDataTypeController.new,
-);
+      MeasurableDataTypeController.new,
+    );
 
 class MeasurableDataTypeController extends AsyncNotifier<MeasurableDataType?> {
   MeasurableDataTypeController(this._id);
@@ -62,8 +62,8 @@ class MeasurableDataTypeController extends AsyncNotifier<MeasurableDataType?> {
 // AggregationTypeController - two params
 final aggregationTypeControllerProvider = AsyncNotifierProvider.autoDispose
     .family<AggregationTypeController, AggregationType, AggregationTypeParams>(
-  AggregationTypeController.new,
-);
+      AggregationTypeController.new,
+    );
 
 class AggregationTypeController extends AsyncNotifier<AggregationType> {
   AggregationTypeController(this._params);
@@ -80,7 +80,8 @@ class AggregationTypeController extends AsyncNotifier<AggregationType> {
 
     // Watch the measurable data type for changes
     final measurableDataType = await ref.watch(
-        measurableDataTypeControllerProvider(measurableDataTypeId).future);
+      measurableDataTypeControllerProvider(measurableDataTypeId).future,
+    );
 
     return dashboardDefinedAggregationType ??
         measurableDataType?.aggregationType ??
@@ -90,10 +91,13 @@ class AggregationTypeController extends AsyncNotifier<AggregationType> {
 
 // MeasurableChartDataController - three params
 final measurableChartDataControllerProvider = AsyncNotifierProvider.autoDispose
-    .family<MeasurableChartDataController, List<JournalEntity>,
-        MeasurableChartDataParams>(
-  MeasurableChartDataController.new,
-);
+    .family<
+      MeasurableChartDataController,
+      List<JournalEntity>,
+      MeasurableChartDataParams
+    >(
+      MeasurableChartDataController.new,
+    );
 
 class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
   MeasurableChartDataController(this._params);
@@ -117,8 +121,9 @@ class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
   }
 
   void _listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(measurableDataTypeId)) {
         final latest = await _fetch();
         if (ref.mounted && latest != state.value) {
@@ -138,11 +143,15 @@ class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
 }
 
 // MeasurableObservationsController - four params
-final measurableObservationsControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<MeasurableObservationsController,
-        List<Observation>, MeasurableObservationsParams>(
-  MeasurableObservationsController.new,
-);
+final measurableObservationsControllerProvider = AsyncNotifierProvider
+    .autoDispose
+    .family<
+      MeasurableObservationsController,
+      List<Observation>,
+      MeasurableObservationsParams
+    >(
+      MeasurableObservationsController.new,
+    );
 
 class MeasurableObservationsController
     extends AsyncNotifier<List<Observation>> {
@@ -179,22 +188,22 @@ class MeasurableObservationsController
     return switch (aggregationType) {
       AggregationType.none => aggregateMeasurementNone(measurements),
       AggregationType.dailySum => aggregateSumByDay(
-          measurements,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        ),
+        measurements,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
       AggregationType.dailyMax => aggregateMaxByDay(
-          measurements,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        ),
+        measurements,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
       // TODO: implement average
       AggregationType.dailyAvg => <Observation>[],
       AggregationType.hourlySum => aggregateSumByHour(
-          measurements,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        ),
+        measurements,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
     };
   }
 }
@@ -203,8 +212,8 @@ class MeasurableObservationsController
 final measurableSuggestionsControllerProvider = AsyncNotifierProvider
     .autoDispose
     .family<MeasurableSuggestionsController, List<num>?, String>(
-  MeasurableSuggestionsController.new,
-);
+      MeasurableSuggestionsController.new,
+    );
 
 class MeasurableSuggestionsController extends AsyncNotifier<List<num>?> {
   MeasurableSuggestionsController(this._measurableDataTypeId);
@@ -217,8 +226,9 @@ class MeasurableSuggestionsController extends AsyncNotifier<List<num>?> {
   Future<List<num>?> build() async {
     ref.cacheFor(dashboardCacheDuration);
 
-    final rangeStart =
-        DateTime.now().dayAtMidnight.subtract(const Duration(days: 90));
+    final rangeStart = DateTime.now().dayAtMidnight.subtract(
+      const Duration(days: 90),
+    );
     final rangeEnd = DateTime.now().dayAtMidnight.add(const Duration(days: 1));
 
     final measurements = await ref.watch(

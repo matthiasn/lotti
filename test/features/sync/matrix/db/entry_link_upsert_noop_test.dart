@@ -4,8 +4,10 @@ import 'package:lotti/database/database.dart';
 
 void main() {
   test('upsertEntryLink returns 0 on identical serialized payload', () async {
-    final db =
-        JournalDb(inMemoryDatabase: true, overriddenFilename: 'mem.sqlite');
+    final db = JournalDb(
+      inMemoryDatabase: true,
+      overriddenFilename: 'mem.sqlite',
+    );
     addTearDown(() async => db.close());
 
     final link = EntryLink.basic(

@@ -81,43 +81,44 @@ void main() {
       // Mock PhotoManager plugin method channel
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (MethodCall methodCall) async {
-          if (methodCall.method == 'requestPermissionExtend') {
-            // Return denied permission (0 = PermissionState.denied)
-            return 0;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (MethodCall methodCall) async {
+              if (methodCall.method == 'requestPermissionExtend') {
+                // Return denied permission (0 = PermissionState.denied)
+                return 0;
+              }
+              return null;
+            },
+          );
 
       // Mock wechat_assets_picker plugin method channel
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies.wechat_assets_picker'),
-        (MethodCall methodCall) async {
-          // Return null for pickAssets (user cancelled)
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies.wechat_assets_picker'),
+            (MethodCall methodCall) async {
+              // Return null for pickAssets (user cancelled)
+              return null;
+            },
+          );
     });
 
     tearDown(() {
       // Clean up method channel handlers
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies.wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies.wechat_assets_picker'),
+            null,
+          );
     });
 
-    testWidgets('returns early when permissions are not granted',
-        (tester) async {
+    testWidgets('returns early when permissions are not granted', (
+      tester,
+    ) async {
       final context = MockBuildContext();
       when(() => context.mounted).thenReturn(true);
 
@@ -294,23 +295,25 @@ void main() {
       AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
-    test('registered reader takes precedence over environment detection',
-        () async {
-      if (getIt.isRegistered<AudioMetadataReader>()) {
+    test(
+      'registered reader takes precedence over environment detection',
+      () async {
+        if (getIt.isRegistered<AudioMetadataReader>()) {
+          getIt.unregister<AudioMetadataReader>();
+        }
+
+        getIt.registerSingleton<AudioMetadataReader>(
+          (_) async => const Duration(minutes: 5),
+        );
+
+        final reader = AudioMetadataExtractor.selectReader();
+        final result = await reader('/dummy/path.m4a');
+
+        expect(result, equals(const Duration(minutes: 5)));
+
         getIt.unregister<AudioMetadataReader>();
-      }
-
-      getIt.registerSingleton<AudioMetadataReader>(
-        (_) async => const Duration(minutes: 5),
-      );
-
-      final reader = AudioMetadataExtractor.selectReader();
-      final result = await reader('/dummy/path.m4a');
-
-      expect(result, equals(const Duration(minutes: 5)));
-
-      getIt.unregister<AudioMetadataReader>();
-    });
+      },
+    );
 
     test('selectReader handles rapid registration changes', () {
       if (getIt.isRegistered<AudioMetadataReader>()) {
@@ -419,8 +422,10 @@ void main() {
       expect(path, contains('/audio/'));
       expect(path, contains('2025-01-15'));
 
-      final filename =
-          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
+      final filename = AudioMetadataExtractor.computeTargetFileName(
+        timestamp,
+        'm4a',
+      );
       expect(filename, endsWith('.m4a'));
       expect(filename, contains('2025-01-15'));
     });
@@ -455,24 +460,26 @@ void main() {
   });
 
   group('Error Path Coverage', () {
-    test('audio metadata reader handles null/invalid paths gracefully',
-        () async {
-      final reader = AudioMetadataExtractor.selectReader();
+    test(
+      'audio metadata reader handles null/invalid paths gracefully',
+      () async {
+        final reader = AudioMetadataExtractor.selectReader();
 
-      final invalidPaths = [
-        '',
-        ' ',
-        '/nonexistent/path/file.m4a',
-        'relative/path.m4a',
-      ];
+        final invalidPaths = [
+          '',
+          ' ',
+          '/nonexistent/path/file.m4a',
+          'relative/path.m4a',
+        ];
 
-      for (final path in invalidPaths) {
-        expect(
-          reader(path),
-          completes,
-        );
-      }
-    });
+        for (final path in invalidPaths) {
+          expect(
+            reader(path),
+            completes,
+          );
+        }
+      },
+    );
 
     test('selectReader does not crash on GetIt errors', () {
       expect(

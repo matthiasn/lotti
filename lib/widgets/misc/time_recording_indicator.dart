@@ -21,86 +21,87 @@ class TimeRecordingIndicator extends ConsumerWidget {
 
     return StreamBuilder(
       stream: timeService.getStream(),
-      builder: (
-        _,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        final current = snapshot.data;
+      builder:
+          (
+            _,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            final current = snapshot.data;
 
-        if (current == null) {
-          return const SizedBox.shrink();
-        }
-
-        final durationString = formatDuration(entryDuration(current));
-        final backgroundColor = context.colorScheme.surface;
-
-        const borderRadius = BorderRadius.only(
-          topRight: Radius.circular(inputBorderRadius),
-          topLeft: Radius.circular(inputBorderRadius),
-        );
-
-        final borderSide = BorderSide(
-          color: context.colorScheme.error.withAlpha(128),
-        );
-
-        return GestureDetector(
-          onTap: () {
-            final linkedFrom = timeService.linkedFrom;
-            if (linkedFrom != null) {
-              if (linkedFrom is Task) {
-                // Publish focus intent for task-linked timers
-                publishTaskFocus(
-                  taskId: linkedFrom.meta.id,
-                  entryId: current.meta.id,
-                  ref: ref,
-                );
-                beamToNamed('/tasks/${linkedFrom.meta.id}');
-              } else {
-                // Journal-linked timer - no focus intent needed
-                beamToNamed('/journal/${linkedFrom.meta.id}');
-              }
-            } else {
-              // Timer not linked to task - navigate to journal entry
-              beamToNamed('/journal/${current.meta.id}');
+            if (current == null) {
+              return const SizedBox.shrink();
             }
-          },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Material(
-              elevation: 5,
-              borderRadius: borderRadius,
-              child: Container(
-                decoration: BoxDecoration(
+
+            final durationString = formatDuration(entryDuration(current));
+            final backgroundColor = context.colorScheme.surface;
+
+            const borderRadius = BorderRadius.only(
+              topRight: Radius.circular(inputBorderRadius),
+              topLeft: Radius.circular(inputBorderRadius),
+            );
+
+            final borderSide = BorderSide(
+              color: context.colorScheme.error.withAlpha(128),
+            );
+
+            return GestureDetector(
+              onTap: () {
+                final linkedFrom = timeService.linkedFrom;
+                if (linkedFrom != null) {
+                  if (linkedFrom is Task) {
+                    // Publish focus intent for task-linked timers
+                    publishTaskFocus(
+                      taskId: linkedFrom.meta.id,
+                      entryId: current.meta.id,
+                      ref: ref,
+                    );
+                    beamToNamed('/tasks/${linkedFrom.meta.id}');
+                  } else {
+                    // Journal-linked timer - no focus intent needed
+                    beamToNamed('/journal/${linkedFrom.meta.id}');
+                  }
+                } else {
+                  // Timer not linked to task - navigate to journal entry
+                  beamToNamed('/journal/${current.meta.id}');
+                }
+              },
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Material(
+                  elevation: 5,
                   borderRadius: borderRadius,
-                  color: backgroundColor,
-                  border: Border(
-                    top: borderSide,
-                    right: borderSide,
-                    left: borderSide,
-                  ),
-                ),
-                height: AudioRecordingIndicatorConstants.indicatorHeight,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 10),
-                    const TimeRecordingIndicatorDot(),
-                    const SizedBox(width: 5),
-                    Padding(
-                      padding: AudioRecordingIndicatorConstants.textPadding,
-                      child: Text(
-                        durationString,
-                        style: monoTabularStyle(
-                          fontSize: fontSizeMedium,
-                        ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: borderRadius,
+                      color: backgroundColor,
+                      border: Border(
+                        top: borderSide,
+                        right: borderSide,
+                        left: borderSide,
                       ),
                     ),
-                  ],
+                    height: AudioRecordingIndicatorConstants.indicatorHeight,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 10),
+                        const TimeRecordingIndicatorDot(),
+                        const SizedBox(width: 5),
+                        Padding(
+                          padding: AudioRecordingIndicatorConstants.textPadding,
+                          child: Text(
+                            durationString,
+                            style: monoTabularStyle(
+                              fontSize: fontSizeMedium,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
     );
   }
 }

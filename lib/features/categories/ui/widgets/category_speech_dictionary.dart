@@ -84,9 +84,11 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
         .split(';')
         .map((term) => term.trim())
         .where((term) => term.isNotEmpty)
-        .map((term) => term.length > kMaxTermLength
-            ? term.substring(0, kMaxTermLength)
-            : term)
+        .map(
+          (term) => term.length > kMaxTermLength
+              ? term.substring(0, kMaxTermLength)
+              : term,
+        )
         .toList();
   }
 

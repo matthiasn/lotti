@@ -29,7 +29,8 @@ void main() {
         dateTo: now,
       ),
       data: TaskData(
-        status: status ??
+        status:
+            status ??
             TaskStatus.open(
               id: 'status-1',
               createdAt: now,
@@ -52,8 +53,9 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    testWidgets('returns SizedBox.shrink when incomingTasks is empty',
-        (tester) async {
+    testWidgets('returns SizedBox.shrink when incomingTasks is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: WidgetTestBench(
@@ -178,8 +180,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Unlink Task'), findsOneWidget);
-      expect(find.text('Are you sure you want to unlink this task?'),
-          findsOneWidget);
+      expect(
+        find.text('Are you sure you want to unlink this task?'),
+        findsOneWidget,
+      );
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Unlink'), findsOneWidget);
     });
@@ -215,10 +219,12 @@ void main() {
       final task = buildTask(id: 'linking-task', title: 'Linked Task');
       final mockRepo = MockJournalRepository();
 
-      when(() => mockRepo.removeLink(
-            fromId: 'linking-task',
-            toId: 'task-main',
-          )).thenAnswer((_) async => 1);
+      when(
+        () => mockRepo.removeLink(
+          fromId: 'linking-task',
+          toId: 'task-main',
+        ),
+      ).thenAnswer((_) async => 1);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -243,10 +249,12 @@ void main() {
       await tester.tap(find.text('Unlink'));
       await tester.pumpAndSettle();
 
-      verify(() => mockRepo.removeLink(
-            fromId: 'linking-task',
-            toId: 'task-main',
-          )).called(1);
+      verify(
+        () => mockRepo.removeLink(
+          fromId: 'linking-task',
+          toId: 'task-main',
+        ),
+      ).called(1);
     });
 
     testWidgets('renders section inside a Column', (tester) async {

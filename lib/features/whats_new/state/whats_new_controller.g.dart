@@ -15,19 +15,21 @@ final whatsNewServiceProvider = WhatsNewServiceProvider._();
 
 /// Provider for the [WhatsNewService].
 
-final class WhatsNewServiceProvider extends $FunctionalProvider<WhatsNewService,
-    WhatsNewService, WhatsNewService> with $Provider<WhatsNewService> {
+final class WhatsNewServiceProvider
+    extends
+        $FunctionalProvider<WhatsNewService, WhatsNewService, WhatsNewService>
+    with $Provider<WhatsNewService> {
   /// Provider for the [WhatsNewService].
   WhatsNewServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'whatsNewServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'whatsNewServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$whatsNewServiceHash();
@@ -89,15 +91,15 @@ final class ShouldAutoShowWhatsNewProvider
   /// Once read, this provider marks the current version as "launched"
   /// so subsequent checks return false until the next version change.
   ShouldAutoShowWhatsNewProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'shouldAutoShowWhatsNewProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'shouldAutoShowWhatsNewProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$shouldAutoShowWhatsNewHash();
@@ -135,15 +137,15 @@ final class WhatsNewControllerProvider
   /// Manages fetching release content and tracking which releases
   /// the user has seen using SharedPreferences.
   WhatsNewControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'whatsNewControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'whatsNewControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$whatsNewControllerHash();
@@ -167,11 +169,14 @@ abstract class _$WhatsNewController extends $AsyncNotifier<WhatsNewState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<WhatsNewState>, WhatsNewState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<WhatsNewState>, WhatsNewState>,
-        AsyncValue<WhatsNewState>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<WhatsNewState>, WhatsNewState>,
+              AsyncValue<WhatsNewState>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

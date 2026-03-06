@@ -5,8 +5,9 @@ import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import '../../../test_data/test_data.dart';
 
 void main() {
-  testWidgets('LabelChip exposes semantics label for screen readers',
-      (tester) async {
+  testWidgets('LabelChip exposes semantics label for screen readers', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
 
     await tester.pumpWidget(

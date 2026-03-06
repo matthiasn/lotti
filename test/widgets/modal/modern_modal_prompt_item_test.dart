@@ -6,8 +6,9 @@ import '../../widget_test_utils.dart';
 
 void main() {
   group('ModernModalPromptItem', () {
-    testWidgets('displays title, description and icon correctly',
-        (tester) async {
+    testWidgets('displays title, description and icon correctly', (
+      tester,
+    ) async {
       var tapCount = 0;
 
       await tester.pumpWidget(
@@ -156,7 +157,8 @@ void main() {
     });
 
     testWidgets('truncates long description', (tester) async {
-      const longDescription = 'This is a very long description that should '
+      const longDescription =
+          'This is a very long description that should '
           'be truncated after four lines. It contains a lot of text to ensure '
           'that the overflow behavior works correctly. Adding more text here '
           'to make sure it would overflow after four lines.';
@@ -200,8 +202,9 @@ void main() {
         // Gold border and background should be applied
       });
 
-      testWidgets('does not show gold styling when isDefault is false',
-          (tester) async {
+      testWidgets('does not show gold styling when isDefault is false', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ModernModalPromptItem(
@@ -217,8 +220,9 @@ void main() {
         // No gold styling should be present
       });
 
-      testWidgets('custom iconColor is preserved when isDefault is true',
-          (tester) async {
+      testWidgets('custom iconColor is preserved when isDefault is true', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ModernModalPromptItem(
@@ -236,8 +240,9 @@ void main() {
         expect(find.byIcon(Icons.color_lens), findsOneWidget);
       });
 
-      testWidgets('isDefault true with isSelected true shows correct styling',
-          (tester) async {
+      testWidgets('isDefault true with isSelected true shows correct styling', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ModernModalPromptItem(
@@ -280,8 +285,9 @@ void main() {
         expect(find.text('NEW'), findsOneWidget);
       });
 
-      testWidgets('isDefault styling works with trailing widget',
-          (tester) async {
+      testWidgets('isDefault styling works with trailing widget', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ModernModalPromptItem(

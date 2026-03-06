@@ -45,7 +45,7 @@ enum VectorClockDecision {
 
 class VectorClockValidator {
   VectorClockValidator({required LoggingService loggingService})
-      : _logging = loggingService;
+    : _logging = loggingService;
 
   static const int maxStaleDescriptorFailures = 5;
 
@@ -121,8 +121,8 @@ class DescriptorDownloader {
     required LoggingService loggingService,
     required VectorClockValidator validator,
     this.onCachePurge,
-  })  : _logging = loggingService,
-        _validator = validator;
+  }) : _logging = loggingService,
+       _validator = validator;
 
   static const int maxDescriptorDownloadAttempts = 2;
 
@@ -158,8 +158,10 @@ class DescriptorDownloader {
             bytesLength: bytes.length,
           );
         case VectorClockDecision.retryAfterPurge:
-          final purged =
-              await _maybePurgeCachedDescriptor(descriptorEvent, jsonPath);
+          final purged = await _maybePurgeCachedDescriptor(
+            descriptorEvent,
+            jsonPath,
+          );
           if (purged) {
             onCachePurge?.call();
           }
@@ -171,7 +173,8 @@ class DescriptorDownloader {
           continue;
         case VectorClockDecision.staleAfterRefresh:
           throw const FileSystemException(
-              'stale attachment json after refresh');
+            'stale attachment json after refresh',
+          );
         case VectorClockDecision.circuitBreaker:
           throw const FileSystemException(
             'stale attachment json (circuit breaker)',
@@ -250,10 +253,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     required AttachmentIndex attachmentIndex,
     required LoggingService loggingService,
     void Function()? onCachePurge,
-  })  : _attachmentIndex = attachmentIndex,
-        _logging = loggingService {
-    _vectorClockValidator =
-        VectorClockValidator(loggingService: loggingService);
+  }) : _attachmentIndex = attachmentIndex,
+       _logging = loggingService {
+    _vectorClockValidator = VectorClockValidator(
+      loggingService: loggingService,
+    );
     _descriptorDownloader = DescriptorDownloader(
       loggingService: loggingService,
       validator: _vectorClockValidator,
@@ -283,8 +287,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     // If we have an incoming vector clock, decide whether a fetch is needed.
     if (incomingVectorClock != null) {
       try {
-        final local =
-            await const FileSyncJournalEntityLoader().load(jsonPath: jsonPath);
+        final local = await const FileSyncJournalEntityLoader().load(
+          jsonPath: jsonPath,
+        );
         final localVc = local.meta.vectorClock;
         if (localVc != null) {
           final status = VectorClock.compare(localVc, incomingVectorClock);
@@ -398,8 +403,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     }
 
     // Read and return the entity from disk (either pre-existing or freshly written).
-    final entity =
-        await const FileSyncJournalEntityLoader().load(jsonPath: jsonPath);
+    final entity = await const FileSyncJournalEntityLoader().load(
+      jsonPath: jsonPath,
+    );
 
     // Ensure referenced media exists only when mentioned by JSON, and only if missing.
     await _ensureMediaOnMissing(entity);
@@ -422,8 +428,10 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     }
   }
 
-  Future<void> _ensureMediaFile(String relativePath,
-      {String? mediaType}) async {
+  Future<void> _ensureMediaFile(
+    String relativePath, {
+    String? mediaType,
+  }) async {
     final docDir = getDocumentsDirectory();
     final rp = relativePath;
     // Trim any leading '/' or '\\' to avoid accidental absolute paths on Windows.
@@ -490,14 +498,14 @@ class SyncEventProcessor {
     SyncSequenceLogService? sequenceLogService,
     AttachmentIndex? attachmentIndex,
     this.backfillResponseHandler,
-  })  : _loggingService = loggingService,
-        _updateNotifications = updateNotifications,
-        _aiConfigRepository = aiConfigRepository,
-        _settingsDb = settingsDb,
-        _journalEntityLoader =
-            journalEntityLoader ?? const FileSyncJournalEntityLoader(),
-        _sequenceLogService = sequenceLogService,
-        _attachmentIndex = attachmentIndex;
+  }) : _loggingService = loggingService,
+       _updateNotifications = updateNotifications,
+       _aiConfigRepository = aiConfigRepository,
+       _settingsDb = settingsDb,
+       _journalEntityLoader =
+           journalEntityLoader ?? const FileSyncJournalEntityLoader(),
+       _sequenceLogService = sequenceLogService,
+       _attachmentIndex = attachmentIndex;
 
   final LoggingService _loggingService;
   final UpdateNotifications _updateNotifications;
@@ -653,7 +661,8 @@ class SyncEventProcessor {
     }
 
     final status = SyncSequenceStatus.values[existing.status];
-    final shouldProcess = status == SyncSequenceStatus.missing ||
+    final shouldProcess =
+        status == SyncSequenceStatus.missing ||
         status == SyncSequenceStatus.requested;
     final action = shouldProcess ? 'allowing' : 'skipping';
     final reason = shouldProcess ? 'pending' : 'resolved';
@@ -868,8 +877,9 @@ class SyncEventProcessor {
     var predictedStatus = VclockStatus.b_gt_a;
     if (applyObserver != null) {
       try {
-        final existing =
-            await journalDb.journalEntityById(journalEntity.meta.id);
+        final existing = await journalDb.journalEntityById(
+          journalEntity.meta.id,
+        );
         final vcA = existing?.meta.vectorClock;
         final vcB0 = journalEntity.meta.vectorClock;
         if (vcA != null && vcB0 != null) {
@@ -930,7 +940,8 @@ class SyncEventProcessor {
     if (_sequenceLogService != null &&
         syncMessage.vectorClock != null &&
         syncMessage.originatingHostId != null) {
-      final entryExistsInJournal = updateResult.applied ||
+      final entryExistsInJournal =
+          updateResult.applied ||
           await journalDb.journalEntityById(journalEntity.meta.id) != null;
       if (entryExistsInJournal) {
         try {
@@ -1190,13 +1201,12 @@ class SyncEventProcessor {
 
   Future<AgentDomainEntity?> _resolveAgentEntity(
     SyncAgentEntity msg,
-  ) =>
-      _resolveAgentPayload(
-        inline: msg.agentEntity,
-        jsonPath: msg.jsonPath,
-        fromJson: AgentDomainEntity.fromJson,
-        typeName: 'agentEntity',
-      );
+  ) => _resolveAgentPayload(
+    inline: msg.agentEntity,
+    jsonPath: msg.jsonPath,
+    fromJson: AgentDomainEntity.fromJson,
+    typeName: 'agentEntity',
+  );
 
   Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) =>
       _resolveAgentPayload(
@@ -1282,17 +1292,19 @@ class SyncEventProcessor {
         );
         return null;
       case SyncThemingSelection(
-          :final lightThemeName,
-          :final darkThemeName,
-          :final themeMode,
-          :final updatedAt,
-        ):
+        :final lightThemeName,
+        :final darkThemeName,
+        :final themeMode,
+        :final updatedAt,
+      ):
         try {
           // Check if incoming update is newer than local
-          final localUpdatedAtStr =
-              await _settingsDb.itemByKey(themePrefsUpdatedAtKey);
-          final localUpdatedAt =
-              localUpdatedAtStr != null ? int.tryParse(localUpdatedAtStr) : 0;
+          final localUpdatedAtStr = await _settingsDb.itemByKey(
+            themePrefsUpdatedAtKey,
+          );
+          final localUpdatedAt = localUpdatedAtStr != null
+              ? int.tryParse(localUpdatedAtStr)
+              : 0;
 
           if (updatedAt < (localUpdatedAt ?? 0)) {
             _loggingService.captureEvent(
@@ -1304,7 +1316,8 @@ class SyncEventProcessor {
           }
 
           // Normalize themeMode value
-          final normalizedMode = EnumToString.fromString(
+          final normalizedMode =
+              EnumToString.fromString(
                 ThemeMode.values,
                 themeMode,
               ) ??

@@ -40,8 +40,9 @@ void main() {
   }
 
   group('GameyFab - Standard FAB (non-gamey theme)', () {
-    testWidgets('renders FloatingActionButton when not gamey theme',
-        (tester) async {
+    testWidgets('renders FloatingActionButton when not gamey theme', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: GameyFab(
@@ -55,8 +56,9 @@ void main() {
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
-    testWidgets('renders default add icon when no child provided',
-        (tester) async {
+    testWidgets('renders default add icon when no child provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: GameyFab(
@@ -117,15 +119,17 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final fab = tester
-          .widget<FloatingActionButton>(find.byType(FloatingActionButton));
+      final fab = tester.widget<FloatingActionButton>(
+        find.byType(FloatingActionButton),
+      );
       expect(fab.tooltip, equals('Add new item'));
     });
   });
 
   group('GameyFab - Gamey styled FAB', () {
-    testWidgets('renders gamey image FAB when gamey theme is active',
-        (tester) async {
+    testWidgets('renders gamey image FAB when gamey theme is active', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           isGameyTheme: true,
@@ -263,8 +267,11 @@ void main() {
       final has64x64 = containers.any(
         (c) => c.constraints?.maxWidth == 64.0,
       );
-      expect(has64x64, isTrue,
-          reason: 'Should have a container with 64x64 constraints');
+      expect(
+        has64x64,
+        isTrue,
+        reason: 'Should have a container with 64x64 constraints',
+      );
 
       final containerWithSize = containers.firstWhere(
         (c) => c.constraints?.maxWidth == 64.0,

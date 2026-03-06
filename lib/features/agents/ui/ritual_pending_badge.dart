@@ -18,8 +18,9 @@ class RitualPendingBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(
-      templatesPendingReviewProvider
-          .select((async) => async.value?.length ?? 0),
+      templatesPendingReviewProvider.select(
+        (async) => async.value?.length ?? 0,
+      ),
     );
 
     return Badge(

@@ -20,19 +20,23 @@ class _SenderFalse implements OutboxMessageSender {
 
 class _NoopLogging extends LoggingService {
   @override
-  void captureEvent(dynamic event,
-      {required String domain,
-      String? subDomain,
-      InsightLevel level = InsightLevel.info,
-      InsightType type = InsightType.log}) {}
+  void captureEvent(
+    dynamic event, {
+    required String domain,
+    String? subDomain,
+    InsightLevel level = InsightLevel.info,
+    InsightType type = InsightType.log,
+  }) {}
 
   @override
-  void captureException(dynamic exception,
-      {required String domain,
-      String? subDomain,
-      dynamic stackTrace,
-      InsightLevel level = InsightLevel.error,
-      InsightType type = InsightType.exception}) {}
+  void captureException(
+    dynamic exception, {
+    required String domain,
+    String? subDomain,
+    dynamic stackTrace,
+    InsightLevel level = InsightLevel.error,
+    InsightType type = InsightType.exception,
+  }) {}
 }
 
 void main() {
@@ -44,16 +48,20 @@ void main() {
 
     // Insert one outbox item with retries at cap-1
     const cap = 3;
-    final itemId = await db.addOutboxItem(OutboxCompanion.insert(
-      message: jsonEncode(const SyncMessage.aiConfigDelete(id: 'X').toJson()),
-      subject: 'cap-test',
-    ));
+    final itemId = await db.addOutboxItem(
+      OutboxCompanion.insert(
+        message: jsonEncode(const SyncMessage.aiConfigDelete(id: 'X').toJson()),
+        subject: 'cap-test',
+      ),
+    );
     // Set retries to cap-1 so the next markRetry hits cap
-    await db.updateOutboxItem(OutboxCompanion(
-      id: Value(itemId),
-      retries: const Value(cap - 1),
-      status: Value(OutboxStatus.pending.index),
-    ));
+    await db.updateOutboxItem(
+      OutboxCompanion(
+        id: Value(itemId),
+        retries: const Value(cap - 1),
+        status: Value(OutboxStatus.pending.index),
+      ),
+    );
 
     final repo = DatabaseOutboxRepository(db, maxRetries: cap);
     final sender = _SenderFalse();

@@ -72,8 +72,9 @@ void main() {
       );
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -98,7 +99,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -112,12 +113,14 @@ void main() {
       );
 
       when(
-        () => mockHealthImport
-            .fetchHealthDataDelta(testWeightEntry.data.dataType),
+        () => mockHealthImport.fetchHealthDataDelta(
+          testWeightEntry.data.dataType,
+        ),
       ).thenAnswer((_) async {});
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -136,18 +139,23 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('consumes pre-existing focus intent on first build',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('consumes pre-existing focus intent on first build', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       // Create a container with pre-existing focus intent
       final container = ProviderContainer();
-      final focusProvider =
-          journalFocusControllerProvider(id: testTextEntry.meta.id);
+      final focusProvider = journalFocusControllerProvider(
+        id: testTextEntry.meta.id,
+      );
 
       // Set focus intent before building widget
-      container.read(focusProvider.notifier).publishJournalFocus(
+      container
+          .read(focusProvider.notifier)
+          .publishJournalFocus(
             entryId: 'test-linked-entry-id',
             alignment: 0.3,
           );
@@ -181,10 +189,12 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('creates GlobalKeys for entries with entryKeyBuilder',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('creates GlobalKeys for entries with entryKeyBuilder', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -198,10 +208,12 @@ void main() {
       expect(find.byType(EntryDetailsPage), findsOneWidget);
     });
 
-    testWidgets('scroll offset listener is triggered on scroll',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('scroll offset listener is triggered on scroll', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -224,17 +236,22 @@ void main() {
       expect(find.byType(EntryDetailsPage), findsOneWidget);
     });
 
-    testWidgets('successfully scrolls to entry when context exists',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('successfully scrolls to entry when context exists', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       final container = ProviderContainer();
-      final focusProvider =
-          journalFocusControllerProvider(id: testTextEntry.meta.id);
+      final focusProvider = journalFocusControllerProvider(
+        id: testTextEntry.meta.id,
+      );
 
       // Set focus intent that would trigger scroll
-      container.read(focusProvider.notifier).publishJournalFocus(
+      container
+          .read(focusProvider.notifier)
+          .publishJournalFocus(
             entryId: testTextEntry.meta.id,
             alignment: 0.5,
           );

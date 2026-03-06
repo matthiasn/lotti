@@ -90,8 +90,9 @@ void main() {
         () => mockNotificationService.cancelNotification(any()),
       ).thenAnswer((_) async {});
 
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       when(() => mockTimeService.start(any(), any())).thenAnswer((_) async {});
 
@@ -140,8 +141,9 @@ void main() {
       expect(entry?.entryText?.plainText, '');
 
       // Verify entry is in database
-      final retrieved =
-          await getIt<JournalDb>().journalEntityById(entry!.meta.id);
+      final retrieved = await getIt<JournalDb>().journalEntityById(
+        entry!.meta.id,
+      );
       expect(retrieved, isNotNull);
       expect(retrieved?.meta.id, entry.meta.id);
     });
@@ -156,8 +158,9 @@ void main() {
       expect(linked, isNotNull);
 
       // Verify link exists
-      final linkedEntities =
-          await getIt<JournalDb>().getLinkedEntities(parent.meta.id);
+      final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+        parent.meta.id,
+      );
       expect(linkedEntities.length, 1);
       expect(linkedEntities.first.meta.id, linked!.meta.id);
     });
@@ -180,8 +183,9 @@ void main() {
       expect(task?.data.status, isA<TaskOpen>());
 
       // Verify task is in database
-      final retrieved =
-          await getIt<JournalDb>().journalEntityById(task!.meta.id);
+      final retrieved = await getIt<JournalDb>().journalEntityById(
+        task!.meta.id,
+      );
       expect(retrieved, isNotNull);
       expect(retrieved, isA<Task>());
     });
@@ -200,8 +204,9 @@ void main() {
       expect(task?.categoryId, testCategoryId);
 
       // Verify link exists
-      final linkedEntities =
-          await getIt<JournalDb>().getLinkedEntities(parent.meta.id);
+      final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+        parent.meta.id,
+      );
       expect(linkedEntities.any((e) => e.meta.id == task!.meta.id), true);
     });
 
@@ -216,8 +221,9 @@ void main() {
       expect(event?.meta.starred, true);
 
       // Verify event is in database
-      final retrieved =
-          await getIt<JournalDb>().journalEntityById(event!.meta.id);
+      final retrieved = await getIt<JournalDb>().journalEntityById(
+        event!.meta.id,
+      );
       expect(retrieved, isNotNull);
       expect(retrieved, isA<JournalEvent>());
     });
@@ -236,8 +242,9 @@ void main() {
       expect(event?.categoryId, testCategoryId);
 
       // Verify link exists
-      final linkedEntities =
-          await getIt<JournalDb>().getLinkedEntities(parent.meta.id);
+      final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+        parent.meta.id,
+      );
       expect(linkedEntities.any((e) => e.meta.id == event!.meta.id), true);
     });
 
@@ -264,10 +271,14 @@ void main() {
 
       // Verify checklist data integrity
       final checklistEntity = checklist! as Checklist;
-      expect(checklistEntity.data.title,
-          'TODOs'); // Default title when none provided
       expect(
-          checklistEntity.data.linkedChecklistItems, isEmpty); // No items yet
+        checklistEntity.data.title,
+        'TODOs',
+      ); // Default title when none provided
+      expect(
+        checklistEntity.data.linkedChecklistItems,
+        isEmpty,
+      ); // No items yet
       expect(checklistEntity.data.linkedTasks, contains(task.id));
 
       // Verify metadata is properly set
@@ -278,12 +289,15 @@ void main() {
 
       // Verify task has checklist ID
       final updatedTask = await getIt<JournalDb>().journalEntityById(task.id);
-      expect((updatedTask! as Task).data.checklistIds,
-          contains(checklist.meta.id));
+      expect(
+        (updatedTask! as Task).data.checklistIds,
+        contains(checklist.meta.id),
+      );
 
       // Verify checklist is persisted in database
-      final retrievedChecklist =
-          await getIt<JournalDb>().journalEntityById(checklist.meta.id);
+      final retrievedChecklist = await getIt<JournalDb>().journalEntityById(
+        checklist.meta.id,
+      );
       expect(retrievedChecklist, isNotNull);
       expect(retrievedChecklist, isA<Checklist>());
     });
@@ -326,8 +340,9 @@ void main() {
         expect(screenshot, isA<JournalImage>());
 
         // Verify link exists
-        final linkedEntities =
-            await getIt<JournalDb>().getLinkedEntities(parent.meta.id);
+        final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+          parent.meta.id,
+        );
         expect(
           linkedEntities.any((e) => e.meta.id == screenshot!.meta.id),
           true,

@@ -74,7 +74,7 @@ void main() {
         event('b'),
         event('a'),
         event('c'),
-        event('b')
+        event('b'),
       ];
       final deduped = dedupEventsByIdPreserveOrder(list);
       expect(deduped.map((e) => e.eventId), ['a', 'b', 'c']);

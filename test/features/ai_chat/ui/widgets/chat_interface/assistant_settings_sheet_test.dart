@@ -45,20 +45,21 @@ class _StreamingChatController extends ChatSessionController {
 }
 
 AiConfigModel _model(String id, String name) => AiConfigModel(
-      id: id,
-      name: name,
-      providerModelId: name,
-      inferenceProviderId: 'prov',
-      createdAt: DateTime(2024),
-      inputModalities: const [Modality.text],
-      outputModalities: const [Modality.text],
-      isReasoningModel: false,
-      supportsFunctionCalling: true,
-    );
+  id: id,
+  name: name,
+  providerModelId: name,
+  inferenceProviderId: 'prov',
+  createdAt: DateTime(2024),
+  inputModalities: const [Modality.text],
+  outputModalities: const [Modality.text],
+  isReasoningModel: false,
+  supportsFunctionCalling: true,
+);
 
 void main() {
-  testWidgets('AssistantSettingsSheet lists models and toggles reasoning',
-      (tester) async {
+  testWidgets('AssistantSettingsSheet lists models and toggles reasoning', (
+    tester,
+  ) async {
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
@@ -87,51 +88,53 @@ void main() {
   });
 
   testWidgets(
-      'dropdown shows null when previously selected model is ineligible',
-      (tester) async {
-    // Ensure LoggingService is available
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(LoggingService());
-    }
+    'dropdown shows null when previously selected model is ineligible',
+    (tester) async {
+      // Ensure LoggingService is available
+      if (!getIt.isRegistered<LoggingService>()) {
+        getIt.registerSingleton<LoggingService>(LoggingService());
+      }
 
-    final models = [
-      _model('m1', 'A-Model')
-    ]; // Does not include 'missing-model'
+      final models = [
+        _model('m1', 'A-Model'),
+      ]; // Does not include 'missing-model'
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatSessionControllerProvider('cat').overrideWith(
-            _StaticChatController.new,
-          ),
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
-            (ref) async => models,
-          ),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: AssistantSettingsSheet(categoryId: 'cat'),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            chatSessionControllerProvider('cat').overrideWith(
+              _StaticChatController.new,
+            ),
+            eligibleChatModelsForCategoryProvider('cat').overrideWith(
+              (ref) async => models,
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: AssistantSettingsSheet(categoryId: 'cat'),
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    // Dropdown is present and enabled
-    final ddFinder = find.byType(DropdownButtonFormField<String>);
-    final ddWidget = tester.widget<DropdownButtonFormField<String>>(ddFinder);
-    expect(ddWidget.onChanged, isNotNull);
+      // Dropdown is present and enabled
+      final ddFinder = find.byType(DropdownButtonFormField<String>);
+      final ddWidget = tester.widget<DropdownButtonFormField<String>>(ddFinder);
+      expect(ddWidget.onChanged, isNotNull);
 
-    // Since selectedModelId is not in models, initialValue should be null
-    expect(ddWidget.initialValue, isNull);
+      // Since selectedModelId is not in models, initialValue should be null
+      expect(ddWidget.initialValue, isNull);
 
-    // Hint should be visible
-    expect(find.text('Select model'), findsOneWidget);
-  });
+      // Hint should be visible
+      expect(find.text('Select model'), findsOneWidget);
+    },
+  );
 
-  testWidgets('dropdown and reasoning toggle disabled while streaming',
-      (tester) async {
+  testWidgets('dropdown and reasoning toggle disabled while streaming', (
+    tester,
+  ) async {
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
@@ -160,8 +163,9 @@ void main() {
 
     // Dropdown is present but disabled
     final ddFinder = find.byType(DropdownButtonFormField<String>);
-    final ddWidgets =
-        tester.widgetList<DropdownButtonFormField<String>>(ddFinder);
+    final ddWidgets = tester.widgetList<DropdownButtonFormField<String>>(
+      ddFinder,
+    );
     expect(ddWidgets.isNotEmpty, isTrue);
     expect(ddWidgets.first.onChanged, isNull);
 

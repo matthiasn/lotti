@@ -13,8 +13,8 @@ import 'package:lotti/utils/consts.dart';
 
 final embeddingBackfillControllerProvider =
     NotifierProvider<EmbeddingBackfillController, EmbeddingBackfillState>(
-  EmbeddingBackfillController.new,
-);
+      EmbeddingBackfillController.new,
+    );
 
 class EmbeddingBackfillState {
   const EmbeddingBackfillState({
@@ -223,8 +223,9 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
   /// Generates embeddings for all entries in the given [categoryIds].
   Future<void> backfillCategories(Set<String> categoryIds) async {
     await _guardedRun((services) async {
-      final labelResolver =
-          await EmbeddingProcessor.buildLabelResolver(services.journalDb);
+      final labelResolver = await EmbeddingProcessor.buildLabelResolver(
+        services.journalDb,
+      );
 
       // Collect entity IDs across all selected categories, deduplicating
       // in case an entity belongs to multiple categories.
@@ -309,8 +310,9 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
             }
 
             // Resolve the task's category.
-            final taskEntity =
-                await services.journalDb.journalEntityById(taskId);
+            final taskEntity = await services.journalDb.journalEntityById(
+              taskId,
+            );
             final categoryId = taskEntity?.meta.categoryId ?? '';
 
             final didEmbed = await EmbeddingProcessor.processAgentReport(

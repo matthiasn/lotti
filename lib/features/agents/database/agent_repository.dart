@@ -225,8 +225,9 @@ class AgentRepository {
     String templateId,
     String templateVersionId,
   ) async {
-    await (_db.update(_db.wakeRunLog)..where((t) => t.runKey.equals(runKey)))
-        .write(
+    await (_db.update(
+      _db.wakeRunLog,
+    )..where((t) => t.runKey.equals(runKey))).write(
       WakeRunLogCompanion(
         templateId: Value(templateId),
         templateVersionId: Value(templateVersionId),
@@ -241,8 +242,9 @@ class AgentRepository {
   Future<List<AgentStateEntity>> getDueScheduledAgentStates(
     DateTime now,
   ) async {
-    final rows =
-        await _db.getDueScheduledAgentStates(now.toIso8601String()).get();
+    final rows = await _db
+        .getDueScheduledAgentStates(now.toIso8601String())
+        .get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<AgentStateEntity>()
@@ -294,8 +296,9 @@ class AgentRepository {
     required int limit,
     required int offset,
   }) async {
-    final rows =
-        await _db.getAgentEntitiesInInterval(start, end, limit, offset).get();
+    final rows = await _db
+        .getAgentEntitiesInInterval(start, end, limit, offset)
+        .get();
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
@@ -329,8 +332,9 @@ class AgentRepository {
     String templateId, {
     int limit = 10,
   }) async {
-    final rows =
-        await _db.getRecentObservationsByTemplate(templateId, limit).get();
+    final rows = await _db
+        .getRecentObservationsByTemplate(templateId, limit)
+        .get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<AgentMessageEntity>()
@@ -342,8 +346,9 @@ class AgentRepository {
     String templateId, {
     int limit = 10,
   }) async {
-    final rows =
-        await _db.getEvolutionSessionsByTemplate(templateId, limit).get();
+    final rows = await _db
+        .getEvolutionSessionsByTemplate(templateId, limit)
+        .get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<EvolutionSessionEntity>()
@@ -396,14 +401,15 @@ class AgentRepository {
     required double rating,
     required DateTime ratedAt,
   }) async {
-    final updatedRows = await (_db.update(_db.wakeRunLog)
-          ..where((t) => t.runKey.equals(runKey)))
-        .write(
-      WakeRunLogCompanion(
-        userRating: Value(rating),
-        ratedAt: Value(ratedAt),
-      ),
-    );
+    final updatedRows =
+        await (_db.update(
+          _db.wakeRunLog,
+        )..where((t) => t.runKey.equals(runKey))).write(
+          WakeRunLogCompanion(
+            userRating: Value(rating),
+            ratedAt: Value(ratedAt),
+          ),
+        );
 
     if (updatedRows == 0) {
       throw StateError('No wake_run_log row found for runKey: $runKey');
@@ -474,8 +480,9 @@ class AgentRepository {
     required DateTime since,
     int limit = 500,
   }) async {
-    final rows =
-        await _db.getRecentDecisionsByTemplate(templateId, since, limit).get();
+    final rows = await _db
+        .getRecentDecisionsByTemplate(templateId, since, limit)
+        .get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeDecisionEntity>()
@@ -578,8 +585,9 @@ class AgentRepository {
     required int limit,
     required int offset,
   }) async {
-    final rows =
-        await _db.getAgentLinksInInterval(start, end, limit, offset).get();
+    final rows = await _db
+        .getAgentLinksInInterval(start, end, limit, offset)
+        .get();
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
@@ -617,15 +625,18 @@ class AgentRepository {
     DateTime? completedAt,
     String? errorMessage,
   }) async {
-    await (_db.update(_db.wakeRunLog)..where((t) => t.runKey.equals(runKey)))
-        .write(
+    await (_db.update(
+      _db.wakeRunLog,
+    )..where((t) => t.runKey.equals(runKey))).write(
       WakeRunLogCompanion(
         status: Value(status),
         startedAt: startedAt != null ? Value(startedAt) : const Value.absent(),
-        completedAt:
-            completedAt != null ? Value(completedAt) : const Value.absent(),
-        errorMessage:
-            errorMessage != null ? Value(errorMessage) : const Value.absent(),
+        completedAt: completedAt != null
+            ? Value(completedAt)
+            : const Value.absent(),
+        errorMessage: errorMessage != null
+            ? Value(errorMessage)
+            : const Value.absent(),
       ),
     );
   }
@@ -681,17 +692,17 @@ class AgentRepository {
   /// Called on startup to clean up runs left behind by a hot restart or crash.
   /// Returns the number of rows updated.
   Future<int> abandonOrphanedWakeRuns() async {
-    return (_db.update(_db.wakeRunLog)
-          ..where(
-            (t) => t.status.equals(WakeRunStatus.running.name),
-          ))
+    return (_db.update(_db.wakeRunLog)..where(
+          (t) => t.status.equals(WakeRunStatus.running.name),
+        ))
         .write(
-      WakeRunLogCompanion(
-        status: Value(WakeRunStatus.abandoned.name),
-        errorMessage:
-            const Value('Marked as abandoned on startup (orphaned run)'),
-      ),
-    );
+          WakeRunLogCompanion(
+            status: Value(WakeRunStatus.abandoned.name),
+            errorMessage: const Value(
+              'Marked as abandoned on startup (orphaned run)',
+            ),
+          ),
+        );
   }
 
   // ── Saga log ───────────────────────────────────────────────────────────────
@@ -717,9 +728,9 @@ class AgentRepository {
     String status, {
     String? lastError,
   }) async {
-    await (_db.update(_db.sagaLog)
-          ..where((t) => t.operationId.equals(operationId)))
-        .write(
+    await (_db.update(
+      _db.sagaLog,
+    )..where((t) => t.operationId.equals(operationId))).write(
       SagaLogCompanion(
         status: Value(status),
         lastError: lastError != null ? Value(lastError) : const Value.absent(),

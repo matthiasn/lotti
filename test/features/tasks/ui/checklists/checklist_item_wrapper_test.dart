@@ -136,10 +136,12 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockJournalDb = MockJournalDb();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
-    when(() => mockJournalDb.journalEntityById(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockJournalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
 
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
@@ -195,14 +197,17 @@ void main() {
       // Update the JournalDb mock to return testItem for testItemId
       final journalDb = getIt<JournalDb>();
       reset(journalDb);
-      when(() => journalDb.journalEntityById(testItemId))
-          .thenAnswer((_) async => testItem);
-      when(() => journalDb.journalEntityById(any(that: isNot(testItemId))))
-          .thenAnswer((_) async => null);
+      when(
+        () => journalDb.journalEntityById(testItemId),
+      ).thenAnswer((_) async => testItem);
+      when(
+        () => journalDb.journalEntityById(any(that: isNot(testItemId))),
+      ).thenAnswer((_) async => null);
     });
 
-    testWidgets('renders ChecklistItemWithSuggestionWidget when item exists',
-        (tester) async {
+    testWidgets('renders ChecklistItemWithSuggestionWidget when item exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -231,8 +236,9 @@ void main() {
       // Make JournalDb return null for this test
       final journalDb = getIt<JournalDb>();
       reset(journalDb);
-      when(() => journalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -279,8 +285,9 @@ void main() {
       );
 
       reset(journalDb);
-      when(() => journalDb.journalEntityById(testItemId))
-          .thenAnswer((_) async => deletedItem);
+      when(
+        () => journalDb.journalEntityById(testItemId),
+      ).thenAnswer((_) async => deletedItem);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -305,8 +312,9 @@ void main() {
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
-    testWidgets('has dismissible widget with bidirectional configuration',
-        (tester) async {
+    testWidgets('has dismissible widget with bidirectional configuration', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -343,8 +351,9 @@ void main() {
       expect(find.byType(ChecklistItemWrapper), findsOneWidget);
     });
 
-    testWidgets('onDismissed unlinks immediately and delays delete',
-        (tester) async {
+    testWidgets('onDismissed unlinks immediately and delays delete', (
+      tester,
+    ) async {
       // This test verifies the delayed-deletion pattern:
       // 1. Unlink immediately (visual removal)
       // 2. Start Timer for actual delete (5s)
@@ -519,8 +528,9 @@ void main() {
       await tester.pump();
 
       // Find the DragItemWidget and test its dragBuilder directly
-      final dragItemWidget =
-          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      final dragItemWidget = tester.widget<DragItemWidget>(
+        find.byType(DragItemWidget),
+      );
       expect(dragItemWidget.dragBuilder, isNotNull);
 
       // Test the dragBuilder by calling it directly
@@ -567,8 +577,9 @@ void main() {
       expect(find.text('Test Item'), findsWidgets);
 
       // Verify DragItemWidget is configured with dragItemProvider
-      final dragItemWidget =
-          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      final dragItemWidget = tester.widget<DragItemWidget>(
+        find.byType(DragItemWidget),
+      );
       expect(dragItemWidget.dragItemProvider, isNotNull);
 
       // Note: Testing the actual dragItemProvider invocation requires mocking
@@ -576,8 +587,9 @@ void main() {
       // integration tests where actual drag operations occur.
     });
 
-    testWidgets('dragItemProvider creates DragItem with correct data',
-        (tester) async {
+    testWidgets('dragItemProvider creates DragItem with correct data', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -597,8 +609,9 @@ void main() {
       await tester.pump();
 
       // Verify DragItemWidget is configured with dragItemProvider
-      final dragItemWidget =
-          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      final dragItemWidget = tester.widget<DragItemWidget>(
+        find.byType(DragItemWidget),
+      );
       expect(dragItemWidget.dragItemProvider, isNotNull);
 
       // Note: Directly invoking dragItemProvider requires creating a proper
@@ -627,8 +640,9 @@ void main() {
       await tester.pump();
 
       // Find the DragItemWidget and check allowedOperations
-      final dragItemWidget =
-          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      final dragItemWidget = tester.widget<DragItemWidget>(
+        find.byType(DragItemWidget),
+      );
       expect(dragItemWidget.allowedOperations, isNotNull);
 
       // Call allowedOperations to verify it returns move
@@ -636,37 +650,42 @@ void main() {
       expect(operations, [DropOperation.move]);
     });
 
-    testWidgets('confirmDismiss returns true immediately for delete direction',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemOverrideWithBuild(testItem),
-            checklistOverrideWithBuild(null),
-          ],
-          child: const WidgetTestBench(
-            child: ChecklistItemWrapper(
-              testItemId,
-              checklistId: testChecklistId,
-              taskId: testTaskId,
+    testWidgets(
+      'confirmDismiss returns true immediately for delete direction',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              checklistItemOverrideWithBuild(testItem),
+              checklistOverrideWithBuild(null),
+            ],
+            child: const WidgetTestBench(
+              child: ChecklistItemWrapper(
+                testItemId,
+                checklistId: testChecklistId,
+                taskId: testTaskId,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Find the Dismissible widget
-      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+        // Find the Dismissible widget
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
 
-      // Delete direction returns true immediately (no dialog)
-      final result =
-          await dismissible.confirmDismiss!(DismissDirection.endToStart);
-      expect(result, isTrue);
+        // Delete direction returns true immediately (no dialog)
+        final result = await dismissible.confirmDismiss!(
+          DismissDirection.endToStart,
+        );
+        expect(result, isTrue);
 
-      // No dialog should be shown
-      expect(find.byType(AlertDialog), findsNothing);
-    });
+        // No dialog should be shown
+        expect(find.byType(AlertDialog), findsNothing);
+      },
+    );
 
     // TODO(riverpod3): These animation tests require stateful mock controllers
     // that update their state when updateChecked() is called. In Riverpod 3,
@@ -679,8 +698,9 @@ void main() {
     // testWidgets(
     //     'cancels fade-out when item is unchecked again before completion',
 
-    testWidgets('wraps item in DropRegion for cross-checklist drag support',
-        (tester) async {
+    testWidgets('wraps item in DropRegion for cross-checklist drag support', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -731,8 +751,9 @@ void main() {
       // but we verify the callback exists and is configured.
     });
 
-    testWidgets('passes correct index to DropRegion for position-aware drops',
-        (tester) async {
+    testWidgets('passes correct index to DropRegion for position-aware drops', (
+      tester,
+    ) async {
       const testIndex = 5;
 
       await tester.pumpWidget(
@@ -788,8 +809,9 @@ void main() {
       expect(dropRegion.formats, Formats.standardFormats);
     });
 
-    testWidgets('archive swipe (startToEnd) calls archive and shows snackbar',
-        (tester) async {
+    testWidgets('archive swipe (startToEnd) calls archive and shows snackbar', (
+      tester,
+    ) async {
       final mockItemController = MockChecklistItemController(
         (id: testItemId, taskId: testTaskId),
         item: testItem,
@@ -841,8 +863,9 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
-    testWidgets('archive swipe on already-archived item calls unarchive',
-        (tester) async {
+    testWidgets('archive swipe on already-archived item calls unarchive', (
+      tester,
+    ) async {
       final archivedItem = ChecklistItem(
         meta: Metadata(
           id: testItemId,
@@ -905,81 +928,89 @@ void main() {
       expect(mockItemController.archiveWasCalled, isFalse);
     });
 
-    testWidgets('delete swipe (endToStart) returns true without showing dialog',
-        (tester) async {
-      final mockItemController = MockChecklistItemController(
-        (id: testItemId, taskId: testTaskId),
-        item: testItem,
-      );
-      final mockChecklistController = MockChecklistController(
-        (id: testChecklistId, taskId: testTaskId),
-      );
+    testWidgets(
+      'delete swipe (endToStart) returns true without showing dialog',
+      (tester) async {
+        final mockItemController = MockChecklistItemController(
+          (id: testItemId, taskId: testTaskId),
+          item: testItem,
+        );
+        final mockChecklistController = MockChecklistController(
+          (id: testChecklistId, taskId: testTaskId),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemControllerProvider.overrideWith(
-              () => mockItemController,
-            ),
-            checklistControllerProvider.overrideWith(
-              () => mockChecklistController,
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: ChecklistItemWrapper(
-              testItemId,
-              checklistId: testChecklistId,
-              taskId: testTaskId,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              checklistItemControllerProvider.overrideWith(
+                () => mockItemController,
+              ),
+              checklistControllerProvider.overrideWith(
+                () => mockChecklistController,
+              ),
+            ],
+            child: const WidgetTestBench(
+              child: ChecklistItemWrapper(
+                testItemId,
+                checklistId: testChecklistId,
+                taskId: testTaskId,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Get the confirmDismiss callback for delete direction
-      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
-      final result = await dismissible.confirmDismiss!(
-        DismissDirection.endToStart,
-      );
+        // Get the confirmDismiss callback for delete direction
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
+        final result = await dismissible.confirmDismiss!(
+          DismissDirection.endToStart,
+        );
 
-      // Returns true immediately — no dialog
-      expect(result, isTrue);
+        // Returns true immediately — no dialog
+        expect(result, isTrue);
 
-      // archive/unarchive should NOT have been called
-      expect(mockItemController.archiveWasCalled, isFalse);
-      expect(mockItemController.unarchiveWasCalled, isFalse);
-    });
+        // archive/unarchive should NOT have been called
+        expect(mockItemController.archiveWasCalled, isFalse);
+        expect(mockItemController.unarchiveWasCalled, isFalse);
+      },
+    );
 
     testWidgets(
-        'Dismissible has both background and secondaryBackground configured',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemOverrideWithBuild(testItem),
-            checklistOverrideWithBuild(null),
-          ],
-          child: const WidgetTestBench(
-            child: ChecklistItemWrapper(
-              testItemId,
-              checklistId: testChecklistId,
-              taskId: testTaskId,
+      'Dismissible has both background and secondaryBackground configured',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              checklistItemOverrideWithBuild(testItem),
+              checklistOverrideWithBuild(null),
+            ],
+            child: const WidgetTestBench(
+              child: ChecklistItemWrapper(
+                testItemId,
+                checklistId: testChecklistId,
+                taskId: testTaskId,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Verify both backgrounds are set on the Dismissible widget
-      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
-      expect(dismissible.background, isNotNull);
-      expect(dismissible.secondaryBackground, isNotNull);
-    });
+        // Verify both backgrounds are set on the Dismissible widget
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
+        expect(dismissible.background, isNotNull);
+        expect(dismissible.secondaryBackground, isNotNull);
+      },
+    );
 
-    testWidgets('passes isArchived to ChecklistItemWithSuggestionWidget',
-        (tester) async {
+    testWidgets('passes isArchived to ChecklistItemWithSuggestionWidget', (
+      tester,
+    ) async {
       final archivedItem = ChecklistItem(
         meta: Metadata(
           id: testItemId,

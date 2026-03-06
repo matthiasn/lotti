@@ -205,8 +205,9 @@ enum CategoryIcon {
 extension CategoryIconExtension on CategoryIcon {
   /// Static map for O(1) lookup of CategoryIcon by name
   /// Initialized once to avoid repeated iteration through enum values
-  static final Map<String, CategoryIcon> _byName =
-      Map.fromEntries(CategoryIcon.values.map((e) => MapEntry(e.name, e)));
+  static final Map<String, CategoryIcon> _byName = Map.fromEntries(
+    CategoryIcon.values.map((e) => MapEntry(e.name, e)),
+  );
 
   IconData get iconData {
     switch (this) {

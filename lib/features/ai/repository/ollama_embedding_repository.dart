@@ -17,7 +17,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 /// Follows the same HTTP/retry/error patterns as [OllamaInferenceRepository].
 class OllamaEmbeddingRepository {
   OllamaEmbeddingRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 

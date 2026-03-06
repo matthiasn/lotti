@@ -51,8 +51,9 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     repository = HabitsRepositoryImpl(
       journalDb: mockJournalDb,
@@ -67,8 +68,9 @@ void main() {
   group('HabitsRepositoryImpl', () {
     group('watchHabitDefinitions', () {
       test('emits habits from initial fetch', () async {
-        when(mockJournalDb.getAllHabitDefinitions)
-            .thenAnswer((_) async => [testHabit]);
+        when(
+          mockJournalDb.getAllHabitDefinitions,
+        ).thenAnswer((_) async => [testHabit]);
 
         final result = await repository.watchHabitDefinitions().first;
 
@@ -90,8 +92,9 @@ void main() {
           });
 
           final results = <List<HabitDefinition>>[];
-          final subscription =
-              repository.watchHabitDefinitions().listen(results.add);
+          final subscription = repository.watchHabitDefinitions().listen(
+            results.add,
+          );
 
           async.flushMicrotasks();
           expect(results, hasLength(1));
@@ -112,8 +115,9 @@ void main() {
 
     group('watchHabitById', () {
       test('emits specific habit from initial fetch', () async {
-        when(() => mockJournalDb.getHabitById('habit-1'))
-            .thenAnswer((_) async => testHabit);
+        when(
+          () => mockJournalDb.getHabitById('habit-1'),
+        ).thenAnswer((_) async => testHabit);
 
         final result = await repository.watchHabitById('habit-1').first;
 
@@ -124,8 +128,9 @@ void main() {
       });
 
       test('returns null for non-existent habit', () async {
-        when(() => mockJournalDb.getHabitById('non-existent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.getHabitById('non-existent'),
+        ).thenAnswer((_) async => null);
 
         final result = await repository.watchHabitById('non-existent').first;
 
@@ -235,8 +240,9 @@ void main() {
 
     group('upsertHabitDefinition', () {
       test('delegates to JournalDb', () async {
-        when(() => mockJournalDb.upsertHabitDefinition(testHabit))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockJournalDb.upsertHabitDefinition(testHabit),
+        ).thenAnswer((_) async => 1);
 
         final result = await repository.upsertHabitDefinition(testHabit);
 
@@ -247,8 +253,9 @@ void main() {
 
     group('watchDashboards', () {
       test('emits dashboards from initial fetch', () async {
-        when(mockJournalDb.getAllDashboards)
-            .thenAnswer((_) async => [testDashboard]);
+        when(
+          mockJournalDb.getAllDashboards,
+        ).thenAnswer((_) async => [testDashboard]);
 
         final result = await repository.watchDashboards().first;
 
@@ -263,8 +270,9 @@ void main() {
       test('returns stream from UpdateNotifications', () {
         fakeAsync((async) {
           final notifications = <Set<String>>[];
-          final subscription =
-              repository.updateStream.listen(notifications.add);
+          final subscription = repository.updateStream.listen(
+            notifications.add,
+          );
 
           updateStreamController.add({'habit-1'});
           async.flushMicrotasks();
@@ -315,8 +323,9 @@ void main() {
     test('can be overridden in tests', () async {
       final mockRepository = MockHabitsRepository();
       final controller = StreamController<List<HabitDefinition>>.broadcast();
-      when(mockRepository.watchHabitDefinitions)
-          .thenAnswer((_) => controller.stream);
+      when(
+        mockRepository.watchHabitDefinitions,
+      ).thenAnswer((_) => controller.stream);
 
       final container = ProviderContainer(
         overrides: [

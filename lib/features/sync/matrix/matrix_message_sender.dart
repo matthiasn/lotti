@@ -18,10 +18,11 @@ import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
-typedef MatrixMessageSentCallback = void Function(
-  String eventId,
-  SyncMessage message,
-);
+typedef MatrixMessageSentCallback =
+    void Function(
+      String eventId,
+      SyncMessage message,
+    );
 
 /// Handles Matrix message sending including attachments and logging.
 class MatrixMessageSender {
@@ -31,11 +32,11 @@ class MatrixMessageSender {
     required Directory documentsDirectory,
     required SentEventRegistry sentEventRegistry,
     VectorClockService? vectorClockService,
-  })  : _loggingService = loggingService,
-        _journalDb = journalDb,
-        _documentsDirectory = documentsDirectory,
-        _sentEventRegistry = sentEventRegistry,
-        _vectorClockService = vectorClockService;
+  }) : _loggingService = loggingService,
+       _journalDb = journalDb,
+       _documentsDirectory = documentsDirectory,
+       _sentEventRegistry = sentEventRegistry,
+       _vectorClockService = vectorClockService;
 
   final LoggingService _loggingService;
   final JournalDb _journalDb;
@@ -323,8 +324,9 @@ class MatrixMessageSender {
       return null;
     }
 
-    final shouldResendAttachments =
-        await _journalDb.getConfigFlag(resendAttachments);
+    final shouldResendAttachments = await _journalDb.getConfigFlag(
+      resendAttachments,
+    );
 
     var attachmentsOk = true;
 
@@ -449,8 +451,9 @@ class MatrixMessageSender {
         pathBuilder = relativeAgentEntityPath;
         logLabel = 'agentEntity';
       case final SyncAgentLink msg:
-        inlineJson =
-            msg.agentLink != null ? json.encode(msg.agentLink!.toJson()) : null;
+        inlineJson = msg.agentLink != null
+            ? json.encode(msg.agentLink!.toJson())
+            : null;
         jsonPath = msg.jsonPath;
         pathBuilder = relativeAgentLinkPath;
         logLabel = 'agentLink';
@@ -491,8 +494,10 @@ class MatrixMessageSender {
 
     return switch (message) {
       // Agent entities can be large — strip inline, use file only.
-      final SyncAgentEntity m =>
-        m.copyWith(jsonPath: enrichedPath, agentEntity: null),
+      final SyncAgentEntity m => m.copyWith(
+        jsonPath: enrichedPath,
+        agentEntity: null,
+      ),
       // Agent links are small (like entry links) — keep inline for
       // reliable sync, avoiding race conditions with file downloads.
       final SyncAgentLink m => m.copyWith(jsonPath: enrichedPath),
@@ -553,15 +558,13 @@ class MatrixMessageSender {
   Future<SyncJournalEntity?> sendJournalEntityPayloadForTesting({
     required Room room,
     required SyncJournalEntity message,
-  }) =>
-      _sendJournalEntityPayload(room: room, message: message);
+  }) => _sendJournalEntityPayload(room: room, message: message);
 
   @visibleForTesting
   Future<SyncMessage?> enrichAndUploadAgentPayloadForTesting({
     required Room room,
     required SyncMessage message,
-  }) =>
-      _enrichAndUploadAgentPayload(room: room, message: message);
+  }) => _enrichAndUploadAgentPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {

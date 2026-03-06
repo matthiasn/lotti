@@ -32,8 +32,9 @@ void main() {
       ),
       overrides: overrides.isEmpty
           ? [
-              chatRecorderControllerProvider
-                  .overrideWith(ChatRecorderController.new),
+              chatRecorderControllerProvider.overrideWith(
+                ChatRecorderController.new,
+              ),
             ]
           : overrides,
     );
@@ -149,11 +150,13 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           overrides: [
-            chatRecorderControllerProvider
-                .overrideWith(ChatRecorderController.new),
+            chatRecorderControllerProvider.overrideWith(
+              ChatRecorderController.new,
+            ),
             realtimeAvailableProvider.overrideWith((_) async => true),
-            realtimeTranscriptionServiceProvider
-                .overrideWithValue(realtimeServiceWithConfig()),
+            realtimeTranscriptionServiceProvider.overrideWithValue(
+              realtimeServiceWithConfig(),
+            ),
           ],
         ),
       );
@@ -163,8 +166,9 @@ void main() {
       expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
     });
 
-    testWidgets('transcript populates text field on completion',
-        (tester) async {
+    testWidgets('transcript populates text field on completion', (
+      tester,
+    ) async {
       late TranscriptEmittingController controller;
       await tester.pumpWidget(
         buildSubject(
@@ -330,8 +334,9 @@ void main() {
       expect(stopCalled, isTrue);
     });
 
-    testWidgets('shows transcription progress when processing with partial',
-        (tester) async {
+    testWidgets('shows transcription progress when processing with partial', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           overrides: [
@@ -353,37 +358,42 @@ void main() {
       expect(find.byType(TextField), findsNothing);
     });
 
-    testWidgets('shows idle row with hourglass when processing without partial',
-        (tester) async {
+    testWidgets(
+      'shows idle row with hourglass when processing without partial',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            overrides: [
+              chatRecorderControllerProvider.overrideWith(
+                () => ProcessingTestController(partialTranscript: null),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Should show idle row (with TextField) and hourglass icon
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
+        // TextField should be disabled during processing
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.enabled, isFalse);
+      },
+    );
+
+    testWidgets('toggle realtime mode switches icons when realtime available', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           overrides: [
             chatRecorderControllerProvider.overrideWith(
-              () => ProcessingTestController(partialTranscript: null),
+              ChatRecorderController.new,
             ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show idle row (with TextField) and hourglass icon
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
-      // TextField should be disabled during processing
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.enabled, isFalse);
-    });
-
-    testWidgets('toggle realtime mode switches icons when realtime available',
-        (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider
-                .overrideWith(ChatRecorderController.new),
             realtimeAvailableProvider.overrideWith((_) async => true),
-            realtimeTranscriptionServiceProvider
-                .overrideWithValue(realtimeServiceWithConfig()),
+            realtimeTranscriptionServiceProvider.overrideWithValue(
+              realtimeServiceWithConfig(),
+            ),
           ],
         ),
       );
@@ -418,8 +428,9 @@ void main() {
       expect(iconInButtonOfSize(40).icon, Icons.graphic_eq);
     });
 
-    testWidgets('realtime mode starts realtime recording on main button tap',
-        (tester) async {
+    testWidgets('realtime mode starts realtime recording on main button tap', (
+      tester,
+    ) async {
       var startRealtimeCalled = false;
       await tester.pumpWidget(
         buildSubject(
@@ -430,8 +441,9 @@ void main() {
               ),
             ),
             realtimeAvailableProvider.overrideWith((_) async => true),
-            realtimeTranscriptionServiceProvider
-                .overrideWithValue(realtimeServiceWithConfig()),
+            realtimeTranscriptionServiceProvider.overrideWithValue(
+              realtimeServiceWithConfig(),
+            ),
           ],
         ),
       );

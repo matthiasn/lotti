@@ -101,22 +101,27 @@ class SyncMetrics {
   final int liveScanCoalesceCount;
   final int liveScanTrailingScheduled;
 
-  Map<String, int> toMap() => <String, int>{
-        'processed': processed,
-        'skipped': skipped,
-        'failures': failures,
-        'flushes': flushes,
-        'catchupBatches': catchupBatches,
-        'skippedByRetryLimit': skippedByRetryLimit,
-        'retriesScheduled': retriesScheduled,
-        'circuitOpens': circuitOpens,
-      }
-        ..addEntries(processedByType.entries.map(
-          (e) => MapEntry('processed.${e.key}', e.value),
-        ))
-        ..addEntries(droppedByType.entries.map(
-          (e) => MapEntry('droppedByType.${e.key}', e.value),
-        ))
+  Map<String, int> toMap() =>
+      <String, int>{
+          'processed': processed,
+          'skipped': skipped,
+          'failures': failures,
+          'flushes': flushes,
+          'catchupBatches': catchupBatches,
+          'skippedByRetryLimit': skippedByRetryLimit,
+          'retriesScheduled': retriesScheduled,
+          'circuitOpens': circuitOpens,
+        }
+        ..addEntries(
+          processedByType.entries.map(
+            (e) => MapEntry('processed.${e.key}', e.value),
+          ),
+        )
+        ..addEntries(
+          droppedByType.entries.map(
+            (e) => MapEntry('droppedByType.${e.key}', e.value),
+          ),
+        )
         ..addEntries(<MapEntry<String, int>>[
           MapEntry('dbApplied', dbApplied),
           MapEntry('dbIgnoredByVectorClock', dbIgnoredByVectorClock),

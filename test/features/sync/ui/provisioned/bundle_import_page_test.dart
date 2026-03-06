@@ -30,8 +30,9 @@ void main() {
     roomId: '!room123:example.com',
   );
 
-  final validBase64 =
-      base64UrlEncode(utf8.encode(jsonEncode(testBundle.toJson())));
+  final validBase64 = base64UrlEncode(
+    utf8.encode(jsonEncode(testBundle.toJson())),
+  );
 
   setUpAll(() {
     registerFallbackValue(
@@ -50,12 +51,14 @@ void main() {
         waitForLifecycle: any(named: 'waitForLifecycle'),
       ),
     ).thenAnswer((_) async => true);
-    when(() => mockMatrixService.joinRoom(any()))
-        .thenAnswer((_) async => '!room:example.com');
+    when(
+      () => mockMatrixService.joinRoom(any()),
+    ).thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
     when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
-    when(() => mockMatrixService.getRoom())
-        .thenAnswer((_) async => '!room:example.com');
+    when(
+      () => mockMatrixService.getRoom(),
+    ).thenAnswer((_) async => '!room:example.com');
     when(
       () => mockMatrixService.changePassword(
         oldPassword: any(named: 'oldPassword'),
@@ -79,9 +82,9 @@ void main() {
   });
 
   List<Override> defaultOverrides() => [
-        matrixServiceProvider.overrideWithValue(mockMatrixService),
-        loggingServiceProvider.overrideWithValue(mockLoggingService),
-      ];
+    matrixServiceProvider.overrideWithValue(mockMatrixService),
+    loggingServiceProvider.overrideWithValue(mockLoggingService),
+  ];
 
   group('BundleImportWidget', () {
     testWidgets('renders text field and import button', (tester) async {
@@ -156,8 +159,9 @@ void main() {
       expect(find.text('@alice:example.com'), findsNothing);
     });
 
-    testWidgets('configure button navigates to page 1 and triggers config',
-        (tester) async {
+    testWidgets('configure button navigates to page 1 and triggers config', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
@@ -186,8 +190,9 @@ void main() {
       verify(() => mockMatrixService.login(waitForLifecycle: false)).called(1);
     });
 
-    testWidgets('displays error text in TextField for invalid JSON',
-        (tester) async {
+    testWidgets('displays error text in TextField for invalid JSON', (
+      tester,
+    ) async {
       final invalidJsonBase64 = base64UrlEncode(utf8.encode('not json'));
 
       await tester.pumpWidget(
@@ -244,8 +249,9 @@ void main() {
       expect(textField.decoration?.errorText, isNull);
     });
 
-    testWidgets('import button is disabled when text field is empty',
-        (tester) async {
+    testWidgets('import button is disabled when text field is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
@@ -265,8 +271,9 @@ void main() {
       expect(importButton.onPressed, isNull);
     });
 
-    testWidgets('import button becomes enabled after entering text',
-        (tester) async {
+    testWidgets('import button becomes enabled after entering text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),

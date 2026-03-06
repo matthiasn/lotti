@@ -42,8 +42,9 @@ void main() {
       final streamController =
           StreamController<List<AiConfigInferenceProfile>>();
 
-      when(() => mockRepository.watchProfiles())
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockRepository.watchProfiles(),
+      ).thenAnswer((_) => streamController.stream);
 
       final c = createContainer();
       final subscription = c.listen(
@@ -78,8 +79,9 @@ void main() {
       final streamController =
           StreamController<List<AiConfigInferenceProfile>>();
 
-      when(() => mockRepository.watchProfiles())
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockRepository.watchProfiles(),
+      ).thenAnswer((_) => streamController.stream);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       final c = createContainer();
@@ -103,8 +105,9 @@ void main() {
       final streamController =
           StreamController<List<AiConfigInferenceProfile>>();
 
-      when(() => mockRepository.watchProfiles())
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockRepository.watchProfiles(),
+      ).thenAnswer((_) => streamController.stream);
 
       final c = createContainer();
       final subscription = c.listen(

@@ -23,8 +23,9 @@ void main() {
       expect(find.text('Test message'), findsOneWidget);
     });
 
-    testWidgets('progress indicator starts at initialProgress and animates',
-        (tester) async {
+    testWidgets('progress indicator starts at initialProgress and animates', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -97,8 +98,9 @@ void main() {
   });
 
   group('showCountdownSnackBar', () {
-    testWidgets('shows floating SnackBar with progress indicator',
-        (tester) async {
+    testWidgets('shows floating SnackBar with progress indicator', (
+      tester,
+    ) async {
       late ScaffoldMessengerState messenger;
 
       await tester.pumpWidget(
@@ -127,8 +129,9 @@ void main() {
       expect(find.text('Action performed'), findsOneWidget);
     });
 
-    testWidgets('shows action button when actionLabel and onAction provided',
-        (tester) async {
+    testWidgets('shows action button when actionLabel and onAction provided', (
+      tester,
+    ) async {
       late ScaffoldMessengerState messenger;
       var actionCalled = false;
 

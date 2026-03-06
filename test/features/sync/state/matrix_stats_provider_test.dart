@@ -33,11 +33,17 @@ void main() {
   });
 
   test('V2MetricsHistory.clear resets state', () async {
-    final container = ProviderContainer(overrides: [
-      matrixSyncMetricsFutureProvider.overrideWith((ref) async =>
-          SyncMetrics.fromMap(
-              const {'processed': 1, 'failures': 0, 'retriesScheduled': 0})),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        matrixSyncMetricsFutureProvider.overrideWith(
+          (ref) async => SyncMetrics.fromMap(const {
+            'processed': 1,
+            'failures': 0,
+            'retriesScheduled': 0,
+          }),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     container.read(syncMetricsHistoryProvider);

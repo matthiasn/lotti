@@ -35,8 +35,9 @@ void main() {
         inferenceProfileControllerProvider.overrideWith(() {
           return fakeProfileController;
         }),
-        aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-            .overrideWith(() {
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.model,
+        ).overrideWith(() {
           return _FakeAiConfigByTypeController(models);
         }),
         aiConfigByTypeControllerProvider(
@@ -56,8 +57,9 @@ void main() {
       expect(find.text('Create Profile'), findsOneWidget);
     });
 
-    testWidgets('shows edit title when editing existing profile',
-        (tester) async {
+    testWidgets('shows edit title when editing existing profile', (
+      tester,
+    ) async {
       final profile = testInferenceProfile(
         id: 'p1',
         name: 'Existing Profile',
@@ -131,8 +133,9 @@ void main() {
       );
     });
 
-    testWidgets('shows select model placeholder for empty slots',
-        (tester) async {
+    testWidgets('shows select model placeholder for empty slots', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
@@ -140,8 +143,9 @@ void main() {
       expect(find.text('Select a model…'), findsNWidgets(4));
     });
 
-    testWidgets('shows snackbar when saving without thinking model',
-        (tester) async {
+    testWidgets('shows snackbar when saving without thinking model', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
@@ -161,28 +165,33 @@ void main() {
       );
     });
 
-    testWidgets('saves profile and pops when thinking model is selected',
-        (tester) async {
-      final thinkingModel = AiConfig.model(
-        id: 'tm-1',
-        name: 'Flash',
-        providerModelId: 'models/flash',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime(2024),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      ) as AiConfigModel;
+    testWidgets('saves profile and pops when thinking model is selected', (
+      tester,
+    ) async {
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Flash',
+                providerModelId: 'models/flash',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
 
-      final provider = AiConfig.inferenceProvider(
-        id: 'prov-1',
-        name: 'Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'key',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ) as AiConfigInferenceProvider;
+      final provider =
+          AiConfig.inferenceProvider(
+                id: 'prov-1',
+                name: 'Provider',
+                baseUrl: 'https://example.com',
+                apiKey: 'key',
+                createdAt: DateTime(2024),
+                inferenceProviderType: InferenceProviderType.gemini,
+              )
+              as AiConfigInferenceProvider;
 
       await tester.pumpWidget(
         buildSubject(
@@ -241,17 +250,19 @@ void main() {
     });
 
     testWidgets('model slot shows selected model name', (tester) async {
-      final thinkingModel = AiConfig.model(
-        id: 'tm-1',
-        name: 'Gemini Pro',
-        providerModelId: 'models/gemini-pro',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime(2024),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      ) as AiConfigModel;
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Gemini Pro',
+                providerModelId: 'models/gemini-pro',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
 
       // Editing a profile that already has this model selected.
       final profile = testInferenceProfile(
@@ -272,8 +283,9 @@ void main() {
       expect(find.text('Gemini Pro'), findsOneWidget);
     });
 
-    testWidgets('model slot shows raw ID when model not found in list',
-        (tester) async {
+    testWidgets('model slot shows raw ID when model not found in list', (
+      tester,
+    ) async {
       // Edit profile with a model ID that doesn't match any loaded model.
       final profile = testInferenceProfile(
         id: 'p1',
@@ -291,17 +303,19 @@ void main() {
     });
 
     testWidgets('clear button removes selected model', (tester) async {
-      final thinkingModel = AiConfig.model(
-        id: 'tm-1',
-        name: 'Flash',
-        providerModelId: 'models/flash',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime(2024),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      ) as AiConfigModel;
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Flash',
+                providerModelId: 'models/flash',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
 
       final profile = testInferenceProfile(
         id: 'p1',
@@ -373,8 +387,9 @@ void main() {
       expect(find.text('A helpful profile'), findsOneWidget);
     });
 
-    testWidgets('only shows models matching slot filter in picker',
-        (tester) async {
+    testWidgets('only shows models matching slot filter in picker', (
+      tester,
+    ) async {
       // Create a model that supports function calling (thinking slot).
       final thinkingModel = AiConfig.model(
         id: 'tm-1',
@@ -453,8 +468,9 @@ void main() {
       expect(find.textContaining('models/flash'), findsOneWidget);
     });
 
-    testWidgets('model picker shows checkmark for selected model',
-        (tester) async {
+    testWidgets('model picker shows checkmark for selected model', (
+      tester,
+    ) async {
       final thinkingModel = AiConfig.model(
         id: 'tm-1',
         name: 'Flash',
@@ -491,17 +507,19 @@ void main() {
     });
 
     testWidgets('saves profile with description', (tester) async {
-      final thinkingModel = AiConfig.model(
-        id: 'tm-1',
-        name: 'Flash',
-        providerModelId: 'models/flash',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime(2024),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      ) as AiConfigModel;
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Flash',
+                providerModelId: 'models/flash',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
 
       await tester.pumpWidget(
         buildSubject(models: [thinkingModel]),
@@ -538,17 +556,19 @@ void main() {
     });
 
     testWidgets('saves profile with desktop-only enabled', (tester) async {
-      final thinkingModel = AiConfig.model(
-        id: 'tm-1',
-        name: 'Flash',
-        providerModelId: 'models/flash',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime(2024),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      ) as AiConfigModel;
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Flash',
+                providerModelId: 'models/flash',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
 
       await tester.pumpWidget(
         buildSubject(models: [thinkingModel]),

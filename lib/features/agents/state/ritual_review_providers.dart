@@ -23,8 +23,9 @@ Future<AgentDomainEntity?> pendingRitualReview(
   Ref ref,
   String templateId,
 ) async {
-  final sessions =
-      await ref.watch(evolutionSessionsProvider(templateId).future);
+  final sessions = await ref.watch(
+    evolutionSessionsProvider(templateId).future,
+  );
   final typed = sessions.whereType<EvolutionSessionEntity>().toList();
 
   // Sessions are newest-first. Only return the newest one if it's active.
@@ -73,15 +74,18 @@ Future<EvolutionSessionStats> evolutionSessionStats(
   String templateId,
 ) async {
   ref.watch(agentUpdateStreamProvider(templateId));
-  final sessions =
-      await ref.watch(evolutionSessionsProvider(templateId).future);
+  final sessions = await ref.watch(
+    evolutionSessionsProvider(templateId).future,
+  );
   final typed = sessions.whereType<EvolutionSessionEntity>().toList();
 
   final total = typed.length;
-  final completed =
-      typed.where((s) => s.status == EvolutionSessionStatus.completed).length;
-  final abandoned =
-      typed.where((s) => s.status == EvolutionSessionStatus.abandoned).length;
+  final completed = typed
+      .where((s) => s.status == EvolutionSessionStatus.completed)
+      .length;
+  final abandoned = typed
+      .where((s) => s.status == EvolutionSessionStatus.abandoned)
+      .length;
   final approvalRate = total > 0 ? completed / total : 0.0;
 
   return EvolutionSessionStats(

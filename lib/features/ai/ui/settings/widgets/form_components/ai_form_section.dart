@@ -33,8 +33,9 @@ class AiFormSection extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color:
-                  context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+              color: context.colorScheme.primaryContainer.withValues(
+                alpha: 0.2,
+              ),
             ),
           ),
           child: Row(
@@ -43,8 +44,9 @@ class AiFormSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: context.colorScheme.primaryContainer
-                        .withValues(alpha: 0.3),
+                    color: context.colorScheme.primaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

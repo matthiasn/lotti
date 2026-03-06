@@ -8,8 +8,9 @@ import 'package:lotti/l10n/app_localizations.dart';
 
 void main() {
   group('Provider Filter Chip Color Tests', () {
-    testWidgets('Anthropic provider has bronze color in light theme',
-        (tester) async {
+    testWidgets('Anthropic provider has bronze color in light theme', (
+      tester,
+    ) async {
       final provider = AiConfigInferenceProvider(
         id: 'provider1',
         name: 'Anthropic',
@@ -24,8 +25,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             theme: ThemeData.light(),
@@ -61,8 +63,9 @@ void main() {
       expect(tapCalled, isTrue);
     });
 
-    testWidgets('OpenAI provider has green color in dark theme',
-        (tester) async {
+    testWidgets('OpenAI provider has green color in dark theme', (
+      tester,
+    ) async {
       final provider = AiConfigInferenceProvider(
         id: 'provider2',
         name: 'OpenAI',
@@ -75,8 +78,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider2')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider2',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             theme: ThemeData.dark(),
@@ -112,8 +116,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider3')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider3',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -146,8 +151,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider4')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider4',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -193,8 +199,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              aiConfigByIdProvider('provider_${type.name}')
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                'provider_${type.name}',
+              ).overrideWith((ref) async => provider),
             ],
             child: MaterialApp(
               home: Scaffold(
@@ -234,8 +241,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -274,8 +282,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -314,8 +323,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -357,8 +367,9 @@ void main() {
         ],
       );
 
-      final result =
-          await container.read(aiConfigByIdProvider('provider1').future);
+      final result = await container.read(
+        aiConfigByIdProvider('provider1').future,
+      );
       expect(result, isNull);
 
       container.dispose();
@@ -393,20 +404,24 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('provider1')
-              .overrideWith((ref) async => provider),
+          aiConfigByIdProvider(
+            'provider1',
+          ).overrideWith((ref) async => provider),
         ],
       );
 
-      final result =
-          await container.read(aiConfigByIdProvider('provider1').future);
+      final result = await container.read(
+        aiConfigByIdProvider('provider1').future,
+      );
       expect(result, equals(provider));
       expect(result?.name, equals('Test Provider'));
 
       // Cast to AiConfigInferenceProvider to access type-specific fields
       if (result is AiConfigInferenceProvider) {
-        expect(result.inferenceProviderType,
-            equals(InferenceProviderType.anthropic));
+        expect(
+          result.inferenceProviderType,
+          equals(InferenceProviderType.anthropic),
+        );
       }
 
       container.dispose();
@@ -427,8 +442,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             theme: ThemeData.dark(),
@@ -464,8 +480,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             theme: ThemeData.light(),
@@ -505,8 +522,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -550,8 +568,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            aiConfigByIdProvider('provider1')
-                .overrideWith((ref) async => provider),
+            aiConfigByIdProvider(
+              'provider1',
+            ).overrideWith((ref) async => provider),
           ],
           child: MaterialApp(
             home: Scaffold(

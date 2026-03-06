@@ -75,13 +75,13 @@ class DailyTimelineData {
 
   /// Total planned duration for the day.
   Duration get totalPlannedDuration => plannedSlots.fold(
-        Duration.zero,
-        (total, slot) => total + slot.duration,
-      );
+    Duration.zero,
+    (total, slot) => total + slot.duration,
+  );
 
   /// Total recorded duration for the day.
   Duration get totalActualDuration => actualSlots.fold(
-        Duration.zero,
-        (total, slot) => total + slot.duration,
-      );
+    Duration.zero,
+    (total, slot) => total + slot.duration,
+  );
 }

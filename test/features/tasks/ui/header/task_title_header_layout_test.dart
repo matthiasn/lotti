@@ -53,8 +53,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -94,8 +95,9 @@ void main() {
     expect(find.byIcon(Icons.edit), findsOneWidget);
   });
 
-  testWidgets('TaskTitleHeader enters edit mode when edit icon tapped',
-      (tester) async {
+  testWidgets('TaskTitleHeader enters edit mode when edit icon tapped', (
+    tester,
+  ) async {
     final taskWithoutEstimate = testTask.copyWith(
       data: testTask.data.copyWith(estimate: null),
     );

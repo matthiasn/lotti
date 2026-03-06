@@ -23,18 +23,22 @@ void main() {
   setUpAll(() {
     registerFallbackValue(AiConfigType.inferenceProvider);
     registerFallbackValue(Exception('test'));
-    registerFallbackValue(TaskSummaryRequest(
-      startDate: '2024-01-01',
-      endDate: '2024-01-02',
-    ));
-    registerFallbackValue(AiConfigInferenceProvider(
-      id: 'test',
-      name: 'test',
-      baseUrl: 'https://test.com',
-      apiKey: 'test',
-      createdAt: DateTime(2024),
-      inferenceProviderType: InferenceProviderType.gemini,
-    ));
+    registerFallbackValue(
+      TaskSummaryRequest(
+        startDate: '2024-01-01',
+        endDate: '2024-01-02',
+      ),
+    );
+    registerFallbackValue(
+      AiConfigInferenceProvider(
+        id: 'test',
+        name: 'test',
+        baseUrl: 'https://test.com',
+        apiKey: 'test',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      ),
+    );
   });
 
   group('ChatRepository Integration Tests', () {
@@ -85,8 +89,9 @@ void main() {
 
           // The key insight is that if getAiConfigurationForModel fails,
           // the entire operation should fail early
-          when(() => mockAiConfigRepository.getConfigById(testModelId))
-              .thenThrow(Exception('Config error'));
+          when(
+            () => mockAiConfigRepository.getConfigById(testModelId),
+          ).thenThrow(Exception('Config error'));
 
           Object? thrown;
           final sub = repository
@@ -102,19 +107,22 @@ void main() {
           expect(thrown.toString(), contains('Config error'));
 
           // Verify logging was called after dispatch
-          verify(() => mockLoggingService.captureEvent(
-                'Starting chat message processing',
-                domain: 'ChatRepository',
-                subDomain: 'sendMessage',
-              )).called(1);
+          verify(
+            () => mockLoggingService.captureEvent(
+              'Starting chat message processing',
+              domain: 'ChatRepository',
+              subDomain: 'sendMessage',
+            ),
+          ).called(1);
           sub.cancel();
         });
       });
 
       test('handles errors and logs them properly', () {
         fakeAsync((async) {
-          when(() => mockAiConfigRepository.getConfigById(testModelId))
-              .thenThrow(Exception('Test error'));
+          when(
+            () => mockAiConfigRepository.getConfigById(testModelId),
+          ).thenThrow(Exception('Test error'));
 
           Object? thrown;
           final sub = repository
@@ -133,48 +141,56 @@ void main() {
             isA<ChatRepositoryException>(),
           );
           final err = thrown! as ChatRepositoryException;
-          expect(err.message,
-              contains('Failed to send message: Exception: Test error'));
+          expect(
+            err.message,
+            contains('Failed to send message: Exception: Test error'),
+          );
 
           // Verify error logging
-          verify(() => mockLoggingService.captureException(
-                any<Exception>(),
-                domain: 'ChatRepository',
-                subDomain: 'sendMessage',
-                stackTrace: any<StackTrace?>(named: 'stackTrace'),
-              )).called(1);
+          verify(
+            () => mockLoggingService.captureException(
+              any<Exception>(),
+              domain: 'ChatRepository',
+              subDomain: 'sendMessage',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
           sub.cancel();
         });
       });
 
-      test('wraps TimeoutException from provider as ChatRepositoryException',
-          () async {
-        // Arrange configuration
-        final testProvider = AiConfigInferenceProvider(
-          id: 'p',
-          name: 'P',
-          baseUrl: 'https://',
-          apiKey: 'k',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.openAi,
-        );
-        final testModel = AiConfigModel(
-          id: testModelId,
-          name: 'M',
-          providerModelId: 'm',
-          inferenceProviderId: 'p',
-          createdAt: DateTime(2024),
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-          supportsFunctionCalling: true,
-        );
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenAnswer((_) async => testModel);
-        when(() => mockAiConfigRepository.getConfigById('p'))
-            .thenAnswer((_) async => testProvider);
+      test(
+        'wraps TimeoutException from provider as ChatRepositoryException',
+        () async {
+          // Arrange configuration
+          final testProvider = AiConfigInferenceProvider(
+            id: 'p',
+            name: 'P',
+            baseUrl: 'https://',
+            apiKey: 'k',
+            createdAt: DateTime(2024),
+            inferenceProviderType: InferenceProviderType.openAi,
+          );
+          final testModel = AiConfigModel(
+            id: testModelId,
+            name: 'M',
+            providerModelId: 'm',
+            inferenceProviderId: 'p',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          );
+          when(
+            () => mockAiConfigRepository.getConfigById(testModelId),
+          ).thenAnswer((_) async => testModel);
+          when(
+            () => mockAiConfigRepository.getConfigById('p'),
+          ).thenAnswer((_) async => testProvider);
 
-        when(() => mockCloudInferenceRepository.generate(
+          when(
+            () => mockCloudInferenceRepository.generate(
               any<String>(),
               model: any<String>(named: 'model'),
               temperature: any<double>(named: 'temperature'),
@@ -183,21 +199,23 @@ void main() {
               systemMessage: any<String>(named: 'systemMessage'),
               provider: any<AiConfigInferenceProvider?>(named: 'provider'),
               tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) => Stream.error(TimeoutException('timeout')));
+            ),
+          ).thenAnswer((_) => Stream.error(TimeoutException('timeout')));
 
-        // Act/Assert
-        await expectLater(
-          repository
-              .sendMessage(
-                message: 'Hi',
-                conversationHistory: [],
-                categoryId: testCategoryId,
-                modelId: testModelId,
-              )
-              .first,
-          throwsA(isA<ChatRepositoryException>()),
-        );
-      });
+          // Act/Assert
+          await expectLater(
+            repository
+                .sendMessage(
+                  message: 'Hi',
+                  conversationHistory: [],
+                  categoryId: testCategoryId,
+                  modelId: testModelId,
+                )
+                .first,
+            throwsA(isA<ChatRepositoryException>()),
+          );
+        },
+      );
     });
 
     group('session management', () {
@@ -214,16 +232,17 @@ void main() {
       });
 
       test(
-          'createSession creates session with default title when none provided',
-          () async {
-        final session = await repository.createSession(
-          categoryId: testCategoryId,
-        );
+        'createSession creates session with default title when none provided',
+        () async {
+          final session = await repository.createSession(
+            categoryId: testCategoryId,
+          );
 
-        expect(session.categoryId, testCategoryId);
-        expect(session.title, isNotNull);
-        expect(session.messages, isEmpty);
-      });
+          expect(session.categoryId, testCategoryId);
+          expect(session.title, isNotNull);
+          expect(session.messages, isEmpty);
+        },
+      );
 
       test('saveSession stores session and returns it', () async {
         final originalSession = await repository.createSession(
@@ -244,8 +263,9 @@ void main() {
         );
         await repository.saveSession(originalSession);
 
-        final retrievedSession =
-            await repository.getSession(originalSession.id);
+        final retrievedSession = await repository.getSession(
+          originalSession.id,
+        );
 
         expect(retrievedSession, isNotNull);
         expect(retrievedSession!.id, originalSession.id);
@@ -257,17 +277,21 @@ void main() {
         expect(session, isNull);
       });
 
-      test('getSessions returns all sessions when no categoryId filter',
-          () async {
-        final session1 = await repository.createSession(categoryId: 'cat1');
-        final session2 = await repository.createSession(categoryId: 'cat2');
+      test(
+        'getSessions returns all sessions when no categoryId filter',
+        () async {
+          final session1 = await repository.createSession(categoryId: 'cat1');
+          final session2 = await repository.createSession(categoryId: 'cat2');
 
-        final sessions = await repository.getSessions();
+          final sessions = await repository.getSessions();
 
-        expect(sessions.length, 2);
-        expect(
-            sessions.map((s) => s.id), containsAll([session1.id, session2.id]));
-      });
+          expect(sessions.length, 2);
+          expect(
+            sessions.map((s) => s.id),
+            containsAll([session1.id, session2.id]),
+          );
+        },
+      );
 
       test('getSessions filters by categoryId', () async {
         final session1 = await repository.createSession(categoryId: 'cat1');
@@ -283,7 +307,9 @@ void main() {
         // Create multiple sessions
         for (var i = 0; i < 5; i++) {
           await repository.createSession(
-              categoryId: testCategoryId, title: 'Session $i');
+            categoryId: testCategoryId,
+            title: 'Session $i',
+          );
         }
 
         final sessions = await repository.getSessions(
@@ -308,8 +334,9 @@ void main() {
           title: 'Second',
         );
 
-        final sessions =
-            await repository.getSessions(categoryId: testCategoryId);
+        final sessions = await repository.getSessions(
+          categoryId: testCategoryId,
+        );
 
         expect(sessions.length, 2);
         expect(sessions.first.id, session2.id); // Most recent first
@@ -317,8 +344,9 @@ void main() {
       });
 
       test('deleteSession removes session and its messages', () async {
-        final session =
-            await repository.createSession(categoryId: testCategoryId);
+        final session = await repository.createSession(
+          categoryId: testCategoryId,
+        );
         final message = ChatMessage.user('Test message');
 
         final sessionWithMessage = session.copyWith(messages: [message]);
@@ -338,63 +366,67 @@ void main() {
     });
 
     group('searchSessions', () {
-      test('filters by category and matches title (case-insensitive)',
-          () async {
-        final s1 = await repository.createSession(
-          categoryId: 'catA',
-          title: 'Project Alpha',
-        );
-        await repository.createSession(
-          categoryId: 'catB',
-          title: 'Alpha Beta',
-        );
+      test(
+        'filters by category and matches title (case-insensitive)',
+        () async {
+          final s1 = await repository.createSession(
+            categoryId: 'catA',
+            title: 'Project Alpha',
+          );
+          await repository.createSession(
+            categoryId: 'catB',
+            title: 'Alpha Beta',
+          );
 
-        final results = await repository.searchSessions(
-          query: 'alpha',
-          categoryId: 'catA',
-          limit: 10,
-        );
+          final results = await repository.searchSessions(
+            query: 'alpha',
+            categoryId: 'catA',
+            limit: 10,
+          );
 
-        expect(results.length, 1);
-        expect(results.first.id, s1.id);
-      });
+          expect(results.length, 1);
+          expect(results.first.id, s1.id);
+        },
+      );
 
-      test('orders results by lastMessageAt descending deterministically',
-          () async {
-        final sA = await repository.createSession(
-          categoryId: 'catX',
-          title: 'Alpha A',
-        );
-        final sB = await repository.createSession(
-          categoryId: 'catX',
-          title: 'Alpha B',
-        );
-        final sC = await repository.createSession(
-          categoryId: 'catX',
-          title: 'Alpha C',
-        );
+      test(
+        'orders results by lastMessageAt descending deterministically',
+        () async {
+          final sA = await repository.createSession(
+            categoryId: 'catX',
+            title: 'Alpha A',
+          );
+          final sB = await repository.createSession(
+            categoryId: 'catX',
+            title: 'Alpha B',
+          );
+          final sC = await repository.createSession(
+            categoryId: 'catX',
+            title: 'Alpha C',
+          );
 
-        // Set explicit recency timestamps
-        // ignore: avoid_redundant_argument_values
-        final t1 = DateTime(2024, 1, 1, 10, 0, 0);
-        // ignore: avoid_redundant_argument_values
-        final t2 = DateTime(2024, 1, 1, 11, 0, 0);
-        // ignore: avoid_redundant_argument_values
-        final t3 = DateTime(2024, 1, 1, 12, 0, 0);
+          // Set explicit recency timestamps
+          // ignore: avoid_redundant_argument_values
+          final t1 = DateTime(2024, 1, 1, 10, 0, 0);
+          // ignore: avoid_redundant_argument_values
+          final t2 = DateTime(2024, 1, 1, 11, 0, 0);
+          // ignore: avoid_redundant_argument_values
+          final t3 = DateTime(2024, 1, 1, 12, 0, 0);
 
-        await repository.saveSession(sA.copyWith(lastMessageAt: t1));
-        await repository.saveSession(sB.copyWith(lastMessageAt: t2));
-        await repository.saveSession(sC.copyWith(lastMessageAt: t3));
+          await repository.saveSession(sA.copyWith(lastMessageAt: t1));
+          await repository.saveSession(sB.copyWith(lastMessageAt: t2));
+          await repository.saveSession(sC.copyWith(lastMessageAt: t3));
 
-        final results = await repository.searchSessions(
-          query: 'alpha',
-          categoryId: 'catX',
-          limit: 10,
-        );
+          final results = await repository.searchSessions(
+            query: 'alpha',
+            categoryId: 'catX',
+            limit: 10,
+          );
 
-        // Expect newest first by lastMessageAt: C, B, A
-        expect(results.map((s) => s.id).toList(), [sC.id, sB.id, sA.id]);
-      });
+          // Expect newest first by lastMessageAt: C, B, A
+          expect(results.map((s) => s.id).toList(), [sC.id, sB.id, sA.id]);
+        },
+      );
 
       test('with empty query returns getSessions limited', () async {
         // Create more sessions than the limit
@@ -403,7 +435,10 @@ void main() {
         }
 
         final results = await repository.searchSessions(
-            query: '   ', categoryId: 'cat', limit: 3);
+          query: '   ',
+          categoryId: 'cat',
+          limit: 3,
+        );
         expect(results.length, 3);
       });
     });
@@ -411,23 +446,27 @@ void main() {
     group('system message', () {
       test('_getSystemMessage contains today date and guidance', () async {
         // Access via reflection through a sendMessage flow to capture the systemMessage argument
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenThrow(Exception('stop before network'));
+        when(
+          () => mockAiConfigRepository.getConfigById(testModelId),
+        ).thenThrow(Exception('stop before network'));
         try {
           await repository
               .sendMessage(
-                  message: 'x',
-                  conversationHistory: [],
-                  categoryId: testCategoryId,
-                  modelId: testModelId)
+                message: 'x',
+                conversationHistory: [],
+                categoryId: testCategoryId,
+                modelId: testModelId,
+              )
               .first;
         } catch (_) {}
 
-        final captured = verify(() => mockLoggingService.captureEvent(
-              'Starting chat message processing',
-              domain: 'ChatRepository',
-              subDomain: 'sendMessage',
-            )).callCount; // ensure path executed
+        final captured = verify(
+          () => mockLoggingService.captureEvent(
+            'Starting chat message processing',
+            domain: 'ChatRepository',
+            subDomain: 'sendMessage',
+          ),
+        ).callCount; // ensure path executed
         expect(captured, greaterThan(0));
 
         // We cannot directly get the private message here without refactor, but we can instantiate and
@@ -464,8 +503,9 @@ void main() {
 
     group('edge cases and error conditions', () {
       test('handles empty conversation history', () async {
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenThrow(Exception('Expected for this test'));
+        when(
+          () => mockAiConfigRepository.getConfigById(testModelId),
+        ).thenThrow(Exception('Expected for this test'));
 
         await expectLater(
           repository
@@ -482,13 +522,15 @@ void main() {
 
       test('handles very long conversation history', () async {
         final longHistory = List.generate(
-            100,
-            (i) => i.isEven
-                ? ChatMessage.user('User message $i')
-                : ChatMessage.assistant('Assistant message $i'));
+          100,
+          (i) => i.isEven
+              ? ChatMessage.user('User message $i')
+              : ChatMessage.assistant('Assistant message $i'),
+        );
 
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenThrow(Exception('Expected for this test'));
+        when(
+          () => mockAiConfigRepository.getConfigById(testModelId),
+        ).thenThrow(Exception('Expected for this test'));
 
         await expectLater(
           repository
@@ -523,8 +565,9 @@ void main() {
       test('properly delegates to ChatMessageProcessor methods', () async {
         // We can't easily test the full flow due to stream complexity,
         // but we can verify that the error path works and shows the integration
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenThrow(Exception('Processor integration test'));
+        when(
+          () => mockAiConfigRepository.getConfigById(testModelId),
+        ).thenThrow(Exception('Processor integration test'));
 
         var exceptionCaught = false;
         try {
@@ -545,11 +588,13 @@ void main() {
         expect(exceptionCaught, isTrue);
 
         // Verify the repository logged the start of processing
-        verify(() => mockLoggingService.captureEvent(
-              'Starting chat message processing',
-              domain: 'ChatRepository',
-              subDomain: 'sendMessage',
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureEvent(
+            'Starting chat message processing',
+            domain: 'ChatRepository',
+            subDomain: 'sendMessage',
+          ),
+        ).called(1);
       });
     });
 
@@ -582,35 +627,39 @@ void main() {
 
       // Helper to setup AI configuration mocks
       void setupAiConfigMocks() {
-        when(() => mockAiConfigRepository.getConfigById(testModel.id))
-            .thenAnswer((_) async => testModel);
-        when(() => mockAiConfigRepository.getConfigById(testProvider.id))
-            .thenAnswer((_) async => testProvider);
+        when(
+          () => mockAiConfigRepository.getConfigById(testModel.id),
+        ).thenAnswer((_) async => testModel);
+        when(
+          () => mockAiConfigRepository.getConfigById(testProvider.id),
+        ).thenAnswer((_) async => testProvider);
       }
 
-      test('successfully sends message with content only (no tool calls)',
-          () async {
-        // Setup AI configuration
-        setupAiConfigMocks();
+      test(
+        'successfully sends message with content only (no tool calls)',
+        () async {
+          // Setup AI configuration
+          setupAiConfigMocks();
 
-        // Setup streaming response
-        final responseStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            created: 0,
-            model: 'model',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Hello, I can help you with your tasks!',
+          // Setup streaming response
+          final responseStream = Stream.fromIterable([
+            const CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              created: 0,
+              model: 'model',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'Hello, I can help you with your tasks!',
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ]);
+              ],
+            ),
+          ]);
 
-        when(() => mockCloudInferenceRepository.generate(
+          when(
+            () => mockCloudInferenceRepository.generate(
               any<String>(),
               model: any<String>(named: 'model'),
               temperature: any<double>(named: 'temperature'),
@@ -619,29 +668,33 @@ void main() {
               systemMessage: any<String>(named: 'systemMessage'),
               provider: any<AiConfigInferenceProvider?>(named: 'provider'),
               tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) => responseStream);
+            ),
+          ).thenAnswer((_) => responseStream);
 
-        // Send message and collect results
-        final results = await repository
-            .sendMessage(
-              message: testMessage,
-              conversationHistory: [],
-              categoryId: testCategoryId,
-              modelId: testModel.id,
-            )
-            .toList();
+          // Send message and collect results
+          final results = await repository
+              .sendMessage(
+                message: testMessage,
+                conversationHistory: [],
+                categoryId: testCategoryId,
+                modelId: testModel.id,
+              )
+              .toList();
 
-        // Verify results
-        expect(results.length, 1);
-        expect(results[0], 'Hello, I can help you with your tasks!');
+          // Verify results
+          expect(results.length, 1);
+          expect(results[0], 'Hello, I can help you with your tasks!');
 
-        // Verify interactions
-        verify(() => mockLoggingService.captureEvent(
+          // Verify interactions
+          verify(
+            () => mockLoggingService.captureEvent(
               'Starting chat message processing',
               domain: 'ChatRepository',
               subDomain: 'sendMessage',
-            )).called(1);
-      });
+            ),
+          ).called(1);
+        },
+      );
 
       test('successfully sends message with tool calls', () async {
         // Setup AI configuration
@@ -704,16 +757,18 @@ void main() {
         ]);
 
         var callCount = 0;
-        when(() => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) {
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any<String>(),
+            model: any<String>(named: 'model'),
+            temperature: any<double>(named: 'temperature'),
+            baseUrl: any<String>(named: 'baseUrl'),
+            apiKey: any<String>(named: 'apiKey'),
+            systemMessage: any<String>(named: 'systemMessage'),
+            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+          ),
+        ).thenAnswer((_) {
           callCount++;
           return callCount == 1 ? initialStream : finalStream;
         });
@@ -729,10 +784,12 @@ void main() {
           ),
         ];
 
-        when(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any<TaskSummaryRequest>(named: 'request'),
-            )).thenAnswer((_) async => taskSummaries);
+        when(
+          () => mockTaskSummaryRepository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: any<TaskSummaryRequest>(named: 'request'),
+          ),
+        ).thenAnswer((_) async => taskSummaries);
 
         // Send message and collect results
         final results = await repository
@@ -751,10 +808,12 @@ void main() {
         expect(results[1], 'You completed 5 tasks today!');
 
         // Verify task summary was called
-        verify(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any<TaskSummaryRequest>(named: 'request'),
-            )).called(1);
+        verify(
+          () => mockTaskSummaryRepository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: any<TaskSummaryRequest>(named: 'request'),
+          ),
+        ).called(1);
       });
 
       test('handles chunked content in streaming response', () async {
@@ -804,16 +863,18 @@ void main() {
           ),
         ]);
 
-        when(() => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any<String>(),
+            model: any<String>(named: 'model'),
+            temperature: any<double>(named: 'temperature'),
+            baseUrl: any<String>(named: 'baseUrl'),
+            apiKey: any<String>(named: 'apiKey'),
+            systemMessage: any<String>(named: 'systemMessage'),
+            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         // Send message and collect results
         final results = await repository
@@ -880,25 +941,29 @@ void main() {
         ]);
 
         var callCount = 0;
-        when(() => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) {
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any<String>(),
+            model: any<String>(named: 'model'),
+            temperature: any<double>(named: 'temperature'),
+            baseUrl: any<String>(named: 'baseUrl'),
+            apiKey: any<String>(named: 'apiKey'),
+            systemMessage: any<String>(named: 'systemMessage'),
+            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+          ),
+        ).thenAnswer((_) {
           callCount++;
           return callCount == 1 ? initialStream : finalStream;
         });
 
         // Setup empty task summary response
-        when(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any<TaskSummaryRequest>(named: 'request'),
-            )).thenAnswer((_) async => []);
+        when(
+          () => mockTaskSummaryRepository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: any<TaskSummaryRequest>(named: 'request'),
+          ),
+        ).thenAnswer((_) async => []);
 
         // Send message and collect results
         final results = await repository
@@ -985,30 +1050,36 @@ void main() {
         ]);
 
         var call = 0;
-        when(() => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) => (++call == 1) ? initialStream : finalStream);
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any<String>(),
+            model: any<String>(named: 'model'),
+            temperature: any<double>(named: 'temperature'),
+            baseUrl: any<String>(named: 'baseUrl'),
+            apiKey: any<String>(named: 'apiKey'),
+            systemMessage: any<String>(named: 'systemMessage'),
+            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+          ),
+        ).thenAnswer((_) => (++call == 1) ? initialStream : finalStream);
 
         // Tool call data
-        when(() => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any<TaskSummaryRequest>(named: 'request'),
-            )).thenAnswer((_) async => [
-              TaskSummaryResult(
-                taskId: 't1',
-                taskTitle: 'Task 1',
-                summary: 'S1',
-                taskDate: DateTime(2024),
-                status: 'completed',
-              )
-            ]);
+        when(
+          () => mockTaskSummaryRepository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: any<TaskSummaryRequest>(named: 'request'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            TaskSummaryResult(
+              taskId: 't1',
+              taskTitle: 'Task 1',
+              summary: 'S1',
+              taskDate: DateTime(2024),
+              status: 'completed',
+            ),
+          ],
+        );
 
         final results = await repository
             .sendMessage(
@@ -1050,16 +1121,18 @@ void main() {
           ),
         ]);
 
-        when(() => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any<String>(),
+            model: any<String>(named: 'model'),
+            temperature: any<double>(named: 'temperature'),
+            baseUrl: any<String>(named: 'baseUrl'),
+            apiKey: any<String>(named: 'apiKey'),
+            systemMessage: any<String>(named: 'systemMessage'),
+            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         // Send message and collect results
         final results = await repository
@@ -1077,20 +1150,27 @@ void main() {
 
         // Verify the prompt included conversation history
         final capturedPrompt =
-            verify(() => mockCloudInferenceRepository.generate(
-                  captureAny<String>(),
-                  model: any<String>(named: 'model'),
-                  temperature: any<double>(named: 'temperature'),
-                  baseUrl: any<String>(named: 'baseUrl'),
-                  apiKey: any<String>(named: 'apiKey'),
-                  systemMessage: any<String>(named: 'systemMessage'),
-                  provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-                  tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-                )).captured.first as String;
+            verify(
+                  () => mockCloudInferenceRepository.generate(
+                    captureAny<String>(),
+                    model: any<String>(named: 'model'),
+                    temperature: any<double>(named: 'temperature'),
+                    baseUrl: any<String>(named: 'baseUrl'),
+                    apiKey: any<String>(named: 'apiKey'),
+                    systemMessage: any<String>(named: 'systemMessage'),
+                    provider: any<AiConfigInferenceProvider?>(
+                      named: 'provider',
+                    ),
+                    tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+                  ),
+                ).captured.first
+                as String;
 
         expect(capturedPrompt, contains('What is the weather?'));
-        expect(capturedPrompt,
-            contains('I can only help with task-related queries.'));
+        expect(
+          capturedPrompt,
+          contains('I can only help with task-related queries.'),
+        );
         expect(capturedPrompt, contains('Show me my tasks then'));
         expect(capturedPrompt, contains('Please show them now'));
       });
@@ -1102,16 +1182,18 @@ void main() {
         String? capturedSystemMessage;
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
-        when(() => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: captureAny<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            )).thenAnswer((invocation) {
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any<String>(),
+            model: any<String>(named: 'model'),
+            temperature: any<double>(named: 'temperature'),
+            baseUrl: any<String>(named: 'baseUrl'),
+            apiKey: any<String>(named: 'apiKey'),
+            systemMessage: captureAny<String>(named: 'systemMessage'),
+            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+          ),
+        ).thenAnswer((invocation) {
           capturedSystemMessage =
               invocation.namedArguments[#systemMessage] as String?;
           return responseStream;

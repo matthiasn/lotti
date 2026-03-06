@@ -13,12 +13,12 @@ const fts5DbFileName = 'fts5_db.sqlite';
 @DriftDatabase(include: {'fts5_db.drift'})
 class Fts5Db extends _$Fts5Db {
   Fts5Db({this.inMemoryDatabase = false})
-      : super(
-          openDbConnection(
-            fts5DbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-          ),
-        );
+    : super(
+        openDbConnection(
+          fts5DbFileName,
+          inMemoryDatabase: inMemoryDatabase,
+        ),
+      );
 
   final bool inMemoryDatabase;
 
@@ -52,14 +52,16 @@ class Fts5Db extends _$Fts5Db {
 
     final summary = entry.maybeMap(
       measurement: (m) {
-        final dataType =
-            entitiesCacheService.getDataTypeById(m.data.dataTypeId);
+        final dataType = entitiesCacheService.getDataTypeById(
+          m.data.dataTypeId,
+        );
         final value = m.data.value;
         return '${dataType?.displayName} $value ${dataType?.unitName}';
       },
       survey: (survey) {
-        final scores = survey.data.calculatedScores.entries
-            .map((mapEntry) => '${mapEntry.key}: ${mapEntry.value}');
+        final scores = survey.data.calculatedScores.entries.map(
+          (mapEntry) => '${mapEntry.key}: ${mapEntry.value}',
+        );
         return scores.join('\n');
       },
       quantitative: (q) {

@@ -22,8 +22,9 @@ void main() {
     getIt.unregister<EntitiesCacheService>();
   });
 
-  testWidgets('CategoriesTypeCard displays all elements correctly',
-      (WidgetTester tester) async {
+  testWidgets('CategoriesTypeCard displays all elements correctly', (
+    WidgetTester tester,
+  ) async {
     final category = CategoryDefinition(
       id: 'test-id',
       name: 'Test Category',
@@ -70,56 +71,59 @@ void main() {
     );
   });
 
-  testWidgets('CategoriesTypeCard hides private and favorite icons when false',
-      (WidgetTester tester) async {
-    final category = CategoryDefinition(
-      id: 'test-id',
-      name: 'Test Category',
-      color: '#FF0000',
-      private: false,
-      favorite: false,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      vectorClock: null,
-      active: true,
-    );
+  testWidgets(
+    'CategoriesTypeCard hides private and favorite icons when false',
+    (WidgetTester tester) async {
+      final category = CategoryDefinition(
+        id: 'test-id',
+        name: 'Test Category',
+        color: '#FF0000',
+        private: false,
+        favorite: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        active: true,
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CategoryTypeNavCard(
-            category,
-            index: 0,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CategoryTypeNavCard(
+              category,
+              index: 0,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    // Verify category name is displayed
-    expect(find.text('Test Category'), findsOneWidget);
+      // Verify category name is displayed
+      expect(find.text('Test Category'), findsOneWidget);
 
-    // Verify color icon is present
-    expect(find.byType(CategoryIconCompact), findsOneWidget);
+      // Verify color icon is present
+      expect(find.byType(CategoryIconCompact), findsOneWidget);
 
-    // Verify private icon is not shown
-    expect(
-      find.byWidgetPredicate(
-        (widget) => widget is Icon && widget.icon == MdiIcons.security,
-      ),
-      findsNothing,
-    );
+      // Verify private icon is not shown
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Icon && widget.icon == MdiIcons.security,
+        ),
+        findsNothing,
+      );
 
-    // Verify favorite star is not shown
-    expect(
-      find.byWidgetPredicate(
-        (widget) => widget is Icon && widget.icon == MdiIcons.star,
-      ),
-      findsNothing,
-    );
-  });
+      // Verify favorite star is not shown
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Icon && widget.icon == MdiIcons.star,
+        ),
+        findsNothing,
+      );
+    },
+  );
 
-  testWidgets('CategoryColorIcon displays correct color from cache service',
-      (WidgetTester tester) async {
+  testWidgets('CategoryColorIcon displays correct color from cache service', (
+    WidgetTester tester,
+  ) async {
     const categoryId = 'test-category-id';
     final category = CategoryDefinition(
       id: categoryId,
@@ -132,8 +136,9 @@ void main() {
       private: false,
     );
 
-    when(() => mockEntitiesCacheService.getCategoryById(categoryId))
-        .thenReturn(category);
+    when(
+      () => mockEntitiesCacheService.getCategoryById(categoryId),
+    ).thenReturn(category);
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -144,7 +149,8 @@ void main() {
     );
 
     expect(find.byType(CategoryIconCompact), findsOneWidget);
-    verify(() => mockEntitiesCacheService.getCategoryById(categoryId))
-        .called(1);
+    verify(
+      () => mockEntitiesCacheService.getCategoryById(categoryId),
+    ).called(1);
   });
 }

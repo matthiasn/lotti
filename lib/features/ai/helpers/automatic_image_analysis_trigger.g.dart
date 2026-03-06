@@ -24,10 +24,13 @@ final automaticImageAnalysisTriggerProvider =
 /// The trigger stores a Ref and uses it in async operations, so it must
 /// remain valid throughout the inference lifecycle.
 
-final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
-        AutomaticImageAnalysisTrigger,
-        AutomaticImageAnalysisTrigger,
-        AutomaticImageAnalysisTrigger>
+final class AutomaticImageAnalysisTriggerProvider
+    extends
+        $FunctionalProvider<
+          AutomaticImageAnalysisTrigger,
+          AutomaticImageAnalysisTrigger,
+          AutomaticImageAnalysisTrigger
+        >
     with $Provider<AutomaticImageAnalysisTrigger> {
   /// Provider for the automatic image analysis trigger helper.
   ///
@@ -35,15 +38,15 @@ final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
   /// The trigger stores a Ref and uses it in async operations, so it must
   /// remain valid throughout the inference lifecycle.
   AutomaticImageAnalysisTriggerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'automaticImageAnalysisTriggerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'automaticImageAnalysisTriggerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$automaticImageAnalysisTriggerHash();
@@ -51,8 +54,8 @@ final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<AutomaticImageAnalysisTrigger> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   AutomaticImageAnalysisTrigger create(Ref ref) {
@@ -63,8 +66,9 @@ final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
   Override overrideWithValue(AutomaticImageAnalysisTrigger value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride:
-          $SyncValueProvider<AutomaticImageAnalysisTrigger>(value),
+      providerOverride: $SyncValueProvider<AutomaticImageAnalysisTrigger>(
+        value,
+      ),
     );
   }
 }

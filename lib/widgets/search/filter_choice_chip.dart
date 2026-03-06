@@ -29,16 +29,17 @@ class FilterChoiceChip extends StatelessWidget {
           side: BorderSide(color: selectedColor),
           label: Text(
             label,
-            style: choiceChipTextStyle(
-              themeData: Theme.of(context),
-              isSelected: isSelected,
-            ).copyWith(
-              color: isSelected
-                  ? selectedColor.isLight
-                      ? Colors.black
-                      : Colors.white
-                  : context.colorScheme.onSurface,
-            ),
+            style:
+                choiceChipTextStyle(
+                  themeData: Theme.of(context),
+                  isSelected: isSelected,
+                ).copyWith(
+                  color: isSelected
+                      ? selectedColor.isLight
+                            ? Colors.black
+                            : Colors.white
+                      : context.colorScheme.onSurface,
+                ),
           ),
           visualDensity: VisualDensity.compact,
           backgroundColor: isSelected ? selectedColor : null,

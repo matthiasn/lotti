@@ -42,7 +42,9 @@ void main() {
       );
 
       expect(
-          find.text('Flash, Pro, and Nano Banana Pro (image)'), findsOneWidget);
+        find.text('Flash, Pro, and Nano Banana Pro (image)'),
+        findsOneWidget,
+      );
       expect(
         find.text('Optimized: Pro for complex tasks, Flash for speed'),
         findsOneWidget,
@@ -112,8 +114,9 @@ void main() {
   });
 
   group('FtueSetupDialog - OpenAI', () {
-    testWidgets('displays correct title and provider name for OpenAI',
-        (tester) async {
+    testWidgets('displays correct title and provider name for OpenAI', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -126,8 +129,9 @@ void main() {
       expect(find.text('Get started quickly with OpenAI'), findsOneWidget);
     });
 
-    testWidgets('shows OpenAI-specific preview of what will be created',
-        (tester) async {
+    testWidgets('shows OpenAI-specific preview of what will be created', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -194,8 +198,9 @@ void main() {
   });
 
   group('FtueSetupDialog - Mistral', () {
-    testWidgets('displays correct title and provider name for Mistral',
-        (tester) async {
+    testWidgets('displays correct title and provider name for Mistral', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -208,8 +213,9 @@ void main() {
       expect(find.text('Get started quickly with Mistral'), findsOneWidget);
     });
 
-    testWidgets('shows Mistral-specific preview of what will be created',
-        (tester) async {
+    testWidgets('shows Mistral-specific preview of what will be created', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -235,12 +241,14 @@ void main() {
 
       expect(
         find.text(
-            'Magistral Medium (reasoning), Mistral Small (fast), Voxtral Small (audio)'),
+          'Magistral Medium (reasoning), Mistral Small (fast), Voxtral Small (audio)',
+        ),
         findsOneWidget,
       );
       expect(
         find.text(
-            'Optimized: Magistral for reasoning, Mistral Small for speed'),
+          'Optimized: Magistral for reasoning, Mistral Small for speed',
+        ),
         findsOneWidget,
       );
       expect(find.text('Test Category Mistral Enabled'), findsOneWidget);

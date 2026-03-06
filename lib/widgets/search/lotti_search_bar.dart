@@ -114,15 +114,16 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
           color: !isDark
               ? context.colorScheme.surfaceContainerHighest
               : widget.isCompact || !widget.useGradientInDark
-                  ? context.colorScheme.surfaceContainerHighest
-                  : null,
+              ? context.colorScheme.surfaceContainerHighest
+              : null,
           gradient: (!isDark || widget.isCompact || !widget.useGradientInDark)
               ? null
               : LinearGradient(
                   colors: [
                     context.colorScheme.surfaceContainer,
-                    context.colorScheme.surfaceContainerHigh
-                        .withValues(alpha: 0.8),
+                    context.colorScheme.surfaceContainerHigh.withValues(
+                      alpha: 0.8,
+                    ),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -132,9 +133,10 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
             color: _isHovered
                 ? context.colorScheme.primary.withValues(alpha: 0.4)
                 : isDark
-                    ? context.colorScheme.primaryContainer
-                        .withValues(alpha: widget.isCompact ? 0.1 : 0.2)
-                    : context.colorScheme.outline.withValues(alpha: 0.2),
+                ? context.colorScheme.primaryContainer.withValues(
+                    alpha: widget.isCompact ? 0.1 : 0.2,
+                  )
+                : context.colorScheme.outline.withValues(alpha: 0.2),
           ),
           boxShadow: [
             if (!widget.isCompact)
@@ -145,8 +147,9 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
               ),
             if (_isHovered)
               BoxShadow(
-                color:
-                    context.colorScheme.primary.withValues(alpha: hoverAlpha),
+                color: context.colorScheme.primary.withValues(
+                  alpha: hoverAlpha,
+                ),
                 blurRadius: 12,
                 spreadRadius: 1,
               ),
@@ -166,8 +169,9 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: context.colorScheme.onSurfaceVariant.withValues(
+                alpha: 0.5,
+              ),
               fontSize: widget.isCompact ? 14 : 15,
               fontWeight: FontWeight.w400,
               letterSpacing: 0.3,

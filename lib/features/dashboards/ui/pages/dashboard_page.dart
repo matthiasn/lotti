@@ -32,7 +32,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   void initState() {
     _transformationController = TransformationController();
     _transformationController.addListener(() {
-      ref.read(barWidthControllerProvider.notifier).updateScale(
+      ref
+          .read(barWidthControllerProvider.notifier)
+          .updateScale(
             _transformationController.value,
           );
     });
@@ -52,11 +54,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       widget.dashboardId,
     );
 
-    final rangeStart =
-        DateTime.now().subtract(Duration(days: timeSpanDays)).dayAtMidnight;
-    final rangeEnd = DateTime.now()
-        .dayAtMidnight
-        .add(const Duration(hours: 23, minutes: 59, seconds: 59));
+    final rangeStart = DateTime.now()
+        .subtract(Duration(days: timeSpanDays))
+        .dayAtMidnight;
+    final rangeEnd = DateTime.now().dayAtMidnight.add(
+      const Duration(hours: 23, minutes: 59, seconds: 59),
+    );
 
     if (dashboard == null) {
       beamToNamed('/dashboards');

@@ -78,8 +78,9 @@ void main() {
   }
 
   group('WhatsNewModal', () {
-    testWidgets('displays no updates message when content is empty',
-        (tester) async {
+    testWidgets('displays no updates message when content is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           controllerBuilder: () => _TestWhatsNewController(
@@ -95,8 +96,9 @@ void main() {
       expect(find.text("You're all caught up!"), findsOneWidget);
     });
 
-    testWidgets('displays release content when unseen releases exist',
-        (tester) async {
+    testWidgets('displays release content when unseen releases exist', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           controllerBuilder: () => _TestWhatsNewController(
@@ -187,8 +189,9 @@ void main() {
       expect(find.text('v0.9.980'), findsNothing);
     });
 
-    testWidgets('displays fallback banner when image URL is null',
-        (tester) async {
+    testWidgets('displays fallback banner when image URL is null', (
+      tester,
+    ) async {
       final contentWithoutBanner = WhatsNewContent(
         release: testRelease1,
         headerMarkdown: '# January Update',

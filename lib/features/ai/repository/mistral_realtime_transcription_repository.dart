@@ -26,14 +26,14 @@ class MistralRealtimeTranscriptionRepository {
   /// custom implementations can forward authentication.
   MistralRealtimeTranscriptionRepository({
     WebSocketChannel Function(Uri uri, Map<String, String> headers)?
-        channelFactory,
+    channelFactory,
   }) : _channelFactory = channelFactory;
 
   static const _providerName = 'Mistral Realtime';
   static const _logName = 'MistralRealtimeTranscription';
 
   final WebSocketChannel Function(Uri uri, Map<String, String> headers)?
-      _channelFactory;
+  _channelFactory;
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _channelSubscription;

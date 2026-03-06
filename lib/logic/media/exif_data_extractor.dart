@@ -91,8 +91,10 @@ class ExifDataExtractor {
 
     try {
       // Convert to string and clean up brackets
-      final coordStr =
-          coordData.toString().replaceAll('[', '').replaceAll(']', '');
+      final coordStr = coordData
+          .toString()
+          .replaceAll('[', '')
+          .replaceAll(']', '');
       final parts = coordStr.split(',');
 
       if (parts.length != 3) {

@@ -40,8 +40,9 @@ void main() {
   group('TaskToolDispatcher', () {
     group('dispatch — task lookup', () {
       test('returns failure when task entity is not found', () async {
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
 
         final result = await dispatcher.dispatch(
           'set_task_title',
@@ -55,8 +56,9 @@ void main() {
       });
 
       test('returns failure for unknown tool name', () async {
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => _makeTestTask(taskId));
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => _makeTestTask(taskId));
 
         final result = await dispatcher.dispatch(
           'nonexistent_tool',
@@ -72,8 +74,9 @@ void main() {
 
     group('dispatch — type validation guards', () {
       setUp(() {
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => _makeTestTask(taskId));
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => _makeTestTask(taskId));
       });
 
       test('set_task_title rejects non-string title', () async {
@@ -214,8 +217,9 @@ void main() {
 
     group('dispatch — handler delegation', () {
       setUp(() {
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => _makeTestTask(taskId));
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => _makeTestTask(taskId));
       });
 
       test('set_task_title delegates to TaskTitleHandler', () async {
@@ -338,8 +342,9 @@ void main() {
             LabelAssignmentRateLimiter(),
           );
 
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => _makeTestTask(taskId));
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => _makeTestTask(taskId));
 
         // Common stubs for logging service.
         when(
@@ -391,10 +396,12 @@ void main() {
         '(valid labels assigned)',
         () async {
           // Stub label validation: return label as valid.
-          when(() => mockJournalDb.getLabelDefinitionById('label-a'))
-              .thenAnswer((_) async => _makeLabelDef('label-a'));
-          when(() => mockJournalDb.getAllLabelDefinitions())
-              .thenAnswer((_) async => [_makeLabelDef('label-a')]);
+          when(
+            () => mockJournalDb.getLabelDefinitionById('label-a'),
+          ).thenAnswer((_) async => _makeLabelDef('label-a'));
+          when(
+            () => mockJournalDb.getAllLabelDefinitions(),
+          ).thenAnswer((_) async => [_makeLabelDef('label-a')]);
           when(
             () => mockLabelsRepository.addLabels(
               journalEntityId: any(named: 'journalEntityId'),

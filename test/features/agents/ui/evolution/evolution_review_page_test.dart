@@ -83,8 +83,9 @@ void main() {
       );
     });
 
-    testWidgets('shows no-feedback empty state when feedback is null',
-        (tester) async {
+    testWidgets('shows no-feedback empty state when feedback is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
@@ -95,8 +96,9 @@ void main() {
       );
     });
 
-    testWidgets('shows FeedbackSummarySection when feedback has items',
-        (tester) async {
+    testWidgets('shows FeedbackSummarySection when feedback has items', (
+      tester,
+    ) async {
       final feedback = makeTestClassifiedFeedback(
         items: [
           makeTestClassifiedFeedbackItem(detail: 'Agent was accurate'),
@@ -111,8 +113,9 @@ void main() {
       expect(find.byType(FeedbackSummarySection), findsOneWidget);
     });
 
-    testWidgets('shows feedbackSummary text when active session has one',
-        (tester) async {
+    testWidgets('shows feedbackSummary text when active session has one', (
+      tester,
+    ) async {
       final session = makeTestEvolutionSession(
         feedbackSummary: 'Agent performed well in most areas.',
       );
@@ -129,26 +132,29 @@ void main() {
     });
 
     testWidgets(
-        'shows proposal section label inside summary card when session has '
-        'feedbackSummary', (tester) async {
-      final session = makeTestEvolutionSession(
-        feedbackSummary: 'Summary text here.',
-      );
+      'shows proposal section label inside summary card when session has '
+      'feedbackSummary',
+      (tester) async {
+        final session = makeTestEvolutionSession(
+          feedbackSummary: 'Summary text here.',
+        );
 
-      await tester.pumpWidget(
-        buildSubject(pendingOverride: (ref, id) async => session),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          buildSubject(pendingOverride: (ref, id) async => session),
+        );
+        await tester.pump();
 
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(
-        find.text(context.messages.agentRitualReviewProposalSection),
-        findsOneWidget,
-      );
-    });
+        final context = tester.element(find.byType(EvolutionReviewPage));
+        expect(
+          find.text(context.messages.agentRitualReviewProposalSection),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('summary text is bounded with ellipsis overflow',
-        (tester) async {
+    testWidgets('summary text is bounded with ellipsis overflow', (
+      tester,
+    ) async {
       final session = makeTestEvolutionSession(
         feedbackSummary: 'Summary text here.',
       );
@@ -163,8 +169,9 @@ void main() {
       expect(summaryText.overflow, TextOverflow.ellipsis);
     });
 
-    testWidgets('does not show proposal card when pending session is null',
-        (tester) async {
+    testWidgets('does not show proposal card when pending session is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
@@ -177,22 +184,23 @@ void main() {
     });
 
     testWidgets(
-        'FAB with "Start Conversation" appears when there is an active session',
-        (tester) async {
-      final session = makeTestEvolutionSession();
+      'FAB with "Start Conversation" appears when there is an active session',
+      (tester) async {
+        final session = makeTestEvolutionSession();
 
-      await tester.pumpWidget(
-        buildSubject(pendingOverride: (ref, id) async => session),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildSubject(pendingOverride: (ref, id) async => session),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(
-        find.text(context.messages.agentRitualReviewAction),
-        findsOneWidget,
-      );
-    });
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+        final context = tester.element(find.byType(EvolutionReviewPage));
+        expect(
+          find.text(context.messages.agentRitualReviewAction),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('FAB appears when there is no active session', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -207,64 +215,68 @@ void main() {
     });
 
     testWidgets(
-        'ignores non-session pending entities for FAB and proposal card',
-        (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          pendingOverride: (ref, id) async => makeTestTemplate(
-            id: 'not-a-session',
-            agentId: id,
+      'ignores non-session pending entities for FAB and proposal card',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            pendingOverride: (ref, id) async => makeTestTemplate(
+              id: 'not-a-session',
+              agentId: id,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-      expect(
-        find.text(context.messages.agentRitualReviewProposalSection),
-        findsNothing,
-      );
-    });
-
-    testWidgets(
-        'renders SizedBox.shrink when pending session provider has error',
-        (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          pendingOverride: (ref, id) =>
-              Future<AgentDomainEntity?>.error(Exception('fail')),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(find.text(context.messages.commonError), findsNothing);
-    });
+        final context = tester.element(find.byType(EvolutionReviewPage));
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+        expect(
+          find.text(context.messages.agentRitualReviewProposalSection),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
-        'does not show feedbackSummary box when session has null feedbackSummary',
-        (tester) async {
-      // makeTestEvolutionSession defaults feedbackSummary to null.
-      final session = makeTestEvolutionSession();
+      'renders SizedBox.shrink when pending session provider has error',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            pendingOverride: (ref, id) =>
+                Future<AgentDomainEntity?>.error(Exception('fail')),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        buildSubject(pendingOverride: (ref, id) async => session),
-      );
-      await tester.pumpAndSettle();
+        final context = tester.element(find.byType(EvolutionReviewPage));
+        expect(find.text(context.messages.commonError), findsNothing);
+      },
+    );
 
-      // The FAB should still be present.
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      // Proposal section label exists only inside the summary card.
-      expect(
-        find.text(context.messages.agentRitualReviewProposalSection),
-        findsNothing,
-      );
-    });
+    testWidgets(
+      'does not show feedbackSummary box when session has null feedbackSummary',
+      (tester) async {
+        // makeTestEvolutionSession defaults feedbackSummary to null.
+        final session = makeTestEvolutionSession();
 
-    testWidgets('shows empty template name when template is not loaded',
-        (tester) async {
+        await tester.pumpWidget(
+          buildSubject(pendingOverride: (ref, id) async => session),
+        );
+        await tester.pumpAndSettle();
+
+        // The FAB should still be present.
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+        final context = tester.element(find.byType(EvolutionReviewPage));
+        // Proposal section label exists only inside the summary card.
+        expect(
+          find.text(context.messages.agentRitualReviewProposalSection),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('shows empty template name when template is not loaded', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(templateOverride: (ref, id) async => null),
       );
@@ -274,8 +286,9 @@ void main() {
       expect(find.text('Daily Standup'), findsNothing);
     });
 
-    testWidgets('shows loading indicator while feedback is loading',
-        (tester) async {
+    testWidgets('shows loading indicator while feedback is loading', (
+      tester,
+    ) async {
       // Use a Completer so no timer is left pending after the test.
       final completer = Completer<ClassifiedFeedback?>();
 
@@ -288,18 +301,21 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
-    testWidgets('shows common error text when feedback provider emits an error',
-        (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          feedbackOverride: (ref, id) =>
-              Future<ClassifiedFeedback?>.error(Exception('extraction failed')),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows common error text when feedback provider emits an error',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            feedbackOverride: (ref, id) => Future<ClassifiedFeedback?>.error(
+              Exception('extraction failed'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(find.text(context.messages.commonError), findsOneWidget);
-    });
+        final context = tester.element(find.byType(EvolutionReviewPage));
+        expect(find.text(context.messages.commonError), findsOneWidget);
+      },
+    );
   });
 }

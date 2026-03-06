@@ -68,20 +68,22 @@ void main() {
       expect(hash, isNot(host)); // Hash should differ from original
     });
 
-    test('getHostHash returns a valid hash after service initialization',
-        () async {
-      // Create a new service without initializing properly
-      await getIt.reset();
-      final emptySettingsDb = SettingsDb(inMemoryDatabase: true);
-      getIt.registerSingleton<SettingsDb>(emptySettingsDb);
+    test(
+      'getHostHash returns a valid hash after service initialization',
+      () async {
+        // Create a new service without initializing properly
+        await getIt.reset();
+        final emptySettingsDb = SettingsDb(inMemoryDatabase: true);
+        getIt.registerSingleton<SettingsDb>(emptySettingsDb);
 
-      // Create service and wait for init
-      final uninitializedService = VectorClockService();
-      await uninitializedService.initialized;
+        // Create service and wait for init
+        final uninitializedService = VectorClockService();
+        await uninitializedService.initialized;
 
-      final hash = await uninitializedService.getHostHash();
-      expect(hash, isNotNull);
-    });
+        final hash = await uninitializedService.getHostHash();
+        expect(hash, isNotNull);
+      },
+    );
 
     test('getNextVectorClock returns clock with current host', () async {
       final host = await service.getHost();
@@ -102,8 +104,9 @@ void main() {
       final host = await service.getHost();
       const previousClock = VectorClock({'other-host': 5, 'another-host': 10});
 
-      final mergedClock =
-          await service.getNextVectorClock(previous: previousClock);
+      final mergedClock = await service.getNextVectorClock(
+        previous: previousClock,
+      );
 
       expect(mergedClock.vclock, containsPair('other-host', 5));
       expect(mergedClock.vclock, containsPair('another-host', 10));
@@ -119,19 +122,21 @@ void main() {
       expect(clock.vclock[host], 100);
     });
 
-    test('multiple getNextVectorClock calls increment counter sequentially',
-        () async {
-      final host = await service.getHost();
-      await service.setNextAvailableCounter(0);
+    test(
+      'multiple getNextVectorClock calls increment counter sequentially',
+      () async {
+        final host = await service.getHost();
+        await service.setNextAvailableCounter(0);
 
-      final clock1 = await service.getNextVectorClock();
-      final clock2 = await service.getNextVectorClock();
-      final clock3 = await service.getNextVectorClock();
+        final clock1 = await service.getNextVectorClock();
+        final clock2 = await service.getNextVectorClock();
+        final clock3 = await service.getNextVectorClock();
 
-      expect(clock1.vclock[host], 0);
-      expect(clock2.vclock[host], 1);
-      expect(clock3.vclock[host], 2);
-    });
+        expect(clock1.vclock[host], 0);
+        expect(clock2.vclock[host], 1);
+        expect(clock3.vclock[host], 2);
+      },
+    );
 
     test('counter persists across service instances', () async {
       await service.setNextAvailableCounter(50);
@@ -155,38 +160,44 @@ void main() {
       expect(loadedHost, originalHost);
     });
 
-    test('catches up when previous clock has higher counter for our host',
-        () async {
-      final host = await service.getHost();
-      await service.setNextAvailableCounter(10);
+    test(
+      'catches up when previous clock has higher counter for our host',
+      () async {
+        final host = await service.getHost();
+        await service.setNextAvailableCounter(10);
 
-      // Simulate a previous clock (e.g., from synced data) with higher counter
-      final previousClock = VectorClock({host!: 100, 'other-host': 5});
+        // Simulate a previous clock (e.g., from synced data) with higher counter
+        final previousClock = VectorClock({host!: 100, 'other-host': 5});
 
-      final newClock =
-          await service.getNextVectorClock(previous: previousClock);
+        final newClock = await service.getNextVectorClock(
+          previous: previousClock,
+        );
 
-      // Should use previousHostCounter + 1, not our local counter
-      expect(newClock.vclock[host], 101);
-      // Local counter should be updated to stay ahead
-      expect(await service.getNextAvailableCounter(), 102);
-    });
+        // Should use previousHostCounter + 1, not our local counter
+        expect(newClock.vclock[host], 101);
+        // Local counter should be updated to stay ahead
+        expect(await service.getNextAvailableCounter(), 102);
+      },
+    );
 
-    test('does not catch up when previous clock has lower counter for our host',
-        () async {
-      final host = await service.getHost();
-      await service.setNextAvailableCounter(100);
+    test(
+      'does not catch up when previous clock has lower counter for our host',
+      () async {
+        final host = await service.getHost();
+        await service.setNextAvailableCounter(100);
 
-      // Previous clock has a lower counter for our host
-      final previousClock = VectorClock({host!: 50, 'other-host': 5});
+        // Previous clock has a lower counter for our host
+        final previousClock = VectorClock({host!: 50, 'other-host': 5});
 
-      final newClock =
-          await service.getNextVectorClock(previous: previousClock);
+        final newClock = await service.getNextVectorClock(
+          previous: previousClock,
+        );
 
-      // Should use our local counter, not the previous one
-      expect(newClock.vclock[host], 100);
-      // Local counter incremented normally
-      expect(await service.getNextAvailableCounter(), 101);
-    });
+        // Should use our local counter, not the previous one
+        expect(newClock.vclock[host], 100);
+        // Local counter incremented normally
+        expect(await service.getNextAvailableCounter(), 101);
+      },
+    );
   });
 }

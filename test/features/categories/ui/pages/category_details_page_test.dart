@@ -49,58 +49,59 @@ void main() {
     });
 
     testWidgets(
-        'name field does not reseed selection/text on rebuild during edit',
-        (tester) async {
-      final streamController =
-          StreamController<CategoryDefinition?>.broadcast();
-      when(() => mockRepository.watchCategory(any())).thenAnswer(
-        (_) => streamController.stream,
-      );
+      'name field does not reseed selection/text on rebuild during edit',
+      (tester) async {
+        final streamController =
+            StreamController<CategoryDefinition?>.broadcast();
+        when(() => mockRepository.watchCategory(any())).thenAnswer(
+          (_) => streamController.stream,
+        );
 
-      final category = CategoryDefinition(
-        id: testCategoryId,
-        name: 'Alpha',
-        color: '#00AAFF',
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-        private: false,
-        active: true,
-      );
+        final category = CategoryDefinition(
+          id: testCategoryId,
+          name: 'Alpha',
+          color: '#00AAFF',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-          child: CategoryDetailsPage(categoryId: testCategoryId),
-        ),
-      );
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategoryDetailsPage(categoryId: testCategoryId),
+          ),
+        );
 
-      // Emit initial category
-      streamController.add(category);
-      await tester.pump();
+        // Emit initial category
+        streamController.add(category);
+        await tester.pump();
 
-      // Find the name field (first TextFormField in Basic Settings)
-      final nameField = find.byType(TextFormField).first;
-      await tester.tap(nameField);
-      await tester.pump();
+        // Find the name field (first TextFormField in Basic Settings)
+        final nameField = find.byType(TextFormField).first;
+        await tester.tap(nameField);
+        await tester.pump();
 
-      // User types a suffix
-      await tester.enterText(nameField, 'AlphaX');
-      await tester.pump();
+        // User types a suffix
+        await tester.enterText(nameField, 'AlphaX');
+        await tester.pump();
 
-      // Trigger a rebuild via controller state change: simulate toggling favorite
-      final updated = category.copyWith(favorite: true);
-      streamController.add(updated);
-      await tester.pump();
+        // Trigger a rebuild via controller state change: simulate toggling favorite
+        final updated = category.copyWith(favorite: true);
+        streamController.add(updated);
+        await tester.pump();
 
-      // The text should remain user's edited value (no reseed)
-      final tf = tester.widget<TextFormField>(nameField);
-      expect(tf.controller?.text, equals('AlphaX'));
+        // The text should remain user's edited value (no reseed)
+        final tf = tester.widget<TextFormField>(nameField);
+        expect(tf.controller?.text, equals('AlphaX'));
 
-      await streamController.close();
-    });
+        await streamController.close();
+      },
+    );
 
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {
@@ -222,8 +223,10 @@ void main() {
         expect(find.text('Private'), findsOneWidget);
         expect(find.text('Active'), findsOneWidget);
         expect(find.text('Favorite'), findsOneWidget);
-        expect(find.byType(LottiSwitchField),
-            findsNWidgets(3)); // 3 toggle switches
+        expect(
+          find.byType(LottiSwitchField),
+          findsNWidgets(3),
+        ); // 3 toggle switches
       });
 
       testWidgets('displays bottom bar with all buttons', (tester) async {
@@ -247,15 +250,20 @@ void main() {
         // Check for bottom bar
         expect(find.byType(FormBottomBar), findsOneWidget);
         expect(
-            find.byType(LottiTertiaryButton), findsOneWidget); // Delete button
+          find.byType(LottiTertiaryButton),
+          findsOneWidget,
+        ); // Delete button
         expect(
-            find.byType(LottiSecondaryButton), findsOneWidget); // Cancel button
+          find.byType(LottiSecondaryButton),
+          findsOneWidget,
+        ); // Cancel button
         expect(find.byType(LottiPrimaryButton), findsOneWidget); // Save button
       });
 
       testWidgets('displays category name in form', (tester) async {
-        final category =
-            CategoryTestUtils.createTestCategory(name: 'My Test Category');
+        final category = CategoryTestUtils.createTestCategory(
+          name: 'My Test Category',
+        );
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -281,8 +289,9 @@ void main() {
     });
 
     group('Form Interactions', () {
-      testWidgets('save button is disabled initially when no changes',
-          (tester) async {
+      testWidgets('save button is disabled initially when no changes', (
+        tester,
+      ) async {
         final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -305,8 +314,9 @@ void main() {
         expect(buttonWidget.onPressed, isNull);
       });
 
-      testWidgets('save button becomes enabled after changing name',
-          (tester) async {
+      testWidgets('save button becomes enabled after changing name', (
+        tester,
+      ) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
         final category = CategoryTestUtils.createTestCategory(name: 'Original');
@@ -485,8 +495,9 @@ void main() {
       testWidgets('state changes are reflected in UI', (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category =
-            CategoryTestUtils.createTestCategory(name: 'Initial Name');
+        final category = CategoryTestUtils.createTestCategory(
+          name: 'Initial Name',
+        );
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -518,8 +529,9 @@ void main() {
         await streamController.close();
       });
 
-      testWidgets('controller state updates trigger UI rebuilds',
-          (tester) async {
+      testWidgets('controller state updates trigger UI rebuilds', (
+        tester,
+      ) async {
         final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -622,8 +634,11 @@ void main() {
           }
         }
 
-        expect(enabledButton, isNotNull,
-            reason: 'Should find an enabled save button');
+        expect(
+          enabledButton,
+          isNotNull,
+          reason: 'Should find an enabled save button',
+        );
         await tester.tap(saveButtons.at(enabledIndex!));
         await tester.pumpAndSettle();
 
@@ -646,11 +661,15 @@ void main() {
         // Should display create mode UI without errors
         // Use partial text matching since we don't know exact translations
         expect(find.byType(CategoryDetailsPage), findsOneWidget);
-        expect(find.byType(LottiFormSection),
-            findsOneWidget); // Basic Settings section
+        expect(
+          find.byType(LottiFormSection),
+          findsOneWidget,
+        ); // Basic Settings section
         expect(find.byType(TextField), findsOneWidget); // Name field
-        expect(find.byIcon(Icons.palette_outlined),
-            findsOneWidget); // Color picker icon
+        expect(
+          find.byIcon(Icons.palette_outlined),
+          findsOneWidget,
+        ); // Color picker icon
 
         // Should be able to enter name
         await tester.enterText(find.byType(TextField), 'New Category');
@@ -708,15 +727,20 @@ void main() {
           }
         }
 
-        expect(enabledIndex, isNotNull,
-            reason: 'Should find an enabled save button');
+        expect(
+          enabledIndex,
+          isNotNull,
+          reason: 'Should find an enabled save button',
+        );
         await tester.tap(saveButtons.at(enabledIndex!));
         await tester.pumpAndSettle();
 
         // Verify the saved category has the new name
-        final capturedCategory = verify(
-          () => mockRepository.updateCategory(captureAny()),
-        ).captured.single as CategoryDefinition;
+        final capturedCategory =
+            verify(
+                  () => mockRepository.updateCategory(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
         expect(capturedCategory.name, equals('New Name'));
 
         await streamController.close();
@@ -724,8 +748,9 @@ void main() {
     });
 
     group('Navigation Behavior', () {
-      testWidgets('navigates back after successful category creation',
-          (tester) async {
+      testWidgets('navigates back after successful category creation', (
+        tester,
+      ) async {
         var didNavigateBack = false;
 
         when(
@@ -865,8 +890,9 @@ void main() {
     });
 
     group('UI Behavior', () {
-      testWidgets('does not display app bar save; only bottom bar save is used',
-          (tester) async {
+      testWidgets('does not display app bar save; only bottom bar save is used', (
+        tester,
+      ) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
         final category = CategoryTestUtils.createTestCategory();
@@ -898,7 +924,9 @@ void main() {
 
         // Make a change (use .first to target name field, not speech dictionary)
         await tester.enterText(
-            find.byType(TextFormField).first, 'Changed Name');
+          find.byType(TextFormField).first,
+          'Changed Name',
+        );
         await tester.pump();
 
         // Save button should remain absent in app bar; save is in bottom bar only
@@ -919,8 +947,9 @@ void main() {
         await streamController.close();
       });
 
-      testWidgets('displays CustomScrollView even during loading state',
-          (tester) async {
+      testWidgets('displays CustomScrollView even during loading state', (
+        tester,
+      ) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
 

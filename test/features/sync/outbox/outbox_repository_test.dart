@@ -47,42 +47,49 @@ void main() {
       verify(
         () => database.updateOutboxItem(
           any(
-              that: isA<OutboxCompanion>().having(
-            (c) => c.status,
-            'status',
-            Value(OutboxStatus.sent.index),
-          )),
+            that: isA<OutboxCompanion>().having(
+              (c) => c.status,
+              'status',
+              Value(OutboxStatus.sent.index),
+            ),
+          ),
         ),
       ).called(1);
     });
 
-    test('markRetry increments retries and keeps pending when below max',
-        () async {
-      final item = OutboxItem(
-        id: 2,
-        message: '{}',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        subject: 'subject',
-        priority: OutboxPriority.low.index,
-      );
+    test(
+      'markRetry increments retries and keeps pending when below max',
+      () async {
+        final item = OutboxItem(
+          id: 2,
+          message: '{}',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+          priority: OutboxPriority.low.index,
+        );
 
-      when(() => database.updateOutboxItem(any())).thenAnswer((_) async => 1);
+        when(() => database.updateOutboxItem(any())).thenAnswer((_) async => 1);
 
-      await repository.markRetry(item);
+        await repository.markRetry(item);
 
-      verify(
-        () => database.updateOutboxItem(
-          any(
+        verify(
+          () => database.updateOutboxItem(
+            any(
               that: isA<OutboxCompanion>()
                   .having((c) => c.retries, 'retries', const Value(1))
-                  .having((c) => c.status, 'status',
-                      Value(OutboxStatus.pending.index))),
-        ),
-      ).called(1);
-    });
+                  .having(
+                    (c) => c.status,
+                    'status',
+                    Value(OutboxStatus.pending.index),
+                  ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
 
     test('markRetry marks error once retries reach maxRetries', () async {
       final item = OutboxItem(
@@ -103,10 +110,14 @@ void main() {
       verify(
         () => database.updateOutboxItem(
           any(
-              that: isA<OutboxCompanion>()
-                  .having((c) => c.retries, 'retries', const Value(2))
-                  .having((c) => c.status, 'status',
-                      Value(OutboxStatus.error.index))),
+            that: isA<OutboxCompanion>()
+                .having((c) => c.retries, 'retries', const Value(2))
+                .having(
+                  (c) => c.status,
+                  'status',
+                  Value(OutboxStatus.error.index),
+                ),
+          ),
         ),
       ).called(1);
     });
@@ -124,8 +135,9 @@ void main() {
           priority: OutboxPriority.low.index,
         );
 
-        when(() => database.getOutboxItemById(10))
-            .thenAnswer((_) async => item);
+        when(
+          () => database.getOutboxItemById(10),
+        ).thenAnswer((_) async => item);
 
         final result = await repository.refreshItem(item);
 
@@ -145,8 +157,9 @@ void main() {
           priority: OutboxPriority.low.index,
         );
 
-        when(() => database.getOutboxItemById(11))
-            .thenAnswer((_) async => null);
+        when(
+          () => database.getOutboxItemById(11),
+        ).thenAnswer((_) async => null);
 
         final result = await repository.refreshItem(item);
 
@@ -176,8 +189,9 @@ void main() {
           priority: OutboxPriority.low.index,
         );
 
-        when(() => database.getOutboxItemById(12))
-            .thenAnswer((_) async => sentItem);
+        when(
+          () => database.getOutboxItemById(12),
+        ).thenAnswer((_) async => sentItem);
 
         final result = await repository.refreshItem(originalItem);
 
@@ -207,8 +221,9 @@ void main() {
           priority: OutboxPriority.low.index,
         );
 
-        when(() => database.getOutboxItemById(13))
-            .thenAnswer((_) async => errorItem);
+        when(
+          () => database.getOutboxItemById(13),
+        ).thenAnswer((_) async => errorItem);
 
         final result = await repository.refreshItem(originalItem);
 

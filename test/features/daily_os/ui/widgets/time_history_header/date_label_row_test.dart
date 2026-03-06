@@ -22,7 +22,8 @@ void main() {
     VoidCallback? onTodayPressed,
   }) {
     final date = selectedDate ?? testDate;
-    final effectiveStats = stats ??
+    final effectiveStats =
+        stats ??
         const DayBudgetStats(
           totalPlanned: Duration.zero,
           totalRecorded: Duration.zero,
@@ -97,8 +98,9 @@ void main() {
       expect(find.textContaining('Jan 15'), findsOneWidget);
     });
 
-    testWidgets('shows/hides Today button based on selected date',
-        (tester) async {
+    testWidgets('shows/hides Today button based on selected date', (
+      tester,
+    ) async {
       // Use fixed date to avoid flakiness around midnight
       final fixedToday = DateTime(2024, 1, 2, 12);
       final todayMidnight = DateTime(2024, 1, 2);

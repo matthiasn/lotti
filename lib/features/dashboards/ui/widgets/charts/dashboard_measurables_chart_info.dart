@@ -85,10 +85,9 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                       measurableDataType.description,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.8),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,

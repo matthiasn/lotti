@@ -77,8 +77,9 @@ class PromptCapabilityFilter {
     List<String> promptIds,
   ) async {
     for (final promptId in promptIds) {
-      final config =
-          await ref.read(aiConfigRepositoryProvider).getConfigById(promptId);
+      final config = await ref
+          .read(aiConfigRepositoryProvider)
+          .getConfigById(promptId);
 
       if (config is AiConfigPrompt &&
           await isPromptAvailableOnPlatform(config)) {

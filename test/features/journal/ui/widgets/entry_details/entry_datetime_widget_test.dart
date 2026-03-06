@@ -38,8 +38,9 @@ void main() {
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<TagsService>(mockTagsService);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
@@ -69,8 +70,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final entryDateFromFinder =
-          find.text(dfShorter.format(testTextEntry.meta.dateFrom));
+      final entryDateFromFinder = find.text(
+        dfShorter.format(testTextEntry.meta.dateFrom),
+      );
       expect(entryDateFromFinder, findsOneWidget);
 
       await tester.tap(entryDateFromFinder);
@@ -80,18 +82,23 @@ void main() {
       expect(find.text('Date & Time Range'), findsOneWidget);
 
       // Check that both date fields are present
-      expect(find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
-          findsWidgets);
-      expect(find.text(dfShorter.format(testTextEntry.meta.dateTo)),
-          findsOneWidget);
+      expect(
+        find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
+        findsWidgets,
+      );
+      expect(
+        find.text(dfShorter.format(testTextEntry.meta.dateTo)),
+        findsOneWidget,
+      );
 
       // Close modal by tapping outside
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
     });
 
-    testWidgets('date text uses tabular figures style',
-        (WidgetTester tester) async {
+    testWidgets('date text uses tabular figures style', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDatetimeWidget(
@@ -105,8 +112,10 @@ void main() {
       expect(finder, findsOneWidget);
 
       final text = tester.widget<Text>(finder);
-      final hasTabular = text.style?.fontFeatures
-              ?.any((ui.FontFeature ff) => ff.feature == 'tnum') ??
+      final hasTabular =
+          text.style?.fontFeatures?.any(
+            (ui.FontFeature ff) => ff.feature == 'tnum',
+          ) ??
           false;
       expect(hasTabular, isTrue);
     });

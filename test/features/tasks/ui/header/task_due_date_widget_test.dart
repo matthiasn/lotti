@@ -163,8 +163,9 @@ void main() {
       expect(find.byType(CupertinoDatePicker), findsOneWidget);
     });
 
-    testWidgets('Done does not call callback if date unchanged',
-        (tester) async {
+    testWidgets('Done does not call callback if date unchanged', (
+      tester,
+    ) async {
       var callbackCalled = false;
       final initialDate = DateTime(2025, 6, 15);
 
@@ -200,8 +201,9 @@ void main() {
       expect(callbackCalled, isFalse);
     });
 
-    testWidgets('Done calls callback when date changed by user interaction',
-        (tester) async {
+    testWidgets('Done calls callback when date changed by user interaction', (
+      tester,
+    ) async {
       DateTime? resultDate;
       final initialDate = DateTime(2025, 6, 15);
 
@@ -245,87 +247,90 @@ void main() {
       expect(resultDate, isNotNull);
     });
 
-    testWidgets('Done calls callback when existing date differs from selected',
-        (tester) async {
-      DateTime? resultDate;
-      final initialDate = DateTime(2025, 6, 15);
+    testWidgets(
+      'Done calls callback when existing date differs from selected',
+      (tester) async {
+        DateTime? resultDate;
+        final initialDate = DateTime(2025, 6, 15);
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () {
-                  showDueDatePicker(
-                    context: context,
-                    initialDate: initialDate,
-                    onDueDateChanged: (newDate) async {
-                      resultDate = newDate;
-                    },
-                  );
-                },
-                child: const Text('Open Picker'),
-              );
-            },
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showDueDatePicker(
+                      context: context,
+                      initialDate: initialDate,
+                      onDueDateChanged: (newDate) async {
+                        resultDate = newDate;
+                      },
+                    );
+                  },
+                  child: const Text('Open Picker'),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Picker'));
+        await tester.pumpAndSettle();
 
-      // Scroll to change the date
-      final pickerFinder = find.byType(CupertinoDatePicker);
-      await tester.drag(pickerFinder, const Offset(0, -100));
-      await tester.pumpAndSettle();
+        // Scroll to change the date
+        final pickerFinder = find.byType(CupertinoDatePicker);
+        await tester.drag(pickerFinder, const Offset(0, -100));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
 
-      // Since date was changed, callback should be called
-      expect(resultDate, isNotNull);
-      expect(resultDate, isNot(equals(initialDate)));
-    });
+        // Since date was changed, callback should be called
+        expect(resultDate, isNotNull);
+        expect(resultDate, isNot(equals(initialDate)));
+      },
+    );
 
     testWidgets(
-        'Done sets date when opening with null - user is explicitly confirming',
-        (tester) async {
-      DateTime? resultDate;
+      'Done sets date when opening with null - user is explicitly confirming',
+      (tester) async {
+        DateTime? resultDate;
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () {
-                  showDueDatePicker(
-                    context: context,
-                    initialDate: null, // No existing due date
-                    onDueDateChanged: (date) async {
-                      resultDate = date;
-                    },
-                  );
-                },
-                child: const Text('Open Picker'),
-              );
-            },
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showDueDatePicker(
+                      context: context,
+                      initialDate: null, // No existing due date
+                      onDueDateChanged: (date) async {
+                        resultDate = date;
+                      },
+                    );
+                  },
+                  child: const Text('Open Picker'),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Picker'));
+        await tester.pumpAndSettle();
 
-      // Just tap Done without any interaction
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+        // Just tap Done without any interaction
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
 
-      // Callback SHOULD be called - when there's no existing due date and user
-      // opens the picker and clicks Done, they're explicitly confirming they
-      // want to set a due date. This fixes the bug where selecting "Today" on
-      // a task with no due date didn't save.
-      expect(resultDate, isNotNull);
-    });
+        // Callback SHOULD be called - when there's no existing due date and user
+        // opens the picker and clicks Done, they're explicitly confirming they
+        // want to set a due date. This fixes the bug where selecting "Today" on
+        // a task with no due date didn't save.
+        expect(resultDate, isNotNull);
+      },
+    );
 
     testWidgets('modal has proper layout with three buttons', (tester) async {
       await tester.pumpWidget(

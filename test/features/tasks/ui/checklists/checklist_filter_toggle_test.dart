@@ -18,8 +18,9 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    testWidgets('filter tabs visible when expanded and hidden when collapsed',
-        (tester) async {
+    testWidgets('filter tabs visible when expanded and hidden when collapsed', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           mediaQueryData: desktopMq,

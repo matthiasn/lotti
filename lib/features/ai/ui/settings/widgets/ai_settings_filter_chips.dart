@@ -84,9 +84,11 @@ class AiSettingsFilterChips extends ConsumerWidget {
           ProviderFilterChipsRow(
             selectedProviderIds: filterState.selectedProviders,
             onChanged: (newProviders) {
-              onFilterChanged(filterState.copyWith(
-                selectedProviders: newProviders,
-              ));
+              onFilterChanged(
+                filterState.copyWith(
+                  selectedProviders: newProviders,
+                ),
+              );
             },
             useStyledChips: true,
           ),
@@ -155,31 +157,39 @@ class AiSettingsFilterChips extends ConsumerWidget {
         size: 16,
         color: filterState.selectionMode
             ? context.colorScheme.primary
-            : context.colorScheme.onSurfaceVariant
-                .withValues(alpha: AppTheme.alphaFilterChipTextUnselected),
+            : context.colorScheme.onSurfaceVariant.withValues(
+                alpha: AppTheme.alphaFilterChipTextUnselected,
+              ),
       ),
       label: Text(context.messages.aiSettingsSelectLabel),
       selected: filterState.selectionMode,
       onSelected: (selected) {
-        onFilterChanged(filterState.copyWith(
-          selectionMode: selected,
-          selectedPromptIds:
-              selected ? filterState.selectedPromptIds : const {},
-        ));
+        onFilterChanged(
+          filterState.copyWith(
+            selectionMode: selected,
+            selectedPromptIds: selected
+                ? filterState.selectedPromptIds
+                : const {},
+          ),
+        );
       },
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      backgroundColor: context.colorScheme.surfaceContainerHigh
-          .withValues(alpha: AppTheme.alphaFilterChipBackground),
-      selectedColor: context.colorScheme.primaryContainer
-          .withValues(alpha: AppTheme.alphaFilterChipSelected),
+      backgroundColor: context.colorScheme.surfaceContainerHigh.withValues(
+        alpha: AppTheme.alphaFilterChipBackground,
+      ),
+      selectedColor: context.colorScheme.primaryContainer.withValues(
+        alpha: AppTheme.alphaFilterChipSelected,
+      ),
       checkmarkColor: Colors.transparent,
       showCheckmark: false,
       side: BorderSide(
         color: filterState.selectionMode
-            ? context.colorScheme.primary
-                .withValues(alpha: AppTheme.alphaFilterChipBorderSelected)
-            : context.colorScheme.primaryContainer
-                .withValues(alpha: AppTheme.alphaFilterChipBorderUnselected),
+            ? context.colorScheme.primary.withValues(
+                alpha: AppTheme.alphaFilterChipBorderSelected,
+              )
+            : context.colorScheme.primaryContainer.withValues(
+                alpha: AppTheme.alphaFilterChipBorderUnselected,
+              ),
       ),
       labelStyle: TextStyle(
         fontSize: AppTheme.filterChipFontSize,
@@ -187,8 +197,9 @@ class AiSettingsFilterChips extends ConsumerWidget {
         letterSpacing: AppTheme.filterChipLetterSpacing,
         color: filterState.selectionMode
             ? context.colorScheme.onPrimaryContainer
-            : context.colorScheme.onSurfaceVariant
-                .withValues(alpha: AppTheme.alphaFilterChipTextUnselected),
+            : context.colorScheme.onSurfaceVariant.withValues(
+                alpha: AppTheme.alphaFilterChipTextUnselected,
+              ),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppTheme.filterChipPaddingHorizontal,
@@ -204,12 +215,12 @@ class AiSettingsFilterChips extends ConsumerWidget {
       (
         Modality.text,
         Icons.text_fields,
-        context.messages.aiSettingsModalityText
+        context.messages.aiSettingsModalityText,
       ),
       (
         Modality.image,
         Icons.visibility,
-        context.messages.aiSettingsModalityVision
+        context.messages.aiSettingsModalityVision,
       ),
       (Modality.audio, Icons.hearing, context.messages.aiSettingsModalityAudio),
     ];
@@ -220,36 +231,43 @@ class AiSettingsFilterChips extends ConsumerWidget {
       children: [
         ...capabilities.map((capability) {
           final (modality, icon, label) = capability;
-          final isSelected =
-              filterState.selectedCapabilities.contains(modality);
+          final isSelected = filterState.selectedCapabilities.contains(
+            modality,
+          );
           return FilterChip(
             avatar: Icon(icon, size: AppTheme.filterChipIconSize),
             label: Text(label),
             selected: isSelected,
             onSelected: (selected) {
-              final newCapabilities =
-                  Set<Modality>.from(filterState.selectedCapabilities);
+              final newCapabilities = Set<Modality>.from(
+                filterState.selectedCapabilities,
+              );
               if (selected) {
                 newCapabilities.add(modality);
               } else {
                 newCapabilities.remove(modality);
               }
-              onFilterChanged(filterState.copyWith(
-                selectedCapabilities: newCapabilities,
-              ));
+              onFilterChanged(
+                filterState.copyWith(
+                  selectedCapabilities: newCapabilities,
+                ),
+              );
             },
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: context.colorScheme.surfaceContainerHigh
                 .withValues(alpha: AppTheme.alphaFilterChipBackground),
-            selectedColor: context.colorScheme.primaryContainer
-                .withValues(alpha: AppTheme.alphaFilterChipSelected),
+            selectedColor: context.colorScheme.primaryContainer.withValues(
+              alpha: AppTheme.alphaFilterChipSelected,
+            ),
             checkmarkColor: context.colorScheme.onPrimaryContainer,
             side: BorderSide(
               color: isSelected
-                  ? context.colorScheme.primary
-                      .withValues(alpha: AppTheme.alphaFilterChipBorderSelected)
+                  ? context.colorScheme.primary.withValues(
+                      alpha: AppTheme.alphaFilterChipBorderSelected,
+                    )
                   : context.colorScheme.primaryContainer.withValues(
-                      alpha: AppTheme.alphaFilterChipBorderUnselected),
+                      alpha: AppTheme.alphaFilterChipBorderUnselected,
+                    ),
             ),
             labelStyle: TextStyle(
               fontSize: AppTheme.filterChipFontSize,
@@ -258,14 +276,16 @@ class AiSettingsFilterChips extends ConsumerWidget {
               color: isSelected
                   ? context.colorScheme.onPrimaryContainer
                   : context.colorScheme.onSurfaceVariant.withValues(
-                      alpha: AppTheme.alphaFilterChipTextUnselected),
+                      alpha: AppTheme.alphaFilterChipTextUnselected,
+                    ),
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.filterChipPaddingHorizontal,
               vertical: AppTheme.filterChipPaddingVertical,
             ),
-            tooltip:
-                context.messages.aiSettingsFilterByCapabilityTooltip(label),
+            tooltip: context.messages.aiSettingsFilterByCapabilityTooltip(
+              label,
+            ),
           );
         }),
 
@@ -278,22 +298,28 @@ class AiSettingsFilterChips extends ConsumerWidget {
           label: Text(context.messages.aiSettingsReasoningLabel),
           selected: filterState.reasoningFilter,
           onSelected: (selected) {
-            onFilterChanged(filterState.copyWith(
-              reasoningFilter: selected,
-            ));
+            onFilterChanged(
+              filterState.copyWith(
+                reasoningFilter: selected,
+              ),
+            );
           },
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: context.colorScheme.surfaceContainerHigh
-              .withValues(alpha: AppTheme.alphaFilterChipBackground),
-          selectedColor: context.colorScheme.primaryContainer
-              .withValues(alpha: AppTheme.alphaFilterChipSelected),
+          backgroundColor: context.colorScheme.surfaceContainerHigh.withValues(
+            alpha: AppTheme.alphaFilterChipBackground,
+          ),
+          selectedColor: context.colorScheme.primaryContainer.withValues(
+            alpha: AppTheme.alphaFilterChipSelected,
+          ),
           checkmarkColor: context.colorScheme.onPrimaryContainer,
           side: BorderSide(
             color: filterState.reasoningFilter
-                ? context.colorScheme.primary
-                    .withValues(alpha: AppTheme.alphaFilterChipBorderSelected)
+                ? context.colorScheme.primary.withValues(
+                    alpha: AppTheme.alphaFilterChipBorderSelected,
+                  )
                 : context.colorScheme.primaryContainer.withValues(
-                    alpha: AppTheme.alphaFilterChipBorderUnselected),
+                    alpha: AppTheme.alphaFilterChipBorderUnselected,
+                  ),
           ),
           labelStyle: TextStyle(
             fontSize: AppTheme.filterChipFontSize,
@@ -301,8 +327,9 @@ class AiSettingsFilterChips extends ConsumerWidget {
             letterSpacing: AppTheme.filterChipLetterSpacing,
             color: filterState.reasoningFilter
                 ? context.colorScheme.onPrimaryContainer
-                : context.colorScheme.onSurfaceVariant
-                    .withValues(alpha: AppTheme.alphaFilterChipTextUnselected),
+                : context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: AppTheme.alphaFilterChipTextUnselected,
+                  ),
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: AppTheme.filterChipPaddingHorizontal,
@@ -321,36 +348,43 @@ class AiSettingsFilterChips extends ConsumerWidget {
       runSpacing: AppTheme.filterChipSpacing,
       children: [
         ...AiResponseType.values.map((responseType) {
-          final isSelected =
-              filterState.selectedResponseTypes.contains(responseType);
+          final isSelected = filterState.selectedResponseTypes.contains(
+            responseType,
+          );
           return FilterChip(
             avatar: Icon(responseType.icon, size: AppTheme.filterChipIconSize),
             label: Text(responseType.localizedName(context)),
             selected: isSelected,
             onSelected: (selected) {
-              final newResponseTypes =
-                  Set<AiResponseType>.from(filterState.selectedResponseTypes);
+              final newResponseTypes = Set<AiResponseType>.from(
+                filterState.selectedResponseTypes,
+              );
               if (selected) {
                 newResponseTypes.add(responseType);
               } else {
                 newResponseTypes.remove(responseType);
               }
-              onFilterChanged(filterState.copyWith(
-                selectedResponseTypes: newResponseTypes,
-              ));
+              onFilterChanged(
+                filterState.copyWith(
+                  selectedResponseTypes: newResponseTypes,
+                ),
+              );
             },
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: context.colorScheme.surfaceContainerHigh
                 .withValues(alpha: AppTheme.alphaFilterChipBackground),
-            selectedColor: context.colorScheme.primaryContainer
-                .withValues(alpha: AppTheme.alphaFilterChipSelected),
+            selectedColor: context.colorScheme.primaryContainer.withValues(
+              alpha: AppTheme.alphaFilterChipSelected,
+            ),
             checkmarkColor: context.colorScheme.onPrimaryContainer,
             side: BorderSide(
               color: isSelected
-                  ? context.colorScheme.primary
-                      .withValues(alpha: AppTheme.alphaFilterChipBorderSelected)
+                  ? context.colorScheme.primary.withValues(
+                      alpha: AppTheme.alphaFilterChipBorderSelected,
+                    )
                   : context.colorScheme.primaryContainer.withValues(
-                      alpha: AppTheme.alphaFilterChipBorderUnselected),
+                      alpha: AppTheme.alphaFilterChipBorderUnselected,
+                    ),
             ),
             labelStyle: TextStyle(
               fontSize: AppTheme.filterChipFontSize,
@@ -359,7 +393,8 @@ class AiSettingsFilterChips extends ConsumerWidget {
               color: isSelected
                   ? context.colorScheme.onPrimaryContainer
                   : context.colorScheme.onSurfaceVariant.withValues(
-                      alpha: AppTheme.alphaFilterChipTextUnselected),
+                      alpha: AppTheme.alphaFilterChipTextUnselected,
+                    ),
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.filterChipPaddingHorizontal,
@@ -403,8 +438,8 @@ class AiSettingsFilterChips extends ConsumerWidget {
                   ),
                   onPressed: onDeleteSelected,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor:
-                      context.colorScheme.errorContainer.withValues(alpha: 0.3),
+                  backgroundColor: context.colorScheme.errorContainer
+                      .withValues(alpha: 0.3),
                   side: BorderSide(
                     color: context.colorScheme.error.withValues(alpha: 0.5),
                   ),

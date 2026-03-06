@@ -31,21 +31,24 @@ class LanguageSelectionModalContent extends ConsumerWidget {
       builder: (context, query, _) {
         final lowerQuery = query.toLowerCase();
 
-        final filteredLanguages = languages
-            .where(
-              (language) =>
-                  language.name.toLowerCase().contains(lowerQuery) ||
-                  language.code.toLowerCase().contains(lowerQuery) ||
-                  language
-                      .localizedName(context)
-                      .toLowerCase()
-                      .contains(lowerQuery),
-            )
-            .toList()
-          ..sort((a, b) => a
-              .localizedName(context)
-              .toLowerCase()
-              .compareTo(b.localizedName(context).toLowerCase()));
+        final filteredLanguages =
+            languages
+                .where(
+                  (language) =>
+                      language.name.toLowerCase().contains(lowerQuery) ||
+                      language.code.toLowerCase().contains(lowerQuery) ||
+                      language
+                          .localizedName(context)
+                          .toLowerCase()
+                          .contains(lowerQuery),
+                )
+                .toList()
+              ..sort(
+                (a, b) => a
+                    .localizedName(context)
+                    .toLowerCase()
+                    .compareTo(b.localizedName(context).toLowerCase()),
+              );
 
         final selectedLanguage = initialLanguageCode != null
             ? SupportedLanguage.fromCode(initialLanguageCode!)

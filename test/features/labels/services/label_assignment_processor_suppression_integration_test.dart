@@ -13,84 +13,91 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
-  test('processor integrates validator + suppression + repository correctly',
-      () async {
-    final db = MockJournalDb();
-    final repo = MockLabelsRepository();
-    final log = MockLoggingService();
+  test(
+    'processor integrates validator + suppression + repository correctly',
+    () async {
+      final db = MockJournalDb();
+      final repo = MockLabelsRepository();
+      final log = MockLoggingService();
 
-    // Task context
-    const taskId = 't1';
-    final task = Task(
-      meta: Metadata(
-        id: taskId,
+      // Task context
+      const taskId = 't1';
+      final task = Task(
+        meta: Metadata(
+          id: taskId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: 'engineering',
+          labelIds: const ['A'], // already assigned
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 's',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          statusHistory: const [],
+          title: 'Task',
+          aiSuppressedLabelIds: const {'S'},
+        ),
+      );
+
+      // DB lookups used by processor/validator
+      when(() => db.journalEntityById(taskId)).thenAnswer((_) async => task);
+      // Label defs
+      LabelDefinition global(String id) => LabelDefinition(
+        id: id,
+        name: id,
+        color: '#000',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        categoryId: 'engineering',
-        labelIds: const ['A'], // already assigned
-      ),
-      data: TaskData(
-        status: TaskStatus.open(
-          id: 's',
+        vectorClock: null,
+        private: false,
+      );
+      LabelDefinition engineeringOnly(String id) => LabelDefinition(
+        id: id,
+        name: id,
+        color: '#000',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        applicableCategoryIds: const ['engineering'],
+      );
+
+      // getLabelDefinitionById
+      when(
+        () => db.getLabelDefinitionById('A'),
+      ).thenAnswer((_) async => global('A'));
+      when(
+        () => db.getLabelDefinitionById('S'),
+      ).thenAnswer((_) async => global('S'));
+      when(() => db.getLabelDefinitionById('D')).thenAnswer(
+        (_) async => global('D').copyWith(deletedAt: DateTime.now()),
+      );
+      when(() => db.getLabelDefinitionById('C')).thenAnswer(
+        (_) async => LabelDefinition(
+          id: 'C',
+          name: 'C',
+          color: '#000',
           createdAt: DateTime.now(),
-          utcOffset: 0,
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          applicableCategoryIds: const ['design'], // out of scope
         ),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        statusHistory: const [],
-        title: 'Task',
-        aiSuppressedLabelIds: const {'S'},
-      ),
-    );
+      );
+      when(
+        () => db.getLabelDefinitionById('G'),
+      ).thenAnswer((_) async => engineeringOnly('G'));
 
-    // DB lookups used by processor/validator
-    when(() => db.journalEntityById(taskId)).thenAnswer((_) async => task);
-    // Label defs
-    LabelDefinition global(String id) => LabelDefinition(
-          id: id,
-          name: id,
-          color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-        );
-    LabelDefinition engineeringOnly(String id) => LabelDefinition(
-          id: id,
-          name: id,
-          color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-          applicableCategoryIds: const ['engineering'],
-        );
-
-    // getLabelDefinitionById
-    when(() => db.getLabelDefinitionById('A'))
-        .thenAnswer((_) async => global('A'));
-    when(() => db.getLabelDefinitionById('S'))
-        .thenAnswer((_) async => global('S'));
-    when(() => db.getLabelDefinitionById('D')).thenAnswer(
-        (_) async => global('D').copyWith(deletedAt: DateTime.now()));
-    when(() => db.getLabelDefinitionById('C'))
-        .thenAnswer((_) async => LabelDefinition(
-              id: 'C',
-              name: 'C',
-              color: '#000',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              vectorClock: null,
-              private: false,
-              applicableCategoryIds: const ['design'], // out of scope
-            ));
-    when(() => db.getLabelDefinitionById('G'))
-        .thenAnswer((_) async => engineeringOnly('G'));
-
-    // getAllLabelDefinitions used for out_of_scope classification path
-    when(() => db.getAllLabelDefinitions()).thenAnswer((_) async => [
+      // getAllLabelDefinitions used for out_of_scope classification path
+      when(() => db.getAllLabelDefinitions()).thenAnswer(
+        (_) async => [
           global('A'),
           global('S'),
           global('D').copyWith(deletedAt: DateTime.now()),
@@ -105,64 +112,72 @@ void main() {
             private: false,
             applicableCategoryIds: const ['design'],
           ),
-        ]);
+        ],
+      );
 
-    // Expect addLabels called only with the valid new id 'G'
-    when(() => repo.addLabels(
+      // Expect addLabels called only with the valid new id 'G'
+      when(
+        () => repo.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
           addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
-        )).thenAnswer((_) async => true);
+        ),
+      ).thenAnswer((_) async => true);
 
-    // Capture telemetry
-    final telemetry = <String>[];
-    when(() => log.captureEvent(
+      // Capture telemetry
+      final telemetry = <String>[];
+      when(
+        () => log.captureEvent(
           any<String>(),
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
-        )).thenAnswer((inv) {
-      telemetry.add(inv.positionalArguments.first as String);
-    });
+        ),
+      ).thenAnswer((inv) {
+        telemetry.add(inv.positionalArguments.first as String);
+      });
 
-    final processor = LabelAssignmentProcessor(
-      db: db,
-      repository: repo,
-      logging: log,
-      rateLimiter: LabelAssignmentRateLimiter(),
-      validator: LabelValidator(db: db),
-    );
+      final processor = LabelAssignmentProcessor(
+        db: db,
+        repository: repo,
+        logging: log,
+        rateLimiter: LabelAssignmentRateLimiter(),
+        validator: LabelValidator(db: db),
+      );
 
-    final result = await processor.processAssignment(
-      taskId: taskId,
-      // Mix of already assigned, suppressed, deleted, out-of-scope, and valid
-      proposedIds: const ['A', 'S', 'D', 'C', 'G'],
-      existingIds: const ['A'],
-      categoryId: 'engineering',
-    );
+      final result = await processor.processAssignment(
+        taskId: taskId,
+        // Mix of already assigned, suppressed, deleted, out-of-scope, and valid
+        proposedIds: const ['A', 'S', 'D', 'C', 'G'],
+        existingIds: const ['A'],
+        categoryId: 'engineering',
+      );
 
-    // Assert result
-    expect(result.assigned, equals(['G']));
-    expect(result.invalid.toSet(), contains('D'));
-    final skippedReasons = {
-      for (final m in result.skipped) m['id']!: m['reason']!
-    };
-    expect(skippedReasons['A'], 'already_assigned');
-    expect(skippedReasons['S'], 'suppressed');
-    expect(skippedReasons['C'], 'out_of_scope');
+      // Assert result
+      expect(result.assigned, equals(['G']));
+      expect(result.invalid.toSet(), contains('D'));
+      final skippedReasons = {
+        for (final m in result.skipped) m['id']!: m['reason']!,
+      };
+      expect(skippedReasons['A'], 'already_assigned');
+      expect(skippedReasons['S'], 'suppressed');
+      expect(skippedReasons['C'], 'out_of_scope');
 
-    // Persisted labels
-    final captured = verify(() => repo.addLabels(
+      // Persisted labels
+      final captured = verify(
+        () => repo.addLabels(
           journalEntityId: taskId,
           addedLabelIds: captureAny(named: 'addedLabelIds'),
-        )).captured;
-    final persisted = (captured.first as List).cast<String>();
-    expect(persisted, equals(['G']));
+        ),
+      ).captured;
+      final persisted = (captured.first as List).cast<String>();
+      expect(persisted, equals(['G']));
 
-    // Telemetry includes suppressed and out_of_scope counts
-    expect(telemetry, isNotEmpty);
-    final last = jsonDecode(telemetry.last) as Map<String, dynamic>;
-    final skipped = last['skipped'] as Map<String, dynamic>;
-    expect(skipped['suppressed'], 1);
-    expect(skipped['out_of_scope'], 1);
-    expect(last['assigned'], 1);
-  });
+      // Telemetry includes suppressed and out_of_scope counts
+      expect(telemetry, isNotEmpty);
+      final last = jsonDecode(telemetry.last) as Map<String, dynamic>;
+      final skipped = last['skipped'] as Map<String, dynamic>;
+      expect(skipped['suppressed'], 1);
+      expect(skipped['out_of_scope'], 1);
+      expect(last['assigned'], 1);
+    },
+  );
 }

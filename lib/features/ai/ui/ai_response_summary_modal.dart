@@ -57,8 +57,9 @@ class AiResponseSummaryModalContent extends StatelessWidget {
             Expanded(
               child: Text(
                 value,
-                style:
-                    bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+                style: bold
+                    ? const TextStyle(fontWeight: FontWeight.bold)
+                    : null,
               ),
             ),
         ],
@@ -152,9 +153,7 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               'Token Usage',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
+                              style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(color: Colors.grey[600]),
                             ),
                             const SizedBox(height: 4),

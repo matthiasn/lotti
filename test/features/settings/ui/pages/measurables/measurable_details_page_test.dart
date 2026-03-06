@@ -31,8 +31,9 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -42,211 +43,218 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets(
-        'measurable details page is displayed with type water & updated',
-        (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+      'measurable details page is displayed with type water & updated',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: MeasurableDetailsPage(dataType: measurableWater),
             ),
-            child: MeasurableDetailsPage(dataType: measurableWater),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('measurable_description_field'));
-      final saveButtonFinder = find.byKey(const Key('measurable_save'));
+        final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
+        final descriptionFieldFinder = find.byKey(
+          const Key('measurable_description_field'),
+        );
+        final saveButtonFinder = find.byKey(const Key('measurable_save'));
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+        expect(nameFieldFinder, findsOneWidget);
+        expect(descriptionFieldFinder, findsOneWidget);
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        // save button is invisible - no changes yet
+        expect(saveButtonFinder, findsNothing);
 
-      await tester.enterText(
-        nameFieldFinder,
-        'new name',
-      );
-      await tester.enterText(
-        descriptionFieldFinder,
-        'new description',
-      );
-      await tester.pump();
+        await tester.enterText(
+          nameFieldFinder,
+          'new name',
+        );
+        await tester.enterText(
+          descriptionFieldFinder,
+          'new description',
+        );
+        await tester.pump();
 
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
+        // save button is now visible
+        expect(saveButtonFinder, findsOneWidget);
 
-      await tester.tap(saveButtonFinder);
-    });
+        await tester.tap(saveButtonFinder);
+      },
+    );
 
     testWidgets(
-        'measurable details page is displayed with type water & deleted',
-        (tester) async {
-      Future<int> mockUpsertEntity() {
-        return mockPersistenceLogic.upsertEntityDefinition(any());
-      }
+      'measurable details page is displayed with type water & deleted',
+      (tester) async {
+        Future<int> mockUpsertEntity() {
+          return mockPersistenceLogic.upsertEntityDefinition(any());
+        }
 
-      when(mockUpsertEntity).thenAnswer((_) async => 1);
+        when(mockUpsertEntity).thenAnswer((_) async => 1);
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: MeasurableDetailsPage(dataType: measurableWater),
             ),
-            child: MeasurableDetailsPage(dataType: measurableWater),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Find and scroll to the delete button
-      final deleteButtonFinder = find.byTooltip('Delete measurable type');
-      expect(deleteButtonFinder, findsOneWidget);
+        // Find and scroll to the delete button
+        final deleteButtonFinder = find.byTooltip('Delete measurable type');
+        expect(deleteButtonFinder, findsOneWidget);
 
-      await tester.dragUntilVisible(
-        deleteButtonFinder,
-        find.byType(CustomScrollView),
-        const Offset(0, 50),
-      );
+        await tester.dragUntilVisible(
+          deleteButtonFinder,
+          find.byType(CustomScrollView),
+          const Offset(0, 50),
+        );
 
-      // Tap the delete button
-      await tester.tap(deleteButtonFinder);
-      await tester.pumpAndSettle();
+        // Tap the delete button
+        await tester.tap(deleteButtonFinder);
+        await tester.pumpAndSettle();
 
-      // Find the delete confirmation dialog
-      final deleteQuestionFinder =
-          find.text('Do you want to delete this measurable data type?');
-      final confirmDeleteFinder = find.text('YES, DELETE THIS MEASURABLE');
-      expect(deleteQuestionFinder, findsOneWidget);
-      expect(confirmDeleteFinder, findsOneWidget);
+        // Find the delete confirmation dialog
+        final deleteQuestionFinder = find.text(
+          'Do you want to delete this measurable data type?',
+        );
+        final confirmDeleteFinder = find.text('YES, DELETE THIS MEASURABLE');
+        expect(deleteQuestionFinder, findsOneWidget);
+        expect(confirmDeleteFinder, findsOneWidget);
 
-      await tester.tap(confirmDeleteFinder);
-      await tester.pumpAndSettle();
+        await tester.tap(confirmDeleteFinder);
+        await tester.pumpAndSettle();
 
-      // delete button calls mocked function
-      verify(mockUpsertEntity).called(1);
-    });
+        // delete button calls mocked function
+        verify(mockUpsertEntity).called(1);
+      },
+    );
 
     testWidgets(
-        'measurable details page is displayed with type water & updated',
-        (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+      'measurable details page is displayed with type water & updated',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: CreateMeasurablePage(),
             ),
-            child: CreateMeasurablePage(),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('measurable_description_field'));
-      final saveButtonFinder = find.byKey(const Key('measurable_save'));
+        final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
+        final descriptionFieldFinder = find.byKey(
+          const Key('measurable_description_field'),
+        );
+        final saveButtonFinder = find.byKey(const Key('measurable_save'));
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+        expect(nameFieldFinder, findsOneWidget);
+        expect(descriptionFieldFinder, findsOneWidget);
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        // save button is invisible - no changes yet
+        expect(saveButtonFinder, findsNothing);
 
-      await tester.enterText(
-        nameFieldFinder,
-        'new name',
-      );
-      await tester.enterText(
-        descriptionFieldFinder,
-        'new description',
-      );
-      await tester.pump();
+        await tester.enterText(
+          nameFieldFinder,
+          'new name',
+        );
+        await tester.enterText(
+          descriptionFieldFinder,
+          'new description',
+        );
+        await tester.pump();
 
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
+        // save button is now visible
+        expect(saveButtonFinder, findsOneWidget);
 
-      await tester.tap(saveButtonFinder);
-    });
+        await tester.tap(saveButtonFinder);
+      },
+    );
 
     testWidgets(
-        'measurable details page is displayed with type water & updated',
-        (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+      'measurable details page is displayed with type water & updated',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: EditMeasurablePage(
-              measurableId: measurableWater.id,
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: EditMeasurablePage(
+                measurableId: measurableWater.id,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      final nameFieldFinder = find.byKey(
-        const Key(
-          'measurable_name_field',
-        ),
-      );
-      final descriptionFieldFinder = find.byKey(
-        const Key(
-          'measurable_description_field',
-        ),
-      );
-      final saveButtonFinder = find.byKey(
-        const Key(
-          'measurable_save',
-        ),
-      );
+        final nameFieldFinder = find.byKey(
+          const Key(
+            'measurable_name_field',
+          ),
+        );
+        final descriptionFieldFinder = find.byKey(
+          const Key(
+            'measurable_description_field',
+          ),
+        );
+        final saveButtonFinder = find.byKey(
+          const Key(
+            'measurable_save',
+          ),
+        );
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+        expect(nameFieldFinder, findsOneWidget);
+        expect(descriptionFieldFinder, findsOneWidget);
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        // save button is invisible - no changes yet
+        expect(saveButtonFinder, findsNothing);
 
-      await tester.enterText(
-        nameFieldFinder,
-        'new name',
-      );
-      await tester.enterText(
-        descriptionFieldFinder,
-        'new description',
-      );
-      await tester.pump();
+        await tester.enterText(
+          nameFieldFinder,
+          'new name',
+        );
+        await tester.enterText(
+          descriptionFieldFinder,
+          'new description',
+        );
+        await tester.pump();
 
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
+        // save button is now visible
+        expect(saveButtonFinder, findsOneWidget);
 
-      await tester.tap(saveButtonFinder);
-    });
+        await tester.tap(saveButtonFinder);
+      },
+    );
   });
 }

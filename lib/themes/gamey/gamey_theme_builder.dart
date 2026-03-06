@@ -32,28 +32,35 @@ class GameyThemeBuilder {
     return base.copyWith(
       primary: GameyColors.primaryBlue,
       onPrimary: Colors.white,
-      primaryContainer:
-          isDark ? GameyColors.primaryBlueLight : GameyColors.primaryBlue,
+      primaryContainer: isDark
+          ? GameyColors.primaryBlueLight
+          : GameyColors.primaryBlue,
       secondary: GameyColors.primaryGreen,
       onSecondary: Colors.white,
-      secondaryContainer:
-          isDark ? GameyColors.primaryGreenLight : GameyColors.primaryGreen,
+      secondaryContainer: isDark
+          ? GameyColors.primaryGreenLight
+          : GameyColors.primaryGreen,
       tertiary: GameyColors.primaryPurple,
       onTertiary: Colors.white,
-      tertiaryContainer:
-          isDark ? GameyColors.primaryPurpleLight : GameyColors.primaryPurple,
+      tertiaryContainer: isDark
+          ? GameyColors.primaryPurpleLight
+          : GameyColors.primaryPurple,
       surface: isDark ? GameyColors.surfaceDark : GameyColors.surfaceLight,
-      surfaceContainerLowest:
-          isDark ? GameyColors.surfaceDarkLow : GameyColors.surfaceLight,
-      surfaceContainerLow:
-          isDark ? GameyColors.surfaceDark : GameyColors.surfaceLightElevated,
+      surfaceContainerLowest: isDark
+          ? GameyColors.surfaceDarkLow
+          : GameyColors.surfaceLight,
+      surfaceContainerLow: isDark
+          ? GameyColors.surfaceDark
+          : GameyColors.surfaceLightElevated,
       surfaceContainer: isDark
           ? GameyColors.surfaceDarkElevated
           : GameyColors.surfaceLightElevated,
-      surfaceContainerHigh:
-          isDark ? GameyColors.surfaceDarkElevated : const Color(0xFFF0F0F0),
-      surfaceContainerHighest:
-          isDark ? const Color(0xFF3A3A4C) : const Color(0xFFE8E8E8),
+      surfaceContainerHigh: isDark
+          ? GameyColors.surfaceDarkElevated
+          : const Color(0xFFF0F0F0),
+      surfaceContainerHighest: isDark
+          ? const Color(0xFF3A3A4C)
+          : const Color(0xFFE8E8E8),
       error: GameyColors.primaryRed,
       onError: Colors.white,
     );

@@ -31,11 +31,13 @@ void main() {
       final mockEntitiesCacheService = MockEntitiesCacheService();
       final mockUpdateNotifications = MockUpdateNotifications();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
-      when(mockJournalDb.getAllCategories)
-          .thenAnswer((_) async => [categoryMindfulness]);
+      when(
+        mockJournalDb.getAllCategories,
+      ).thenAnswer((_) async => [categoryMindfulness]);
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -45,8 +47,9 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('dashboard list page is displayed with two test dashboards',
-        (tester) async {
+    testWidgets('dashboard list page is displayed with two test dashboards', (
+      tester,
+    ) async {
       when(mockJournalDb.getAllDashboards).thenAnswer(
         (_) async => [testDashboardConfig, emptyTestDashboardConfig],
       );
@@ -70,8 +73,9 @@ void main() {
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
 
-      final categoryFilterFinder =
-          find.byKey(const Key('dashboard_category_filter'));
+      final categoryFilterFinder = find.byKey(
+        const Key('dashboard_category_filter'),
+      );
       expect(categoryFilterFinder, findsOneWidget);
 
       await tester.tap(categoryFilterFinder);
@@ -139,8 +143,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap filter button to open modal
-      final categoryFilterFinder =
-          find.byKey(const Key('dashboard_category_filter'));
+      final categoryFilterFinder = find.byKey(
+        const Key('dashboard_category_filter'),
+      );
       await tester.tap(categoryFilterFinder);
       await tester.pumpAndSettle();
 
@@ -148,8 +153,9 @@ void main() {
       expect(find.text(categoryMindfulness.name), findsOneWidget);
     });
 
-    testWidgets('tapping category chip toggles filter selection',
-        (tester) async {
+    testWidgets('tapping category chip toggles filter selection', (
+      tester,
+    ) async {
       final dashboardWithCategory = testDashboardConfig.copyWith(
         categoryId: categoryMindfulness.id,
       );
@@ -180,8 +186,9 @@ void main() {
       expect(find.text('Test Dashboard #2 - empty'), findsOneWidget);
 
       // Open filter modal
-      final categoryFilterFinder =
-          find.byKey(const Key('dashboard_category_filter'));
+      final categoryFilterFinder = find.byKey(
+        const Key('dashboard_category_filter'),
+      );
       await tester.tap(categoryFilterFinder);
       await tester.pumpAndSettle();
 

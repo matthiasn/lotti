@@ -40,9 +40,11 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
       initialName: widget.initialName,
     );
     _nameController = TextEditingController(
-        text: widget.label?.name ?? widget.initialName ?? '');
-    _descriptionController =
-        TextEditingController(text: widget.label?.description ?? '');
+      text: widget.label?.name ?? widget.initialName ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.label?.description ?? '',
+    );
   }
 
   @override
@@ -178,14 +180,16 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             Builder(
               builder: (_) {
                 final cache = getIt<EntitiesCacheService>();
-                final chips = state.selectedCategoryIds
-                    .map(cache.getCategoryById)
-                    .whereType<CategoryDefinition>()
-                    .toList()
-                  ..sort(
-                    (a, b) =>
-                        a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                  );
+                final chips =
+                    state.selectedCategoryIds
+                        .map(cache.getCategoryById)
+                        .whereType<CategoryDefinition>()
+                        .toList()
+                      ..sort(
+                        (a, b) => a.name.toLowerCase().compareTo(
+                          b.name.toLowerCase(),
+                        ),
+                      );
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -200,32 +204,37 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                         runSpacing: 8,
                         children: [
                           for (final category in chips)
-                            Builder(builder: (context) {
-                              final bg = colorFromCssHex(
-                                category.color,
-                                substitute:
-                                    Theme.of(context).colorScheme.primary,
-                              );
-                              final isDark =
-                                  ThemeData.estimateBrightnessForColor(bg) ==
-                                      Brightness.dark;
-                              final fg = isDark ? Colors.white : Colors.black;
-                              return InputChip(
-                                label: Text(category.name),
-                                labelStyle: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(color: fg),
-                                backgroundColor: bg,
-                                onDeleted: () =>
-                                    controller.removeCategoryId(category.id),
-                                deleteIcon:
-                                    const Icon(Icons.close_rounded, size: 16),
-                                deleteIconColor: fg,
-                                deleteButtonTooltipMessage: context.messages
-                                    .settingsLabelsCategoriesRemoveTooltip,
-                              );
-                            }),
+                            Builder(
+                              builder: (context) {
+                                final bg = colorFromCssHex(
+                                  category.color,
+                                  substitute: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                );
+                                final isDark =
+                                    ThemeData.estimateBrightnessForColor(bg) ==
+                                    Brightness.dark;
+                                final fg = isDark ? Colors.white : Colors.black;
+                                return InputChip(
+                                  label: Text(category.name),
+                                  labelStyle: Theme.of(
+                                    context,
+                                  ).textTheme.labelSmall?.copyWith(color: fg),
+                                  backgroundColor: bg,
+                                  onDeleted: () =>
+                                      controller.removeCategoryId(category.id),
+                                  deleteIcon: const Icon(
+                                    Icons.close_rounded,
+                                    size: 16,
+                                  ),
+                                  deleteIconColor: fg,
+                                  deleteButtonTooltipMessage: context
+                                      .messages
+                                      .settingsLabelsCategoriesRemoveTooltip,
+                                );
+                              },
+                            ),
                         ],
                       ),
                     const SizedBox(height: 8),
@@ -233,21 +242,23 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                       icon: const Icon(Icons.add),
                       label: Text(context.messages.settingsLabelsCategoriesAdd),
                       onPressed: () async {
-                        final result = await showModalBottomSheet<
-                            List<CategoryDefinition>>(
-                          context: context,
-                          isScrollControlled: true,
-                          useRootNavigator: true,
-                          builder: (context) => CategorySelectionModalContent(
-                            // Keep single-select behaviour for other call sites,
-                            // but use multiSelect here to allow selecting several
-                            // categories in one go.
-                            onCategorySelected: (_) {},
-                            multiSelect: true,
-                            initiallySelectedCategoryIds:
-                                state.selectedCategoryIds,
-                          ),
-                        );
+                        final result =
+                            await showModalBottomSheet<
+                              List<CategoryDefinition>
+                            >(
+                              context: context,
+                              isScrollControlled: true,
+                              useRootNavigator: true,
+                              builder: (context) => CategorySelectionModalContent(
+                                // Keep single-select behaviour for other call sites,
+                                // but use multiSelect here to allow selecting several
+                                // categories in one go.
+                                onCategorySelected: (_) {},
+                                multiSelect: true,
+                                initiallySelectedCategoryIds:
+                                    state.selectedCategoryIds,
+                              ),
+                            );
                         if (result != null && result.isNotEmpty) {
                           for (final cat in result) {
                             controller.addCategoryId(cat.id);
@@ -273,10 +284,9 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
               const SizedBox(height: 12),
               Text(
                 state.errorMessage!,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Theme.of(context).colorScheme.error),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ],
             const SizedBox(height: 24),
@@ -310,9 +320,11 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                             width: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(widget.label == null
-                            ? context.messages.createButton
-                            : context.messages.saveButton),
+                        : Text(
+                            widget.label == null
+                                ? context.messages.createButton
+                                : context.messages.saveButton,
+                          ),
                   ),
                 ),
               ],

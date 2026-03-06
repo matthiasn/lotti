@@ -45,8 +45,9 @@ void main() {
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -101,8 +102,9 @@ void main() {
 
     // Stub getHabitById to return the habit with dashboard set
     // (notificationDrivenItemStream fetches via getHabitById)
-    when(() => mockJournalDb.getHabitById(habitWithDashboard.id))
-        .thenAnswer((_) async => habitWithDashboard);
+    when(
+      () => mockJournalDb.getHabitById(habitWithDashboard.id),
+    ).thenAnswer((_) async => habitWithDashboard);
 
     await tester.pumpWidget(
       RiverpodWidgetTestBench(

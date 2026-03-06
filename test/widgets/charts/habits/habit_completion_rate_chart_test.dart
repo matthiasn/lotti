@@ -29,8 +29,9 @@ void main() {
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
-    when(mockJournalDb.getAllHabitDefinitions)
-        .thenAnswer((_) async => <HabitDefinition>[]);
+    when(
+      mockJournalDb.getAllHabitDefinitions,
+    ).thenAnswer((_) async => <HabitDefinition>[]);
 
     when(
       () => mockJournalDb.getHabitCompletionsInRange(
@@ -38,8 +39,9 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateController.stream);
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -71,8 +73,9 @@ void main() {
       expect(find.byType(LineChart), findsOneWidget);
     });
 
-    testWidgets('displays default info label when no day selected',
-        (tester) async {
+    testWidgets('displays default info label when no day selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -104,8 +107,9 @@ void main() {
       // The actual setInfoYmd call is deferred via addPostFrameCallback
     });
 
-    testWidgets('displays percentage info when day is selected',
-        (tester) async {
+    testWidgets('displays percentage info when day is selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

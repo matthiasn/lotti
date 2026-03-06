@@ -17,8 +17,9 @@ void _stubDailyVolumes(
   MockSyncDatabase mock, {
   required List<OutboxDailyVolume> volumes,
 }) {
-  when(() => mock.getDailyOutboxVolume(days: kOutboxVolumeDays))
-      .thenAnswer((_) async => volumes);
+  when(
+    () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
+  ).thenAnswer((_) async => volumes);
 }
 
 void main() {
@@ -35,11 +36,13 @@ void main() {
       flagStreamController = StreamController<bool>.broadcast();
       countStreamController = StreamController<int>.broadcast();
 
-      when(() => mockDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => flagStreamController.stream);
+      when(
+        () => mockDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => flagStreamController.stream);
 
-      when(() => mockSyncDb.watchOutboxCount())
-          .thenAnswer((_) => countStreamController.stream);
+      when(
+        () => mockSyncDb.watchOutboxCount(),
+      ).thenAnswer((_) => countStreamController.stream);
 
       container = ProviderContainer(
         overrides: [

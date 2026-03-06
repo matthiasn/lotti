@@ -103,12 +103,14 @@ void main() {
       service = TestPortalService();
 
       // Setup default mock behaviors
-      when(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
 
       when(() => mockDBusClient.close()).thenAnswer((_) async {});
     });
@@ -124,7 +126,8 @@ void main() {
       test('shouldUsePortal matches isRunningInFlatpak on Linux', () {
         final shouldUse = PortalService.shouldUsePortal;
         final isLinux = Platform.isLinux;
-        final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+        final hasFlatpakId =
+            Platform.environment['FLATPAK_ID'] != null &&
             Platform.environment['FLATPAK_ID']!.isNotEmpty;
 
         expect(shouldUse, equals(isLinux && hasFlatpakId));
@@ -133,7 +136,8 @@ void main() {
       test('isRunningInFlatpak returns correct value based on environment', () {
         final isRunning = PortalService.isRunningInFlatpak;
         final isLinux = Platform.isLinux;
-        final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+        final hasFlatpakId =
+            Platform.environment['FLATPAK_ID'] != null &&
             Platform.environment['FLATPAK_ID']!.isNotEmpty;
 
         expect(isRunning, equals(isLinux && hasFlatpakId));
@@ -141,17 +145,19 @@ void main() {
     });
 
     group('Initialization', () {
-      test('should handle initialization when shouldUsePortal is false',
-          () async {
-        // Test in non-Flatpak environment
-        expect(service.isInitialized, isFalse);
+      test(
+        'should handle initialization when shouldUsePortal is false',
+        () async {
+          // Test in non-Flatpak environment
+          expect(service.isInitialized, isFalse);
 
-        await service.initialize();
+          await service.initialize();
 
-        expect(service.isInitialized, isTrue);
-        // Should throw StateError when accessing client in non-Flatpak mode
-        expect(() => service.client, throwsStateError);
-      });
+          expect(service.isInitialized, isTrue);
+          // Should throw StateError when accessing client in non-Flatpak mode
+          expect(() => service.client, throwsStateError);
+        },
+      );
 
       test('should handle multiple initializations safely', () async {
         expect(service.isInitialized, isFalse);
@@ -165,21 +171,22 @@ void main() {
       });
 
       test(
-          'should handle initialization errors with logging service not registered',
-          () async {
-        // Unregister logging service temporarily
-        await getIt.unregister<LoggingService>();
+        'should handle initialization errors with logging service not registered',
+        () async {
+          // Unregister logging service temporarily
+          await getIt.unregister<LoggingService>();
 
-        // Create a new service that will fail on initialization
-        final failingService = TestPortalService();
+          // Create a new service that will fail on initialization
+          final failingService = TestPortalService();
 
-        // Re-register logging service for other tests
-        getIt.registerSingleton<LoggingService>(mockLoggingService);
+          // Re-register logging service for other tests
+          getIt.registerSingleton<LoggingService>(mockLoggingService);
 
-        // Service should still initialize even if logging fails
-        await failingService.initialize();
-        expect(failingService.isInitialized, isTrue);
-      });
+          // Service should still initialize even if logging fails
+          await failingService.initialize();
+          expect(failingService.isInitialized, isTrue);
+        },
+      );
     });
 
     group('Disposal', () {
@@ -216,11 +223,13 @@ void main() {
         expect(() => service.client, throwsStateError);
       });
 
-      test('should throw StateError when accessing client outside Flatpak',
-          () async {
-        await service.initialize();
-        expect(() => service.client, throwsStateError);
-      });
+      test(
+        'should throw StateError when accessing client outside Flatpak',
+        () async {
+          await service.initialize();
+          expect(() => service.client, throwsStateError);
+        },
+      );
     });
 
     group('Portal Object Creation', () {
@@ -288,102 +297,119 @@ void main() {
 
     group('Interface Availability', () {
       test(
-          'should return false for ScreenshotPortalService when not in Flatpak',
-          () async {
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Screenshot',
-          service,
-          'ScreenshotPortalService',
-        );
+        'should return false for ScreenshotPortalService when not in Flatpak',
+        () async {
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Screenshot',
+            service,
+            'ScreenshotPortalService',
+          );
 
-        expect(available, isFalse);
-      });
+          expect(available, isFalse);
+        },
+      );
 
-      test('should handle interface availability check errors gracefully',
-          () async {
-        // This will fail in test environment, but we can test error handling
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Screenshot',
-          service,
-          'ScreenshotPortalService',
-        );
+      test(
+        'should handle interface availability check errors gracefully',
+        () async {
+          // This will fail in test environment, but we can test error handling
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Screenshot',
+            service,
+            'ScreenshotPortalService',
+          );
 
-        // Should return false on error
-        expect(available, isFalse);
-      });
+          // Should return false on error
+          expect(available, isFalse);
+        },
+      );
 
-      test('should handle interface availability check for unknown service',
-          () async {
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Unknown',
-          service,
-          'UnknownService',
-        );
+      test(
+        'should handle interface availability check for unknown service',
+        () async {
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Unknown',
+            service,
+            'UnknownService',
+          );
 
-        // Should return false for unknown service
-        expect(available, isFalse);
-      });
+          // Should return false for unknown service
+          expect(available, isFalse);
+        },
+      );
     });
 
     group('Constants', () {
       test('should have correct portal constants', () {
-        expect(PortalConstants.portalBusName,
-            equals('org.freedesktop.portal.Desktop'));
-        expect(PortalConstants.portalPath,
-            equals('/org/freedesktop/portal/desktop'));
-        expect(PortalConstants.responseTimeout,
-            equals(const Duration(seconds: 30)));
+        expect(
+          PortalConstants.portalBusName,
+          equals('org.freedesktop.portal.Desktop'),
+        );
+        expect(
+          PortalConstants.portalPath,
+          equals('/org/freedesktop/portal/desktop'),
+        );
+        expect(
+          PortalConstants.responseTimeout,
+          equals(const Duration(seconds: 30)),
+        );
       });
     });
 
     // Focused tests for code coverage
     group('Code Coverage Tests', () {
-      test('should handle successful introspection with matching interface',
-          () async {
-        if (PortalService.shouldUsePortal) {
-          return; // Skip in Flatpak environment
-        }
+      test(
+        'should handle successful introspection with matching interface',
+        () async {
+          if (PortalService.shouldUsePortal) {
+            return; // Skip in Flatpak environment
+          }
 
-        // In non-Flatpak environments, the method returns false by default
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Device',
-          service,
-          'TestService',
-        );
+          // In non-Flatpak environments, the method returns false by default
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Device',
+            service,
+            'TestService',
+          );
 
-        expect(available, isFalse);
-      });
+          expect(available, isFalse);
+        },
+      );
 
-      test('should handle successful introspection without matching interface',
-          () async {
-        if (PortalService.shouldUsePortal) {
-          return; // Skip in Flatpak environment
-        }
+      test(
+        'should handle successful introspection without matching interface',
+        () async {
+          if (PortalService.shouldUsePortal) {
+            return; // Skip in Flatpak environment
+          }
 
-        // Set up mocks
-        service
-          ..setMockClient(mockDBusClient)
-          ..setMockRemoteObject(mockDBusRemoteObject);
+          // Set up mocks
+          service
+            ..setMockClient(mockDBusClient)
+            ..setMockRemoteObject(mockDBusRemoteObject);
 
-        // Create mock introspection node
-        final mockIntrospectNode = MockDBusIntrospectNode();
-        final mockInterface = MockDBusIntrospectInterface();
+          // Create mock introspection node
+          final mockIntrospectNode = MockDBusIntrospectNode();
+          final mockInterface = MockDBusIntrospectInterface();
 
-        when(() => mockInterface.name)
-            .thenReturn('org.freedesktop.portal.SomeOther');
-        when(() => mockIntrospectNode.interfaces).thenReturn([mockInterface]);
-        when(() => mockDBusRemoteObject.introspect())
-            .thenAnswer((_) async => mockIntrospectNode);
+          when(
+            () => mockInterface.name,
+          ).thenReturn('org.freedesktop.portal.SomeOther');
+          when(() => mockIntrospectNode.interfaces).thenReturn([mockInterface]);
+          when(
+            () => mockDBusRemoteObject.introspect(),
+          ).thenAnswer((_) async => mockIntrospectNode);
 
-        // Test no match case
-        final available = await PortalService.isInterfaceAvailable(
-          'org.freedesktop.portal.Device',
-          service,
-          'TestService',
-        );
+          // Test no match case
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Device',
+            service,
+            'TestService',
+          );
 
-        expect(available, isFalse);
-      });
+          expect(available, isFalse);
+        },
+      );
 
       test('should handle introspection timeout', () async {
         if (PortalService.shouldUsePortal) {
@@ -400,11 +426,13 @@ void main() {
         expect(available, isFalse);
 
         // Verify no exception logging since method returns early
-        verifyNever(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'TestService',
-              subDomain: 'isAvailable',
-            ));
+        verifyNever(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'TestService',
+            subDomain: 'isAvailable',
+          ),
+        );
       });
 
       test('should handle introspection exceptions', () async {
@@ -422,11 +450,13 @@ void main() {
         expect(available, isFalse);
 
         // Verify no exception logging since method returns early
-        verifyNever(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'TestService',
-              subDomain: 'isAvailable',
-            ));
+        verifyNever(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'TestService',
+            subDomain: 'isAvailable',
+          ),
+        );
       });
 
       test('should handle empty interfaces list', () async {
@@ -442,8 +472,9 @@ void main() {
         // Create mock introspection node with no interfaces
         final mockIntrospectNode = MockDBusIntrospectNode();
         when(() => mockIntrospectNode.interfaces).thenReturn([]);
-        when(() => mockDBusRemoteObject.introspect())
-            .thenAnswer((_) async => mockIntrospectNode);
+        when(
+          () => mockDBusRemoteObject.introspect(),
+        ).thenAnswer((_) async => mockIntrospectNode);
 
         // Test empty interfaces case
         final available = await PortalService.isInterfaceAvailable(

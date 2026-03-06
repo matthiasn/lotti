@@ -23,8 +23,10 @@ Future<List<AgentDomainEntity>> pendingChangeSets(
   Ref ref,
   String taskId,
 ) async {
-  final agent =
-      ref.watch(taskAgentProvider(taskId)).value?.mapOrNull(agent: (a) => a);
+  final agent = ref
+      .watch(taskAgentProvider(taskId))
+      .value
+      ?.mapOrNull(agent: (a) => a);
 
   if (agent == null) return [];
 
@@ -56,11 +58,12 @@ List<AgentDomainEntity> _deduplicateChangeSets(
       continue;
     }
 
-    final fingerprint = entity.items
-        .where((i) => i.status == ChangeItemStatus.pending)
-        .map(ChangeItem.fingerprint)
-        .toList()
-      ..sort();
+    final fingerprint =
+        entity.items
+            .where((i) => i.status == ChangeItemStatus.pending)
+            .map(ChangeItem.fingerprint)
+            .toList()
+          ..sort();
 
     // Sets with no pending items are fully resolved — keep each one
     // individually (keyed by entity ID) to avoid collapsing unrelated sets.

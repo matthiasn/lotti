@@ -148,25 +148,27 @@ void main() {
       expect(state2, isA<ImageGenerationInitial>());
     });
 
-    test('retryGeneration throws when no prompt available in initial state',
-        () async {
-      const entityId = 'test-entity-id';
+    test(
+      'retryGeneration throws when no prompt available in initial state',
+      () async {
+        const entityId = 'test-entity-id';
 
-      final notifier = container.read(
-        imageGenerationControllerProvider(entityId: entityId).notifier,
-      );
+        final notifier = container.read(
+          imageGenerationControllerProvider(entityId: entityId).notifier,
+        );
 
-      expect(
-        notifier.retryGeneration,
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('No prompt available for retry'),
+        expect(
+          notifier.retryGeneration,
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('No prompt available for retry'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   });
 
   group('ImageGenerationController.retryGeneration prompt extraction', () {
@@ -396,64 +398,68 @@ void main() {
       }
     });
 
-    test('generateImage transitions to generating then success state',
-        () async {
-      const entityId = 'test-entity';
-      const prompt = 'Generate a beautiful sunset';
-      final imageBytes = [1, 2, 3, 4, 5];
+    test(
+      'generateImage transitions to generating then success state',
+      () async {
+        const entityId = 'test-entity';
+        const prompt = 'Generate a beautiful sunset';
+        final imageBytes = [1, 2, 3, 4, 5];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+        ).thenAnswer((_) async => [testGeminiProvider]);
 
-      when(
-        () => mockCloudRepo.generateImage(
-          prompt: any(named: 'prompt'),
-          model: any(named: 'model'),
-          provider: any<AiConfigInferenceProvider>(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          referenceImages: any(named: 'referenceImages'),
-        ),
-      ).thenAnswer(
-        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
-      );
+        when(
+          () => mockCloudRepo.generateImage(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            provider: any<AiConfigInferenceProvider>(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        ).thenAnswer(
+          (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+        );
 
-      final notifier = container.read(
-        imageGenerationControllerProvider(entityId: entityId).notifier,
-      );
+        final notifier = container.read(
+          imageGenerationControllerProvider(entityId: entityId).notifier,
+        );
 
-      // Verify initial state
-      expect(
-        container.read(imageGenerationControllerProvider(entityId: entityId)),
-        isA<ImageGenerationInitial>(),
-      );
+        // Verify initial state
+        expect(
+          container.read(imageGenerationControllerProvider(entityId: entityId)),
+          isA<ImageGenerationInitial>(),
+        );
 
-      // Generate image
-      await notifier.generateImage(prompt: prompt);
+        // Generate image
+        await notifier.generateImage(prompt: prompt);
 
-      // Verify final state is success
-      final finalState = container.read(
-        imageGenerationControllerProvider(entityId: entityId),
-      );
-      expect(finalState, isA<ImageGenerationSuccess>());
+        // Verify final state is success
+        final finalState = container.read(
+          imageGenerationControllerProvider(entityId: entityId),
+        );
+        expect(finalState, isA<ImageGenerationSuccess>());
 
-      finalState.map(
-        initial: (_) => fail('Should be success'),
-        generating: (_) => fail('Should be success'),
-        success: (s) {
-          expect(s.prompt, prompt);
-          expect(s.imageBytes, Uint8List.fromList(imageBytes));
-          expect(s.mimeType, 'image/png');
-        },
-        error: (_) => fail('Should be success'),
-      );
-    });
+        finalState.map(
+          initial: (_) => fail('Should be success'),
+          generating: (_) => fail('Should be success'),
+          success: (s) {
+            expect(s.prompt, prompt);
+            expect(s.imageBytes, Uint8List.fromList(imageBytes));
+            expect(s.mimeType, 'image/png');
+          },
+          error: (_) => fail('Should be success'),
+        );
+      },
+    );
 
     test('generateImage transitions to error state on failure', () async {
       const entityId = 'test-entity';
       const prompt = 'Generate a beautiful sunset';
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+      ).thenAnswer((_) async => [testGeminiProvider]);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -496,50 +502,54 @@ void main() {
       );
     });
 
-    test('generateImage errors when no Gemini provider is configured',
-        () async {
-      const entityId = 'test-entity';
-      const prompt = 'Generate a beautiful sunset';
+    test(
+      'generateImage errors when no Gemini provider is configured',
+      () async {
+        const entityId = 'test-entity';
+        const prompt = 'Generate a beautiful sunset';
 
-      // Return empty list - no providers
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => []);
+        // Return empty list - no providers
+        when(
+          () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+        ).thenAnswer((_) async => []);
 
-      when(
-        () => mockLoggingService.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).thenReturn(null);
+        when(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenReturn(null);
 
-      final notifier = container.read(
-        imageGenerationControllerProvider(entityId: entityId).notifier,
-      );
+        final notifier = container.read(
+          imageGenerationControllerProvider(entityId: entityId).notifier,
+        );
 
-      await notifier.generateImage(prompt: prompt);
+        await notifier.generateImage(prompt: prompt);
 
-      final finalState = container.read(
-        imageGenerationControllerProvider(entityId: entityId),
-      );
-      expect(finalState, isA<ImageGenerationError>());
+        final finalState = container.read(
+          imageGenerationControllerProvider(entityId: entityId),
+        );
+        expect(finalState, isA<ImageGenerationError>());
 
-      finalState.map(
-        initial: (_) => fail('Should be error'),
-        generating: (_) => fail('Should be error'),
-        success: (_) => fail('Should be error'),
-        error: (s) {
-          expect(s.errorMessage, contains('No Gemini provider'));
-        },
-      );
-    });
+        finalState.map(
+          initial: (_) => fail('Should be error'),
+          generating: (_) => fail('Should be error'),
+          success: (_) => fail('Should be error'),
+          error: (s) {
+            expect(s.errorMessage, contains('No Gemini provider'));
+          },
+        );
+      },
+    );
 
     test('generateImageFromEntity fails with non-existent entity', () async {
       const entityId = 'non-existent';
 
-      when(() => mockJournalRepo.getJournalEntityById(entityId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalRepo.getJournalEntityById(entityId),
+      ).thenAnswer((_) async => null);
 
       when(
         () => mockLoggingService.captureException(
@@ -590,8 +600,9 @@ void main() {
         ),
       );
 
-      when(() => mockJournalRepo.getJournalEntityById(entityId))
-          .thenAnswer((_) async => imageEntity);
+      when(
+        () => mockJournalRepo.getJournalEntityById(entityId),
+      ).thenAnswer((_) async => imageEntity);
 
       when(
         () => mockLoggingService.captureException(
@@ -629,8 +640,9 @@ void main() {
       const modifiedPrompt = 'Modified prompt';
       final imageBytes = [1, 2, 3];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+      ).thenAnswer((_) async => [testGeminiProvider]);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -669,90 +681,96 @@ void main() {
       );
     });
 
-    test('retryGeneration without modified prompt uses current prompt',
-        () async {
-      const entityId = 'test-entity';
-      const prompt = 'Test prompt';
-      final imageBytes = [1, 2, 3];
+    test(
+      'retryGeneration without modified prompt uses current prompt',
+      () async {
+        const entityId = 'test-entity';
+        const prompt = 'Test prompt';
+        final imageBytes = [1, 2, 3];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+        ).thenAnswer((_) async => [testGeminiProvider]);
 
-      when(
-        () => mockCloudRepo.generateImage(
-          prompt: any(named: 'prompt'),
-          model: any(named: 'model'),
-          provider: any<AiConfigInferenceProvider>(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          referenceImages: any(named: 'referenceImages'),
-        ),
-      ).thenAnswer(
-        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
-      );
+        when(
+          () => mockCloudRepo.generateImage(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            provider: any<AiConfigInferenceProvider>(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        ).thenAnswer(
+          (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+        );
 
-      final notifier = container.read(
-        imageGenerationControllerProvider(entityId: entityId).notifier,
-      );
+        final notifier = container.read(
+          imageGenerationControllerProvider(entityId: entityId).notifier,
+        );
 
-      // First generate
-      await notifier.generateImage(prompt: prompt);
+        // First generate
+        await notifier.generateImage(prompt: prompt);
 
-      // Retry without modifying
-      await notifier.retryGeneration();
+        // Retry without modifying
+        await notifier.retryGeneration();
 
-      final finalState = container.read(
-        imageGenerationControllerProvider(entityId: entityId),
-      );
-      expect(finalState, isA<ImageGenerationSuccess>());
+        final finalState = container.read(
+          imageGenerationControllerProvider(entityId: entityId),
+        );
+        expect(finalState, isA<ImageGenerationSuccess>());
 
-      finalState.map(
-        initial: (_) => fail('Should be success'),
-        generating: (_) => fail('Should be success'),
-        success: (s) {
-          expect(s.prompt, prompt);
-        },
-        error: (_) => fail('Should be success'),
-      );
-    });
+        finalState.map(
+          initial: (_) => fail('Should be success'),
+          generating: (_) => fail('Should be success'),
+          success: (s) {
+            expect(s.prompt, prompt);
+          },
+          error: (_) => fail('Should be success'),
+        );
+      },
+    );
 
-    test('generateImage uses system message from preconfigured prompt',
-        () async {
-      const entityId = 'test-entity';
-      const prompt = 'Test prompt';
-      final imageBytes = [1, 2, 3];
+    test(
+      'generateImage uses system message from preconfigured prompt',
+      () async {
+        const entityId = 'test-entity';
+        const prompt = 'Test prompt';
+        final imageBytes = [1, 2, 3];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+        ).thenAnswer((_) async => [testGeminiProvider]);
 
-      when(
-        () => mockCloudRepo.generateImage(
-          prompt: any(named: 'prompt'),
-          model: any(named: 'model'),
-          provider: any<AiConfigInferenceProvider>(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          referenceImages: any(named: 'referenceImages'),
-        ),
-      ).thenAnswer(
-        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
-      );
+        when(
+          () => mockCloudRepo.generateImage(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            provider: any<AiConfigInferenceProvider>(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        ).thenAnswer(
+          (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+        );
 
-      final notifier = container.read(
-        imageGenerationControllerProvider(entityId: entityId).notifier,
-      );
+        final notifier = container.read(
+          imageGenerationControllerProvider(entityId: entityId).notifier,
+        );
 
-      await notifier.generateImage(prompt: prompt);
+        await notifier.generateImage(prompt: prompt);
 
-      // Verify generateImage was called with systemMessage
-      verify(
-        () => mockCloudRepo.generateImage(
-          prompt: prompt,
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          referenceImages: any(named: 'referenceImages'),
-        ),
-      ).called(1);
-    });
+        // Verify generateImage was called with systemMessage
+        verify(
+          () => mockCloudRepo.generateImage(
+            prompt: prompt,
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('ImageGenerationController.generateImageFromEntity happy path', () {
@@ -865,92 +883,101 @@ void main() {
       }
     });
 
-    test('generateImageFromEntity succeeds with audio entity linked to task',
-        () async {
-      const audioEntityId = 'audio-entity-id';
-      const taskId = 'task-id';
-      final audioEntity = buildAudioEntity(
-        id: audioEntityId,
-        transcript: 'Create a colorful sunset image',
-      );
-      final linkedTask = buildTask(id: taskId);
-      final imageBytes = [1, 2, 3, 4, 5];
+    test(
+      'generateImageFromEntity succeeds with audio entity linked to task',
+      () async {
+        const audioEntityId = 'audio-entity-id';
+        const taskId = 'task-id';
+        final audioEntity = buildAudioEntity(
+          id: audioEntityId,
+          transcript: 'Create a colorful sunset image',
+        );
+        final linkedTask = buildTask(id: taskId);
+        final imageBytes = [1, 2, 3, 4, 5];
 
-      // Mock: Get the audio entity by ID
-      when(() => mockJournalRepo.getJournalEntityById(audioEntityId))
-          .thenAnswer((_) async => audioEntity);
+        // Mock: Get the audio entity by ID
+        when(
+          () => mockJournalRepo.getJournalEntityById(audioEntityId),
+        ).thenAnswer((_) async => audioEntity);
 
-      // Mock: Get linked entities (audio -> task link)
-      when(() => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId))
-          .thenAnswer((_) async => [linkedTask]);
+        // Mock: Get linked entities (audio -> task link)
+        when(
+          () => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId),
+        ).thenAnswer((_) async => [linkedTask]);
 
-      // Mock: Get linked to entities (task -> entries link for summaries)
-      when(() => mockJournalRepo.getLinkedToEntities(linkedTo: taskId))
-          .thenAnswer((_) async => []);
+        // Mock: Get linked to entities (task -> entries link for summaries)
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: taskId),
+        ).thenAnswer((_) async => []);
 
-      // Mock: Build task details JSON for the {{task}} placeholder
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => '{"title": "Test Task", "status": "open"}');
+        // Mock: Build task details JSON for the {{task}} placeholder
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title": "Test Task", "status": "open"}');
 
-      // Mock: Build linked tasks JSON
-      when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
-          .thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
+        // Mock: Build linked tasks JSON
+        when(
+          () => mockAiInputRepo.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
 
-      // Mock: AI config to return Gemini provider
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+        // Mock: AI config to return Gemini provider
+        when(
+          () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+        ).thenAnswer((_) async => [testGeminiProvider]);
 
-      // Mock: Cloud repo to generate image
-      when(
-        () => mockCloudRepo.generateImage(
-          prompt: any(named: 'prompt'),
-          model: any(named: 'model'),
-          provider: any<AiConfigInferenceProvider>(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          referenceImages: any(named: 'referenceImages'),
-        ),
-      ).thenAnswer(
-        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
-      );
+        // Mock: Cloud repo to generate image
+        when(
+          () => mockCloudRepo.generateImage(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            provider: any<AiConfigInferenceProvider>(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        ).thenAnswer(
+          (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+        );
 
-      final notifier = container.read(
-        imageGenerationControllerProvider(entityId: audioEntityId).notifier,
-      );
+        final notifier = container.read(
+          imageGenerationControllerProvider(entityId: audioEntityId).notifier,
+        );
 
-      // Execute the method
-      await notifier.generateImageFromEntity(audioEntityId: audioEntityId);
+        // Execute the method
+        await notifier.generateImageFromEntity(audioEntityId: audioEntityId);
 
-      // Verify final state is success
-      final finalState = container.read(
-        imageGenerationControllerProvider(entityId: audioEntityId),
-      );
-      expect(finalState, isA<ImageGenerationSuccess>());
+        // Verify final state is success
+        final finalState = container.read(
+          imageGenerationControllerProvider(entityId: audioEntityId),
+        );
+        expect(finalState, isA<ImageGenerationSuccess>());
 
-      finalState.map(
-        initial: (_) => fail('Should be success'),
-        generating: (_) => fail('Should be success'),
-        success: (s) {
-          // Prompt should contain the transcript
-          expect(s.prompt, contains('Create a colorful sunset image'));
-          expect(s.imageBytes, Uint8List.fromList(imageBytes));
-          expect(s.mimeType, 'image/png');
-        },
-        error: (_) => fail('Should be success'),
-      );
+        finalState.map(
+          initial: (_) => fail('Should be success'),
+          generating: (_) => fail('Should be success'),
+          success: (s) {
+            // Prompt should contain the transcript
+            expect(s.prompt, contains('Create a colorful sunset image'));
+            expect(s.imageBytes, Uint8List.fromList(imageBytes));
+            expect(s.mimeType, 'image/png');
+          },
+          error: (_) => fail('Should be success'),
+        );
 
-      // Verify the repository calls
-      verify(() => mockJournalRepo.getJournalEntityById(audioEntityId))
-          .called(1);
-      verify(
-        () => mockCloudRepo.generateImage(
-          prompt: any(named: 'prompt'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          referenceImages: any(named: 'referenceImages'),
-        ),
-      ).called(1);
-    });
+        // Verify the repository calls
+        verify(
+          () => mockJournalRepo.getJournalEntityById(audioEntityId),
+        ).called(1);
+        verify(
+          () => mockCloudRepo.generateImage(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('generateImageFromEntity handles empty prompt gracefully', () async {
       const audioEntityId = 'audio-entity-id';
@@ -959,20 +986,25 @@ void main() {
       final audioEntity = buildAudioEntity(id: audioEntityId);
       final linkedTask = buildTask(id: taskId);
 
-      when(() => mockJournalRepo.getJournalEntityById(audioEntityId))
-          .thenAnswer((_) async => audioEntity);
+      when(
+        () => mockJournalRepo.getJournalEntityById(audioEntityId),
+      ).thenAnswer((_) async => audioEntity);
 
-      when(() => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId))
-          .thenAnswer((_) async => [linkedTask]);
+      when(
+        () => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId),
+      ).thenAnswer((_) async => [linkedTask]);
 
-      when(() => mockJournalRepo.getLinkedToEntities(linkedTo: taskId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepo.getLinkedToEntities(linkedTo: taskId),
+      ).thenAnswer((_) async => []);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
-          .thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
+      when(
+        () => mockAiInputRepo.buildLinkedTasksJson(taskId),
+      ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
 
       when(
         () => mockLoggingService.captureException(
@@ -984,8 +1016,9 @@ void main() {
       ).thenReturn(null);
 
       // Mock AI config returns provider so generation can proceed
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+      ).thenAnswer((_) async => [testGeminiProvider]);
 
       final imageBytes = [1, 2, 3];
       when(
@@ -1030,8 +1063,9 @@ void main() {
         ),
       ];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+      ).thenAnswer((_) async => [testGeminiProvider]);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -1089,23 +1123,29 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepo.getJournalEntityById(audioEntityId))
-          .thenAnswer((_) async => audioEntity);
+      when(
+        () => mockJournalRepo.getJournalEntityById(audioEntityId),
+      ).thenAnswer((_) async => audioEntity);
 
-      when(() => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId))
-          .thenAnswer((_) async => [linkedTask]);
+      when(
+        () => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId),
+      ).thenAnswer((_) async => [linkedTask]);
 
-      when(() => mockJournalRepo.getLinkedToEntities(linkedTo: taskId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepo.getLinkedToEntities(linkedTo: taskId),
+      ).thenAnswer((_) async => []);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
-          .thenAnswer((_) async => '{}');
+      when(
+        () => mockAiInputRepo.buildLinkedTasksJson(taskId),
+      ).thenAnswer((_) async => '{}');
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()),
+      ).thenAnswer((_) async => [testGeminiProvider]);
 
       when(
         () => mockCloudRepo.generateImage(

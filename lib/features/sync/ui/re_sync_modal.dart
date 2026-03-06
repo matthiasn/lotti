@@ -59,7 +59,9 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             'Start',
             onPressed: dateFrom != null && dateTo != null
                 ? () {
-                    ref.read(maintenanceProvider).reSyncInterval(
+                    ref
+                        .read(maintenanceProvider)
+                        .reSyncInterval(
                           start: dateFrom,
                           end: dateTo,
                           agentRepository: ref.read(agentRepositoryProvider),

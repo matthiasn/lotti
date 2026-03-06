@@ -23,7 +23,7 @@ class ApiKeyName extends FormzInput<String, ProviderFormError> {
 class ApiKeyValue extends FormzInput<String, ProviderFormError> {
   const ApiKeyValue.pure([super.value = '', this.providerType]) : super.pure();
   const ApiKeyValue.dirty([super.value = '', this.providerType])
-      : super.dirty();
+    : super.dirty();
 
   final InferenceProviderType? providerType;
 
@@ -122,11 +122,11 @@ class InferenceProviderFormState with FormzMixin {
 
   @override
   List<FormzInput<String, dynamic>> get inputs => [
-        name,
-        apiKey,
-        baseUrl,
-        description,
-      ];
+    name,
+    apiKey,
+    baseUrl,
+    description,
+  ];
 
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {

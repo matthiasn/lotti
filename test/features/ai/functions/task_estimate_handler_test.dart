@@ -106,8 +106,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         Task? capturedTask;
         final handler = TaskEstimateHandler(
@@ -138,34 +139,41 @@ void main() {
         ).called(1);
       });
 
-      test('should update estimate when currently zero (treat as not set)',
-          () async {
-        final task = createTask(estimate: Duration.zero);
-        final toolCall = createEstimateToolCall(minutes: 60);
+      test(
+        'should update estimate when currently zero (treat as not set)',
+        () async {
+          final task = createTask(estimate: Duration.zero);
+          final toolCall = createEstimateToolCall(minutes: 60);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskEstimateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskEstimateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        expect(result.requestedMinutes, 60);
-        expect(result.updatedTask!.data.estimate, const Duration(minutes: 60));
+          expect(result.success, isTrue);
+          expect(result.requestedMinutes, 60);
+          expect(
+            result.updatedTask!.data.estimate,
+            const Duration(minutes: 60),
+          );
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-      });
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        },
+      );
 
       test('should update handler task reference after success', () async {
         final task = createTask();
         final toolCall = createEstimateToolCall(minutes: 90);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -179,33 +187,36 @@ void main() {
         expect(handler.task.data.estimate, const Duration(minutes: 90));
       });
 
-      test('should work without ConversationManager (for unit testing)',
-          () async {
-        final task = createTask();
-        final toolCall = createEstimateToolCall(minutes: 45);
+      test(
+        'should work without ConversationManager (for unit testing)',
+        () async {
+          final task = createTask();
+          final toolCall = createEstimateToolCall(minutes: 45);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskEstimateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskEstimateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        // Call without manager
-        final result = await handler.processToolCall(toolCall);
+          // Call without manager
+          final result = await handler.processToolCall(toolCall);
 
-        expect(result.success, isTrue);
-        expect(result.requestedMinutes, 45);
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-        // Manager methods should not be called
-        verifyNever(
-          () => mockManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          ),
-        );
-      });
+          expect(result.success, isTrue);
+          expect(result.requestedMinutes, 45);
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          // Manager methods should not be called
+          verifyNever(
+            () => mockManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          );
+        },
+      );
     });
 
     group('no-op when same estimate', () {
@@ -258,8 +269,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -410,8 +422,9 @@ void main() {
         final task = createTask();
         final toolCall = createEstimateToolCall(minutes: 90);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database connection lost'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database connection lost'));
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -440,8 +453,9 @@ void main() {
         final task = createTask();
         final toolCall = createEstimateToolCall(minutes: 90);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database error'));
 
         var callbackCalled = false;
         final handler = TaskEstimateHandler(
@@ -455,24 +469,27 @@ void main() {
         expect(callbackCalled, isFalse);
       });
 
-      test('should not update handler task reference when repository fails',
-          () async {
-        final task = createTask();
-        final toolCall = createEstimateToolCall(minutes: 90);
+      test(
+        'should not update handler task reference when repository fails',
+        () async {
+          final task = createTask();
+          final toolCall = createEstimateToolCall(minutes: 90);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database error'));
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenThrow(Exception('Database error'));
 
-        final handler = TaskEstimateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskEstimateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        await handler.processToolCall(toolCall);
+          await handler.processToolCall(toolCall);
 
-        // Task should remain unchanged
-        expect(handler.task.data.estimate, isNull);
-      });
+          // Task should remain unchanged
+          expect(handler.task.data.estimate, isNull);
+        },
+      );
     });
 
     group('TaskEstimateResult', () {
@@ -513,8 +530,9 @@ void main() {
         // 24 hours in minutes (max allowed)
         final toolCall = createEstimateToolCall(minutes: 1440);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -535,8 +553,9 @@ void main() {
         final task = createTask();
         final toolCall = createEstimateToolCall(minutes: 1);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -550,51 +569,54 @@ void main() {
         expect(result.updatedTask!.data.estimate, const Duration(minutes: 1));
       });
 
-      test('should preserve other task fields when updating estimate',
-          () async {
-        final task = Task(
-          meta: Metadata(
-            id: 'test-task-id',
-            createdAt: fixedDate,
-            updatedAt: fixedDate,
-            dateFrom: fixedDate,
-            dateTo: fixedDate,
-            categoryId: 'test-category',
-          ),
-          data: TaskData(
-            title: 'Important Task',
-            status: TaskStatus.inProgress(
-              id: 'status-2',
+      test(
+        'should preserve other task fields when updating estimate',
+        () async {
+          final task = Task(
+            meta: Metadata(
+              id: 'test-task-id',
               createdAt: fixedDate,
-              utcOffset: 0,
+              updatedAt: fixedDate,
+              dateFrom: fixedDate,
+              dateTo: fixedDate,
+              categoryId: 'test-category',
             ),
-            statusHistory: const [],
-            dateFrom: fixedDate,
-            dateTo: DateTime(2024, 1, 20),
-            due: DateTime(2024, 1, 25),
-            // estimate is null
-          ),
-        );
-        final toolCall = createEstimateToolCall(minutes: 60);
+            data: TaskData(
+              title: 'Important Task',
+              status: TaskStatus.inProgress(
+                id: 'status-2',
+                createdAt: fixedDate,
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: fixedDate,
+              dateTo: DateTime(2024, 1, 20),
+              due: DateTime(2024, 1, 25),
+              // estimate is null
+            ),
+          );
+          final toolCall = createEstimateToolCall(minutes: 60);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskEstimateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskEstimateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        final updated = result.updatedTask!;
-        expect(updated.data.title, 'Important Task');
-        expect(updated.data.status.id, 'status-2');
-        expect(updated.data.due, DateTime(2024, 1, 25));
-        expect(updated.data.estimate, const Duration(minutes: 60));
-        expect(updated.meta.id, 'test-task-id');
-      });
+          expect(result.success, isTrue);
+          final updated = result.updatedTask!;
+          expect(updated.data.title, 'Important Task');
+          expect(updated.data.status.id, 'status-2');
+          expect(updated.data.due, DateTime(2024, 1, 25));
+          expect(updated.data.estimate, const Duration(minutes: 60));
+          expect(updated.meta.id, 'test-task-id');
+        },
+      );
 
       test('should accept double minutes (rounded)', () async {
         final task = createTask();
@@ -608,8 +630,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -638,8 +661,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskEstimateHandler(
           task: task,

@@ -42,13 +42,16 @@ class _PreconfiguredPromptButtonState extends State<PreconfiguredPromptButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1,
-      end: 0.98,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: 0.98,
+        ).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
   }
 
   @override
@@ -139,8 +142,9 @@ class _PreconfiguredPromptButtonState extends State<PreconfiguredPromptButton>
                       color: context.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color:
-                            context.colorScheme.primary.withValues(alpha: 0.2),
+                        color: context.colorScheme.primary.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ),
                     child: Icon(
@@ -165,11 +169,13 @@ class _PreconfiguredPromptButtonState extends State<PreconfiguredPromptButton>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          context.messages
+                          context
+                              .messages
                               .enhancedPromptFormPreconfiguredPromptDescription,
                           style: context.textTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
+                            color: context.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
                             height: 1.3,
                           ),
                         ),
@@ -184,8 +190,9 @@ class _PreconfiguredPromptButtonState extends State<PreconfiguredPromptButton>
                       ..translateByVector3(Vector3(_isPressed ? 2 : 0, 0, 0)),
                     child: Icon(
                       Icons.chevron_right_rounded,
-                      color:
-                          context.colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: context.colorScheme.onSurface.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                   ),
                 ],

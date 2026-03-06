@@ -179,8 +179,9 @@ TimelineFoldingState calculateFoldingState({
       final gap = hour - clusterEnd;
       if (gap >= gapThreshold) {
         // Finalize current cluster, start new one
-        clusters
-            .add(VisibleCluster(startHour: clusterStart, endHour: clusterEnd));
+        clusters.add(
+          VisibleCluster(startHour: clusterStart, endHour: clusterEnd),
+        );
         clusterStart = hour;
       }
       // If gap is small, just extend the cluster to include this hour
@@ -317,8 +318,9 @@ double timeToFoldedPosition({
   allRegions.sort((a, b) => a.startHour.compareTo(b.startHour));
 
   for (final region in allRegions) {
-    final hourHeight =
-        region.isCompressed ? compressedHourHeight : normalHourHeight;
+    final hourHeight = region.isCompressed
+        ? compressedHourHeight
+        : normalHourHeight;
 
     if (timeInHours < region.startHour) {
       // Time is before this region - shouldn't happen in a valid timeline

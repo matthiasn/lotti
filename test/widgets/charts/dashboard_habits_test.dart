@@ -45,8 +45,9 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('renders habit chart with title and completion card',
-        (tester) async {
+    testWidgets('renders habit chart with title and completion card', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardHabitsChart(

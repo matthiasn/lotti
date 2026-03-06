@@ -159,8 +159,9 @@ void main() {
       );
 
       final json = jsonEncode(original);
-      final restored =
-          EntryLink.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final restored = EntryLink.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       expect(restored.collapsed, isTrue);
       expect(restored.hidden, isFalse);

@@ -189,12 +189,14 @@ class EvolutionStrategy extends ConversationStrategy {
     final kindStr = _readStringArg(args, 'kind');
     final content = _readStringArg(args, 'content');
 
-    final kind =
-        EvolutionNoteKind.values.firstWhereOrNull((k) => k.name == kindStr);
+    final kind = EvolutionNoteKind.values.firstWhereOrNull(
+      (k) => k.name == kindStr,
+    );
     if (kind == null) {
       manager.addToolResponse(
         toolCallId: callId,
-        response: 'Error: invalid kind "$kindStr". '
+        response:
+            'Error: invalid kind "$kindStr". '
             'Expected one of: ${EvolutionNoteKind.values.map((k) => k.name).join(", ")}.',
       );
       return;

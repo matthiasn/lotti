@@ -20,15 +20,15 @@ final class EnableTooltipsProvider
     with $FutureModifier<bool>, $StreamProvider<bool> {
   /// Stream provider watching the tooltip enable flag from config.
   EnableTooltipsProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'enableTooltipsProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'enableTooltipsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$enableTooltipsHash();
@@ -59,15 +59,15 @@ final class ThemingControllerProvider
   /// Notifier managing the complete theming state.
   /// Marked as keepAlive since theme state should persist for the entire app lifecycle.
   ThemingControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'themingControllerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'themingControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$themingControllerHash();
@@ -96,11 +96,14 @@ abstract class _$ThemingController extends $Notifier<ThemingState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<ThemingState, ThemingState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<ThemingState, ThemingState>,
-        ThemingState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ThemingState, ThemingState>,
+              ThemingState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

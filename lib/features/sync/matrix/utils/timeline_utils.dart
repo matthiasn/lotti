@@ -19,8 +19,10 @@ Duration computeExponentialBackoff(
   }
   final rnd = random ?? math.Random();
   final jitter = 1 + (jitterFraction * (rnd.nextDouble() * 2 - 1));
-  final jittered =
-      (clamped * jitter).clamp(baseMs.toDouble(), maxMs.toDouble());
+  final jittered = (clamped * jitter).clamp(
+    baseMs.toDouble(),
+    maxMs.toDouble(),
+  );
   return Duration(milliseconds: jittered.round());
 }
 

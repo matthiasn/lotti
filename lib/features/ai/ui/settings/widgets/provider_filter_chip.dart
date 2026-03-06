@@ -54,9 +54,11 @@ class ProviderFilterChip extends ConsumerWidget {
 
         final borderColor = isSelected
             ? providerColor.withValues(
-                alpha: ProviderChipConstants.selectedBorderAlpha)
+                alpha: ProviderChipConstants.selectedBorderAlpha,
+              )
             : providerColor.withValues(
-                alpha: ProviderChipConstants.unselectedBorderAlpha);
+                alpha: ProviderChipConstants.unselectedBorderAlpha,
+              );
 
         final textColor = isDark ? Colors.white : Colors.black;
 
@@ -118,8 +120,9 @@ class ProviderFilterChip extends ConsumerWidget {
           ),
           showCheckmark: false,
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(ProviderChipConstants.chipBorderRadius),
+            borderRadius: BorderRadius.circular(
+              ProviderChipConstants.chipBorderRadius,
+            ),
           ),
         );
       },

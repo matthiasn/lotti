@@ -139,8 +139,9 @@ void main() {
     expect(find.text('Label 9'), findsOneWidget);
   });
 
-  testWidgets('Clear and Unlabeled chips trigger controller actions',
-      (tester) async {
+  testWidgets('Clear and Unlabeled chips trigger controller actions', (
+    tester,
+  ) async {
     final state = _baseState(selectedLabelIds: {'label-1'});
     final widget = wrapFilter(const TaskLabelFilter(), state);
 
@@ -154,8 +155,9 @@ void main() {
     expect(fakeController.toggledLabelIds, contains(''));
   });
 
-  testWidgets('quick filter lists active labels and clears selections',
-      (tester) async {
+  testWidgets('quick filter lists active labels and clears selections', (
+    tester,
+  ) async {
     final state = _baseState(selectedLabelIds: {'label-0', ''});
     fakeController = FakeJournalPageController(state);
 

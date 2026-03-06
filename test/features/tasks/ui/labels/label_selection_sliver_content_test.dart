@@ -61,10 +61,12 @@ void main() {
       ..registerSingleton<LabelsRepository>(repository)
       ..registerSingleton<EntitiesCacheService>(cacheService);
 
-    when(() => cacheService.filterLabelsForCategory(
-          any(),
-          any(),
-        )).thenAnswer(
+    when(
+      () => cacheService.filterLabelsForCategory(
+        any(),
+        any(),
+      ),
+    ).thenAnswer(
       (invocation) =>
           invocation.positionalArguments.first as List<LabelDefinition>,
     );
@@ -123,10 +125,12 @@ void main() {
         expect(find.text('Bug'), findsOneWidget);
       });
 
-      testWidgets('shows checked state for initially selected labels',
-          (tester) async {
-        await tester
-            .pumpWidget(buildWidget(initialLabelIds: const ['label-1']));
+      testWidgets('shows checked state for initially selected labels', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(initialLabelIds: const ['label-1']),
+        );
         await tester.pumpAndSettle();
 
         final checkbox = tester.widget<CheckboxListTile>(
@@ -176,8 +180,9 @@ void main() {
         expect(checkbox.value, isFalse);
       });
 
-      testWidgets('shows label description as subtitle when present',
-          (tester) async {
+      testWidgets('shows label description as subtitle when present', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget(initialLabelIds: const []));
         await tester.pumpAndSettle();
 
@@ -199,10 +204,12 @@ void main() {
     group('Search functionality', () {
       testWidgets('filters labels by name', (tester) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          searchQuery: searchQuery,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            searchQuery: searchQuery,
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Urgent'), findsOneWidget);
@@ -217,10 +224,12 @@ void main() {
 
       testWidgets('filters labels by description', (tester) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          searchQuery: searchQuery,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            searchQuery: searchQuery,
+          ),
+        );
         await tester.pumpAndSettle();
 
         searchQuery.value = 'immediate';
@@ -232,10 +241,12 @@ void main() {
 
       testWidgets('search is case insensitive', (tester) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          searchQuery: searchQuery,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            searchQuery: searchQuery,
+          ),
+        );
         await tester.pumpAndSettle();
 
         searchQuery.value = 'URGENT';
@@ -247,23 +258,28 @@ void main() {
 
     group('Empty states', () {
       testWidgets('shows empty state when no labels available', (tester) async {
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          availableLabels: const [],
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            availableLabels: const [],
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('No labels available yet.'), findsOneWidget);
         expect(find.byIcon(Icons.label_outline), findsOneWidget);
       });
 
-      testWidgets('shows empty state when search has no matches',
-          (tester) async {
+      testWidgets('shows empty state when search has no matches', (
+        tester,
+      ) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          searchQuery: searchQuery,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            searchQuery: searchQuery,
+          ),
+        );
         await tester.pumpAndSettle();
 
         searchQuery.value = 'nonexistent';
@@ -274,12 +290,15 @@ void main() {
     });
 
     group('Label creation', () {
-      testWidgets('opens label editor when create button is tapped',
-          (tester) async {
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          availableLabels: const [],
-        ));
+      testWidgets('opens label editor when create button is tapped', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            availableLabels: const [],
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Find the FilledButton.icon in the empty state by finding the add icon
@@ -292,13 +311,16 @@ void main() {
         expect(find.byType(LabelEditorSheet), findsOneWidget);
       });
 
-      testWidgets('shows create button when search has substring match',
-          (tester) async {
+      testWidgets('shows create button when search has substring match', (
+        tester,
+      ) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          searchQuery: searchQuery,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            searchQuery: searchQuery,
+          ),
+        );
         await tester.pumpAndSettle();
 
         searchQuery.value = 'Urg';
@@ -308,13 +330,16 @@ void main() {
         expect(find.textContaining('Create "Urg" label'), findsOneWidget);
       });
 
-      testWidgets('hides create button when exact match exists',
-          (tester) async {
+      testWidgets('hides create button when exact match exists', (
+        tester,
+      ) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(buildWidget(
-          initialLabelIds: const [],
-          searchQuery: searchQuery,
-        ));
+        await tester.pumpWidget(
+          buildWidget(
+            initialLabelIds: const [],
+            searchQuery: searchQuery,
+          ),
+        );
         await tester.pumpAndSettle();
 
         searchQuery.value = 'Urgent';
@@ -336,8 +361,9 @@ void main() {
                 (ref) => testLabels,
               ),
               labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider
-                  .overrideWith((ref) => Stream.value(testLabels)),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream.value(testLabels),
+              ),
             ],
             child: WidgetTestBench(
               child: Material(
@@ -360,14 +386,17 @@ void main() {
         expect(applyController.value, isNotNull);
       });
 
-      testWidgets('calls repository.setLabels when apply is invoked',
-          (tester) async {
+      testWidgets('calls repository.setLabels when apply is invoked', (
+        tester,
+      ) async {
         final applyController = ValueNotifier<Future<bool> Function()?>(null);
 
-        when(() => repository.setLabels(
-              journalEntityId: any(named: 'journalEntityId'),
-              labelIds: any(named: 'labelIds'),
-            )).thenAnswer((_) async => true);
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -376,8 +405,9 @@ void main() {
                 (ref) => testLabels,
               ),
               labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider
-                  .overrideWith((ref) => Stream.value(testLabels)),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream.value(testLabels),
+              ),
             ],
             child: WidgetTestBench(
               child: Material(
@@ -400,20 +430,25 @@ void main() {
         final result = await applyController.value!();
         expect(result, isTrue);
 
-        verify(() => repository.setLabels(
-              journalEntityId: 'task-123',
-              labelIds: ['label-1'],
-            )).called(1);
+        verify(
+          () => repository.setLabels(
+            journalEntityId: 'task-123',
+            labelIds: ['label-1'],
+          ),
+        ).called(1);
       });
 
-      testWidgets('returns false when repository.setLabels fails',
-          (tester) async {
+      testWidgets('returns false when repository.setLabels fails', (
+        tester,
+      ) async {
         final applyController = ValueNotifier<Future<bool> Function()?>(null);
 
-        when(() => repository.setLabels(
-              journalEntityId: any(named: 'journalEntityId'),
-              labelIds: any(named: 'labelIds'),
-            )).thenAnswer((_) async => false);
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => false);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -422,8 +457,9 @@ void main() {
                 (ref) => testLabels,
               ),
               labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider
-                  .overrideWith((ref) => Stream.value(testLabels)),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream.value(testLabels),
+              ),
             ],
             child: WidgetTestBench(
               child: Material(
@@ -449,8 +485,9 @@ void main() {
     });
 
     group('Category filtering', () {
-      testWidgets('uses availableLabelsForCategoryProvider with category',
-          (tester) async {
+      testWidgets('uses availableLabelsForCategoryProvider with category', (
+        tester,
+      ) async {
         final categoryLabels = [testLabels.first];
 
         await tester.pumpWidget(
@@ -460,8 +497,9 @@ void main() {
                 (ref) => categoryLabels,
               ),
               labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider
-                  .overrideWith((ref) => Stream.value(testLabels)),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream.value(testLabels),
+              ),
             ],
             child: WidgetTestBench(
               child: Material(
@@ -471,8 +509,9 @@ void main() {
                       entryId: 'task-123',
                       initialLabelIds: const [],
                       categoryId: 'work',
-                      applyController:
-                          ValueNotifier<Future<bool> Function()?>(null),
+                      applyController: ValueNotifier<Future<bool> Function()?>(
+                        null,
+                      ),
                       searchQuery: ValueNotifier<String>(''),
                     ),
                   ],

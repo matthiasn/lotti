@@ -67,7 +67,7 @@ import 'app_localizations_ro.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -90,11 +90,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -104,7 +104,7 @@ abstract class AppLocalizations {
     Locale('en', 'GB'),
     Locale('es'),
     Locale('fr'),
-    Locale('ro')
+    Locale('ro'),
   ];
 
   /// No description provided for @activeLabel.
@@ -358,7 +358,10 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{messageCount} messages, {toolCallCount} tool calls · {shortId}'**
   String agentConversationThreadSummary(
-      int messageCount, int toolCallCount, String shortId);
+    int messageCount,
+    int toolCallCount,
+    String shortId,
+  );
 
   /// No description provided for @agentConversationTokenCount.
   ///
@@ -5231,7 +5234,34 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}'**
   String maintenanceGenerateEmbeddingsProgress(
-      int processed, int total, int embedded);
+    int processed,
+    int total,
+    int embedded,
+  );
+
+  /// No description provided for @maintenancePopulatePhaseAgentEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing agent entities...'**
+  String get maintenancePopulatePhaseAgentEntities;
+
+  /// No description provided for @maintenancePopulatePhaseAgentLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing agent links...'**
+  String get maintenancePopulatePhaseAgentLinks;
+
+  /// No description provided for @maintenancePopulatePhaseJournal.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing journal entries...'**
+  String get maintenancePopulatePhaseJournal;
+
+  /// No description provided for @maintenancePopulatePhaseLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing entry links...'**
+  String get maintenancePopulatePhaseLinks;
 
   /// No description provided for @maintenancePopulateSequenceLog.
   ///
@@ -5262,30 +5292,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.'**
   String get maintenancePopulateSequenceLogMessage;
-
-  /// No description provided for @maintenancePopulatePhaseAgentEntities.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing agent entities...'**
-  String get maintenancePopulatePhaseAgentEntities;
-
-  /// No description provided for @maintenancePopulatePhaseAgentLinks.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing agent links...'**
-  String get maintenancePopulatePhaseAgentLinks;
-
-  /// No description provided for @maintenancePopulatePhaseJournal.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing journal entries...'**
-  String get maintenancePopulatePhaseJournal;
-
-  /// No description provided for @maintenancePopulatePhaseLinks.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing entry links...'**
-  String get maintenancePopulatePhaseLinks;
 
   /// No description provided for @maintenancePurgeDeleted.
   ///
@@ -7176,7 +7182,9 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve successfully verified {deviceName} ({deviceID})'**
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID);
+    String deviceName,
+    String deviceID,
+  );
 
   /// No description provided for @settingsMatrixVerifyConfirm.
   ///
@@ -8612,13 +8620,13 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => <String>[
-        'cs',
-        'de',
-        'en',
-        'es',
-        'fr',
-        'ro'
-      ].contains(locale.languageCode);
+    'cs',
+    'de',
+    'en',
+    'es',
+    'fr',
+    'ro',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -8654,8 +8662,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

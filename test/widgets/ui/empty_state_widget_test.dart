@@ -87,8 +87,9 @@ void main() {
       expect(icon.size, 48);
     });
 
-    testWidgets('displays container when showContainer is true',
-        (tester) async {
+    testWidgets('displays container when showContainer is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

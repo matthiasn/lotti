@@ -31,8 +31,9 @@ void main() {
     getIt.registerSingleton<EntitiesCacheService>(mockCache);
 
     final mockNotifications = MockUpdateNotifications();
-    when(() => mockNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
     getIt.registerSingleton<UpdateNotifications>(mockNotifications);
   });
 
@@ -103,8 +104,9 @@ void main() {
   }
 
   group('TaskSliverAppBar', () {
-    testWidgets('renders SliverAppBar for task without cover art',
-        (tester) async {
+    testWidgets('renders SliverAppBar for task without cover art', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -157,8 +159,9 @@ void main() {
       expect(find.byType(SliverAppBar), findsOneWidget);
     });
 
-    testWidgets('renders expandable app bar when task has cover art',
-        (tester) async {
+    testWidgets('renders expandable app bar when task has cover art', (
+      tester,
+    ) async {
       final task = buildTask(coverArtId: 'image-1');
       final image = buildImage(id: 'image-1');
 
@@ -178,8 +181,9 @@ void main() {
       expect(find.byType(TaskSliverAppBar), findsOneWidget);
     });
 
-    testWidgets('expandable app bar has chevron_left icon for back button',
-        (tester) async {
+    testWidgets('expandable app bar has chevron_left icon for back button', (
+      tester,
+    ) async {
       final task = buildTask(coverArtId: 'image-1');
       final image = buildImage(id: 'image-1');
 
@@ -198,8 +202,9 @@ void main() {
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
-    testWidgets('task with cover art renders SliverAppBar correctly',
-        (tester) async {
+    testWidgets('task with cover art renders SliverAppBar correctly', (
+      tester,
+    ) async {
       final task = buildTask(coverArtId: 'image-1');
       final image = buildImage(id: 'image-1');
 
@@ -224,8 +229,9 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
-    testWidgets('task without cover art renders compact SliverAppBar',
-        (tester) async {
+    testWidgets('task without cover art renders compact SliverAppBar', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(

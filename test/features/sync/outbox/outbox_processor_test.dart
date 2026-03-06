@@ -46,8 +46,9 @@ void main() {
       final pending = OutboxItem(
         id: 1,
         // Use valid JSON encoding for the stored message payload
-        message:
-            jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+        message: jsonEncode(
+          const SyncMessage.aiConfigDelete(id: 'cfg').toJson(),
+        ),
         subject: 'host:1',
         status: OutboxStatus.pending.index,
         retries: 0,
@@ -55,22 +56,32 @@ void main() {
         updatedAt: DateTime(2024),
         priority: OutboxPriority.low.index,
       );
-      when(() => repo.fetchPending(limit: any<int>(named: 'limit')))
-          .thenAnswer((_) async => [pending]);
-      when(() => repo.refreshItem(any<OutboxItem>()))
-          .thenAnswer((_) async => pending);
+      when(
+        () => repo.fetchPending(limit: any<int>(named: 'limit')),
+      ).thenAnswer((_) async => [pending]);
+      when(
+        () => repo.refreshItem(any<OutboxItem>()),
+      ).thenAnswer((_) async => pending);
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       // Sender never completes; processQueue relies on the timeout
-      when(() => sender.send(any()))
-          .thenAnswer((_) => Completer<bool>().future);
-      when(() => log.captureEvent(any<Object>(),
+      when(
+        () => sender.send(any()),
+      ).thenAnswer((_) => Completer<bool>().future);
+      when(
+        () => log.captureEvent(
+          any<Object>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
-      when(() => log.captureException(any<Object>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-              stackTrace: any<StackTrace?>(named: 'stackTrace')))
-          .thenAnswer((_) async {});
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => log.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async {});
 
       final proc = OutboxProcessor(
         repository: repo,
@@ -102,8 +113,9 @@ void main() {
 
         final pending = OutboxItem(
           id: 1,
-          message:
-              jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'cfg').toJson(),
+          ),
           subject: 'host:cap',
           status: OutboxStatus.pending.index,
           retries: 2, // maxRetriesOverride=3 → nextAttempts=3 hits cap
@@ -112,16 +124,22 @@ void main() {
           priority: OutboxPriority.low.index,
         );
 
-        when(() => repo.fetchPending(limit: any(named: 'limit')))
-            .thenAnswer((_) async => [pending]);
-        when(() => repo.refreshItem(any<OutboxItem>()))
-            .thenAnswer((_) async => pending);
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [pending]);
+        when(
+          () => repo.refreshItem(any<OutboxItem>()),
+        ).thenAnswer((_) async => pending);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenAnswer((_) async => false);
         final events = <String>[];
-        when(() => log.captureEvent(captureAny<Object>(),
+        when(
+          () => log.captureEvent(
+            captureAny<Object>(),
             domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((inv) {
           events.add(inv.positionalArguments.first.toString());
         });
 
@@ -139,15 +157,19 @@ void main() {
         expect(result!.shouldSchedule, isTrue);
         expect(result!.nextDelay, Duration.zero);
         verify(() => repo.markRetry(any())).called(1);
-        verify(() => log.captureEvent(
-              startsWith('retryCapReached subject=host:cap attempts=3'),
-              domain: 'OUTBOX',
-              subDomain: 'retry.cap',
-            )).called(1);
+        verify(
+          () => log.captureEvent(
+            startsWith('retryCapReached subject=host:cap attempts=3'),
+            domain: 'OUTBOX',
+            subDomain: 'retry.cap',
+          ),
+        ).called(1);
         expect(
-          events.any((e) =>
-              e.contains('retryCapReached subject=host:cap attempts=3') &&
-              e.contains('status=error')),
+          events.any(
+            (e) =>
+                e.contains('retryCapReached subject=host:cap attempts=3') &&
+                e.contains('status=error'),
+          ),
           isTrue,
         );
       });
@@ -161,8 +183,9 @@ void main() {
 
         final pending = OutboxItem(
           id: 2,
-          message:
-              jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'cfg').toJson(),
+          ),
           subject: 'host:cap-ex',
           status: OutboxStatus.pending.index,
           retries: 2,
@@ -171,24 +194,32 @@ void main() {
           priority: OutboxPriority.low.index,
         );
 
-        when(() => repo.fetchPending(limit: any(named: 'limit')))
-            .thenAnswer((_) async => [pending]);
-        when(() => repo.refreshItem(any<OutboxItem>()))
-            .thenAnswer((_) async => pending);
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [pending]);
+        when(
+          () => repo.refreshItem(any<OutboxItem>()),
+        ).thenAnswer((_) async => pending);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenThrow(Exception('boom'));
         final events = <String>[];
-        when(() => log.captureEvent(captureAny<Object>(),
+        when(
+          () => log.captureEvent(
+            captureAny<Object>(),
             domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((inv) {
           events.add(inv.positionalArguments.first.toString());
         });
-        when(() => log.captureException(
-              any<Object>(),
-              domain: any(named: 'domain'),
-              subDomain: any(named: 'subDomain'),
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-            )).thenAnswer((_) async {});
+        when(
+          () => log.captureException(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
 
         final proc = OutboxProcessor(
           repository: repo,
@@ -204,15 +235,19 @@ void main() {
         expect(result!.shouldSchedule, isTrue);
         expect(result!.nextDelay, Duration.zero);
         verify(() => repo.markRetry(any())).called(1);
-        verify(() => log.captureEvent(
-              startsWith('retryCapReached subject=host:cap-ex attempts=3'),
-              domain: 'OUTBOX',
-              subDomain: 'retry.cap',
-            )).called(1);
+        verify(
+          () => log.captureEvent(
+            startsWith('retryCapReached subject=host:cap-ex attempts=3'),
+            domain: 'OUTBOX',
+            subDomain: 'retry.cap',
+          ),
+        ).called(1);
         expect(
-          events.any((e) =>
-              e.contains('retryCapReached subject=host:cap-ex attempts=3') &&
-              e.contains('status=error')),
+          events.any(
+            (e) =>
+                e.contains('retryCapReached subject=host:cap-ex attempts=3') &&
+                e.contains('status=error'),
+          ),
           isTrue,
         );
       });
@@ -246,8 +281,9 @@ void main() {
       );
 
       var call = 0;
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async {
+      when(() => repo.fetchPending(limit: any(named: 'limit'))).thenAnswer((
+        _,
+      ) async {
         call++;
         return call == 1 ? [a] : [b];
       });
@@ -264,9 +300,13 @@ void main() {
         // First call (A) fails at cap; second call (B) succeeds
         return sendCalls == 2;
       });
-      when(() => log.captureEvent(any<Object>(),
+      when(
+        () => log.captureEvent(
+          any<Object>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
 
       final proc = OutboxProcessor(
         repository: repo,
@@ -277,7 +317,9 @@ void main() {
 
       final r1 = await proc.processQueue();
       expect(
-          r1.nextDelay, Duration.zero); // cap reached → immediate continuation
+        r1.nextDelay,
+        Duration.zero,
+      ); // cap reached → immediate continuation
       final r2 = await proc.processQueue();
       expect(r2.shouldSchedule, isFalse); // only one item (B) and it succeeded
       verify(() => repo.markSent(any())).called(1);
@@ -293,8 +335,9 @@ void main() {
 
         final pending = OutboxItem(
           id: 3,
-          message:
-              jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'cfg').toJson(),
+          ),
           subject: 'host:slow',
           status: OutboxStatus.pending.index,
           retries: 0,
@@ -302,18 +345,28 @@ void main() {
           updatedAt: DateTime(2024),
           priority: OutboxPriority.low.index,
         );
-        when(() => repo.fetchPending(limit: any(named: 'limit')))
-            .thenAnswer((_) async => [pending]);
-        when(() => repo.refreshItem(any<OutboxItem>()))
-            .thenAnswer((_) async => pending);
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [pending]);
+        when(
+          () => repo.refreshItem(any<OutboxItem>()),
+        ).thenAnswer((_) async => pending);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
-        when(() => sender.send(any())).thenAnswer((_) => Future<bool>.delayed(
-            const Duration(milliseconds: 100), () => true));
+        when(() => sender.send(any())).thenAnswer(
+          (_) => Future<bool>.delayed(
+            const Duration(milliseconds: 100),
+            () => true,
+          ),
+        );
 
         final events = <String>[];
-        when(() => log.captureEvent(captureAny<Object>(),
+        when(
+          () => log.captureEvent(
+            captureAny<Object>(),
             domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((inv) {
           events.add(inv.positionalArguments.first.toString());
         });
 
@@ -342,8 +395,9 @@ void main() {
 
       final pending = OutboxItem(
         id: 4,
-        message:
-            jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+        message: jsonEncode(
+          const SyncMessage.aiConfigDelete(id: 'cfg').toJson(),
+        ),
         subject: 'host:fastfail',
         status: OutboxStatus.pending.index,
         retries: 0,
@@ -351,17 +405,23 @@ void main() {
         updatedAt: DateTime(2024),
         priority: OutboxPriority.low.index,
       );
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [pending]);
-      when(() => repo.refreshItem(any<OutboxItem>()))
-          .thenAnswer((_) async => pending);
+      when(
+        () => repo.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => [pending]);
+      when(
+        () => repo.refreshItem(any<OutboxItem>()),
+      ).thenAnswer((_) async => pending);
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => sender.send(any())).thenAnswer((_) async => false);
 
       final events = <String>[];
-      when(() => log.captureEvent(captureAny<Object>(),
+      when(
+        () => log.captureEvent(
+          captureAny<Object>(),
           domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         events.add(inv.positionalArguments.first.toString());
       });
 
@@ -387,8 +447,9 @@ void main() {
 
       final pending = OutboxItem(
         id: 99,
-        message:
-            jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+        message: jsonEncode(
+          const SyncMessage.aiConfigDelete(id: 'cfg').toJson(),
+        ),
         subject: 'host:timeout-boundary',
         status: OutboxStatus.pending.index,
         retries: 0,
@@ -396,10 +457,12 @@ void main() {
         updatedAt: DateTime(2024),
         priority: OutboxPriority.low.index,
       );
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [pending]);
-      when(() => repo.refreshItem(any<OutboxItem>()))
-          .thenAnswer((_) async => pending);
+      when(
+        () => repo.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => [pending]);
+      when(
+        () => repo.refreshItem(any<OutboxItem>()),
+      ).thenAnswer((_) async => pending);
       when(() => repo.markRetry(any())).thenAnswer((_) async {});
       when(() => repo.markSent(any())).thenAnswer((_) async {});
       // Complete exactly at timeout boundary (50ms)
@@ -407,9 +470,13 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
         return true;
       });
-      when(() => log.captureEvent(any<Object>(),
+      when(
+        () => log.captureEvent(
+          any<Object>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
 
       final proc = OutboxProcessor(
         repository: repo,
@@ -438,8 +505,9 @@ void main() {
 
     final item = OutboxItem(
       id: 1000,
-      message:
-          jsonEncode(const SyncMessage.aiConfigDelete(id: 'repeat').toJson()),
+      message: jsonEncode(
+        const SyncMessage.aiConfigDelete(id: 'repeat').toJson(),
+      ),
       subject: 'S',
       status: OutboxStatus.pending.index,
       retries: 0,
@@ -447,17 +515,23 @@ void main() {
       updatedAt: DateTime(2024),
       priority: OutboxPriority.low.index,
     );
-    when(() => repo.fetchPending(limit: any(named: 'limit')))
-        .thenAnswer((_) async => [item]);
-    when(() => repo.refreshItem(any<OutboxItem>()))
-        .thenAnswer((_) async => item);
+    when(
+      () => repo.fetchPending(limit: any(named: 'limit')),
+    ).thenAnswer((_) async => [item]);
+    when(
+      () => repo.refreshItem(any<OutboxItem>()),
+    ).thenAnswer((_) async => item);
     when(() => repo.markRetry(any())).thenAnswer((_) async {});
     when(() => sender.send(any())).thenAnswer((_) async => false);
 
     final events = <String>[];
-    when(() => log.captureEvent(captureAny<Object>(),
+    when(
+      () => log.captureEvent(
+        captureAny<Object>(),
         domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenAnswer((inv) {
       events.add(inv.positionalArguments.first.toString());
     });
 
@@ -481,76 +555,94 @@ void main() {
   });
 
   group('repeated failure diagnostics', () {
-    test('repeated failure increments repeats counter for same subject',
-        () async {
-      final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
-      final log = MockLogging();
+    test(
+      'repeated failure increments repeats counter for same subject',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLogging();
 
-      // First failure: retries=0 → nextAttempts=1, repeats=1
-      final item0 = OutboxItem(
-        id: 21,
-        message: jsonEncode(const SyncMessage.aiConfigDelete(id: 'X').toJson()),
-        subject: 'S',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        priority: OutboxPriority.low.index,
-      );
-      // Second failure: same subject, retries=1 → repeats=2
-      final item1 = item0.copyWith(retries: 1, updatedAt: DateTime(2024, 1, 2));
-      // Third failure: same subject, retries=2 → repeats=3
-      final item2 = item0.copyWith(retries: 2, updatedAt: DateTime(2024, 1, 3));
+        // First failure: retries=0 → nextAttempts=1, repeats=1
+        final item0 = OutboxItem(
+          id: 21,
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'X').toJson(),
+          ),
+          subject: 'S',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
+        );
+        // Second failure: same subject, retries=1 → repeats=2
+        final item1 = item0.copyWith(
+          retries: 1,
+          updatedAt: DateTime(2024, 1, 2),
+        );
+        // Third failure: same subject, retries=2 → repeats=3
+        final item2 = item0.copyWith(
+          retries: 2,
+          updatedAt: DateTime(2024, 1, 3),
+        );
 
-      var call = 0;
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async {
-        call++;
-        return call == 1
-            ? [item0]
-            : call == 2
-                ? [item1]
-                : [item2];
-      });
-      var refreshCall = 0;
-      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
-        refreshCall++;
-        return refreshCall == 1
-            ? item0
-            : refreshCall == 2
-                ? item1
-                : item2;
-      });
-      when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
-      when(() => sender.send(any())).thenAnswer((_) async => false);
+        var call = 0;
+        when(() => repo.fetchPending(limit: any(named: 'limit'))).thenAnswer((
+          _,
+        ) async {
+          call++;
+          return call == 1
+              ? [item0]
+              : call == 2
+              ? [item1]
+              : [item2];
+        });
+        var refreshCall = 0;
+        when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+          refreshCall++;
+          return refreshCall == 1
+              ? item0
+              : refreshCall == 2
+              ? item1
+              : item2;
+        });
+        when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => false);
 
-      final events = <String>[];
-      when(() => log.captureEvent(captureAny<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
-        events.add(inv.positionalArguments.first.toString());
-      });
+        final events = <String>[];
+        when(
+          () => log.captureEvent(
+            captureAny<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((inv) {
+          events.add(inv.positionalArguments.first.toString());
+        });
 
-      final proc = OutboxProcessor(
-        repository: repo,
-        messageSender: sender,
-        loggingService: log,
-      );
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+        );
 
-      await proc.processQueue();
-      await proc.processQueue();
-      await proc.processQueue();
+        await proc.processQueue();
+        await proc.processQueue();
+        await proc.processQueue();
 
-      // Look for repeats=1, 2, 3 in sendFailed logs
-      final r1 = events
-          .any((e) => e.contains('sendFailed') && e.contains('repeats=1'));
-      final r2 = events
-          .any((e) => e.contains('sendFailed') && e.contains('repeats=2'));
-      final r3 = events
-          .any((e) => e.contains('sendFailed') && e.contains('repeats=3'));
-      expect(r1 && r2 && r3, isTrue);
-    });
+        // Look for repeats=1, 2, 3 in sendFailed logs
+        final r1 = events.any(
+          (e) => e.contains('sendFailed') && e.contains('repeats=1'),
+        );
+        final r2 = events.any(
+          (e) => e.contains('sendFailed') && e.contains('repeats=2'),
+        );
+        final r3 = events.any(
+          (e) => e.contains('sendFailed') && e.contains('repeats=3'),
+        );
+        expect(r1 && r2 && r3, isTrue);
+      },
+    );
 
     test('repeated failure resets on different subject', () async {
       final repo = MockOutboxRepository();
@@ -580,14 +672,15 @@ void main() {
       );
 
       var call = 0;
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async {
+      when(() => repo.fetchPending(limit: any(named: 'limit'))).thenAnswer((
+        _,
+      ) async {
         call++;
         return call == 1
             ? [a0]
             : call == 2
-                ? [a1]
-                : [b0];
+            ? [a1]
+            : [b0];
       });
       var refreshCall = 0;
       when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
@@ -595,16 +688,20 @@ void main() {
         return refreshCall == 1
             ? a0
             : refreshCall == 2
-                ? a1
-                : b0;
+            ? a1
+            : b0;
       });
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => sender.send(any())).thenAnswer((_) async => false);
 
       final events = <String>[];
-      when(() => log.captureEvent(captureAny<Object>(),
+      when(
+        () => log.captureEvent(
+          captureAny<Object>(),
           domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         events.add(inv.positionalArguments.first.toString());
       });
 
@@ -618,9 +715,11 @@ void main() {
       await proc.processQueue(); // B repeats=1 (reset)
 
       final hasA2 = events.any(
-          (e) => e.contains('sendFailed subject=A') && e.contains('repeats=2'));
+        (e) => e.contains('sendFailed subject=A') && e.contains('repeats=2'),
+      );
       final hasB1 = events.any(
-          (e) => e.contains('sendFailed subject=B') && e.contains('repeats=1'));
+        (e) => e.contains('sendFailed subject=B') && e.contains('repeats=1'),
+      );
       expect(hasA2 && hasB1, isTrue);
     });
 
@@ -643,14 +742,15 @@ void main() {
       final s2 = s0.copyWith(updatedAt: DateTime(2024, 2));
 
       var call = 0;
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async {
+      when(() => repo.fetchPending(limit: any(named: 'limit'))).thenAnswer((
+        _,
+      ) async {
         call++;
         return call == 1
             ? [s0]
             : call == 2
-                ? [s1]
-                : [s2];
+            ? [s1]
+            : [s2];
       });
       var refreshCall = 0;
       when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
@@ -658,10 +758,10 @@ void main() {
         return refreshCall == 1
             ? s0
             : refreshCall == 2
-                ? s1
-                : refreshCall == 3
-                    ? s2
-                    : s0; // 4th call after reset
+            ? s1
+            : refreshCall == 3
+            ? s2
+            : s0; // 4th call after reset
       });
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
@@ -673,9 +773,13 @@ void main() {
       });
 
       final events = <String>[];
-      when(() => log.captureEvent(captureAny<Object>(),
+      when(
+        () => log.captureEvent(
+          captureAny<Object>(),
           domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         events.add(inv.positionalArguments.first.toString());
       });
 
@@ -689,198 +793,234 @@ void main() {
       await proc.processQueue(); // success, reset
 
       // Now fail again for same subject; should start at repeats=1
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [s0]);
+      when(
+        () => repo.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => [s0]);
       when(() => sender.send(any())).thenAnswer((_) async => false);
       await proc.processQueue();
 
       final hadRepeats2 = events.any(
-          (e) => e.contains('sendFailed subject=S') && e.contains('repeats=2'));
+        (e) => e.contains('sendFailed subject=S') && e.contains('repeats=2'),
+      );
       final hadRepeats1AfterSuccess = events
-          .lastWhere((e) => e.contains('sendFailed subject=S'),
-              orElse: () => '')
+          .lastWhere(
+            (e) => e.contains('sendFailed subject=S'),
+            orElse: () => '',
+          )
           .contains('repeats=1');
       expect(hadRepeats2 && hadRepeats1AfterSuccess, isTrue);
     });
   });
 
   group('refresh before send', () {
-    test('sends refreshed message when item updated between fetch and send',
-        () async {
-      final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
-      final log = MockLogging();
+    test(
+      'sends refreshed message when item updated between fetch and send',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLogging();
 
-      // Initial fetch returns item with old message
-      final oldItem = OutboxItem(
-        id: 100,
-        message: jsonEncode(
-            const SyncMessage.aiConfigDelete(id: 'old-version').toJson()),
-        subject: 'host:refresh-test',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        priority: OutboxPriority.low.index,
-      );
+        // Initial fetch returns item with old message
+        final oldItem = OutboxItem(
+          id: 100,
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'old-version').toJson(),
+          ),
+          subject: 'host:refresh-test',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
+        );
 
-      // Refreshed item has updated message (simulating merge that happened)
-      final refreshedItem = OutboxItem(
-        id: 100,
-        message: jsonEncode(
-            const SyncMessage.aiConfigDelete(id: 'new-version').toJson()),
-        subject: 'host:refresh-test',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        priority: OutboxPriority.low.index,
-      );
+        // Refreshed item has updated message (simulating merge that happened)
+        final refreshedItem = OutboxItem(
+          id: 100,
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'new-version').toJson(),
+          ),
+          subject: 'host:refresh-test',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024, 1, 2),
+          priority: OutboxPriority.low.index,
+        );
 
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [oldItem]);
-      when(() => repo.refreshItem(any<OutboxItem>()))
-          .thenAnswer((_) async => refreshedItem);
-      when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [oldItem]);
+        when(
+          () => repo.refreshItem(any<OutboxItem>()),
+        ).thenAnswer((_) async => refreshedItem);
+        when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
 
-      // Capture what message was actually sent
-      SyncMessage? sentMessage;
-      when(() => sender.send(any())).thenAnswer((inv) async {
-        sentMessage = inv.positionalArguments.first as SyncMessage;
-        return true;
-      });
-      when(() => log.captureEvent(any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+        // Capture what message was actually sent
+        SyncMessage? sentMessage;
+        when(() => sender.send(any())).thenAnswer((inv) async {
+          sentMessage = inv.positionalArguments.first as SyncMessage;
+          return true;
+        });
+        when(
+          () => log.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
 
-      final proc = OutboxProcessor(
-        repository: repo,
-        messageSender: sender,
-        loggingService: log,
-      );
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+        );
 
-      await proc.processQueue();
+        await proc.processQueue();
 
-      // Verify the NEW message was sent, not the old one
-      expect(sentMessage, isNotNull);
-      expect(
-        sentMessage,
-        isA<SyncAiConfigDelete>()
-            .having((m) => m.id, 'id', equals('new-version')),
-      );
-      verify(() => repo.markSent(refreshedItem)).called(1);
-    });
+        // Verify the NEW message was sent, not the old one
+        expect(sentMessage, isNotNull);
+        expect(
+          sentMessage,
+          isA<SyncAiConfigDelete>().having(
+            (m) => m.id,
+            'id',
+            equals('new-version'),
+          ),
+        );
+        verify(() => repo.markSent(refreshedItem)).called(1);
+      },
+    );
 
-    test('skips item when refreshItem returns null (item no longer pending)',
-        () async {
-      final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
-      final log = MockLogging();
+    test(
+      'skips item when refreshItem returns null (item no longer pending)',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLogging();
 
-      final item = OutboxItem(
-        id: 101,
-        message:
-            jsonEncode(const SyncMessage.aiConfigDelete(id: 'skip').toJson()),
-        subject: 'host:skip-test',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        priority: OutboxPriority.low.index,
-      );
+        final item = OutboxItem(
+          id: 101,
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'skip').toJson(),
+          ),
+          subject: 'host:skip-test',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
+        );
 
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [item]);
-      // refreshItem returns null - item was sent/deleted by another process
-      when(() => repo.refreshItem(any<OutboxItem>()))
-          .thenAnswer((_) async => null);
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item]);
+        // refreshItem returns null - item was sent/deleted by another process
+        when(
+          () => repo.refreshItem(any<OutboxItem>()),
+        ).thenAnswer((_) async => null);
 
-      final events = <String>[];
-      when(() => log.captureEvent(captureAny<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
-        events.add(inv.positionalArguments.first.toString());
-      });
+        final events = <String>[];
+        when(
+          () => log.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((inv) {
+          events.add(inv.positionalArguments.first.toString());
+        });
 
-      final proc = OutboxProcessor(
-        repository: repo,
-        messageSender: sender,
-        loggingService: log,
-      );
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+        );
 
-      final result = await proc.processQueue();
+        final result = await proc.processQueue();
 
-      // Verify send was never called
-      verifyNever(() => sender.send(any()));
-      // Verify skip was logged
-      expect(events.any((e) => e.contains('item no longer pending')), isTrue);
-      // Result should indicate no more work (was only item)
-      expect(result.shouldSchedule, isFalse);
-    });
+        // Verify send was never called
+        verifyNever(() => sender.send(any()));
+        // Verify skip was logged
+        expect(events.any((e) => e.contains('item no longer pending')), isTrue);
+        // Result should indicate no more work (was only item)
+        expect(result.shouldSchedule, isFalse);
+      },
+    );
 
-    test('continues to next item when current item becomes non-pending',
-        () async {
-      final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
-      final log = MockLogging();
+    test(
+      'continues to next item when current item becomes non-pending',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLogging();
 
-      final item1 = OutboxItem(
-        id: 102,
-        message: jsonEncode(
-            const SyncMessage.aiConfigDelete(id: 'first-skip').toJson()),
-        subject: 'host:first',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        priority: OutboxPriority.low.index,
-      );
-      final item2 = OutboxItem(
-        id: 103,
-        message: jsonEncode(
-            const SyncMessage.aiConfigDelete(id: 'second-send').toJson()),
-        subject: 'host:second',
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        priority: OutboxPriority.low.index,
-      );
+        final item1 = OutboxItem(
+          id: 102,
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'first-skip').toJson(),
+          ),
+          subject: 'host:first',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
+        );
+        final item2 = OutboxItem(
+          id: 103,
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'second-send').toJson(),
+          ),
+          subject: 'host:second',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          priority: OutboxPriority.low.index,
+        );
 
-      // First fetch returns both items
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [item1, item2]);
-      // First refresh returns null (item1 no longer pending), second returns item2
-      var refreshCall = 0;
-      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
-        refreshCall++;
-        return refreshCall == 1 ? null : item2;
-      });
-      when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
-      when(() => sender.send(any())).thenAnswer((_) async => true);
-      when(() => log.captureEvent(any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+        // First fetch returns both items
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item1, item2]);
+        // First refresh returns null (item1 no longer pending), second returns item2
+        var refreshCall = 0;
+        when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+          refreshCall++;
+          return refreshCall == 1 ? null : item2;
+        });
+        when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => true);
+        when(
+          () => log.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
 
-      final proc = OutboxProcessor(
-        repository: repo,
-        messageSender: sender,
-        loggingService: log,
-      );
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+        );
 
-      // First call: item1 skipped because refresh returns null
-      final result1 = await proc.processQueue();
-      // Should schedule immediately (hasMore=true, item was skipped)
-      expect(result1.shouldSchedule, isTrue);
-      expect(result1.nextDelay, Duration.zero);
+        // First call: item1 skipped because refresh returns null
+        final result1 = await proc.processQueue();
+        // Should schedule immediately (hasMore=true, item was skipped)
+        expect(result1.shouldSchedule, isTrue);
+        expect(result1.nextDelay, Duration.zero);
 
-      // Second call would process item2 (new fetch)
-      when(() => repo.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [item2]);
-      final result2 = await proc.processQueue();
-      // item2 sent successfully, no more items
-      expect(result2.shouldSchedule, isFalse);
-      verify(() => sender.send(any())).called(1);
-    });
+        // Second call would process item2 (new fetch)
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item2]);
+        final result2 = await proc.processQueue();
+        // item2 sent successfully, no more items
+        expect(result2.shouldSchedule, isFalse);
+        verify(() => sender.send(any())).called(1);
+      },
+    );
   });
 }

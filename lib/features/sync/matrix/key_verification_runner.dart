@@ -126,7 +126,7 @@ Future<void> listenForKeyVerificationRequests({
 }
 
 Future<StreamSubscription<KeyVerification>?>
-    listenForKeyVerificationRequestsWithSubscription({
+listenForKeyVerificationRequestsWithSubscription({
   required MatrixService service,
   required LoggingService loggingService,
   Stream<KeyVerification>? requests,
@@ -134,22 +134,23 @@ Future<StreamSubscription<KeyVerification>?>
   try {
     final subscription =
         (requests ?? service.client.onKeyVerificationRequest.stream).listen((
-      KeyVerification keyVerification,
-    ) {
-      service.incomingKeyVerificationRunner = KeyVerificationRunner(
-        keyVerification,
-        controller: service.incomingKeyVerificationRunnerController,
-        name: 'Incoming KeyVerificationRunner',
-        onCompleted: (source) =>
-            service.onVerificationCompleted(source: source),
-      );
+          KeyVerification keyVerification,
+        ) {
+          service.incomingKeyVerificationRunner = KeyVerificationRunner(
+            keyVerification,
+            controller: service.incomingKeyVerificationRunnerController,
+            name: 'Incoming KeyVerificationRunner',
+            onCompleted: (source) =>
+                service.onVerificationCompleted(source: source),
+          );
 
-      DevLogger.log(
-        name: 'KeyVerificationRunner',
-        message: 'Key Verification Request from ${keyVerification.deviceId}',
-      );
-      service.incomingKeyVerificationController.add(keyVerification);
-    });
+          DevLogger.log(
+            name: 'KeyVerificationRunner',
+            message:
+                'Key Verification Request from ${keyVerification.deviceId}',
+          );
+          service.incomingKeyVerificationController.add(keyVerification);
+        });
     return subscription;
   } catch (e, stackTrace) {
     DevLogger.error(

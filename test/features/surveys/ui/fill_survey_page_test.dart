@@ -52,8 +52,9 @@ void main() {
       // The exact text depends on research_package implementation
     });
 
-    testWidgets('SurveyWidget renders with cancel-enabled task',
-        (tester) async {
+    testWidgets('SurveyWidget renders with cancel-enabled task', (
+      tester,
+    ) async {
       final task = RPOrderedTask(
         identifier: 'cancel_test_task',
         steps: [
@@ -100,27 +101,28 @@ void main() {
     });
 
     test(
-        'DevLogger.log is called with SurveyWidget name for cancel with result',
-        () {
-      // Direct test of the logging pattern
-      DevLogger.clear();
+      'DevLogger.log is called with SurveyWidget name for cancel with result',
+      () {
+        // Direct test of the logging pattern
+        DevLogger.clear();
 
-      // Simulate what cancelCallBack does
-      DevLogger.log(
-        name: 'SurveyWidget',
-        message: 'The result so far:\n{"test": "data"}',
-      );
+        // Simulate what cancelCallBack does
+        DevLogger.log(
+          name: 'SurveyWidget',
+          message: 'The result so far:\n{"test": "data"}',
+        );
 
-      expect(
-        DevLogger.capturedLogs.any(
-          (log) =>
-              log.contains('SurveyWidget') &&
-              log.contains('The result so far:'),
-        ),
-        isTrue,
-        reason: 'DevLogger should capture SurveyWidget cancel logs',
-      );
-    });
+        expect(
+          DevLogger.capturedLogs.any(
+            (log) =>
+                log.contains('SurveyWidget') &&
+                log.contains('The result so far:'),
+          ),
+          isTrue,
+          reason: 'DevLogger should capture SurveyWidget cancel logs',
+        );
+      },
+    );
 
     test('DevLogger.log is called with No result message for null cancel', () {
       // Direct test of the logging pattern for null result

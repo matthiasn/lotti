@@ -18,9 +18,9 @@ class ReadMarkerManager {
     required Duration debounce,
     required ReadMarkerFlush onFlush,
     required LoggingService logging,
-  })  : _debounce = debounce,
-        _onFlush = onFlush,
-        _logging = logging;
+  }) : _debounce = debounce,
+       _onFlush = onFlush,
+       _logging = logging;
 
   final Duration _debounce;
   final ReadMarkerFlush _onFlush;
@@ -88,14 +88,16 @@ class ReadMarkerManager {
       // Persisting the marker locally is handled inside _onFlush.
       try {
         final result = _onFlush(r, id);
-        unawaited(result.catchError((Object error, StackTrace stack) {
-          _logging.captureException(
-            error,
-            domain: syncLoggingDomain,
-            subDomain: 'flushReadMarker.onDispose',
-            stackTrace: stack,
-          );
-        }));
+        unawaited(
+          result.catchError((Object error, StackTrace stack) {
+            _logging.captureException(
+              error,
+              domain: syncLoggingDomain,
+              subDomain: 'flushReadMarker.onDispose',
+              stackTrace: stack,
+            );
+          }),
+        );
       } catch (_) {
         // Ignore misbehaving mocks.
       }

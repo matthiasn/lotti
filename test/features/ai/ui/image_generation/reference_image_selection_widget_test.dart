@@ -98,8 +98,9 @@ void main() {
     getIt.allowReassignment = true;
 
     // Create a temp directory to simulate the documents directory
-    mockDocumentsDirectory =
-        Directory.systemTemp.createTempSync('ref_image_selection_test_');
+    mockDocumentsDirectory = Directory.systemTemp.createTempSync(
+      'ref_image_selection_test_',
+    );
 
     // Register temp directory for getDocumentsDirectory()
     getIt.registerSingleton<Directory>(mockDocumentsDirectory);
@@ -115,15 +116,17 @@ void main() {
   });
 
   group('ReferenceImageSelectionWidget', () {
-    testWidgets('shows loading indicator when isLoading is true',
-        (tester) async {
+    testWidgets('shows loading indicator when isLoading is true', (
+      tester,
+    ) async {
       const loadingState = ReferenceImageSelectionState(isLoading: true);
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(loadingState),
             ),
           ],
@@ -145,8 +148,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(emptyState),
             ),
           ],
@@ -163,8 +167,9 @@ void main() {
       expect(skipCalled, isTrue);
     });
 
-    testWidgets('displays title and subtitle when images available',
-        (tester) async {
+    testWidgets('displays title and subtitle when images available', (
+      tester,
+    ) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [buildTestImage('img-1')],
       );
@@ -172,8 +177,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -204,8 +210,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithSelection),
             ),
           ],
@@ -229,8 +236,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -246,8 +254,9 @@ void main() {
       expect(find.text('Continue'), findsOneWidget);
     });
 
-    testWidgets('Continue button shows count when images selected',
-        (tester) async {
+    testWidgets('Continue button shows count when images selected', (
+      tester,
+    ) async {
       final stateWithSelection = ReferenceImageSelectionState(
         availableImages: [buildTestImage('img-1'), buildTestImage('img-2')],
         selectedImageIds: const {'img-1', 'img-2'},
@@ -256,8 +265,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithSelection),
             ),
           ],
@@ -282,8 +292,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(processingState),
             ),
           ],
@@ -315,8 +326,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -345,8 +357,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithSelection),
             ),
           ],
@@ -370,8 +383,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -401,8 +415,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateAtMax),
             ),
           ],
@@ -425,8 +440,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(emptyState),
             ),
           ],
@@ -457,8 +473,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -484,8 +501,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -510,8 +528,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(errorState),
             ),
           ],
@@ -536,8 +555,9 @@ void main() {
       expect(find.text('Skip'), findsOneWidget);
     });
 
-    testWidgets('tapping image tile calls toggleImageSelection',
-        (tester) async {
+    testWidgets('tapping image tile calls toggleImageSelection', (
+      tester,
+    ) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [
           buildTestImage('img-1'),
@@ -545,14 +565,16 @@ void main() {
         ],
       );
 
-      final trackingController =
-          _TrackingMockReferenceImageSelectionController(stateWithImages);
+      final trackingController = _TrackingMockReferenceImageSelectionController(
+        stateWithImages,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => trackingController,
             ),
           ],
@@ -575,8 +597,9 @@ void main() {
       expect(trackingController.toggledImageIds, contains('img-1'));
     });
 
-    testWidgets('tapping non-selectable image tile does not toggle',
-        (tester) async {
+    testWidgets('tapping non-selectable image tile does not toggle', (
+      tester,
+    ) async {
       // All 3 slots taken, img-4 is not selected and cannot be toggled
       final stateAtMax = ReferenceImageSelectionState(
         availableImages: [
@@ -588,14 +611,16 @@ void main() {
         selectedImageIds: const {'img-1', 'img-2', 'img-3'},
       );
 
-      final trackingController =
-          _TrackingMockReferenceImageSelectionController(stateAtMax);
+      final trackingController = _TrackingMockReferenceImageSelectionController(
+        stateAtMax,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => trackingController,
             ),
           ],
@@ -624,8 +649,9 @@ void main() {
       expect(trackingController.toggledImageIds, isNot(contains('img-4')));
     });
 
-    testWidgets('tapping already-selected image tile toggles deselection',
-        (tester) async {
+    testWidgets('tapping already-selected image tile toggles deselection', (
+      tester,
+    ) async {
       final stateWithSelection = ReferenceImageSelectionState(
         availableImages: [
           buildTestImage('img-1'),
@@ -634,14 +660,16 @@ void main() {
         selectedImageIds: const {'img-1'},
       );
 
-      final trackingController =
-          _TrackingMockReferenceImageSelectionController(stateWithSelection);
+      final trackingController = _TrackingMockReferenceImageSelectionController(
+        stateWithSelection,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => trackingController,
             ),
           ],
@@ -663,43 +691,45 @@ void main() {
     });
 
     testWidgets(
-        'renders without error in unbounded height context (modal regression)',
-        (tester) async {
-      final stateWithImages = ReferenceImageSelectionState(
-        availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
-          buildTestImage('img-3'),
-        ],
-        selectedImageIds: const {'img-1'},
-      );
-
-      // Wrap in SingleChildScrollView to simulate the unbounded vertical
-      // constraints that WoltModalSheetPage provides.
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
-            ),
+      'renders without error in unbounded height context (modal regression)',
+      (tester) async {
+        final stateWithImages = ReferenceImageSelectionState(
+          availableImages: [
+            buildTestImage('img-1'),
+            buildTestImage('img-2'),
+            buildTestImage('img-3'),
           ],
-          child: SingleChildScrollView(
-            child: ReferenceImageSelectionWidget(
-              taskId: testTaskId,
-              onContinue: (_) {},
-              onSkip: () {},
+          selectedImageIds: const {'img-1'},
+        );
+
+        // Wrap in SingleChildScrollView to simulate the unbounded vertical
+        // constraints that WoltModalSheetPage provides.
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              referenceImageSelectionControllerProvider(
+                taskId: testTaskId,
+              ).overrideWith(
+                () => _MockReferenceImageSelectionController(stateWithImages),
+              ),
+            ],
+            child: SingleChildScrollView(
+              child: ReferenceImageSelectionWidget(
+                taskId: testTaskId,
+                onContinue: (_) {},
+                onSkip: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Widget should render without layout errors
-      expect(find.byType(GridView), findsOneWidget);
-      expect(find.text('Select Reference Images'), findsOneWidget);
-      expect(find.text('1/$kMaxReferenceImages'), findsOneWidget);
-      expect(find.byType(LottiPrimaryButton), findsOneWidget);
-    });
+        // Widget should render without layout errors
+        expect(find.byType(GridView), findsOneWidget);
+        expect(find.text('Select Reference Images'), findsOneWidget);
+        expect(find.text('1/$kMaxReferenceImages'), findsOneWidget);
+        expect(find.byType(LottiPrimaryButton), findsOneWidget);
+      },
+    );
 
     testWidgets('error state skip button calls onSkip', (tester) async {
       var skipCalled = false;
@@ -710,8 +740,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
               () => _MockReferenceImageSelectionController(errorState),
             ),
           ],

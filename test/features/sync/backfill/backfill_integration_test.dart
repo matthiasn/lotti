@@ -165,12 +165,18 @@ void main() {
       );
 
       // Verify Alice has all 3 entries
-      final aliceEntry1 =
-          await aliceSyncDb.getEntryByHostAndCounter(aliceHostId, 1);
-      final aliceEntry2 =
-          await aliceSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
-      final aliceEntry3 =
-          await aliceSyncDb.getEntryByHostAndCounter(aliceHostId, 3);
+      final aliceEntry1 = await aliceSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        1,
+      );
+      final aliceEntry2 = await aliceSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        2,
+      );
+      final aliceEntry3 = await aliceSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        3,
+      );
 
       expect(aliceEntry1, isNotNull);
       expect(aliceEntry1!.entryId, entryId1);
@@ -204,8 +210,10 @@ void main() {
       expect(gaps1, isEmpty, reason: 'No gap for first entry');
 
       // Verify Bob recorded entry 1
-      final bobEntry1 =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 1);
+      final bobEntry1 = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        1,
+      );
       expect(bobEntry1, isNotNull);
       expect(bobEntry1!.status, SyncSequenceStatus.received.index);
 
@@ -221,15 +229,19 @@ void main() {
       expect(gaps3[0].counter, 2);
 
       // Verify Bob has entry 2 marked as missing
-      final bobEntry2 =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
+      final bobEntry2 = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        2,
+      );
       expect(bobEntry2, isNotNull);
       expect(bobEntry2!.status, SyncSequenceStatus.missing.index);
       expect(bobEntry2.entryId, isNull, reason: 'Missing entry has no entryId');
 
       // Verify Bob has entry 3 as received
-      final bobEntry3 =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 3);
+      final bobEntry3 = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        3,
+      );
       expect(bobEntry3, isNotNull);
       expect(bobEntry3!.status, SyncSequenceStatus.received.index);
 
@@ -259,8 +271,10 @@ void main() {
       ]);
 
       // Verify status updated
-      final bobEntry2AfterRequest =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
+      final bobEntry2AfterRequest = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        2,
+      );
       expect(
         bobEntry2AfterRequest!.status,
         SyncSequenceStatus.requested.index,
@@ -295,8 +309,10 @@ void main() {
       );
 
       // Verify Bob's sequence log is updated to backfilled
-      final bobEntry2Final =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
+      final bobEntry2Final = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        2,
+      );
       expect(bobEntry2Final, isNotNull);
       expect(bobEntry2Final!.status, SyncSequenceStatus.backfilled.index);
       expect(bobEntry2Final.entryId, entryId2);
@@ -327,8 +343,10 @@ void main() {
       );
 
       // Verify gap detected
-      final bobEntry2 =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
+      final bobEntry2 = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        2,
+      );
       expect(bobEntry2!.status, SyncSequenceStatus.missing.index);
 
       // Bob requests backfill
@@ -359,8 +377,10 @@ void main() {
       );
 
       // Verify Bob's entry is marked as deleted
-      final bobEntry2Final =
-          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
+      final bobEntry2Final = await bobSyncDb.getEntryByHostAndCounter(
+        aliceHostId,
+        2,
+      );
       expect(bobEntry2Final!.status, SyncSequenceStatus.deleted.index);
 
       // No more missing entries (deleted counts as resolved)
@@ -388,8 +408,10 @@ void main() {
 
       // All should be marked as missing
       for (var counter = 2; counter <= 4; counter++) {
-        final entry =
-            await bobSyncDb.getEntryByHostAndCounter(aliceHostId, counter);
+        final entry = await bobSyncDb.getEntryByHostAndCounter(
+          aliceHostId,
+          counter,
+        );
         expect(entry!.status, SyncSequenceStatus.missing.index);
       }
     });

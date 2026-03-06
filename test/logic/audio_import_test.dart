@@ -276,22 +276,33 @@ void main() {
     });
 
     test('parses timestamp from Lotti filename format', () async {
-      final testFile =
-          await createTestAudioFile('2025-10-20_16-49-32-203.m4a', 1024);
+      final testFile = await createTestAudioFile(
+        '2025-10-20_16-49-32-203.m4a',
+        1024,
+      );
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
       await importDroppedAudio(data: dropDetails);
 
-      final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(
-          captureAny(that: isA<JournalAudio>()),
-          linkedId: any(named: 'linkedId'),
-        ),
-      ).captured.single as JournalAudio;
+      final captured =
+          verify(
+                () => mockPersistenceLogic.createDbEntity(
+                  captureAny(that: isA<JournalAudio>()),
+                  linkedId: any(named: 'linkedId'),
+                ),
+              ).captured.single
+              as JournalAudio;
 
-      final expectedTimestamp =
-          DateTime.utc(2025, 10, 20, 16, 49, 32, 203).toLocal();
+      final expectedTimestamp = DateTime.utc(
+        2025,
+        10,
+        20,
+        16,
+        49,
+        32,
+        203,
+      ).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
     });
   });

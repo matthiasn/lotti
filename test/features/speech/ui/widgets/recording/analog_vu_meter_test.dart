@@ -37,11 +37,13 @@ void main() {
     }
 
     testWidgets('renders correctly with given size', (tester) async {
-      await tester.pumpWidget(makeTestableWidget(
-        vu: 0,
-        dBFS: -60,
-        size: 400,
-      ));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          vu: 0,
+          dBFS: -60,
+          size: 400,
+        ),
+      );
 
       expect(find.byType(AnalogVuMeter), findsOneWidget);
 
@@ -74,11 +76,12 @@ void main() {
 
       // Check that the VU meter's AnimatedBuilder is present
       expect(
-          find.descendant(
-            of: vuMeter,
-            matching: find.byType(AnimatedBuilder),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: vuMeter,
+          matching: find.byType(AnimatedBuilder),
+        ),
+        findsOneWidget,
+      );
 
       await tester.pumpAndSettle();
     });
@@ -96,33 +99,38 @@ void main() {
 
       // Check that it has a CustomPaint widget
       expect(
-          find.descendant(
-            of: vuMeter,
-            matching: find.byType(CustomPaint),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: vuMeter,
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
 
       await tester.pumpAndSettle();
     });
 
     testWidgets('maintains aspect ratio at different sizes', (tester) async {
       // Test small size
-      await tester.pumpWidget(makeTestableWidget(
-        vu: 0,
-        dBFS: -60,
-        size: 200,
-      ));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          vu: 0,
+          dBFS: -60,
+          size: 200,
+        ),
+      );
 
       var sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(sizedBox.width, 200);
       expect(sizedBox.height, 80); // Maintains 2.5:1 ratio (size * 0.4)
 
       // Test large size
-      await tester.pumpWidget(makeTestableWidget(
-        vu: 0,
-        dBFS: -60,
-        size: 600,
-      ));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          vu: 0,
+          dBFS: -60,
+          size: 600,
+        ),
+      );
 
       sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(sizedBox.width, 600);
@@ -131,36 +139,42 @@ void main() {
 
     testWidgets('CustomPainter receives correct theme mode', (tester) async {
       // Test light mode
-      await tester.pumpWidget(makeTestableWidget(
-        vu: 0,
-        dBFS: -60,
-      ));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          vu: 0,
+          dBFS: -60,
+        ),
+      );
 
       final vuMeter = find.byType(AnalogVuMeter);
       expect(vuMeter, findsOneWidget);
 
       // Check that it has a CustomPaint widget in light mode
       expect(
-          find.descendant(
-            of: vuMeter,
-            matching: find.byType(CustomPaint),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: vuMeter,
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
 
       // Test dark mode
-      await tester.pumpWidget(makeTestableWidget(
-        vu: 0,
-        dBFS: -60,
-        brightness: Brightness.dark,
-      ));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          vu: 0,
+          dBFS: -60,
+          brightness: Brightness.dark,
+        ),
+      );
 
       // Check that it has a CustomPaint widget in dark mode
       expect(
-          find.descendant(
-            of: vuMeter,
-            matching: find.byType(CustomPaint),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: vuMeter,
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('VU and dBFS values work correctly', (tester) async {
@@ -173,18 +187,21 @@ void main() {
       ];
 
       for (final values in testValues) {
-        await tester.pumpWidget(makeTestableWidget(
-          vu: values.vu,
-          dBFS: values.dBFS,
-        ));
+        await tester.pumpWidget(
+          makeTestableWidget(
+            vu: values.vu,
+            dBFS: values.dBFS,
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(AnalogVuMeter), findsOneWidget);
       }
     });
 
-    testWidgets('peak hold animation triggers for increasing values',
-        (tester) async {
+    testWidgets('peak hold animation triggers for increasing values', (
+      tester,
+    ) async {
       // Start with low value
       await tester.pumpWidget(makeTestableWidget(vu: -10, dBFS: -30));
       await tester.pumpAndSettle();
@@ -201,11 +218,12 @@ void main() {
 
       // Check that the AnimatedBuilder is present
       expect(
-          find.descendant(
-            of: vuMeter,
-            matching: find.byType(AnimatedBuilder),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: vuMeter,
+          matching: find.byType(AnimatedBuilder),
+        ),
+        findsOneWidget,
+      );
 
       // Allow all animations and timers to complete
       await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -235,10 +253,12 @@ void main() {
       ];
 
       for (final value in values) {
-        await tester.pumpWidget(makeTestableWidget(
-          vu: value.vu,
-          dBFS: value.dBFS,
-        ));
+        await tester.pumpWidget(
+          makeTestableWidget(
+            vu: value.vu,
+            dBFS: value.dBFS,
+          ),
+        );
         await tester.pump(const Duration(milliseconds: 20));
       }
 

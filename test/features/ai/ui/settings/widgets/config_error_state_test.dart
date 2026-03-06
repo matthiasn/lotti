@@ -29,16 +29,19 @@ void main() {
       expect(find.text(errorMessage), findsOneWidget);
     });
 
-    testWidgets('shows retry button when onRetry is provided',
-        (WidgetTester tester) async {
+    testWidgets('shows retry button when onRetry is provided', (
+      WidgetTester tester,
+    ) async {
       var retryPressed = false;
 
-      await tester.pumpWidget(createWidget(
-        error: 'Test error',
-        onRetry: () {
-          retryPressed = true;
-        },
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          error: 'Test error',
+          onRetry: () {
+            retryPressed = true;
+          },
+        ),
+      );
 
       expect(find.text('RETRY'), findsOneWidget);
       expect(find.byIcon(Icons.refresh), findsOneWidget);
@@ -49,18 +52,22 @@ void main() {
       expect(retryPressed, isTrue);
     });
 
-    testWidgets('hides retry button when onRetry is null',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        error: 'Test error',
-      ));
+    testWidgets('hides retry button when onRetry is null', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          error: 'Test error',
+        ),
+      );
 
       expect(find.text('RETRY'), findsNothing);
       expect(find.byType(LottiPrimaryButton), findsNothing);
     });
 
-    testWidgets('displays error icon with correct size and color',
-        (WidgetTester tester) async {
+    testWidgets('displays error icon with correct size and color', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget(error: 'Error'));
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
@@ -84,8 +91,9 @@ void main() {
       expect(column.mainAxisAlignment, MainAxisAlignment.center);
     });
 
-    testWidgets('handles exception objects as errors',
-        (WidgetTester tester) async {
+    testWidgets('handles exception objects as errors', (
+      WidgetTester tester,
+    ) async {
       final exception = Exception('Custom exception');
 
       await tester.pumpWidget(createWidget(error: exception));
@@ -93,12 +101,15 @@ void main() {
       expect(find.text(exception.toString()), findsOneWidget);
     });
 
-    testWidgets('maintains proper spacing between elements',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        error: 'Error with retry',
-        onRetry: () {},
-      ));
+    testWidgets('maintains proper spacing between elements', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          error: 'Error with retry',
+          onRetry: () {},
+        ),
+      );
 
       // Find only the spacing SizedBox widgets by their height
       final spacing16 = find.byWidgetPredicate(
@@ -113,11 +124,14 @@ void main() {
       expect(spacing8, findsOneWidget);
     });
 
-    testWidgets('error message has proper padding',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        error: 'This is a padded error message',
-      ));
+    testWidgets('error message has proper padding', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          error: 'This is a padded error message',
+        ),
+      );
 
       final padding = tester.widget<Padding>(
         find.ancestor(
@@ -132,9 +146,11 @@ void main() {
       );
     });
 
-    testWidgets('uses centered text alignment for error message',
-        (WidgetTester tester) async {
-      const longError = 'This is a very long error message that should '
+    testWidgets('uses centered text alignment for error message', (
+      WidgetTester tester,
+    ) async {
+      const longError =
+          'This is a very long error message that should '
           'be centered when displayed';
 
       await tester.pumpWidget(createWidget(error: longError));
@@ -143,12 +159,15 @@ void main() {
       expect(errorText.textAlign, TextAlign.center);
     });
 
-    testWidgets('retry button is properly styled as LottiPrimaryButton',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        error: 'Error',
-        onRetry: () {},
-      ));
+    testWidgets('retry button is properly styled as LottiPrimaryButton', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          error: 'Error',
+          onRetry: () {},
+        ),
+      );
 
       // Find LottiPrimaryButton
       final primaryButton = find.byWidgetPredicate(

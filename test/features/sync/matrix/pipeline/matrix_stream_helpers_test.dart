@@ -9,18 +9,20 @@ class MockEvent extends Mock implements Event {}
 
 void main() {
   group('matrix_stream_helpers', () {
-    test('extractRuntimeTypeFromEvent returns runtimeType from base64 JSON',
-        () {
-      final ev = MockEvent();
-      final jsonPayload = <String, dynamic>{
-        'runtimeType': 'entryLink',
-        'id': 'abc',
-      };
-      final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
-      when(() => ev.text).thenReturn(text);
+    test(
+      'extractRuntimeTypeFromEvent returns runtimeType from base64 JSON',
+      () {
+        final ev = MockEvent();
+        final jsonPayload = <String, dynamic>{
+          'runtimeType': 'entryLink',
+          'id': 'abc',
+        };
+        final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+        when(() => ev.text).thenReturn(text);
 
-      expect(extractRuntimeTypeFromEvent(ev), 'entryLink');
-    });
+        expect(extractRuntimeTypeFromEvent(ev), 'entryLink');
+      },
+    );
 
     test('extractRuntimeTypeFromEvent returns null for invalid/empty text', () {
       final ev1 = MockEvent();
@@ -74,31 +76,39 @@ void main() {
       );
     });
 
-    test('extractJsonPathFromEvent returns null for unsupported runtimeType',
-        () {
-      final ev = MockEvent();
-      final jsonPayload = <String, dynamic>{
-        'runtimeType': 'entryLink',
-        'jsonPath': '/some/path.json',
-      };
-      final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
-      when(() => ev.text).thenReturn(text);
+    test(
+      'extractJsonPathFromEvent returns null for unsupported runtimeType',
+      () {
+        final ev = MockEvent();
+        final jsonPayload = <String, dynamic>{
+          'runtimeType': 'entryLink',
+          'jsonPath': '/some/path.json',
+        };
+        final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+        when(() => ev.text).thenReturn(text);
 
-      expect(extractJsonPathFromEvent(ev), isNull);
-    });
+        expect(extractJsonPathFromEvent(ev), isNull);
+      },
+    );
 
-    test('isLikelySyncPayloadText detects valid base64 JSON with runtimeType',
-        () {
-      final valid = base64.encode(utf8.encode(json.encode(<String, dynamic>{
-        'runtimeType': 'journalEntity',
-      })));
-      final invalidJson = base64.encode(utf8.encode('not json'));
+    test(
+      'isLikelySyncPayloadText detects valid base64 JSON with runtimeType',
+      () {
+        final valid = base64.encode(
+          utf8.encode(
+            json.encode(<String, dynamic>{
+              'runtimeType': 'journalEntity',
+            }),
+          ),
+        );
+        final invalidJson = base64.encode(utf8.encode('not json'));
 
-      expect(isLikelySyncPayloadText(valid), isTrue);
-      expect(isLikelySyncPayloadText(invalidJson), isFalse);
-      expect(isLikelySyncPayloadText(''), isFalse);
-      expect(isLikelySyncPayloadText('not-base64'), isFalse);
-    });
+        expect(isLikelySyncPayloadText(valid), isTrue);
+        expect(isLikelySyncPayloadText(invalidJson), isFalse);
+        expect(isLikelySyncPayloadText(''), isFalse);
+        expect(isLikelySyncPayloadText('not-base64'), isFalse);
+      },
+    );
 
     test('ringBufferAdd enforces max size, evicts oldest', () {
       final buf = <String>[];
@@ -149,14 +159,23 @@ void main() {
       final later = DateTime.fromMillisecondsSinceEpoch(1200);
       final earlier = DateTime.fromMillisecondsSinceEpoch(900);
       expect(
-          computeNextScanDelay(now, later), const Duration(milliseconds: 200));
-      expect(computeNextScanDelay(now, earlier),
-          const Duration(milliseconds: 200));
+        computeNextScanDelay(now, later),
+        const Duration(milliseconds: 200),
+      );
       expect(
-          computeNextScanDelay(now, null), const Duration(milliseconds: 200));
+        computeNextScanDelay(now, earlier),
+        const Duration(milliseconds: 200),
+      );
       expect(
-        computeNextScanDelay(now, later,
-            defaultDelay: const Duration(milliseconds: 50)),
+        computeNextScanDelay(now, null),
+        const Duration(milliseconds: 200),
+      );
+      expect(
+        computeNextScanDelay(
+          now,
+          later,
+          defaultDelay: const Duration(milliseconds: 50),
+        ),
         const Duration(milliseconds: 200),
       );
     });
@@ -171,16 +190,19 @@ void main() {
     test('buildLiveScanSlice slices strictly after lastEventId', () {
       final e1 = MockEvent();
       when(() => e1.eventId).thenReturn('a');
-      when(() => e1.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(
+        () => e1.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       final e2 = MockEvent();
       when(() => e2.eventId).thenReturn('b');
-      when(() => e2.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      when(
+        () => e2.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
       final e3 = MockEvent();
       when(() => e3.eventId).thenReturn('c');
-      when(() => e3.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
+      when(
+        () => e3.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
 
       final slice = buildLiveScanSlice(
         timelineEvents: [e2, e1, e3],
@@ -196,8 +218,9 @@ void main() {
       for (var i = 0; i < 5; i++) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
         es.add(e);
       }
       final slice = buildLiveScanSlice(
@@ -212,12 +235,14 @@ void main() {
     test('buildLiveScanSlice ignores timestamp cutoff (removed)', () {
       final older = MockEvent();
       when(() => older.eventId).thenReturn('old');
-      when(() => older.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(
+        () => older.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
       final newer = MockEvent();
       when(() => newer.eventId).thenReturn('new');
-      when(() => newer.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
+      when(
+        () => newer.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
 
       final slice = buildLiveScanSlice(
         timelineEvents: [older, newer],
@@ -231,16 +256,19 @@ void main() {
     test('buildLiveScanSlice deduplicates by eventId preserving order', () {
       final a1 = MockEvent();
       when(() => a1.eventId).thenReturn('a');
-      when(() => a1.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(
+        () => a1.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       final a2 = MockEvent();
       when(() => a2.eventId).thenReturn('a');
-      when(() => a2.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(
+        () => a2.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       final b = MockEvent();
       when(() => b.eventId).thenReturn('b');
-      when(() => b.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      when(
+        () => b.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
 
       final slice = buildLiveScanSlice(
         timelineEvents: [a2, b, a1],
@@ -252,61 +280,69 @@ void main() {
     });
 
     test(
-        'filterSyncPayloadsByMonotonic drops old payloads, keeps retries/attachments',
-        () {
-      Event mk(String id, int ts, {bool payload = true}) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn(id);
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-        if (payload) {
-          final jsonPayload = <String, dynamic>{
-            'runtimeType': 'journalEntity',
-            'jsonPath': '/x.json',
-          };
-          final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
-          when(() => e.text).thenReturn(text);
-          when(() => e.attachmentMimetype).thenReturn('');
-        } else {
-          when(() => e.text).thenReturn('');
-          when(() => e.attachmentMimetype).thenReturn('image/png');
+      'filterSyncPayloadsByMonotonic drops old payloads, keeps retries/attachments',
+      () {
+        Event mk(String id, int ts, {bool payload = true}) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          if (payload) {
+            final jsonPayload = <String, dynamic>{
+              'runtimeType': 'journalEntity',
+              'jsonPath': '/x.json',
+            };
+            final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+            when(() => e.text).thenReturn(text);
+            when(() => e.attachmentMimetype).thenReturn('');
+          } else {
+            when(() => e.text).thenReturn('');
+            when(() => e.attachmentMimetype).thenReturn('image/png');
+          }
+          when(() => e.content).thenReturn(<String, dynamic>{});
+          return e;
         }
-        when(() => e.content).thenReturn(<String, dynamic>{});
-        return e;
-      }
 
-      final old = mk('E0', 100);
-      final equal = mk('E1', 200);
-      final newer = mk('E2', 201);
-      final att = mk('A1', 50, payload: false);
-      var skipped = 0;
+        final old = mk('E0', 100);
+        final equal = mk('E1', 200);
+        final newer = mk('E2', 201);
+        final att = mk('A1', 50, payload: false);
+        var skipped = 0;
 
-      // With nothing completed: keep all events (including ones with pending retries)
-      // This fixes the bug where failed events were incorrectly dropped
-      final kept = filterSyncPayloadsByMonotonic(
-        events: [old, equal, newer, att],
-        dropOldSyncPayloads: true,
-        lastTimestamp: 200,
-        lastEventId: 'E1',
-        wasCompleted: (_) => false,
-        onSkipped: () => skipped++,
-      );
-      expect(kept.map((e) => e.eventId), containsAll(['E0', 'E1', 'E2', 'A1']));
-      expect(skipped, 0);
+        // With nothing completed: keep all events (including ones with pending retries)
+        // This fixes the bug where failed events were incorrectly dropped
+        final kept = filterSyncPayloadsByMonotonic(
+          events: [old, equal, newer, att],
+          dropOldSyncPayloads: true,
+          lastTimestamp: 200,
+          lastEventId: 'E1',
+          wasCompleted: (_) => false,
+          onSkipped: () => skipped++,
+        );
+        expect(
+          kept.map((e) => e.eventId),
+          containsAll(['E0', 'E1', 'E2', 'A1']),
+        );
+        expect(skipped, 0);
 
-      // Mark old events as completed -> they get dropped
-      skipped = 0;
-      final kept2 = filterSyncPayloadsByMonotonic(
-        events: [old, equal, newer, att],
-        dropOldSyncPayloads: true,
-        lastTimestamp: 200,
-        lastEventId: 'E1',
-        wasCompleted: (id) => id == 'E0' || id == 'E1',
-        onSkipped: () => skipped++,
-      );
-      expect(kept2.map((e) => e.eventId), containsAll(['E2', 'A1']));
-      expect(kept2.any((e) => e.eventId == 'E0' || e.eventId == 'E1'), isFalse);
-      expect(skipped, 2);
-    });
+        // Mark old events as completed -> they get dropped
+        skipped = 0;
+        final kept2 = filterSyncPayloadsByMonotonic(
+          events: [old, equal, newer, att],
+          dropOldSyncPayloads: true,
+          lastTimestamp: 200,
+          lastEventId: 'E1',
+          wasCompleted: (id) => id == 'E0' || id == 'E1',
+          onSkipped: () => skipped++,
+        );
+        expect(kept2.map((e) => e.eventId), containsAll(['E2', 'A1']));
+        expect(
+          kept2.any((e) => e.eventId == 'E0' || e.eventId == 'E1'),
+          isFalse,
+        );
+        expect(skipped, 2);
+      },
+    );
   });
 }

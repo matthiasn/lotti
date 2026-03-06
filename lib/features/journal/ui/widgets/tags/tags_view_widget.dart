@@ -25,37 +25,38 @@ class _TagsViewWidgetState extends State<TagsViewWidget> {
   Widget build(BuildContext context) {
     return StreamBuilder<List<TagEntity>>(
       stream: tagsService.watchTags(),
-      builder: (
-        BuildContext context,
-        // This stream is not used, the StreamBuilder is only here
-        // to trigger updates when any tag changes. In that case,
-        // data in the tags service will already have been updated.
-        AsyncSnapshot<List<TagEntity>> _,
-      ) {
-        final tagIds = widget.item.meta.tagIds ?? [];
-        final tagsFromTagIds = <TagEntity>[];
+      builder:
+          (
+            BuildContext context,
+            // This stream is not used, the StreamBuilder is only here
+            // to trigger updates when any tag changes. In that case,
+            // data in the tags service will already have been updated.
+            AsyncSnapshot<List<TagEntity>> _,
+          ) {
+            final tagIds = widget.item.meta.tagIds ?? [];
+            final tagsFromTagIds = <TagEntity>[];
 
-        for (final tagId in tagIds) {
-          final tagEntity = tagsService.getTagById(tagId);
-          if (tagEntity != null) {
-            tagsFromTagIds.add(tagEntity);
-          }
-        }
+            for (final tagId in tagIds) {
+              final tagEntity = tagsService.getTagById(tagId);
+              if (tagEntity != null) {
+                tagsFromTagIds.add(tagEntity);
+              }
+            }
 
-        if (tagsFromTagIds.isEmpty) {
-          return const SizedBox.shrink();
-        }
+            if (tagsFromTagIds.isEmpty) {
+              return const SizedBox.shrink();
+            }
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            // ignore: unnecessary_lambdas
-            children: tagsFromTagIds.map((tag) => TagChip(tag)).toList(),
-          ),
-        );
-      },
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                // ignore: unnecessary_lambdas
+                children: tagsFromTagIds.map((tag) => TagChip(tag)).toList(),
+              ),
+            );
+          },
     );
   }
 }

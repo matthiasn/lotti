@@ -39,10 +39,9 @@ class SyncSettingsPage extends StatelessWidget {
               trailing: OutboxBadgeIcon(
                 icon: Icon(
                   MdiIcons.mailboxOutline,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.9),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.9),
                 ),
               ),
             ),

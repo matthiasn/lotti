@@ -4,8 +4,9 @@ import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
 void main() {
   group('FormBottomBar Tests', () {
-    testWidgets('displays only right buttons when no left button',
-        (tester) async {
+    testWidgets('displays only right buttons when no left button', (
+      tester,
+    ) async {
       var savePressed = false;
       var cancelPressed = false;
 
@@ -97,8 +98,9 @@ void main() {
       expect(find.byType(FormBottomBar), findsOneWidget);
     });
 
-    testWidgets('handles multiple right buttons with proper spacing',
-        (tester) async {
+    testWidgets('handles multiple right buttons with proper spacing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

@@ -164,49 +164,52 @@ void registerAllFallbackValues() {
   );
   registerFallbackValue(
     AgentDomainEntity.agentTemplate(
-      id: 'fallback-tpl',
-      agentId: 'fallback-tpl',
-      displayName: 'Fallback',
-      kind: AgentTemplateKind.taskAgent,
-      modelId: 'models/fallback',
-      categoryIds: const {},
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
-      vectorClock: null,
-    ) as AgentTemplateEntity,
+          id: 'fallback-tpl',
+          agentId: 'fallback-tpl',
+          displayName: 'Fallback',
+          kind: AgentTemplateKind.taskAgent,
+          modelId: 'models/fallback',
+          categoryIds: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+          vectorClock: null,
+        )
+        as AgentTemplateEntity,
   );
   registerFallbackValue(
     AgentDomainEntity.agentTemplateVersion(
-      id: 'fallback-ver',
-      agentId: 'fallback-tpl',
-      version: 1,
-      status: AgentTemplateVersionStatus.active,
-      directives: 'fallback',
-      authoredBy: 'system',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      vectorClock: null,
-    ) as AgentTemplateVersionEntity,
+          id: 'fallback-ver',
+          agentId: 'fallback-tpl',
+          version: 1,
+          status: AgentTemplateVersionStatus.active,
+          directives: 'fallback',
+          authoredBy: 'system',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          vectorClock: null,
+        )
+        as AgentTemplateVersionEntity,
   );
 
   // Change set fallbacks
   registerFallbackValue(
     AgentDomainEntity.changeSet(
-      id: 'fallback-cs',
-      agentId: 'fallback-agent',
-      taskId: 'fallback-task',
-      threadId: 'fallback-thread',
-      runKey: 'fallback-run',
-      status: ChangeSetStatus.pending,
-      items: const [
-        ChangeItem(
-          toolName: 'fallback_tool',
-          args: {},
-          humanSummary: 'Fallback',
-        ),
-      ],
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      vectorClock: null,
-    ) as ChangeSetEntity,
+          id: 'fallback-cs',
+          agentId: 'fallback-agent',
+          taskId: 'fallback-task',
+          threadId: 'fallback-thread',
+          runKey: 'fallback-run',
+          status: ChangeSetStatus.pending,
+          items: const [
+            ChangeItem(
+              toolName: 'fallback_tool',
+              args: {},
+              humanSummary: 'Fallback',
+            ),
+          ],
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          vectorClock: null,
+        )
+        as ChangeSetEntity,
   );
 
   // Logging enum fallbacks

@@ -16,8 +16,8 @@ class ScheduledWakeManager {
     required AgentRepository repository,
     required WakeOrchestrator orchestrator,
     this.checkInterval = const Duration(hours: 1),
-  })  : _repository = repository,
-        _orchestrator = orchestrator;
+  }) : _repository = repository,
+       _orchestrator = orchestrator;
 
   final AgentRepository _repository;
   final WakeOrchestrator _orchestrator;

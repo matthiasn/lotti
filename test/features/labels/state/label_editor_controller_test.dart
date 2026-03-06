@@ -110,8 +110,9 @@ void main() {
   });
 
   test('save returns error when duplicate label exists', () async {
-    when(() => repository.getAllLabels())
-        .thenAnswer((_) async => [testLabelDefinition1]);
+    when(
+      () => repository.getAllLabels(),
+    ).thenAnswer((_) async => [testLabelDefinition1]);
 
     final provider = labelEditorControllerProvider(const LabelEditorArgs());
     final notifier = container.read(provider.notifier);
@@ -125,12 +126,14 @@ void main() {
       state.errorMessage,
       contains('already exists'),
     );
-    verifyNever(() => repository.createLabel(
-          name: any(named: 'name'),
-          color: any(named: 'color'),
-          description: any(named: 'description'),
-          private: any(named: 'private'),
-        ));
+    verifyNever(
+      () => repository.createLabel(
+        name: any(named: 'name'),
+        color: any(named: 'color'),
+        description: any(named: 'description'),
+        private: any(named: 'private'),
+      ),
+    );
   });
 
   test('save updates existing label', () async {
@@ -319,8 +322,9 @@ void main() {
       final label = testLabelDefinition1.copyWith(
         applicableCategoryIds: const ['a', 'b'],
       );
-      final provider =
-          labelEditorControllerProvider(LabelEditorArgs(label: label));
+      final provider = labelEditorControllerProvider(
+        LabelEditorArgs(label: label),
+      );
       final state = container.read(provider);
       expect(state.selectedCategoryIds, equals({'a', 'b'}));
     });

@@ -15,19 +15,20 @@ final inferenceProfileControllerProvider =
     InferenceProfileControllerProvider._();
 
 /// Streams all inference profiles for the profile management UI.
-final class InferenceProfileControllerProvider extends $StreamNotifierProvider<
-    InferenceProfileController, List<AiConfig>> {
+final class InferenceProfileControllerProvider
+    extends
+        $StreamNotifierProvider<InferenceProfileController, List<AiConfig>> {
   /// Streams all inference profiles for the profile management UI.
   InferenceProfileControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'inferenceProfileControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'inferenceProfileControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$inferenceProfileControllerHash();
@@ -49,11 +50,14 @@ abstract class _$InferenceProfileController
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<AiConfig>>, List<AiConfig>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<AiConfig>>, List<AiConfig>>,
-        AsyncValue<List<AiConfig>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<AiConfig>>, List<AiConfig>>,
+              AsyncValue<List<AiConfig>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

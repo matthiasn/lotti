@@ -65,8 +65,9 @@ Widget _sheetHost({LabelDefinition? label, String? initialName}) {
 void main() {
   setUp(() {
     if (!getIt.isRegistered<EntitiesCacheService>()) {
-      getIt
-          .registerSingleton<EntitiesCacheService>(_MockEntitiesCacheService());
+      getIt.registerSingleton<EntitiesCacheService>(
+        _MockEntitiesCacheService(),
+      );
     }
   });
 

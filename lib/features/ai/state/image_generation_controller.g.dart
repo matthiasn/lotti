@@ -32,16 +32,16 @@ final class ImageGenerationControllerProvider
   /// - Building prompts from task context and audio descriptions
   /// - Calling the Gemini image generation API
   /// - Managing generation state (idle, generating, success, error)
-  ImageGenerationControllerProvider._(
-      {required ImageGenerationControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'imageGenerationControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ImageGenerationControllerProvider._({
+    required ImageGenerationControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'imageGenerationControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$imageGenerationControllerHash();
@@ -89,16 +89,21 @@ String _$imageGenerationControllerHash() =>
 
 final class ImageGenerationControllerFamily extends $Family
     with
-        $ClassFamilyOverride<ImageGenerationController, ImageGenerationState,
-            ImageGenerationState, ImageGenerationState, String> {
+        $ClassFamilyOverride<
+          ImageGenerationController,
+          ImageGenerationState,
+          ImageGenerationState,
+          ImageGenerationState,
+          String
+        > {
   ImageGenerationControllerFamily._()
-      : super(
-          retry: null,
-          name: r'imageGenerationControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'imageGenerationControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Controller for generating cover art images using AI.
   ///
@@ -109,8 +114,7 @@ final class ImageGenerationControllerFamily extends $Family
 
   ImageGenerationControllerProvider call({
     required String entityId,
-  }) =>
-      ImageGenerationControllerProvider._(argument: entityId, from: this);
+  }) => ImageGenerationControllerProvider._(argument: entityId, from: this);
 
   @override
   String toString() => r'imageGenerationControllerProvider';
@@ -135,15 +139,19 @@ abstract class _$ImageGenerationController
   @override
   void runBuild() {
     final ref = this.ref as $Ref<ImageGenerationState, ImageGenerationState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<ImageGenerationState, ImageGenerationState>,
-        ImageGenerationState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ImageGenerationState, ImageGenerationState>,
+              ImageGenerationState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              entityId: _$args,
-            ));
+      ref,
+      () => build(
+        entityId: _$args,
+      ),
+    );
   }
 }

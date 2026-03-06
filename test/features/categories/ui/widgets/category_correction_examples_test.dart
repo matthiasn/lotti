@@ -92,8 +92,9 @@ void main() {
       expect(findRichTextContaining('macOS'), findsOneWidget);
     });
 
-    testWidgets('calls onDeleteAt with correct index when swiped',
-        (tester) async {
+    testWidgets('calls onDeleteAt with correct index when swiped', (
+      tester,
+    ) async {
       int? deletedIndex;
 
       final examples = [

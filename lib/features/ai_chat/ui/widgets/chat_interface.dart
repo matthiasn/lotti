@@ -44,15 +44,17 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
   }
 
   Future<void> _initializeSession() async {
-    final controller =
-        ref.read(chatSessionControllerProvider(widget.categoryId).notifier);
+    final controller = ref.read(
+      chatSessionControllerProvider(widget.categoryId).notifier,
+    );
     await controller.initializeSession(sessionId: widget.sessionId);
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessionState =
-        ref.watch(chatSessionControllerProvider(widget.categoryId));
+    final sessionState = ref.watch(
+      chatSessionControllerProvider(widget.categoryId),
+    );
 
     // Use closures to get fresh notifier instances at invocation time
     // (required for Riverpod 3 autoDispose providers)

@@ -151,10 +151,12 @@ void main() {
 
     // Default stubs
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(() => mockLabelsRepository.getLabelUsageCounts())
-        .thenAnswer((_) async => {});
-    when(() => mockLabelsRepository.buildLabelTuples(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockLabelsRepository.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockLabelsRepository.buildLabelTuples(any()),
+    ).thenAnswer((_) async => []);
     when(
       () => mockAiInputRepository.buildTaskDetailsJson(
         id: any<String>(named: 'id'),
@@ -202,31 +204,33 @@ void main() {
         expect(result, isNot(contains('{{audioTranscript}}')));
       });
 
-      test('uses edited text over original transcript when available',
-          () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Generate Prompt',
-          systemMessage: 'System message',
-          userMessage: 'Audio: {{audioTranscript}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: true,
-          requiredInputData: const [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.promptGeneration,
-        );
+      test(
+        'uses edited text over original transcript when available',
+        () async {
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Generate Prompt',
+            systemMessage: 'System message',
+            userMessage: 'Audio: {{audioTranscript}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: true,
+            requiredInputData: const [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.promptGeneration,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testAudioWithEditedText,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testAudioWithEditedText,
+          );
 
-        expect(result, isNotNull);
-        // Should use edited text, not original transcript
-        expect(result, contains('User edited and corrected transcript.'));
-        expect(result, isNot(contains('Original transcript.')));
-      });
+          expect(result, isNotNull);
+          // Should use edited text, not original transcript
+          expect(result, contains('User edited and corrected transcript.'));
+          expect(result, isNot(contains('Original transcript.')));
+        },
+      );
 
       test('returns fallback message when no transcript available', () async {
         final config = AiConfigPrompt(
@@ -300,31 +304,33 @@ void main() {
         expect(result, contains('[Audio entry expected but received Task]'));
       });
 
-      test('leaves prompt unchanged if audioTranscript placeholder not present',
-          () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Image Analysis',
-          systemMessage: 'System message',
-          userMessage: 'Analyze this image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+      test(
+        'leaves prompt unchanged if audioTranscript placeholder not present',
+        () async {
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Image Analysis',
+            systemMessage: 'System message',
+            userMessage: 'Analyze this image.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testImage,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testImage,
+          );
 
-        expect(result, isNotNull);
-        expect(result, equals('Analyze this image.'));
-        // No audioTranscript placeholder to replace
-        expect(result, isNot(contains('{{audioTranscript}}')));
-      });
+          expect(result, isNotNull);
+          expect(result, equals('Analyze this image.'));
+          // No audioTranscript placeholder to replace
+          expect(result, isNot(contains('{{audioTranscript}}')));
+        },
+      );
     });
   });
 }

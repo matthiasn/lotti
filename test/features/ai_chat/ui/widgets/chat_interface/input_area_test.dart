@@ -38,16 +38,15 @@ Widget _inputArea({
   bool canSend = true,
   bool requiresModelSelection = false,
   void Function(String)? onSendMessage,
-}) =>
-    InputArea(
-      controller: controller ?? TextEditingController(),
-      scrollController: ScrollController(),
-      isLoading: isLoading,
-      canSend: canSend,
-      requiresModelSelection: requiresModelSelection,
-      categoryId: 'cat',
-      onSendMessage: onSendMessage ?? (_) {},
-    );
+}) => InputArea(
+  controller: controller ?? TextEditingController(),
+  scrollController: ScrollController(),
+  isLoading: isLoading,
+  canSend: canSend,
+  requiresModelSelection: requiresModelSelection,
+  categoryId: 'cat',
+  onSendMessage: onSendMessage ?? (_) {},
+);
 
 /// Override that uses the real [ChatRecorderController].
 Override _defaultRecorderOverride() =>
@@ -85,8 +84,9 @@ void main() {
     expect(sent, 'hello');
   });
 
-  testWidgets('InputArea shows mic when empty and not requiresModelSelection',
-      (tester) async {
+  testWidgets('InputArea shows mic when empty and not requiresModelSelection', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(),
@@ -98,31 +98,33 @@ void main() {
   });
 
   testWidgets(
-      'TranscriptionProgress shows partial transcript during processing',
-      (tester) async {
-    await tester.pumpWidget(
-      _wrap(
-        _inputArea(),
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            () => _ProcessingRecorderController(
-              partialTranscript: 'Transcribing audio...',
+    'TranscriptionProgress shows partial transcript during processing',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _inputArea(),
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => _ProcessingRecorderController(
+                partialTranscript: 'Transcribing audio...',
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    expect(find.text('Transcribing audio...'), findsOneWidget);
-    expect(find.byIcon(Icons.transcribe), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byType(TextField), findsNothing);
-  });
+      expect(find.text('Transcribing audio...'), findsOneWidget);
+      expect(find.byIcon(Icons.transcribe), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    },
+  );
 
-  testWidgets('TranscriptionProgress updates as transcript grows',
-      (tester) async {
+  testWidgets('TranscriptionProgress updates as transcript grows', (
+    tester,
+  ) async {
     final controller = _ProcessingRecorderController(
       partialTranscript: 'First chunk',
     );
@@ -146,27 +148,29 @@ void main() {
   });
 
   testWidgets(
-      'InputArea shows TextField when processing without partialTranscript',
-      (tester) async {
-    await tester.pumpWidget(
-      _wrap(
-        _inputArea(),
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            () => _ProcessingRecorderController(partialTranscript: null),
-          ),
-        ],
-      ),
-    );
+    'InputArea shows TextField when processing without partialTranscript',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _inputArea(),
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => _ProcessingRecorderController(partialTranscript: null),
+            ),
+          ],
+        ),
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    expect(find.byType(TextField), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-  });
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    },
+  );
 
-  testWidgets('shows Listening indicator during realtimeRecording',
-      (tester) async {
+  testWidgets('shows Listening indicator during realtimeRecording', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(),
@@ -187,8 +191,9 @@ void main() {
     expect(find.byIcon(Icons.close), findsOneWidget);
   });
 
-  testWidgets('shows live transcript text during realtimeRecording',
-      (tester) async {
+  testWidgets('shows live transcript text during realtimeRecording', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(),
@@ -235,8 +240,9 @@ void main() {
     expect(textField.enabled, isFalse);
   });
 
-  testWidgets('shows disabled send button when canSend is false and has text',
-      (tester) async {
+  testWidgets('shows disabled send button when canSend is false and has text', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(
@@ -260,8 +266,9 @@ void main() {
     expect(iconButton.onPressed, isNull);
   });
 
-  testWidgets('shows tune icon when requiresModelSelection is true',
-      (tester) async {
+  testWidgets('shows tune icon when requiresModelSelection is true', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(requiresModelSelection: true),
@@ -275,8 +282,9 @@ void main() {
     expect(find.byIcon(Icons.mic), findsNothing);
   });
 
-  testWidgets('shows correct hint text for requiresModelSelection',
-      (tester) async {
+  testWidgets('shows correct hint text for requiresModelSelection', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(requiresModelSelection: true),
@@ -352,8 +360,9 @@ void main() {
     expect(stopCalled, isTrue);
   });
 
-  testWidgets('cancel button during realtime recording calls cancel',
-      (tester) async {
+  testWidgets('cancel button during realtime recording calls cancel', (
+    tester,
+  ) async {
     var cancelCalled = false;
     await tester.pumpWidget(
       _wrap(
@@ -377,8 +386,9 @@ void main() {
     expect(cancelCalled, isTrue);
   });
 
-  testWidgets('stop button during realtime recording calls stopRealtime',
-      (tester) async {
+  testWidgets('stop button during realtime recording calls stopRealtime', (
+    tester,
+  ) async {
     var stopCalled = false;
     await tester.pumpWidget(
       _wrap(
@@ -425,8 +435,9 @@ void main() {
     expect(cancelCalled, isTrue);
   });
 
-  testWidgets('mode toggle switches between realtime and batch',
-      (tester) async {
+  testWidgets('mode toggle switches between realtime and batch', (
+    tester,
+  ) async {
     final mockRealtime = _realtimeServiceWithConfig();
 
     await tester.pumpWidget(
@@ -466,8 +477,9 @@ void main() {
     expect(textField.onSubmitted, isNotNull);
   });
 
-  testWidgets('text field onSubmitted is null when canSend is false',
-      (tester) async {
+  testWidgets('text field onSubmitted is null when canSend is false', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         _inputArea(canSend: false),
@@ -531,8 +543,9 @@ void main() {
     expect(startRealtimeCalled, isTrue);
   });
 
-  testWidgets('escape key during realtime recording calls cancel',
-      (tester) async {
+  testWidgets('escape key during realtime recording calls cancel', (
+    tester,
+  ) async {
     var cancelCalled = false;
     await tester.pumpWidget(
       _wrap(
@@ -581,8 +594,9 @@ void main() {
     expect(textController.text, isEmpty);
   });
 
-  testWidgets('transcript fills text field when canSend is false',
-      (tester) async {
+  testWidgets('transcript fills text field when canSend is false', (
+    tester,
+  ) async {
     String? sentMessage;
     final textController = TextEditingController();
     final controller = _TranscriptEmittingController();
@@ -682,7 +696,7 @@ class _RealtimeControllerWithCallbacks extends ChatRecorderController {
 /// Test controller for realtime recording state
 class _RealtimeRecordingController extends ChatRecorderController {
   _RealtimeRecordingController({String? partialTranscript})
-      : _partialTranscript = partialTranscript;
+    : _partialTranscript = partialTranscript;
 
   final String? _partialTranscript;
 

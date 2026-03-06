@@ -55,38 +55,38 @@ void main() {
   }
 
   Map<String, dynamic> textEvent(String text, {bool finished = false}) => {
-        'output': {
-          'choices': [
-            {
-              'message': {
-                'content': [
-                  {'type': 'text', 'text': text},
-                ],
-                'role': 'assistant',
-              },
-              'finish_reason': finished ? 'stop' : 'null',
-            },
-          ],
-          'finished': finished,
+    'output': {
+      'choices': [
+        {
+          'message': {
+            'content': [
+              {'type': 'text', 'text': text},
+            ],
+            'role': 'assistant',
+          },
+          'finish_reason': finished ? 'stop' : 'null',
         },
-      };
+      ],
+      'finished': finished,
+    },
+  };
 
   Map<String, dynamic> imageEvent(String imageUrl) => {
-        'output': {
-          'choices': [
-            {
-              'message': {
-                'content': [
-                  {'type': 'image', 'image': imageUrl},
-                ],
-                'role': 'assistant',
-              },
-              'finish_reason': 'stop',
-            },
-          ],
-          'finished': true,
+    'output': {
+      'choices': [
+        {
+          'message': {
+            'content': [
+              {'type': 'image', 'image': imageUrl},
+            ],
+            'role': 'assistant',
+          },
+          'finish_reason': 'stop',
         },
-      };
+      ],
+      'finished': true,
+    },
+  };
 
   http.StreamedResponse createStreamedResponse(
     String body, {
@@ -99,38 +99,42 @@ void main() {
   group('DashScopeInferenceRepository', () {
     group('generateImage', () {
       group('success', () {
-        test('happy path: sends request, parses SSE, downloads image',
-            () async {
-          final provider = createProvider();
-          const imageUrl = 'https://dashscope-result.oss.aliyuncs.com/img.png';
-          final sseBody = buildSseResponse([
-            textEvent('A'),
-            textEvent(' cat'),
-            imageEvent(imageUrl),
-          ]);
+        test(
+          'happy path: sends request, parses SSE, downloads image',
+          () async {
+            final provider = createProvider();
+            const imageUrl =
+                'https://dashscope-result.oss.aliyuncs.com/img.png';
+            final sseBody = buildSseResponse([
+              textEvent('A'),
+              textEvent(' cat'),
+              imageEvent(imageUrl),
+            ]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+            when(
+              () => mockHttpClient.send(any()),
+            ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
-          final imageBytes = Uint8List.fromList([137, 80, 78, 71]);
-          when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
-            (_) async => http.Response.bytes(
-              imageBytes,
-              200,
-              headers: {'content-type': 'image/png'},
-            ),
-          );
+            final imageBytes = Uint8List.fromList([137, 80, 78, 71]);
+            when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
+              (_) async => http.Response.bytes(
+                imageBytes,
+                200,
+                headers: {'content-type': 'image/png'},
+              ),
+            );
 
-          final result = await repository.generateImage(
-            prompt: 'A cute cat',
-            model: 'wan2.6-image',
-            provider: provider,
-          );
+            final result = await repository.generateImage(
+              prompt: 'A cute cat',
+              model: 'wan2.6-image',
+              provider: provider,
+            );
 
-          expect(result, isA<GeneratedImage>());
-          expect(result.bytes, imageBytes);
-          expect(result.mimeType, 'image/png');
-        });
+            expect(result, isA<GeneratedImage>());
+            expect(result.bytes, imageBytes);
+            expect(result.mimeType, 'image/png');
+          },
+        );
 
         test('sends correct headers including Authorization and SSE', () async {
           final provider = createProvider(apiKey: 'my-secret-key');
@@ -242,52 +246,58 @@ void main() {
           expect(params['enable_interleave'], true);
         });
 
-        test('includes reference image in request body when provided',
-            () async {
-          final provider = createProvider();
-          const imageUrl =
-              'https://dashscope-result.oss.aliyuncs.com/image.png';
-          final sseBody = buildSseResponse([imageEvent(imageUrl)]);
+        test(
+          'includes reference image in request body when provided',
+          () async {
+            final provider = createProvider();
+            const imageUrl =
+                'https://dashscope-result.oss.aliyuncs.com/image.png';
+            final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          http.Request? capturedRequest;
-          when(() => mockHttpClient.send(any())).thenAnswer((invocation) async {
-            capturedRequest = invocation.positionalArguments[0] as http.Request;
-            return createStreamedResponse(sseBody);
-          });
+            http.Request? capturedRequest;
+            when(() => mockHttpClient.send(any())).thenAnswer((
+              invocation,
+            ) async {
+              capturedRequest =
+                  invocation.positionalArguments[0] as http.Request;
+              return createStreamedResponse(sseBody);
+            });
 
-          when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
-            (_) async => http.Response.bytes([1], 200),
-          );
+            when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
+              (_) async => http.Response.bytes([1], 200),
+            );
 
-          const refImage = ProcessedReferenceImage(
-            base64Data: 'dGVzdA==',
-            mimeType: 'image/png',
-            originalId: 'ref-1',
-          );
+            const refImage = ProcessedReferenceImage(
+              base64Data: 'dGVzdA==',
+              mimeType: 'image/png',
+              originalId: 'ref-1',
+            );
 
-          await repository.generateImage(
-            prompt: 'A sunset over mountains',
-            model: 'wan2.6-image',
-            provider: provider,
-            referenceImages: [refImage],
-          );
+            await repository.generateImage(
+              prompt: 'A sunset over mountains',
+              model: 'wan2.6-image',
+              provider: provider,
+              referenceImages: [refImage],
+            );
 
-          final body =
-              jsonDecode(capturedRequest!.body) as Map<String, dynamic>;
-          final input = body['input'] as Map<String, dynamic>;
-          final messages = input['messages'] as List<dynamic>;
-          final content =
-              (messages[0] as Map<String, dynamic>)['content'] as List<dynamic>;
+            final body =
+                jsonDecode(capturedRequest!.body) as Map<String, dynamic>;
+            final input = body['input'] as Map<String, dynamic>;
+            final messages = input['messages'] as List<dynamic>;
+            final content =
+                (messages[0] as Map<String, dynamic>)['content']
+                    as List<dynamic>;
 
-          // Reference image should be first content part
-          expect(content.length, 2);
-          final imagePart = content[0] as Map<String, dynamic>;
-          expect(imagePart['image'], 'data:image/png;base64,dGVzdA==');
+            // Reference image should be first content part
+            expect(content.length, 2);
+            final imagePart = content[0] as Map<String, dynamic>;
+            expect(imagePart['image'], 'data:image/png;base64,dGVzdA==');
 
-          // Text prompt should be second
-          final textPart = content[1] as Map<String, dynamic>;
-          expect(textPart['text'], 'A sunset over mountains');
-        });
+            // Text prompt should be second
+            final textPart = content[1] as Map<String, dynamic>;
+            expect(textPart['text'], 'A sunset over mountains');
+          },
+        );
 
         test('omits reference image when none provided', () async {
           final provider = createProvider();
@@ -329,8 +339,9 @@ void main() {
               'https://dashscope-result.oss.aliyuncs.com/image.jpg';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
             (_) async => http.Response.bytes(
@@ -354,8 +365,9 @@ void main() {
           const imageUrl = 'https://dashscope-result.oss.aliyuncs.com/image';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
             (_) async => http.Response.bytes([1, 2, 3], 200),
@@ -432,8 +444,9 @@ void main() {
             textEvent(' world', finished: true),
           ]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           expect(
             () => repository.generateImage(
@@ -457,8 +470,9 @@ void main() {
           // Create raw SSE with no image
           final sseBody = 'data:$longText\n';
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           try {
             await repository.generateImage(
@@ -483,8 +497,9 @@ void main() {
               'https://dashscope-result.oss.aliyuncs.com/expired.png';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
             (_) async => http.Response('Not Found', 404),
@@ -516,8 +531,9 @@ void main() {
           const imageUrl = 'http://internal-server.local/image.png';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           expect(
             () => repository.generateImage(
@@ -540,8 +556,9 @@ void main() {
           const imageUrl = 'https://evil-server.com/stolen.png';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           expect(
             () => repository.generateImage(
@@ -565,8 +582,9 @@ void main() {
               'https://dashscope-result.oss.aliyuncs.com/image.png';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
             (_) async => http.Response.bytes([1, 2, 3], 200),
@@ -586,8 +604,9 @@ void main() {
           const imageUrl = 'https://img.alicdn.com/image.png';
           final sseBody = buildSseResponse([imageEvent(imageUrl)]);
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => createStreamedResponse(sseBody));
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
           when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
             (_) async => http.Response.bytes([4, 5, 6], 200),
@@ -616,8 +635,9 @@ void main() {
           imageEvent(imageUrl),
         ]);
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(sseBody));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
         when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
           (_) async => http.Response.bytes([1, 2, 3], 200),
@@ -639,12 +659,14 @@ void main() {
         const imageUrl = 'https://oss.aliyuncs.com/image.png';
 
         // Build SSE with a malformed JSON line followed by a valid image event
-        final sseBody = 'id:1\nevent:result\ndata:not-valid-json\n\n'
+        final sseBody =
+            'id:1\nevent:result\ndata:not-valid-json\n\n'
             'id:2\nevent:result\n'
             'data:${jsonEncode(imageEvent(imageUrl))}\n\n';
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(sseBody));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
         when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
           (_) async => http.Response.bytes([10, 20], 200),
@@ -670,12 +692,14 @@ void main() {
             'choices': 'not-a-list',
           },
         });
-        final sseBody = 'id:1\nevent:result\ndata:$badEvent\n\n'
+        final sseBody =
+            'id:1\nevent:result\ndata:$badEvent\n\n'
             'id:2\nevent:result\n'
             'data:${jsonEncode(imageEvent(imageUrl))}\n\n';
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(sseBody));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
         when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
           (_) async => http.Response.bytes([42], 200),
@@ -701,8 +725,9 @@ void main() {
           },
         ]);
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(sseBody));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
         expect(
           () => repository.generateImage(
@@ -726,8 +751,9 @@ void main() {
           <String, dynamic>{'usage': <String, dynamic>{}},
         ]);
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(sseBody));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
         expect(
           () => repository.generateImage(
@@ -759,8 +785,9 @@ void main() {
           },
         ]);
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(sseBody));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(sseBody));
 
         expect(
           () => repository.generateImage(
@@ -781,8 +808,9 @@ void main() {
       test('returns null (throws) for empty SSE response', () async {
         final provider = createProvider();
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => createStreamedResponse(''));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => createStreamedResponse(''));
 
         expect(
           () => repository.generateImage(

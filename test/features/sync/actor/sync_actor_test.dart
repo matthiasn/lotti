@@ -52,13 +52,14 @@ class MockLoginStateController extends Mock
 /// allowing tests to set up stubs before commands use it.
 SyncActorCommandHandler createTestHandler({
   void Function(MockMatrixSdkGateway gateway, MockClient client)?
-      onGatewayCreated,
+  onGatewayCreated,
   SyncDatabase Function(String dbRootPath)? syncDatabaseFactory,
   void Function(SyncDatabase db)? onSyncDatabaseCreated,
   bool enableLogging = false,
   int verificationPeerDiscoveryAttempts = 8,
-  Duration verificationPeerDiscoveryInterval =
-      const Duration(milliseconds: 500),
+  Duration verificationPeerDiscoveryInterval = const Duration(
+    milliseconds: 500,
+  ),
   Stream<LoginState>? loginStateChanges,
   Stream<KeyVerification>? keyVerificationRequests,
   Stream<SyncUpdate>? syncUpdateStream,
@@ -76,75 +77,86 @@ SyncActorCommandHandler createTestHandler({
       StreamController<Event>.broadcast();
 
   return SyncActorCommandHandler(
-    createMatrixClientFactory: ({
-      required Directory documentsDirectory,
-      String? deviceDisplayName,
-      String? dbName,
-    }) async {
-      return mockClient;
-    },
-    gatewayFactory: ({
-      required Client client,
-      required SentEventRegistry sentEventRegistry,
-    }) {
-      mockGateway = MockMatrixSdkGateway();
+    createMatrixClientFactory:
+        ({
+          required Directory documentsDirectory,
+          String? deviceDisplayName,
+          String? dbName,
+        }) async {
+          return mockClient;
+        },
+    gatewayFactory:
+        ({
+          required Client client,
+          required SentEventRegistry sentEventRegistry,
+        }) {
+          mockGateway = MockMatrixSdkGateway();
 
-      when(() => defaultLoginStateController.value)
-          .thenReturn(LoginState.loggedIn);
-      when(() => defaultLoginStateController.stream).thenAnswer(
-        (_) => loginStateChanges ?? const Stream.empty(),
-      );
+          when(
+            () => defaultLoginStateController.value,
+          ).thenReturn(LoginState.loggedIn);
+          when(() => defaultLoginStateController.stream).thenAnswer(
+            (_) => loginStateChanges ?? const Stream.empty(),
+          );
 
-      when(() => mockClient.userID).thenReturn('@test:localhost');
-      when(() => mockClient.deviceID).thenReturn('DEV');
-      // ignore: unnecessary_lambdas
-      when(() => mockClient.abortSync()).thenAnswer((_) async {});
-      when(() => mockClient.syncPending).thenReturn(false);
-      when(() => mockClient.encryptionEnabled).thenReturn(false);
-      when(() => mockClient.userDeviceKeys)
-          .thenReturn(<String, DeviceKeysList>{});
-      when(() => mockClient.userOwnsEncryptionKeys(any()))
-          .thenAnswer((_) async => false);
-      when(() => mockClient.userDeviceKeysLoading).thenAnswer((_) async {});
-      when(() => mockClient.rooms).thenReturn(<Room>[]);
-      when(
-        () => mockClient.updateUserDeviceKeys(
-          additionalUsers: any(named: 'additionalUsers'),
-        ),
-      ).thenAnswer((_) async {});
-      // ignore: unnecessary_lambdas
-      when(() => mockClient.dispose()).thenAnswer((_) async {});
+          when(() => mockClient.userID).thenReturn('@test:localhost');
+          when(() => mockClient.deviceID).thenReturn('DEV');
+          // ignore: unnecessary_lambdas
+          when(() => mockClient.abortSync()).thenAnswer((_) async {});
+          when(() => mockClient.syncPending).thenReturn(false);
+          when(() => mockClient.encryptionEnabled).thenReturn(false);
+          when(
+            () => mockClient.userDeviceKeys,
+          ).thenReturn(<String, DeviceKeysList>{});
+          when(
+            () => mockClient.userOwnsEncryptionKeys(any()),
+          ).thenAnswer((_) async => false);
+          when(() => mockClient.userDeviceKeysLoading).thenAnswer((_) async {});
+          when(() => mockClient.rooms).thenReturn(<Room>[]);
+          when(
+            () => mockClient.updateUserDeviceKeys(
+              additionalUsers: any(named: 'additionalUsers'),
+            ),
+          ).thenAnswer((_) async {});
+          // ignore: unnecessary_lambdas
+          when(() => mockClient.dispose()).thenAnswer((_) async {});
 
-      // Default stubs
-      when(() => mockGateway.connect(any())).thenAnswer((_) async {});
-      when(() => mockGateway.login(any(),
-              deviceDisplayName: any(named: 'deviceDisplayName')))
-          .thenAnswer((_) async {
-        return LoginResponse.fromJson({
-          'user_id': '@test:localhost',
-          'device_id': 'DEV',
-          'access_token': 'tok',
-        });
-      });
-      when(() => mockGateway.loginStateChanges)
-          .thenAnswer((_) => defaultLoginStateController.stream);
-      when(() => mockGateway.keyVerificationRequests)
-          .thenAnswer((_) => keyVerificationRequests ?? const Stream.empty());
-      when(() => mockGateway.unverifiedDevices())
-          .thenReturn(const <DeviceKeys>[]);
-      when(() => mockGateway.client).thenReturn(mockClient);
-      when(() => mockGateway.dispose()).thenAnswer((_) async {
-        await mockClient.dispose();
-      });
+          // Default stubs
+          when(() => mockGateway.connect(any())).thenAnswer((_) async {});
+          when(
+            () => mockGateway.login(
+              any(),
+              deviceDisplayName: any(named: 'deviceDisplayName'),
+            ),
+          ).thenAnswer((_) async {
+            return LoginResponse.fromJson({
+              'user_id': '@test:localhost',
+              'device_id': 'DEV',
+              'access_token': 'tok',
+            });
+          });
+          when(
+            () => mockGateway.loginStateChanges,
+          ).thenAnswer((_) => defaultLoginStateController.stream);
+          when(
+            () => mockGateway.keyVerificationRequests,
+          ).thenAnswer((_) => keyVerificationRequests ?? const Stream.empty());
+          when(
+            () => mockGateway.unverifiedDevices(),
+          ).thenReturn(const <DeviceKeys>[]);
+          when(() => mockGateway.client).thenReturn(mockClient);
+          when(() => mockGateway.dispose()).thenAnswer((_) async {
+            await mockClient.dispose();
+          });
 
-      onGatewayCreated?.call(mockGateway, mockClient);
-      // Ensure identity fields are always available even when callbacks configure
-      // additional client-level stubs.
-      when(() => mockClient.userID).thenReturn('@test:localhost');
-      when(() => mockClient.deviceID).thenReturn('DEV');
+          onGatewayCreated?.call(mockGateway, mockClient);
+          // Ensure identity fields are always available even when callbacks configure
+          // additional client-level stubs.
+          when(() => mockClient.userID).thenReturn('@test:localhost');
+          when(() => mockClient.deviceID).thenReturn('DEV');
 
-      return mockGateway;
-    },
+          return mockGateway;
+        },
     syncUpdateStreamFactory: (Client _) =>
         syncUpdateStream ?? defaultSyncUpdateStreamController.stream,
     toDeviceEventStreamFactory: (Client _) =>
@@ -152,7 +164,8 @@ SyncActorCommandHandler createTestHandler({
     timelineEventStreamFactory: (Client _) =>
         timelineEventStream ?? defaultTimelineEventStreamController.stream,
     syncDatabaseFactory: (String dbRootPath) {
-      final db = syncDatabaseFactory?.call(dbRootPath) ??
+      final db =
+          syncDatabaseFactory?.call(dbRootPath) ??
           SyncDatabase(inMemoryDatabase: true);
       onSyncDatabaseCreated?.call(db);
       return db;
@@ -289,8 +302,9 @@ void main() {
     group('invalid state rejection', () {
       test('acceptVerification rejected in uninitialized state', () async {
         handler = createTestHandler();
-        final response =
-            await handler.handleCommand(_cmd('acceptVerification'));
+        final response = await handler.handleCommand(
+          _cmd('acceptVerification'),
+        );
         expect(response['ok'], isFalse);
         expect(response['errorCode'], 'INVALID_STATE');
       });
@@ -304,8 +318,9 @@ void main() {
 
       test('cancelVerification rejected in uninitialized state', () async {
         handler = createTestHandler();
-        final response =
-            await handler.handleCommand(_cmd('cancelVerification'));
+        final response = await handler.handleCommand(
+          _cmd('cancelVerification'),
+        );
         expect(response['ok'], isFalse);
         expect(response['errorCode'], 'INVALID_STATE');
       });
@@ -377,8 +392,9 @@ void main() {
     group('unknown command', () {
       test('returns UNKNOWN_COMMAND error', () async {
         handler = createTestHandler();
-        final response =
-            await handler.handleCommand(_cmd('nonExistentCommand'));
+        final response = await handler.handleCommand(
+          _cmd('nonExistentCommand'),
+        );
         expect(response['ok'], isFalse);
         expect(response['errorCode'], 'UNKNOWN_COMMAND');
       });
@@ -578,16 +594,18 @@ void main() {
         expect(response['errorCode'], 'INVALID_STATE');
       });
 
-      test('getHealth returns syncing state and loginState after init',
-          () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
+      test(
+        'getHealth returns syncing state and loginState after init',
+        () async {
+          handler = createTestHandler();
+          await handler.handleCommand(_initPayload());
 
-        final health = await handler.handleCommand(_cmd('getHealth'));
-        expect(health['ok'], isTrue);
-        expect(health['state'], 'syncing');
-        expect(health['loginState'], 'loggedIn');
-      });
+          final health = await handler.handleCommand(_cmd('getHealth'));
+          expect(health['ok'], isTrue);
+          expect(health['state'], 'syncing');
+          expect(health['loginState'], 'loggedIn');
+        },
+      );
 
       test('emits ready event via eventPort', () async {
         handler = createTestHandler();
@@ -631,12 +649,14 @@ void main() {
         when(() => mockTimelineEvent.text).thenReturn('actor test message');
         when(() => mockTimelineEvent.messageType).thenReturn('m.text');
 
-        when(() => mockVerification.lastStep)
-            .thenReturn('m.key.verification.ready');
+        when(
+          () => mockVerification.lastStep,
+        ).thenReturn('m.key.verification.ready');
         when(() => mockVerification.canceled).thenReturn(false);
         when(() => mockVerification.isDone).thenReturn(false);
-        when(() => mockVerification.sasEmojis)
-            .thenReturn(<KeyVerificationEmoji>[]);
+        when(
+          () => mockVerification.sasEmojis,
+        ).thenReturn(<KeyVerificationEmoji>[]);
 
         final eventPort = ReceivePort()
           ..listen((dynamic raw) {
@@ -658,8 +678,9 @@ void main() {
             when(() => c.userDeviceKeys).thenReturn({});
           },
         );
-        await handler
-            .handleCommand(_initPayload(eventPort: eventPort.sendPort));
+        await handler.handleCommand(
+          _initPayload(eventPort: eventPort.sendPort),
+        );
 
         loginStateController.add(LoginState.loggedIn);
         verificationController.add(mockVerification);
@@ -683,11 +704,13 @@ void main() {
         expect(syncCount, isA<int>());
         expect(syncCount, greaterThanOrEqualTo(3));
         expect(health['toDeviceEventCount'], equals(1));
-        final healthWithToDevice =
-            await handler.handleCommand(_cmd('getHealth'));
+        final healthWithToDevice = await handler.handleCommand(
+          _cmd('getHealth'),
+        );
         expect(healthWithToDevice['toDeviceEventCount'], equals(1));
-        final verificationState =
-            await handler.handleCommand(_cmd('getVerificationState'));
+        final verificationState = await handler.handleCommand(
+          _cmd('getVerificationState'),
+        );
         final verificationEvent = incomingEvents
             .where((event) => event['event'] == 'verificationState')
             .toList();
@@ -774,34 +797,38 @@ void main() {
         expect(response, isA<Map<Object?, Object?>>());
         final responseMap = Map<String, Object?>.from(response as Map);
         expect(responseMap['ok'], isFalse);
-        expect(responseMap['error'],
-            contains('Invalid command type: expected String'));
+        expect(
+          responseMap['error'],
+          contains('Invalid command type: expected String'),
+        );
         expect(responseMap['errorCode'], 'INVALID_PARAMETER');
       });
 
-      test('returns missing-command error for raw entrypoint payload',
-          () async {
-        final readyPort = ReceivePort();
-        syncActorEntrypoint(readyPort.sendPort, vodInitializer: () async {});
-        final commandPort = (await readyPort.first) as SendPort;
+      test(
+        'returns missing-command error for raw entrypoint payload',
+        () async {
+          final readyPort = ReceivePort();
+          syncActorEntrypoint(readyPort.sendPort, vodInitializer: () async {});
+          final commandPort = (await readyPort.first) as SendPort;
 
-        final responsePort = ReceivePort();
-        commandPort.send(
-          <Object, Object?>{
-            'replyTo': responsePort.sendPort,
-          },
-        );
+          final responsePort = ReceivePort();
+          commandPort.send(
+            <Object, Object?>{
+              'replyTo': responsePort.sendPort,
+            },
+          );
 
-        final response = await responsePort.first;
-        responsePort.close();
-        readyPort.close();
+          final response = await responsePort.first;
+          responsePort.close();
+          readyPort.close();
 
-        expect(response, isA<Map<Object?, Object?>>());
-        final responseMap = Map<String, Object?>.from(response as Map);
-        expect(responseMap['ok'], isFalse);
-        expect(responseMap['error'], contains('Missing command field'));
-        expect(responseMap['errorCode'], 'MISSING_PARAMETER');
-      });
+          expect(response, isA<Map<Object?, Object?>>());
+          final responseMap = Map<String, Object?>.from(response as Map);
+          expect(responseMap['ok'], isFalse);
+          expect(responseMap['error'], contains('Missing command field'));
+          expect(responseMap['errorCode'], 'MISSING_PARAMETER');
+        },
+      );
     });
   });
 
@@ -1057,7 +1084,8 @@ void main() {
       ).thenAnswer((_) async {
         attempt++;
         throw Exception(
-            'SqliteFfiException(21): bad parameter or other API misuse');
+          'SqliteFfiException(21): bad parameter or other API misuse',
+        );
       });
 
       final response = await handler.handleCommand(
@@ -1103,27 +1131,30 @@ void main() {
   });
 
   group('verification', () {
-    test('startVerification returns started false when no peer device',
-        () async {
-      late MockClient client;
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          client = c;
-          when(() => c.userDeviceKeys).thenReturn({});
-          when(() => c.userOwnsEncryptionKeys(any()))
-              .thenAnswer((_) async => true);
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-        },
-        verificationPeerDiscoveryAttempts: 1,
-        verificationPeerDiscoveryInterval: Duration.zero,
-      );
-      await handler.handleCommand(_initPayload());
-      expect(client.userID, '@test:localhost');
+    test(
+      'startVerification returns started false when no peer device',
+      () async {
+        late MockClient client;
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            client = c;
+            when(() => c.userDeviceKeys).thenReturn({});
+            when(
+              () => c.userOwnsEncryptionKeys(any()),
+            ).thenAnswer((_) async => true);
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+          },
+          verificationPeerDiscoveryAttempts: 1,
+          verificationPeerDiscoveryInterval: Duration.zero,
+        );
+        await handler.handleCommand(_initPayload());
+        expect(client.userID, '@test:localhost');
 
-      final response = await handler.handleCommand(_cmd('startVerification'));
-      expect(response['ok'], isTrue);
-      expect(response['started'], isFalse);
-    });
+        final response = await handler.handleCommand(_cmd('startVerification'));
+        expect(response['ok'], isTrue);
+        expect(response['started'], isFalse);
+      },
+    );
 
     test('startVerification caps peer discovery attempts at eight', () async {
       var unverifiedCalls = 0;
@@ -1132,8 +1163,9 @@ void main() {
         verificationPeerDiscoveryAttempts: 24,
         verificationPeerDiscoveryInterval: Duration.zero,
         onGatewayCreated: (g, c) {
-          when(() => c.userOwnsEncryptionKeys(any()))
-              .thenAnswer((_) async => true);
+          when(
+            () => c.userOwnsEncryptionKeys(any()),
+          ).thenAnswer((_) async => true);
           when(() => c.userDeviceKeys).thenReturn({});
           when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
           when(() => g.unverifiedDevices()).thenAnswer((_) {
@@ -1178,459 +1210,497 @@ void main() {
     });
 
     test(
-        'startVerification refreshes peer keys and emits update log when key count changes',
-        () async {
-      final ownDevice = MockDeviceKeys();
-      final remoteDevice = MockDeviceKeys();
-      final initialKeys = MockDeviceKeysList();
-      final updatedKeys = MockDeviceKeysList();
-      final incomingEvents = <Map<String, Object?>>[];
-      var keysUpdated = false;
+      'startVerification refreshes peer keys and emits update log when key count changes',
+      () async {
+        final ownDevice = MockDeviceKeys();
+        final remoteDevice = MockDeviceKeys();
+        final initialKeys = MockDeviceKeysList();
+        final updatedKeys = MockDeviceKeysList();
+        final incomingEvents = <Map<String, Object?>>[];
+        var keysUpdated = false;
 
-      when(() => ownDevice.deviceId).thenReturn('DEV');
-      when(() => ownDevice.verified).thenReturn(true);
+        when(() => ownDevice.deviceId).thenReturn('DEV');
+        when(() => ownDevice.verified).thenReturn(true);
 
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => remoteDevice.userId).thenReturn('@peer:localhost');
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(() => remoteDevice.userId).thenReturn('@peer:localhost');
 
-      when(() => initialKeys.deviceKeys).thenReturn(
-        <String, DeviceKeys>{'DEV': ownDevice},
-      );
-      when(() => updatedKeys.deviceKeys).thenReturn(
-        <String, DeviceKeys>{
-          'DEV': ownDevice,
-          'REMOTE': remoteDevice,
-        },
-      );
+        when(() => initialKeys.deviceKeys).thenReturn(
+          <String, DeviceKeys>{'DEV': ownDevice},
+        );
+        when(() => updatedKeys.deviceKeys).thenReturn(
+          <String, DeviceKeys>{
+            'DEV': ownDevice,
+            'REMOTE': remoteDevice,
+          },
+        );
 
-      final eventPort = ReceivePort()
-        ..listen((dynamic raw) {
-          if (raw is Map) {
-            incomingEvents.add(raw.cast<String, Object?>());
-          }
-        });
-
-      handler = createTestHandler(
-        enableLogging: true,
-        verificationPeerDiscoveryAttempts: 2,
-        verificationPeerDiscoveryInterval: Duration.zero,
-        onGatewayCreated: (g, c) {
-          when(() => c.userOwnsEncryptionKeys(any()))
-              .thenAnswer((_) async => true);
-          when(() => c.userDeviceKeys).thenAnswer(
-            (_) => <String, DeviceKeysList>{
-              '@test:localhost': keysUpdated ? updatedKeys : initialKeys,
-            },
-          );
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(
-            () => c.updateUserDeviceKeys(
-              additionalUsers: any(named: 'additionalUsers'),
-            ),
-          ).thenAnswer((_) async {
-            keysUpdated = true;
+        final eventPort = ReceivePort()
+          ..listen((dynamic raw) {
+            if (raw is Map) {
+              incomingEvents.add(raw.cast<String, Object?>());
+            }
           });
-          when(() => g.unverifiedDevices()).thenReturn(const <DeviceKeys>[]);
-        },
-      );
 
-      await handler.handleCommand(_initPayload(eventPort: eventPort.sendPort));
+        handler = createTestHandler(
+          enableLogging: true,
+          verificationPeerDiscoveryAttempts: 2,
+          verificationPeerDiscoveryInterval: Duration.zero,
+          onGatewayCreated: (g, c) {
+            when(
+              () => c.userOwnsEncryptionKeys(any()),
+            ).thenAnswer((_) async => true);
+            when(() => c.userDeviceKeys).thenAnswer(
+              (_) => <String, DeviceKeysList>{
+                '@test:localhost': keysUpdated ? updatedKeys : initialKeys,
+              },
+            );
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(
+              () => c.updateUserDeviceKeys(
+                additionalUsers: any(named: 'additionalUsers'),
+              ),
+            ).thenAnswer((_) async {
+              keysUpdated = true;
+            });
+            when(() => g.unverifiedDevices()).thenReturn(const <DeviceKeys>[]);
+          },
+        );
 
-      final first = await handler.handleCommand(_cmd('startVerification'));
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      final second = await handler.handleCommand(_cmd('startVerification'));
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        await handler.handleCommand(
+          _initPayload(eventPort: eventPort.sendPort),
+        );
 
-      expect(first['ok'], isTrue);
-      expect(first['started'], isFalse);
-      expect(second['ok'], isTrue);
-      expect(second['started'], isFalse);
-      expect(
-        incomingEvents.any(
-          (event) =>
-              event['event'] == 'log' &&
-              '${event['message']}'
-                  .contains('verification device keys updated for'),
-        ),
-        isTrue,
-      );
+        final first = await handler.handleCommand(_cmd('startVerification'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        final second = await handler.handleCommand(_cmd('startVerification'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      eventPort.close();
-    });
+        expect(first['ok'], isTrue);
+        expect(first['started'], isFalse);
+        expect(second['ok'], isTrue);
+        expect(second['started'], isFalse);
+        expect(
+          incomingEvents.any(
+            (event) =>
+                event['event'] == 'log' &&
+                '${event['message']}'.contains(
+                  'verification device keys updated for',
+                ),
+          ),
+          isTrue,
+        );
 
-    test('startVerification emits key-refresh error event on refresh failure',
-        () async {
-      final incomingEvents = <Map<String, Object?>>[];
-
-      final eventPort = ReceivePort()
-        ..listen((dynamic raw) {
-          if (raw is Map) {
-            incomingEvents.add(raw.cast<String, Object?>());
-          }
-        });
-
-      handler = createTestHandler(
-        enableLogging: true,
-        verificationPeerDiscoveryAttempts: 1,
-        verificationPeerDiscoveryInterval: Duration.zero,
-        onGatewayCreated: (g, c) {
-          when(() => c.userOwnsEncryptionKeys(any()))
-              .thenAnswer((_) async => true);
-          when(
-            () => c.updateUserDeviceKeys(
-              additionalUsers: any(named: 'additionalUsers'),
-            ),
-          ).thenThrow(Exception('refresh failed'));
-          when(() => g.unverifiedDevices()).thenReturn(const <DeviceKeys>[]);
-        },
-      );
-
-      await handler.handleCommand(_initPayload(eventPort: eventPort.sendPort));
-      final response = await handler.handleCommand(_cmd('startVerification'));
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      expect(response['ok'], isTrue);
-      expect(response['started'], isFalse);
-      expect(
-        incomingEvents.where(
-          (event) =>
-              event['event'] == 'verificationKeyRefreshError' &&
-              '${event['error']}'.contains('refresh failed'),
-        ),
-        isNotEmpty,
-      );
-
-      eventPort.close();
-    });
+        eventPort.close();
+      },
+    );
 
     test(
-        'startVerification ignores start request while another verification is active',
-        () async {
-      late MockMatrixSdkGateway gateway;
-      final remoteDevice = MockDeviceKeys();
-      final verification = MockKeyVerification();
+      'startVerification emits key-refresh error event on refresh failure',
+      () async {
+        final incomingEvents = <Map<String, Object?>>[];
 
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
-      when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-      when(() => verification.isDone).thenReturn(false);
-      when(() => verification.canceled).thenReturn(false);
-      when(verification.acceptSas).thenAnswer((_) async {});
-      when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
-      when(() => verification.startedVerification).thenReturn(true);
-
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          gateway = g;
-          final keysList = MockDeviceKeysList();
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
+        final eventPort = ReceivePort()
+          ..listen((dynamic raw) {
+            if (raw is Map) {
+              incomingEvents.add(raw.cast<String, Object?>());
+            }
           });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-          when(() => g.startKeyVerification(any()))
-              .thenAnswer((_) async => verification);
-        },
-      );
 
-      await handler.handleCommand(_initPayload());
+        handler = createTestHandler(
+          enableLogging: true,
+          verificationPeerDiscoveryAttempts: 1,
+          verificationPeerDiscoveryInterval: Duration.zero,
+          onGatewayCreated: (g, c) {
+            when(
+              () => c.userOwnsEncryptionKeys(any()),
+            ).thenAnswer((_) async => true);
+            when(
+              () => c.updateUserDeviceKeys(
+                additionalUsers: any(named: 'additionalUsers'),
+              ),
+            ).thenThrow(Exception('refresh failed'));
+            when(() => g.unverifiedDevices()).thenReturn(const <DeviceKeys>[]);
+          },
+        );
 
-      final first = await handler.handleCommand(_cmd('startVerification'));
-      final second = await handler.handleCommand(_cmd('startVerification'));
-      final finalState =
-          await handler.handleCommand(_cmd('getVerificationState'));
+        await handler.handleCommand(
+          _initPayload(eventPort: eventPort.sendPort),
+        );
+        final response = await handler.handleCommand(_cmd('startVerification'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(first['ok'], isTrue);
-      expect(first['started'], isTrue);
-      expect(second['ok'], isTrue);
-      expect(second['started'], isFalse);
-      expect(finalState['hasOutgoing'], isTrue);
-      expect(finalState['hasIncoming'], isFalse);
-      verify(() => gateway.startKeyVerification(any())).called(1);
-    });
+        expect(response['ok'], isTrue);
+        expect(response['started'], isFalse);
+        expect(
+          incomingEvents.where(
+            (event) =>
+                event['event'] == 'verificationKeyRefreshError' &&
+                '${event['error']}'.contains('refresh failed'),
+          ),
+          isNotEmpty,
+        );
 
-    test('startVerification starts verification for unverified device',
-        () async {
-      late MockMatrixSdkGateway gateway;
-      var callbackCalled = false;
-      late MockDeviceKeysList keysList;
-      final remoteDevice = MockDeviceKeys();
-      final verification = MockKeyVerification();
-
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
-      when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-      when(verification.acceptSas).thenAnswer((_) async {});
-      when(() => verification.isDone).thenReturn(false);
-      when(() => verification.canceled).thenReturn(false);
-      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
-      when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
-      when(() => verification.startedVerification).thenReturn(true);
-
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          callbackCalled = true;
-          gateway = g;
-          keysList = MockDeviceKeysList();
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
-          });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-          when(() => g.startKeyVerification(any()))
-              .thenAnswer((_) async => verification);
-        },
-      );
-      final initResponse = await handler.handleCommand(_initPayload());
-      expect(initResponse['ok'], isTrue, reason: '$initResponse');
-      expect(callbackCalled, isTrue);
-      final preState = await handler.handleCommand(_cmd('getHealth'));
-      final deviceKeys = preState['deviceKeys'] as Map<String, Object?>?;
-      expect(preState['userId'], '@test:localhost');
-      expect(preState['state'], 'syncing');
-      expect(deviceKeys, isNotNull);
-      expect(deviceKeys!['count'], 1);
-
-      final response = await handler.handleCommand(_cmd('startVerification'));
-      final state = await handler.handleCommand(_cmd('getVerificationState'));
-      final sasResponse = await handler.handleCommand(_cmd('acceptSas'));
-
-      expect(response['ok'], isTrue);
-      expect(response['started'], isTrue);
-      expect(state['hasOutgoing'], isTrue);
-      expect(sasResponse['ok'], isTrue);
-      verify(() => gateway.startKeyVerification(any())).called(1);
-    });
+        eventPort.close();
+      },
+    );
 
     test(
-        'startVerification returns error when direct verification does not start',
-        () async {
-      final keysList = MockDeviceKeysList();
-      final remoteDevice = MockDeviceKeys();
-      final verification = MockKeyVerification();
+      'startVerification ignores start request while another verification is active',
+      () async {
+        late MockMatrixSdkGateway gateway;
+        final remoteDevice = MockDeviceKeys();
+        final verification = MockKeyVerification();
 
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => remoteDevice.userId).thenReturn('@test:localhost');
-      when(() => verification.startedVerification).thenReturn(false);
-      when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
-      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
-      when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-      when(() => verification.isDone).thenReturn(false);
-      when(() => verification.canceled).thenReturn(false);
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(
+          () => verification.lastStep,
+        ).thenReturn('m.key.verification.ready');
+        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+        when(() => verification.isDone).thenReturn(false);
+        when(() => verification.canceled).thenReturn(false);
+        when(verification.acceptSas).thenAnswer((_) async {});
+        when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
+        when(() => verification.startedVerification).thenReturn(true);
 
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
-          });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-          when(() => g.startKeyVerification(any()))
-              .thenAnswer((_) async => verification);
-        },
-      );
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            gateway = g;
+            final keysList = MockDeviceKeysList();
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+            when(
+              () => g.startKeyVerification(any()),
+            ).thenAnswer((_) async => verification);
+          },
+        );
 
-      await handler.handleCommand(_initPayload());
-      final response = await handler.handleCommand(_cmd('startVerification'));
+        await handler.handleCommand(_initPayload());
 
-      expect(response['ok'], isFalse);
-      expect(response['error'], contains('Verification request did not start'));
-    });
+        final first = await handler.handleCommand(_cmd('startVerification'));
+        final second = await handler.handleCommand(_cmd('startVerification'));
+        final finalState = await handler.handleCommand(
+          _cmd('getVerificationState'),
+        );
 
-    test(
-        'startVerification returns error when room verification has no encryption',
-        () async {
-      final keysList = MockDeviceKeysList();
-      final remoteDevice = MockDeviceKeys();
-
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => remoteDevice.userId).thenReturn('@peer:localhost');
-
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
-          });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-        },
-      );
-
-      await handler.handleCommand(_initPayload());
-      final response = await handler.handleCommand(
-        _cmd('startVerification', {'roomId': '!room:localhost'}),
-      );
-
-      expect(response['ok'], isFalse);
-      expect(
-        response['error'],
-        contains('startKeyVerification requires enabled encryption'),
-      );
-    });
+        expect(first['ok'], isTrue);
+        expect(first['started'], isTrue);
+        expect(second['ok'], isTrue);
+        expect(second['started'], isFalse);
+        expect(finalState['hasOutgoing'], isTrue);
+        expect(finalState['hasIncoming'], isFalse);
+        verify(() => gateway.startKeyVerification(any())).called(1);
+      },
+    );
 
     test(
-        'startVerification returns error when room verification room is missing',
-        () async {
-      final keysList = MockDeviceKeysList();
-      final remoteDevice = MockDeviceKeys();
-      final encryption = MockEncryption();
+      'startVerification starts verification for unverified device',
+      () async {
+        late MockMatrixSdkGateway gateway;
+        var callbackCalled = false;
+        late MockDeviceKeysList keysList;
+        final remoteDevice = MockDeviceKeys();
+        final verification = MockKeyVerification();
 
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => remoteDevice.userId).thenReturn('@peer:localhost');
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(
+          () => verification.lastStep,
+        ).thenReturn('m.key.verification.ready');
+        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+        when(verification.acceptSas).thenAnswer((_) async {});
+        when(() => verification.isDone).thenReturn(false);
+        when(() => verification.canceled).thenReturn(false);
+        when(
+          () => verification.lastStep,
+        ).thenReturn('m.key.verification.ready');
+        when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
+        when(() => verification.startedVerification).thenReturn(true);
 
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
-          });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.encryption).thenReturn(encryption);
-          when(() => c.getRoomById(any())).thenReturn(null);
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-        },
-      );
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            callbackCalled = true;
+            gateway = g;
+            keysList = MockDeviceKeysList();
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+            when(
+              () => g.startKeyVerification(any()),
+            ).thenAnswer((_) async => verification);
+          },
+        );
+        final initResponse = await handler.handleCommand(_initPayload());
+        expect(initResponse['ok'], isTrue, reason: '$initResponse');
+        expect(callbackCalled, isTrue);
+        final preState = await handler.handleCommand(_cmd('getHealth'));
+        final deviceKeys = preState['deviceKeys'] as Map<String, Object?>?;
+        expect(preState['userId'], '@test:localhost');
+        expect(preState['state'], 'syncing');
+        expect(deviceKeys, isNotNull);
+        expect(deviceKeys!['count'], 1);
 
-      await handler.handleCommand(_initPayload());
-      final response = await handler.handleCommand(
-        _cmd('startVerification', {'roomId': '!missing:localhost'}),
-      );
+        final response = await handler.handleCommand(_cmd('startVerification'));
+        final state = await handler.handleCommand(_cmd('getVerificationState'));
+        final sasResponse = await handler.handleCommand(_cmd('acceptSas'));
 
-      expect(response['ok'], isFalse);
-      expect(
-        response['error'],
-        contains('Room verification requires existing room'),
-      );
-    });
+        expect(response['ok'], isTrue);
+        expect(response['started'], isTrue);
+        expect(state['hasOutgoing'], isTrue);
+        expect(sasResponse['ok'], isTrue);
+        verify(() => gateway.startKeyVerification(any())).called(1);
+      },
+    );
 
-    test('startVerification attempts room verification flow for peer user',
-        () async {
-      final keysList = MockDeviceKeysList();
-      final remoteDevice = MockDeviceKeys();
-      final encryption = MockEncryption();
-      final crossSigning = MockCrossSigning();
-      final keyVerificationManager = MockKeyVerificationManager();
-      final room = MockRoom();
+    test(
+      'startVerification returns error when direct verification does not start',
+      () async {
+        final keysList = MockDeviceKeysList();
+        final remoteDevice = MockDeviceKeys();
+        final verification = MockKeyVerification();
 
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => remoteDevice.userId).thenReturn('@peer:localhost');
-      when(() => crossSigning.enabled).thenReturn(false);
-      when(() => keyVerificationManager.addRequest(any())).thenReturn(null);
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(() => remoteDevice.userId).thenReturn('@test:localhost');
+        when(() => verification.startedVerification).thenReturn(false);
+        when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
+        when(
+          () => verification.lastStep,
+        ).thenReturn('m.key.verification.ready');
+        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+        when(() => verification.isDone).thenReturn(false);
+        when(() => verification.canceled).thenReturn(false);
 
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.verificationMethods).thenReturn(
-            <KeyVerificationMethod>{KeyVerificationMethod.emoji},
-          );
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
-          });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.encryption).thenReturn(encryption);
-          when(() => c.getRoomById(any())).thenReturn(room);
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+            when(
+              () => g.startKeyVerification(any()),
+            ).thenAnswer((_) async => verification);
+          },
+        );
 
-          when(() => encryption.client).thenReturn(c);
-          when(() => encryption.crossSigning).thenReturn(crossSigning);
-          when(() => encryption.keyVerificationManager)
-              .thenReturn(keyVerificationManager);
-          when(
-            () => room.sendEvent(
-              any(),
-              type: any(named: 'type'),
-            ),
-          ).thenAnswer((_) async => r'$evtRoom');
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(_cmd('startVerification'));
 
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-        },
-      );
+        expect(response['ok'], isFalse);
+        expect(
+          response['error'],
+          contains('Verification request did not start'),
+        );
+      },
+    );
 
-      await handler.handleCommand(_initPayload());
-      final response = await handler.handleCommand(
-        _cmd('startVerification', {'roomId': '!room:localhost'}),
-      );
+    test(
+      'startVerification returns error when room verification has no encryption',
+      () async {
+        final keysList = MockDeviceKeysList();
+        final remoteDevice = MockDeviceKeys();
 
-      expect(response['ok'], isFalse);
-      expect(response['error'], contains('startVerification failed'));
-    });
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(() => remoteDevice.userId).thenReturn('@peer:localhost');
 
-    test('acceptVerification returns error when no incoming verification',
-        () async {
-      handler = createTestHandler();
-      await handler.handleCommand(_initPayload());
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+          },
+        );
 
-      final response = await handler.handleCommand(_cmd('acceptVerification'));
-      expect(response['ok'], isFalse);
-      expect(
-        response['error'],
-        contains('No incoming verification'),
-      );
-    });
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(
+          _cmd('startVerification', {'roomId': '!room:localhost'}),
+        );
+
+        expect(response['ok'], isFalse);
+        expect(
+          response['error'],
+          contains('startKeyVerification requires enabled encryption'),
+        );
+      },
+    );
+
+    test(
+      'startVerification returns error when room verification room is missing',
+      () async {
+        final keysList = MockDeviceKeysList();
+        final remoteDevice = MockDeviceKeys();
+        final encryption = MockEncryption();
+
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(() => remoteDevice.userId).thenReturn('@peer:localhost');
+
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.encryption).thenReturn(encryption);
+            when(() => c.getRoomById(any())).thenReturn(null);
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+          },
+        );
+
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(
+          _cmd('startVerification', {'roomId': '!missing:localhost'}),
+        );
+
+        expect(response['ok'], isFalse);
+        expect(
+          response['error'],
+          contains('Room verification requires existing room'),
+        );
+      },
+    );
+
+    test(
+      'startVerification attempts room verification flow for peer user',
+      () async {
+        final keysList = MockDeviceKeysList();
+        final remoteDevice = MockDeviceKeys();
+        final encryption = MockEncryption();
+        final crossSigning = MockCrossSigning();
+        final keyVerificationManager = MockKeyVerificationManager();
+        final room = MockRoom();
+
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(() => remoteDevice.userId).thenReturn('@peer:localhost');
+        when(() => crossSigning.enabled).thenReturn(false);
+        when(() => keyVerificationManager.addRequest(any())).thenReturn(null);
+
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.verificationMethods).thenReturn(
+              <KeyVerificationMethod>{KeyVerificationMethod.emoji},
+            );
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.encryption).thenReturn(encryption);
+            when(() => c.getRoomById(any())).thenReturn(room);
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+
+            when(() => encryption.client).thenReturn(c);
+            when(() => encryption.crossSigning).thenReturn(crossSigning);
+            when(
+              () => encryption.keyVerificationManager,
+            ).thenReturn(keyVerificationManager);
+            when(
+              () => room.sendEvent(
+                any(),
+                type: any(named: 'type'),
+              ),
+            ).thenAnswer((_) async => r'$evtRoom');
+
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+          },
+        );
+
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(
+          _cmd('startVerification', {'roomId': '!room:localhost'}),
+        );
+
+        expect(response['ok'], isFalse);
+        expect(response['error'], contains('startVerification failed'));
+      },
+    );
+
+    test(
+      'acceptVerification returns error when no incoming verification',
+      () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final response = await handler.handleCommand(
+          _cmd('acceptVerification'),
+        );
+        expect(response['ok'], isFalse);
+        expect(
+          response['error'],
+          contains('No incoming verification'),
+        );
+      },
+    );
 
     test('acceptVerification succeeds with incoming verification', () async {
       final verification = MockKeyVerification();
@@ -1645,8 +1715,9 @@ void main() {
 
       handler = createTestHandler(
         onGatewayCreated: (g, c) {
-          when(() => g.keyVerificationRequests)
-              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+          when(
+            () => g.keyVerificationRequests,
+          ).thenAnswer((_) => Stream<KeyVerification>.value(verification));
         },
       );
       await handler.handleCommand(_initPayload());
@@ -1660,8 +1731,9 @@ void main() {
     test('acceptVerification returns error when accept fails', () async {
       final verification = MockKeyVerification();
 
-      when(verification.acceptVerification)
-          .thenThrow(Exception('accept failed'));
+      when(
+        verification.acceptVerification,
+      ).thenThrow(Exception('accept failed'));
       when(() => verification.lastStep).thenReturn('m.key.verification.ready');
       when(() => verification.isDone).thenReturn(false);
       when(() => verification.canceled).thenReturn(false);
@@ -1669,8 +1741,9 @@ void main() {
 
       handler = createTestHandler(
         onGatewayCreated: (g, c) {
-          when(() => g.keyVerificationRequests)
-              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+          when(
+            () => g.keyVerificationRequests,
+          ).thenAnswer((_) => Stream<KeyVerification>.value(verification));
         },
       );
       await handler.handleCommand(_initPayload());
@@ -1681,54 +1754,59 @@ void main() {
       expect(response['error'], contains('acceptVerification failed'));
     });
 
-    test('startVerification returns error when key verification fails',
-        () async {
-      final keysList = MockDeviceKeysList();
-      final remoteDevice = MockDeviceKeys();
-      final verification = MockKeyVerification();
+    test(
+      'startVerification returns error when key verification fails',
+      () async {
+        final keysList = MockDeviceKeysList();
+        final remoteDevice = MockDeviceKeys();
+        final verification = MockKeyVerification();
 
-      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-      when(() => remoteDevice.verified).thenReturn(false);
-      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
-      when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-      when(() => verification.isDone).thenReturn(false);
-      when(() => verification.canceled).thenReturn(false);
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(
+          () => verification.lastStep,
+        ).thenReturn('m.key.verification.ready');
+        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+        when(() => verification.isDone).thenReturn(false);
+        when(() => verification.canceled).thenReturn(false);
 
-      handler = createTestHandler(
-        onGatewayCreated: (g, c) {
-          when(() => c.userID).thenReturn('@test:localhost');
-          when(() => c.deviceID).thenReturn('DEV');
-          when(() => c.userDeviceKeys).thenReturn({
-            '@test:localhost': keysList,
-          });
-          when(() => keysList.deviceKeys).thenReturn(
-            <String, DeviceKeys>{'REMOTE': remoteDevice},
-          );
-          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-            return false;
-          });
-          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          when(() => g.unverifiedDevices()).thenReturn(
-            <DeviceKeys>[remoteDevice],
-          );
-          when(() => g.startKeyVerification(any()))
-              .thenThrow(Exception('verification failed'));
-        },
-      );
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+            when(
+              () => g.startKeyVerification(any()),
+            ).thenThrow(Exception('verification failed'));
+          },
+        );
 
-      await handler.handleCommand(_initPayload());
-      final response = await handler.handleCommand(
-        _cmd(
-          'startVerification',
-          {'requestId': 'start-verification-fail'},
-        ),
-      );
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(
+          _cmd(
+            'startVerification',
+            {'requestId': 'start-verification-fail'},
+          ),
+        );
 
-      expect(response['ok'], isFalse);
-      expect(response['requestId'], 'start-verification-fail');
-      expect(response['error'], contains('startVerification failed'));
-      expect(response['stackTrace'], isNotNull);
-    });
+        expect(response['ok'], isFalse);
+        expect(response['requestId'], 'start-verification-fail');
+        expect(response['error'], contains('startVerification failed'));
+        expect(response['stackTrace'], isNotNull);
+      },
+    );
 
     test('acceptSas returns error when no active verification', () async {
       handler = createTestHandler();
@@ -1752,8 +1830,9 @@ void main() {
 
       handler = createTestHandler(
         onGatewayCreated: (g, c) {
-          when(() => g.keyVerificationRequests)
-              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+          when(
+            () => g.keyVerificationRequests,
+          ).thenAnswer((_) => Stream<KeyVerification>.value(verification));
         },
       );
       await handler.handleCommand(_initPayload());
@@ -1777,8 +1856,9 @@ void main() {
       when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
       handler = createTestHandler(
         onGatewayCreated: (g, c) {
-          when(() => g.keyVerificationRequests)
-              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+          when(
+            () => g.keyVerificationRequests,
+          ).thenAnswer((_) => Stream<KeyVerification>.value(verification));
         },
       );
       await handler.handleCommand(_initPayload());
@@ -1810,8 +1890,9 @@ void main() {
 
       handler = createTestHandler(
         onGatewayCreated: (g, c) {
-          when(() => g.keyVerificationRequests)
-              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+          when(
+            () => g.keyVerificationRequests,
+          ).thenAnswer((_) => Stream<KeyVerification>.value(verification));
         },
       );
       await handler.handleCommand(_initPayload());

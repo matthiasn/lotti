@@ -22,22 +22,27 @@ void main() {
       const testMessage = 'No items found';
       const testIcon = Icons.search_off;
 
-      await tester.pumpWidget(createWidget(
-        message: testMessage,
-        icon: testIcon,
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          message: testMessage,
+          icon: testIcon,
+        ),
+      );
 
       expect(find.text(testMessage), findsOneWidget);
       expect(find.byIcon(testIcon), findsOneWidget);
       expect(find.text('Tap the + button to add one'), findsOneWidget);
     });
 
-    testWidgets('displays icon in container with gradient',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        message: 'Test',
-        icon: Icons.hub,
-      ));
+    testWidgets('displays icon in container with gradient', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          message: 'Test',
+          icon: Icons.hub,
+        ),
+      );
 
       final container = tester.widget<Container>(
         find.descendant(
@@ -52,12 +57,15 @@ void main() {
       expect(decoration.borderRadius, BorderRadius.circular(24));
     });
 
-    testWidgets('maintains proper spacing between elements',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        message: 'No providers',
-        icon: Icons.link,
-      ));
+    testWidgets('maintains proper spacing between elements', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          message: 'No providers',
+          icon: Icons.link,
+        ),
+      );
 
       // Verify spacing using SizedBox widgets that are direct children of Column
       final column = find.byType(Column).first;
@@ -83,10 +91,12 @@ void main() {
     });
 
     testWidgets('uses correct text styles', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        message: 'Empty state message',
-        icon: Icons.error,
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          message: 'Empty state message',
+          icon: Icons.error,
+        ),
+      );
 
       // Message text style
       final messageText = tester.widget<Text>(find.text('Empty state message'));
@@ -100,10 +110,12 @@ void main() {
     });
 
     testWidgets('centers content properly', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        message: 'Centered content',
-        icon: Icons.folder_open,
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          message: 'Centered content',
+          icon: Icons.folder_open,
+        ),
+      );
 
       // ConfigEmptyState itself contains a Center widget
       // Find the column inside the center
@@ -117,16 +129,19 @@ void main() {
       expect(column.mainAxisAlignment, MainAxisAlignment.center);
     });
 
-    testWidgets('handles long messages gracefully',
-        (WidgetTester tester) async {
+    testWidgets('handles long messages gracefully', (
+      WidgetTester tester,
+    ) async {
       const longMessage =
           'This is a very long message that might wrap to multiple lines '
           'when displayed in the empty state widget';
 
-      await tester.pumpWidget(createWidget(
-        message: longMessage,
-        icon: Icons.info,
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          message: longMessage,
+          icon: Icons.info,
+        ),
+      );
 
       expect(find.text(longMessage), findsOneWidget);
       // Should not overflow

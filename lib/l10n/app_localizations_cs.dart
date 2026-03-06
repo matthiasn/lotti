@@ -140,7 +140,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String agentConversationThreadSummary(
-      int messageCount, int toolCallCount, String shortId) {
+    int messageCount,
+    int toolCallCount,
+    String shortId,
+  ) {
     return '$messageCount messages, $toolCallCount tool calls · $shortId';
   }
 
@@ -2877,7 +2880,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String maintenanceGenerateEmbeddingsProgress(
-      int processed, int total, int embedded) {
+    int processed,
+    int total,
+    int embedded,
+  ) {
     String _temp0 = intl.Intl.pluralLogic(
       embedded,
       locale: localeName,
@@ -2910,6 +2916,20 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Zpracování entit agentů...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Zpracování propojení agentů...';
+
+  @override
+  String get maintenancePopulatePhaseJournal => 'Zpracování záznamů deníku...';
+
+  @override
+  String get maintenancePopulatePhaseLinks => 'Zpracování propojení záznamů...';
+
+  @override
   String get maintenancePopulateSequenceLog =>
       'Naplnit protokol synchronizační sekvence';
 
@@ -2928,20 +2948,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'Toto prohledá všechny záznamy deníku a přidá je do protokolu synchronizační sekvence. To umožní zpětné zpracování odpovědí pro záznamy vytvořené před přidáním této funkce.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Zpracování entit agentů...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks =>
-      'Zpracování propojení agentů...';
-
-  @override
-  String get maintenancePopulatePhaseJournal => 'Zpracování záznamů deníku...';
-
-  @override
-  String get maintenancePopulatePhaseLinks => 'Zpracování propojení záznamů...';
 
   @override
   String get maintenancePurgeDeleted => 'Vyčistit smazané položky';
@@ -3979,7 +3985,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'Úspěšně jste ověřili zařízení $deviceName ($deviceID)';
   }
 

@@ -19,10 +19,12 @@ class TemplateTokenUsageSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summariesAsync =
-        ref.watch(templateTokenUsageSummariesProvider(templateId));
-    final breakdownAsync =
-        ref.watch(templateInstanceTokenBreakdownProvider(templateId));
+    final summariesAsync = ref.watch(
+      templateTokenUsageSummariesProvider(templateId),
+    );
+    final breakdownAsync = ref.watch(
+      templateInstanceTokenBreakdownProvider(templateId),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -160,21 +162,21 @@ class _InstanceExpansionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final (badgeLabel, badgeColor) = switch (breakdown.lifecycle) {
       AgentLifecycle.created => (
-          context.messages.agentLifecycleCreated,
-          context.colorScheme.outline,
-        ),
+        context.messages.agentLifecycleCreated,
+        context.colorScheme.outline,
+      ),
       AgentLifecycle.active => (
-          context.messages.agentLifecycleActive,
-          context.colorScheme.primary,
-        ),
+        context.messages.agentLifecycleActive,
+        context.colorScheme.primary,
+      ),
       AgentLifecycle.dormant => (
-          context.messages.agentLifecycleDormant,
-          context.colorScheme.tertiary,
-        ),
+        context.messages.agentLifecycleDormant,
+        context.colorScheme.tertiary,
+      ),
       AgentLifecycle.destroyed => (
-          context.messages.agentLifecycleDestroyed,
-          context.colorScheme.error,
-        ),
+        context.messages.agentLifecycleDestroyed,
+        context.colorScheme.error,
+      ),
     };
 
     return ExpansionTile(

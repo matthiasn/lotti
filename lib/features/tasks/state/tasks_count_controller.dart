@@ -13,8 +13,9 @@ class TasksCountController extends _$TasksCountController {
   StreamSubscription<Set<String>>? _updateSubscription;
 
   void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.intersection(subscribedIds).isNotEmpty) {
         final latest = await _fetch();
         if (latest != state.value) {

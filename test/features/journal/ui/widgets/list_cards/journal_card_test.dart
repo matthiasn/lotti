@@ -120,14 +120,17 @@ void main() {
     final tempDir = Directory.systemTemp.createTempSync('journal_card_test');
 
     final mockJournalDb = MockJournalDb();
-    when(() => mockJournalDb.getHabitById(any()))
-        .thenAnswer((_) async => habitFlossing);
-    when(mockJournalDb.getAllMeasurableDataTypes)
-        .thenAnswer((_) async => <MeasurableDataType>[]);
+    when(
+      () => mockJournalDb.getHabitById(any()),
+    ).thenAnswer((_) async => habitFlossing);
+    when(
+      mockJournalDb.getAllMeasurableDataTypes,
+    ).thenAnswer((_) async => <MeasurableDataType>[]);
 
     final mockUpdateNotifications = MockUpdateNotifications();
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
 
     getIt
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -472,8 +475,9 @@ void main() {
       expect(find.byType(TagsViewWidget), findsOneWidget);
     });
 
-    testWidgets('shows icon container for entries with leading icons',
-        (tester) async {
+    testWidgets('shows icon container for entries with leading icons', (
+      tester,
+    ) async {
       final audioEntry = testAudioEntry;
 
       await tester.pumpWidget(
@@ -675,10 +679,14 @@ void main() {
 
         expect(find.byType(ModernJournalCard), findsOneWidget);
         expect(
-            find.text(testUncheckedChecklistItem.data.title), findsOneWidget);
+          find.text(testUncheckedChecklistItem.data.title),
+          findsOneWidget,
+        );
         // Verify the unchecked icon is present somewhere in the card
-        expect(find.byIcon(MdiIcons.checkboxBlankOutline),
-            findsAtLeastNWidgets(1));
+        expect(
+          find.byIcon(MdiIcons.checkboxBlankOutline),
+          findsAtLeastNWidgets(1),
+        );
       });
 
       testWidgets('renders survey entry', (tester) async {
@@ -724,7 +732,9 @@ void main() {
 
         // Verify date format is displayed (look for date text)
         expect(
-            find.text(dfShort.format(testEvent.meta.dateFrom)), findsOneWidget);
+          find.text(dfShort.format(testEvent.meta.dateFrom)),
+          findsOneWidget,
+        );
       });
 
       testWidgets('navigates to checklist detail on tap', (tester) async {
@@ -781,8 +791,9 @@ void main() {
         );
       });
 
-      testWidgets('displays proper icon types for different entities',
-          (tester) async {
+      testWidgets('displays proper icon types for different entities', (
+        tester,
+      ) async {
         // Test checklist icon is present
         await tester.pumpWidget(
           makeTestableWidget(
@@ -805,8 +816,10 @@ void main() {
             ModernJournalCard(item: testUncheckedChecklistItem),
           ),
         );
-        expect(find.byIcon(MdiIcons.checkboxBlankOutline),
-            findsAtLeastNWidgets(1));
+        expect(
+          find.byIcon(MdiIcons.checkboxBlankOutline),
+          findsAtLeastNWidgets(1),
+        );
 
         // Test AI response icon is present
         await tester.pumpWidget(
@@ -817,8 +830,9 @@ void main() {
         expect(find.byIcon(Icons.assistant), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('handles entries with various metadata flags',
-          (tester) async {
+      testWidgets('handles entries with various metadata flags', (
+        tester,
+      ) async {
         final flaggedEntry = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(
             flag: EntryFlag.import,
@@ -841,8 +855,9 @@ void main() {
 
     group('Labels display', () {
       // Override for labelsStreamProvider to avoid real database access
-      final labelsOverride = labelsStreamProvider
-          .overrideWith((ref) => Stream.value(<LabelDefinition>[]));
+      final labelsOverride = labelsStreamProvider.overrideWith(
+        (ref) => Stream.value(<LabelDefinition>[]),
+      );
 
       testWidgets('renders labels when labelIds are present', (tester) async {
         // Arrange labels in the cache
@@ -863,12 +878,15 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockEntitiesCacheService.getLabelById('label-a'))
-            .thenReturn(labelA);
-        when(() => mockEntitiesCacheService.getLabelById('label-b'))
-            .thenReturn(labelB);
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(false);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-a'),
+        ).thenReturn(labelA);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-b'),
+        ).thenReturn(labelB);
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(false);
 
         // Build entry with two labels
         final entryWithLabels = testTextEntry.copyWith(
@@ -902,10 +920,12 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockEntitiesCacheService.getLabelById('label-a'))
-            .thenReturn(labelA);
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(false);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-a'),
+        ).thenReturn(labelA);
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(false);
 
         final taskWithLabels = testTask.copyWith(
           meta: testTask.meta.copyWith(
@@ -926,8 +946,9 @@ void main() {
         expect(find.byType(LabelChip), findsNothing);
       });
 
-      testWidgets('filters out private labels when showPrivate is false',
-          (tester) async {
+      testWidgets('filters out private labels when showPrivate is false', (
+        tester,
+      ) async {
         final publicLabel = LabelDefinition(
           id: 'label-public',
           name: 'Public',
@@ -947,12 +968,15 @@ void main() {
           private: true,
         );
 
-        when(() => mockEntitiesCacheService.getLabelById('label-public'))
-            .thenReturn(publicLabel);
-        when(() => mockEntitiesCacheService.getLabelById('label-private'))
-            .thenReturn(privateLabel);
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(false);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-public'),
+        ).thenReturn(publicLabel);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-private'),
+        ).thenReturn(privateLabel);
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(false);
 
         final entryWithLabels = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(
@@ -974,8 +998,9 @@ void main() {
         expect(find.text('Private'), findsNothing);
       });
 
-      testWidgets('shows private labels when showPrivate is true',
-          (tester) async {
+      testWidgets('shows private labels when showPrivate is true', (
+        tester,
+      ) async {
         final privateLabel = LabelDefinition(
           id: 'label-private',
           name: 'Private',
@@ -986,10 +1011,12 @@ void main() {
           private: true,
         );
 
-        when(() => mockEntitiesCacheService.getLabelById('label-private'))
-            .thenReturn(privateLabel);
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(true);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-private'),
+        ).thenReturn(privateLabel);
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(true);
 
         final entryWithLabels = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(
@@ -1027,12 +1054,15 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockEntitiesCacheService.getLabelById('label-z'))
-            .thenReturn(labelZ);
-        when(() => mockEntitiesCacheService.getLabelById('label-a'))
-            .thenReturn(labelA);
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(false);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-z'),
+        ).thenReturn(labelZ);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-a'),
+        ).thenReturn(labelA);
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(false);
 
         final entryWithLabels = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(
@@ -1055,10 +1085,12 @@ void main() {
         expect(names, equals(['Apple', 'Zebra']));
       });
 
-      testWidgets('does not render labels when entry has no labelIds',
-          (tester) async {
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(false);
+      testWidgets('does not render labels when entry has no labelIds', (
+        tester,
+      ) async {
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(false);
 
         final entryWithoutLabels = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(
@@ -1077,8 +1109,9 @@ void main() {
         expect(find.byType(LabelChip), findsNothing);
       });
 
-      testWidgets('handles cache returning null for unknown label IDs',
-          (tester) async {
+      testWidgets('handles cache returning null for unknown label IDs', (
+        tester,
+      ) async {
         final knownLabel = LabelDefinition(
           id: 'label-known',
           name: 'Known',
@@ -1088,12 +1121,15 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockEntitiesCacheService.getLabelById('label-known'))
-            .thenReturn(knownLabel);
-        when(() => mockEntitiesCacheService.getLabelById('label-unknown'))
-            .thenReturn(null);
-        when(() => mockEntitiesCacheService.showPrivateEntries)
-            .thenReturn(false);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-known'),
+        ).thenReturn(knownLabel);
+        when(
+          () => mockEntitiesCacheService.getLabelById('label-unknown'),
+        ).thenReturn(null);
+        when(
+          () => mockEntitiesCacheService.showPrivateEntries,
+        ).thenReturn(false);
 
         final entryWithMixedLabels = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(

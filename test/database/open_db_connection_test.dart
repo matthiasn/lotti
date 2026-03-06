@@ -11,7 +11,8 @@ void main() {
   test('openDbConnection creates parent directory if missing', () async {
     final base = Directory.systemTemp.createTempSync('db_parent_create_');
     addTearDown(
-        () => base.existsSync() ? base.deleteSync(recursive: true) : null);
+      () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+    );
 
     // Nested path that does not exist yet
     final nested = Directory('${base.path}/foo/bar/baz');
@@ -34,7 +35,8 @@ void main() {
   test('openDbConnection handles temp directory resolution failure', () async {
     final base = Directory.systemTemp.createTempSync('db_tempdir_fail_');
     addTearDown(
-        () => base.existsSync() ? base.deleteSync(recursive: true) : null);
+      () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+    );
 
     var tempProviderCalled = false;
     final lazy = openDbConnection(
@@ -57,7 +59,8 @@ void main() {
   test('openDbConnection enables WAL mode for file-based databases', () async {
     final base = Directory.systemTemp.createTempSync('wal_test_');
     addTearDown(
-        () => base.existsSync() ? base.deleteSync(recursive: true) : null);
+      () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+    );
 
     final lazy = openDbConnection(
       'test_wal.sqlite',
@@ -80,32 +83,41 @@ void main() {
     await db.close();
   });
 
-  test('openDbConnection with background=false uses NativeDatabase directly',
-      () async {
-    final base = Directory.systemTemp.createTempSync('wal_nobg_test_');
-    addTearDown(
-        () => base.existsSync() ? base.deleteSync(recursive: true) : null);
+  test(
+    'openDbConnection with background=false uses NativeDatabase directly',
+    () async {
+      final base = Directory.systemTemp.createTempSync('wal_nobg_test_');
+      addTearDown(
+        () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+      );
 
-    final lazy = openDbConnection(
-      'test_nobg.sqlite',
-      background: false,
-      documentsDirectoryProvider: () async => base,
-      tempDirectoryProvider: () async => base,
-    );
+      final lazy = openDbConnection(
+        'test_nobg.sqlite',
+        background: false,
+        documentsDirectoryProvider: () async => base,
+        tempDirectoryProvider: () async => base,
+      );
 
-    final db = SyncDatabase.connect(DatabaseConnection(lazy));
+      final db = SyncDatabase.connect(DatabaseConnection(lazy));
 
-    // WAL pragmas should still be applied even without background isolate
-    final walResult = await db.customSelect('PRAGMA journal_mode').getSingle();
-    expect(walResult.read<String>('journal_mode'), 'wal');
+      // WAL pragmas should still be applied even without background isolate
+      final walResult = await db
+          .customSelect('PRAGMA journal_mode')
+          .getSingle();
+      expect(walResult.read<String>('journal_mode'), 'wal');
 
-    final busyResult = await db.customSelect('PRAGMA busy_timeout').getSingle();
-    expect(busyResult.read<int>('timeout'), 5000);
+      final busyResult = await db
+          .customSelect('PRAGMA busy_timeout')
+          .getSingle();
+      expect(busyResult.read<int>('timeout'), 5000);
 
-    final syncResult = await db.customSelect('PRAGMA synchronous').getSingle();
-    // NORMAL = 1
-    expect(syncResult.read<int>('synchronous'), 1);
+      final syncResult = await db
+          .customSelect('PRAGMA synchronous')
+          .getSingle();
+      // NORMAL = 1
+      expect(syncResult.read<int>('synchronous'), 1);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 }

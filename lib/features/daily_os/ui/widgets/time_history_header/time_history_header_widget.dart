@@ -120,8 +120,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     // Since reverse: true, index 0 is at the right edge
     // scrollOffset increases as we scroll left (toward older days)
     final firstVisibleIndex = (scrollOffset / daySegmentWidth).floor();
-    final lastVisibleIndex =
-        ((scrollOffset + viewportWidth) / daySegmentWidth).ceil();
+    final lastVisibleIndex = ((scrollOffset + viewportWidth) / daySegmentWidth)
+        .ceil();
 
     // Clamp to valid range
     final startIdx = firstVisibleIndex.clamp(0, data.days.length - 1);
@@ -210,10 +210,14 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     final (visibleStart, visibleEnd) = _getVisibleIndices(historyData);
 
     // Calculate prefetch window: visible + buffer in each direction
-    final prefetchStart =
-        (visibleStart - _prefetchBuffer).clamp(0, historyData.days.length - 1);
-    final prefetchEnd =
-        (visibleEnd + _prefetchBuffer).clamp(0, historyData.days.length - 1);
+    final prefetchStart = (visibleStart - _prefetchBuffer).clamp(
+      0,
+      historyData.days.length - 1,
+    );
+    final prefetchEnd = (visibleEnd + _prefetchBuffer).clamp(
+      0,
+      historyData.days.length - 1,
+    );
 
     // Collect dates in the current prefetch window
     final currentWindowDates = <DateTime>{};
@@ -222,18 +226,23 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     }
 
     // Collect dates in the extended window (for invalidation check)
-    final extendedStart = (visibleStart - _invalidateMargin)
-        .clamp(0, historyData.days.length - 1);
-    final extendedEnd =
-        (visibleEnd + _invalidateMargin).clamp(0, historyData.days.length - 1);
+    final extendedStart = (visibleStart - _invalidateMargin).clamp(
+      0,
+      historyData.days.length - 1,
+    );
+    final extendedEnd = (visibleEnd + _invalidateMargin).clamp(
+      0,
+      historyData.days.length - 1,
+    );
     final extendedWindowDates = <DateTime>{};
     for (var i = extendedStart; i <= extendedEnd; i++) {
       extendedWindowDates.add(historyData.days[i].day.dayAtMidnight);
     }
 
     // Invalidate providers for dates that are no longer in the extended window
-    final datesToInvalidate =
-        _prefetchedDates.difference(extendedWindowDates).toList();
+    final datesToInvalidate = _prefetchedDates
+        .difference(extendedWindowDates)
+        .toList();
     for (final date in datesToInvalidate) {
       ref
         ..invalidate(unifiedDailyOsDataControllerProvider(date: date))
@@ -266,8 +275,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     // Check if today is in the data window, if not reset
     final data = ref.read(timeHistoryHeaderControllerProvider).value;
     if (data != null) {
-      final todayInWindow =
-          data.days.any((day) => day.day.dayAtMidnight == today);
+      final todayInWindow = data.days.any(
+        (day) => day.day.dayAtMidnight == today,
+      );
       if (!todayInWindow) {
         ref.read(timeHistoryHeaderControllerProvider.notifier).resetToToday();
       } else if (_scrollController.hasClients) {
@@ -386,7 +396,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   Widget _buildDaySelectorWithChart(
-      TimeHistoryData data, DateTime selectedDate) {
+    TimeHistoryData data,
+    DateTime selectedDate,
+  ) {
     final itemCount = data.days.length + (data.isLoadingMore ? 1 : 0);
 
     return Stack(
@@ -436,9 +448,11 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
         return AnimatedBuilder(
           animation: _scrollController,
           builder: (context, _) {
-            final scrollOffset =
-                _scrollController.hasClients ? _scrollController.offset : 0.0;
-            final hasViewport = _scrollController.hasClients &&
+            final scrollOffset = _scrollController.hasClients
+                ? _scrollController.offset
+                : 0.0;
+            final hasViewport =
+                _scrollController.hasClients &&
                 _scrollController.position.hasViewportDimension;
             final viewportWidth = hasViewport
                 ? _scrollController.position.viewportDimension
@@ -475,28 +489,29 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
               return const SizedBox.shrink();
             }
 
-            final chartRightEdge = constraints.maxWidth +
+            final chartRightEdge =
+                constraints.maxWidth +
                 scrollOffset -
                 (chartStart * daySegmentWidth);
 
             // Calculate clip boundary at tomorrow noon (horizontal only)
             final tomorrow = clock.now().dayAtNoon.add(
-                  const Duration(days: 1),
-                );
+              const Duration(days: 1),
+            );
             final tomorrowIndex = data.days.indexWhere(
               (d) => d.day == tomorrow,
             );
             final clipRightX = tomorrowIndex >= 0
                 ? constraints.maxWidth +
-                    scrollOffset -
-                    (tomorrowIndex * daySegmentWidth) -
-                    (daySegmentWidth / 2)
+                      scrollOffset -
+                      (tomorrowIndex * daySegmentWidth) -
+                      (daySegmentWidth / 2)
                 : double.infinity;
 
             final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
             final alignedRight =
                 (chartRightEdge * devicePixelRatio).roundToDouble() /
-                    devicePixelRatio;
+                devicePixelRatio;
             final alignedLeft = alignedRight - chartWidth;
 
             return ClipRect(

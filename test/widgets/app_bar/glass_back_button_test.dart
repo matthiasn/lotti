@@ -155,8 +155,9 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('calls Navigator.maybePop by default when tapped',
-        (tester) async {
+    testWidgets('calls Navigator.maybePop by default when tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

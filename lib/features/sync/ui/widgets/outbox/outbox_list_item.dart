@@ -26,8 +26,10 @@ class OutboxListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel =
-        OutboxListItemViewModel.fromItem(context: context, item: item);
+    final viewModel = OutboxListItemViewModel.fromItem(
+      context: context,
+      item: item,
+    );
     final theme = Theme.of(context);
     final hasActions =
         (showRetry && onRetry != null) || (showDelete && onDelete != null);

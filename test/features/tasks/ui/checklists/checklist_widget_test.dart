@@ -34,8 +34,9 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    testWidgets('renders title and progress indicator correctly',
-        (tester) async {
+    testWidgets('renders title and progress indicator correctly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -172,8 +173,9 @@ void main() {
       expect(savedTitle, 'Updated Checklist Title');
     });
 
-    testWidgets('creates new checklist item when text submitted',
-        (tester) async {
+    testWidgets('creates new checklist item when text submitted', (
+      tester,
+    ) async {
       String? newItemText;
 
       await tester.pumpWidget(
@@ -184,7 +186,8 @@ void main() {
               id: 'checklist1',
               taskId: 'task1',
               title: mockState.title,
-              itemIds: const [], // Empty list to avoid ChecklistItemWrapper failures
+              itemIds:
+                  const [], // Empty list to avoid ChecklistItemWrapper failures
               onTitleSave: (title) {},
               onCreateChecklistItem: (text) async {
                 newItemText = text;
@@ -223,47 +226,49 @@ void main() {
     });
 
     testWidgets(
-        'shows delete confirmation dialog when delete button is pressed',
-        (tester) async {
-      var deleteActionCalled = false;
+      'shows delete confirmation dialog when delete button is pressed',
+      (tester) async {
+        var deleteActionCalled = false;
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
-            child: ChecklistWidget(
-              id: 'checklist1',
-              taskId: 'task1',
-              title: mockState.title,
-              itemIds: const [], // Empty list to avoid ChecklistItemWrapper failures
-              onTitleSave: (title) {},
-              onCreateChecklistItem: (_) async => 'new-item-id',
-              completionRate: 0.5,
-              updateItemOrder: (_) async {},
-              onDelete: () {
-                deleteActionCalled = true;
-              },
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: mockState.title,
+                itemIds:
+                    const [], // Empty list to avoid ChecklistItemWrapper failures
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                updateItemOrder: (_) async {},
+                onDelete: () {
+                  deleteActionCalled = true;
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Open the overflow menu and choose Delete
-      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete checklist?'));
-      await tester.pump();
+        // Open the overflow menu and choose Delete
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete checklist?'));
+        await tester.pump();
 
-      // Verify the dialog is shown
-      expect(find.byType(AlertDialog), findsOneWidget);
+        // Verify the dialog is shown
+        expect(find.byType(AlertDialog), findsOneWidget);
 
-      // Confirm deletion by tapping the 'Confirm' action
-      await tester.tap(find.text('Confirm'));
-      await tester.pump();
+        // Confirm deletion by tapping the 'Confirm' action
+        await tester.tap(find.text('Confirm'));
+        await tester.pump();
 
-      // Verify delete action was called
-      expect(deleteActionCalled, isTrue);
-    });
+        // Verify delete action was called
+        expect(deleteActionCalled, isTrue);
+      },
+    );
 
     testWidgets('canceling delete does not call onDelete', (tester) async {
       var deleteActionCalled = false;
@@ -302,8 +307,9 @@ void main() {
       expect(deleteActionCalled, isFalse);
     });
 
-    testWidgets('proxyDecorator applies correct styling during reorder',
-        (tester) async {
+    testWidgets('proxyDecorator applies correct styling during reorder', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -444,8 +450,9 @@ void main() {
       expect(find.byType(ChecklistWidget), findsOneWidget);
     });
 
-    testWidgets('filter tabs are visible when expanded with items',
-        (tester) async {
+    testWidgets('filter tabs are visible when expanded with items', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -472,8 +479,9 @@ void main() {
       expect(find.text('All'), findsOneWidget);
     });
 
-    testWidgets('empty checklist shows empty state and hides progress row',
-        (tester) async {
+    testWidgets('empty checklist shows empty state and hides progress row', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -512,8 +520,9 @@ void main() {
       expect(hiddenCrossFades.length, greaterThanOrEqualTo(3));
     });
 
-    testWidgets('populated checklist shows progress row and filter tabs',
-        (tester) async {
+    testWidgets('populated checklist shows progress row and filter tabs', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -554,8 +563,9 @@ void main() {
     });
 
     group('sorting mode', () {
-      testWidgets('shows drag handle and hides chevron/menu in sorting mode',
-          (tester) async {
+      testWidgets('shows drag handle and hides chevron/menu in sorting mode', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           ProviderScope(
             child: WidgetTestBench(
@@ -630,8 +640,9 @@ void main() {
         expect(find.text('All'), findsNothing);
       });
 
-      testWidgets('shows normal layout when not in sorting mode',
-          (tester) async {
+      testWidgets('shows normal layout when not in sorting mode', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           ProviderScope(
             child: WidgetTestBench(
@@ -666,8 +677,9 @@ void main() {
         expect(find.text('All'), findsOneWidget);
       });
 
-      testWidgets('calls onExpansionChanged when expansion state changes',
-          (tester) async {
+      testWidgets('calls onExpansionChanged when expansion state changes', (
+        tester,
+      ) async {
         bool? expansionState;
 
         await tester.pumpWidget(

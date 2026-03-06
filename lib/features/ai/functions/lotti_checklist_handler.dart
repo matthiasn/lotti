@@ -133,8 +133,8 @@ class LottiChecklistItemHandler extends FunctionHandler {
         final errorMsg = attemptedItem?.trim().isEmpty ?? false
             ? 'Empty description provided. Please provide a meaningful description.'
             : wrongFieldName != null
-                ? 'Found "$wrongFieldName" instead of "actionItemDescription"'
-                : 'Missing required field "actionItemDescription"';
+            ? 'Found "$wrongFieldName" instead of "actionItemDescription"'
+            : 'Missing required field "actionItemDescription"';
 
         return FunctionCallResult(
           success: false,
@@ -203,11 +203,13 @@ class LottiChecklistItemHandler extends FunctionHandler {
     required List<FunctionCallResult> failedItems,
     required List<String> successfulDescriptions,
   }) {
-    final errorSummary = failedItems.map((item) {
-      final attempted = getDescription(item);
-      final attemptedStr = attempted != null ? ' for "$attempted"' : '';
-      return '- ${item.error}$attemptedStr';
-    }).join('\n');
+    final errorSummary = failedItems
+        .map((item) {
+          final attempted = getDescription(item);
+          final attemptedStr = attempted != null ? ' for "$attempted"' : '';
+          return '- ${item.error}$attemptedStr';
+        })
+        .join('\n');
 
     final itemsToRetry = failedItems
         .map(getDescription)
@@ -267,8 +269,9 @@ Do NOT recreate the items that were already successful.''';
           _createdDescriptions.add(description.toLowerCase().trim());
 
           // Refresh the task
-          final refreshedEntity =
-              await journalDb.journalEntityById(currentTask.id);
+          final refreshedEntity = await journalDb.journalEntityById(
+            currentTask.id,
+          );
           if (refreshedEntity is Task) {
             task = refreshedEntity;
             onTaskUpdated?.call(refreshedEntity);
@@ -294,8 +297,9 @@ Do NOT recreate the items that were already successful.''';
           _createdDescriptions.add(description.toLowerCase().trim());
 
           // Refresh the task
-          final refreshedEntity =
-              await journalDb.journalEntityById(currentTask.id);
+          final refreshedEntity = await journalDb.journalEntityById(
+            currentTask.id,
+          );
           if (refreshedEntity is Task) {
             task = refreshedEntity;
             onTaskUpdated?.call(refreshedEntity);

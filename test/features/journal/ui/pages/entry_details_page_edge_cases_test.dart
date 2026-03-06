@@ -71,8 +71,9 @@ void main() {
       );
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -97,7 +98,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -111,12 +112,14 @@ void main() {
       );
 
       when(
-        () => mockHealthImport
-            .fetchHealthDataDelta(testWeightEntry.data.dataType),
+        () => mockHealthImport.fetchHealthDataDelta(
+          testWeightEntry.data.dataType,
+        ),
       ).thenAnswer((_) async {});
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -137,8 +140,9 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('scroll controller is properly disposed', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -168,8 +172,9 @@ void main() {
     });
 
     testWidgets('handles null item gracefully', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -184,8 +189,9 @@ void main() {
     });
 
     testWidgets('scroll offset listener updates correctly', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -211,10 +217,12 @@ void main() {
       expect(find.byType(EntryDetailsPage), findsOneWidget);
     });
 
-    testWidgets('creates GlobalKeys for each entry without duplicates',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('creates GlobalKeys for each entry without duplicates', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -232,8 +240,9 @@ void main() {
     });
 
     testWidgets('FloatingAddActionButton is present', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -247,10 +256,12 @@ void main() {
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
-    testWidgets('scroll controller listeners are set up in initState',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('scroll controller listeners are set up in initState', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -269,10 +280,12 @@ void main() {
       expect(find.byType(EntryDetailsPage), findsOneWidget);
     });
 
-    testWidgets('handles scroll to non-existent entry gracefully',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('handles scroll to non-existent entry gracefully', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       final container = ProviderContainer();
 
@@ -296,8 +309,9 @@ void main() {
     });
 
     testWidgets('multiple scroll listeners work independently', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

@@ -202,8 +202,9 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
                 child: Text(
                   _selected.isEmpty
                       ? context.messages.multiSelectAddButton
-                      : context.messages
-                          .multiSelectAddButtonWithCount(_selected.length),
+                      : context.messages.multiSelectAddButtonWithCount(
+                          _selected.length,
+                        ),
                 ),
               ),
             ),

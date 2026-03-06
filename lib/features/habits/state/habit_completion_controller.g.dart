@@ -12,23 +12,24 @@ part of 'habit_completion_controller.dart';
 @ProviderFor(HabitCompletionController)
 final habitCompletionControllerProvider = HabitCompletionControllerFamily._();
 
-final class HabitCompletionControllerProvider extends $AsyncNotifierProvider<
-    HabitCompletionController, List<HabitResult>> {
-  HabitCompletionControllerProvider._(
-      {required HabitCompletionControllerFamily super.from,
-      required ({
-        String habitId,
-        DateTime rangeStart,
-        DateTime rangeEnd,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'habitCompletionControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class HabitCompletionControllerProvider
+    extends
+        $AsyncNotifierProvider<HabitCompletionController, List<HabitResult>> {
+  HabitCompletionControllerProvider._({
+    required HabitCompletionControllerFamily super.from,
+    required ({
+      String habitId,
+      DateTime rangeStart,
+      DateTime rangeEnd,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'habitCompletionControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$habitCompletionControllerHash();
@@ -62,34 +63,37 @@ String _$habitCompletionControllerHash() =>
 final class HabitCompletionControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            HabitCompletionController,
-            AsyncValue<List<HabitResult>>,
-            List<HabitResult>,
-            FutureOr<List<HabitResult>>,
-            ({
-              String habitId,
-              DateTime rangeStart,
-              DateTime rangeEnd,
-            })> {
+          HabitCompletionController,
+          AsyncValue<List<HabitResult>>,
+          List<HabitResult>,
+          FutureOr<List<HabitResult>>,
+          ({
+            String habitId,
+            DateTime rangeStart,
+            DateTime rangeEnd,
+          })
+        > {
   HabitCompletionControllerFamily._()
-      : super(
-          retry: null,
-          name: r'habitCompletionControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'habitCompletionControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   HabitCompletionControllerProvider call({
     required String habitId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      HabitCompletionControllerProvider._(argument: (
-        habitId: habitId,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ), from: this);
+  }) => HabitCompletionControllerProvider._(
+    argument: (
+      habitId: habitId,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'habitCompletionControllerProvider';
@@ -97,11 +101,13 @@ final class HabitCompletionControllerFamily extends $Family
 
 abstract class _$HabitCompletionController
     extends $AsyncNotifier<List<HabitResult>> {
-  late final _$args = ref.$arg as ({
-    String habitId,
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  });
+  late final _$args =
+      ref.$arg
+          as ({
+            String habitId,
+            DateTime rangeStart,
+            DateTime rangeEnd,
+          });
   String get habitId => _$args.habitId;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
@@ -116,17 +122,21 @@ abstract class _$HabitCompletionController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<HabitResult>>, List<HabitResult>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<HabitResult>>, List<HabitResult>>,
-        AsyncValue<List<HabitResult>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<HabitResult>>, List<HabitResult>>,
+              AsyncValue<List<HabitResult>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              habitId: _$args.habitId,
-              rangeStart: _$args.rangeStart,
-              rangeEnd: _$args.rangeEnd,
-            ));
+      ref,
+      () => build(
+        habitId: _$args.habitId,
+        rangeStart: _$args.rangeStart,
+        rangeEnd: _$args.rangeEnd,
+      ),
+    );
   }
 }

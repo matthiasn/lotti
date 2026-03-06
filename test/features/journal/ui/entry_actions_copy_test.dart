@@ -194,21 +194,23 @@ void main() {
   testWidgets('Editor toolbar builds (coverage)', (tester) async {
     final controller = TestEntryController(initialText: 'Toolbar');
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        entryControllerProvider(id: 'e3').overrideWith(() => controller),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          ...AppLocalizations.localizationsDelegates,
-          quill_localizations.FlutterQuillLocalizations.delegate,
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          entryControllerProvider(id: 'e3').overrideWith(() => controller),
         ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: EditorWidget(entryId: 'e3'),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            ...AppLocalizations.localizationsDelegates,
+            quill_localizations.FlutterQuillLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: EditorWidget(entryId: 'e3'),
+          ),
         ),
       ),
-    ));
+    );
 
     await tester.pumpAndSettle();
 
@@ -218,29 +220,31 @@ void main() {
   testWidgets('InitialModalPageContent includes copy actions', (tester) async {
     final controller = TestEntryController(initialText: 'Hello');
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        entryControllerProvider(id: 'e4').overrideWith(() => controller),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          ...AppLocalizations.localizationsDelegates,
-          quill_localizations.FlutterQuillLocalizations.delegate,
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          entryControllerProvider(id: 'e4').overrideWith(() => controller),
         ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: InitialModalPageContent(
-              entryId: 'e4',
-              linkedFromId: null,
-              inLinkedEntries: false,
-              link: null,
-              pageIndexNotifier: ValueNotifier(0),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            ...AppLocalizations.localizationsDelegates,
+            quill_localizations.FlutterQuillLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: InitialModalPageContent(
+                entryId: 'e4',
+                linkedFromId: null,
+                inLinkedEntries: false,
+                link: null,
+                pageIndexNotifier: ValueNotifier(0),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
 
     await tester.pumpAndSettle();
 

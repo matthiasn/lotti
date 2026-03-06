@@ -91,8 +91,9 @@ List<VersionPerformanceBucket> _computeVersionBuckets(
   // Pre-compute the earliest run date per version to avoid redundant
   // reduce calls inside the sort comparator (O(N*M) → O(N*M + N log N)).
   final versionFirstRunDates = byVersion.map((versionId, runs) {
-    final firstRunDate =
-        runs.map((r) => r.createdAt).reduce((a, b) => a.isBefore(b) ? a : b);
+    final firstRunDate = runs
+        .map((r) => r.createdAt)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
     return MapEntry(versionId, firstRunDate);
   });
   final sortedVersionIds = byVersion.keys.toList()

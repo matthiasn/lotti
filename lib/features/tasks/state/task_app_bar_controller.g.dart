@@ -14,16 +14,16 @@ final taskAppBarControllerProvider = TaskAppBarControllerFamily._();
 
 final class TaskAppBarControllerProvider
     extends $AsyncNotifierProvider<TaskAppBarController, double> {
-  TaskAppBarControllerProvider._(
-      {required TaskAppBarControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'taskAppBarControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TaskAppBarControllerProvider._({
+    required TaskAppBarControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'taskAppBarControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$taskAppBarControllerHash();
@@ -55,21 +55,25 @@ String _$taskAppBarControllerHash() =>
 
 final class TaskAppBarControllerFamily extends $Family
     with
-        $ClassFamilyOverride<TaskAppBarController, AsyncValue<double>, double,
-            FutureOr<double>, String> {
+        $ClassFamilyOverride<
+          TaskAppBarController,
+          AsyncValue<double>,
+          double,
+          FutureOr<double>,
+          String
+        > {
   TaskAppBarControllerFamily._()
-      : super(
-          retry: null,
-          name: r'taskAppBarControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'taskAppBarControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   TaskAppBarControllerProvider call({
     required String id,
-  }) =>
-      TaskAppBarControllerProvider._(argument: id, from: this);
+  }) => TaskAppBarControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'taskAppBarControllerProvider';
@@ -86,15 +90,19 @@ abstract class _$TaskAppBarController extends $AsyncNotifier<double> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<double>, double>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<double>, double>,
-        AsyncValue<double>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<double>, double>,
+              AsyncValue<double>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+      ref,
+      () => build(
+        id: _$args,
+      ),
+    );
   }
 }

@@ -101,7 +101,8 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     BuildContext context,
     String label,
     int count,
-  ) countSummaryBuilder;
+  )
+  countSummaryBuilder;
 
   /// Initial segment selection. Defaults to the first entry in [filters].
   final F? initialFilter;
@@ -208,15 +209,17 @@ class _SyncListScaffoldState<T, F extends Enum>
             entry.key: items.where(entry.value.predicate).length,
         };
 
-        final filteredItems =
-            items.where(widget.filters[_selectedFilter]!.predicate).toList();
+        final filteredItems = items
+            .where(widget.filters[_selectedFilter]!.predicate)
+            .toList();
 
         final hasData = snapshot.hasData;
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final effectivePadding =
-                _effectivePaddingForWidth(constraints.maxWidth);
+            final effectivePadding = _effectivePaddingForWidth(
+              constraints.maxWidth,
+            );
             final horizontalPaddingForEmpty =
                 (effectivePadding.start + effectivePadding.end) / 2;
             final listPadding = EdgeInsets.only(
@@ -238,32 +241,37 @@ class _SyncListScaffoldState<T, F extends Enum>
             );
 
             // Build labels, counts, and icon presence lists for height calculation.
-            final filterEntries =
-                widget.filters.entries.toList(growable: false);
+            final filterEntries = widget.filters.entries.toList(
+              growable: false,
+            );
             final labels = filterEntries
-                .map((e) => toBeginningOfSentenceCase(
-                      e.value.labelBuilder(context),
-                      locale,
-                    ))
+                .map(
+                  (e) => toBeginningOfSentenceCase(
+                    e.value.labelBuilder(context),
+                    locale,
+                  ),
+                )
                 .toList();
-            final countsList =
-                filterEntries.map((e) => counts[e.key] ?? 0).toList();
-            final haveIcons =
-                filterEntries.map((e) => e.value.icon != null).toList();
+            final countsList = filterEntries
+                .map((e) => counts[e.key] ?? 0)
+                .toList();
+            final haveIcons = filterEntries
+                .map((e) => e.value.icon != null)
+                .toList();
 
             // Calculate dynamic header height based on actual content.
             final headerHorizontalPadding =
                 effectivePadding.start + effectivePadding.end;
             final headerHeight =
                 SettingsHeaderDimensions.calculateFilterHeaderHeight(
-              context: context,
-              labels: labels,
-              counts: countsList,
-              haveIcons: haveIcons,
-              availableWidth: constraints.maxWidth,
-              horizontalPadding: headerHorizontalPadding,
-              summaryText: summaryText,
-            );
+                  context: context,
+                  labels: labels,
+                  counts: countsList,
+                  haveIcons: haveIcons,
+                  availableWidth: constraints.maxWidth,
+                  horizontalPadding: headerHorizontalPadding,
+                  summaryText: summaryText,
+                );
 
             final headerBottom = _SyncHeaderBottom<T, F>(
               filters: widget.filters,
@@ -316,12 +324,13 @@ class _SyncListScaffoldState<T, F extends Enum>
                           ),
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 420),
-                            child: EmptyStateWidget(
-                              icon: widget.emptyIcon,
-                              title: widget.emptyTitleBuilder(context),
-                              description:
-                                  widget.emptyDescriptionBuilder?.call(context),
-                            ).animate().fadeIn(
+                            child:
+                                EmptyStateWidget(
+                                  icon: widget.emptyIcon,
+                                  title: widget.emptyTitleBuilder(context),
+                                  description: widget.emptyDescriptionBuilder
+                                      ?.call(context),
+                                ).animate().fadeIn(
                                   duration: const Duration(
                                     milliseconds: AppTheme.animationDuration,
                                   ),
@@ -413,9 +422,11 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
           final rawLabel = entry.value.labelBuilder(context);
           final label = toBeginningOfSentenceCase(rawLabel, locale);
           final count = counts[entry.key] ?? 0;
-          final selectedColor = entry.value.selectedColor ??
+          final selectedColor =
+              entry.value.selectedColor ??
               Theme.of(context).colorScheme.primary;
-          final selectedForeground = entry.value.selectedForegroundColor ??
+          final selectedForeground =
+              entry.value.selectedForegroundColor ??
               Theme.of(context).colorScheme.onPrimary;
 
           return _SegmentChip(
@@ -535,26 +546,28 @@ class _SegmentChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = context.textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final foregroundColor =
-        isSelected ? selectedForegroundColor : colorScheme.onSurface;
-    final iconColor =
-        isSelected ? selectedForegroundColor : colorScheme.onSurfaceVariant;
+    final foregroundColor = isSelected
+        ? selectedForegroundColor
+        : colorScheme.onSurface;
+    final iconColor = isSelected
+        ? selectedForegroundColor
+        : colorScheme.onSurfaceVariant;
     final shouldShowCount = showCount && (!hideCountWhenZero || count > 0);
     final hasAccent = shouldShowCount && count > 0 && countAccentColor != null;
     final accentForeground = hasAccent
         ? countAccentForegroundColor ??
-            (ThemeData.estimateBrightnessForColor(countAccentColor!) ==
-                    Brightness.dark
-                ? Colors.white
-                : Colors.black)
+              (ThemeData.estimateBrightnessForColor(countAccentColor!) ==
+                      Brightness.dark
+                  ? Colors.white
+                  : Colors.black)
         : null;
     final hasAccentSelection = hasAccent && isSelected;
     final countBackground = selectedColor;
     final countForeground = hasAccent
         ? accentForeground!
         : isSelected
-            ? selectedForegroundColor
-            : colorScheme.onSurfaceVariant;
+        ? selectedForegroundColor
+        : colorScheme.onSurfaceVariant;
     final countBorderColor = isSelected
         ? countForeground.withValues(alpha: 0.68)
         : Colors.transparent;
@@ -582,8 +595,9 @@ class _SegmentChip extends StatelessWidget {
               color: isSelected
                   ? selectedColor
                   : colorScheme.surfaceContainerHighest.withValues(alpha: 0.26),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.cardBorderRadius / 1.6),
+              borderRadius: BorderRadius.circular(
+                AppTheme.cardBorderRadius / 1.6,
+              ),
               border: Border.all(
                 color: isSelected
                     ? selectedColor ?? colorScheme.primary
@@ -632,8 +646,8 @@ class _SegmentChip extends StatelessWidget {
                         width: hasAccentSelection
                             ? 1.3
                             : hasAccent
-                                ? 1.1
-                                : 1.2,
+                            ? 1.1
+                            : 1.2,
                       ),
                     ),
                     child: Text(

@@ -239,8 +239,9 @@ void main() {
       expect(seeks.last, const Duration(seconds: 63));
     });
 
-    testWidgets('rapid drags remain throttled to trailing seek',
-        (tester) async {
+    testWidgets('rapid drags remain throttled to trailing seek', (
+      tester,
+    ) async {
       final seeks = <Duration>[];
       await _pumpScrubber(
         tester,
@@ -379,8 +380,9 @@ void main() {
   });
 
   group('AudioWaveformScrubber painter', () {
-    testWidgets('exposes empty amplitude list without painting',
-        (tester) async {
+    testWidgets('exposes empty amplitude list without painting', (
+      tester,
+    ) async {
       final painter = await _pumpAndGetPainter(
         tester,
         amplitudes: const <double>[],
@@ -452,8 +454,9 @@ void main() {
       expect(rect.width, closeTo(2400, 0.001));
     });
 
-    testWidgets('shouldRepaint returns true when amplitudes change',
-        (tester) async {
+    testWidgets('shouldRepaint returns true when amplitudes change', (
+      tester,
+    ) async {
       await _pumpScrubber(
         tester,
         amplitudes: <double>[0.2, 0.4],
@@ -469,8 +472,9 @@ void main() {
       expect(secondPainter.shouldRepaint(firstPainter), isTrue);
     });
 
-    testWidgets('shouldRepaint returns false when values are identical',
-        (tester) async {
+    testWidgets('shouldRepaint returns false when values are identical', (
+      tester,
+    ) async {
       final shared = <double>[0.3, 0.6];
       await _pumpScrubber(
         tester,

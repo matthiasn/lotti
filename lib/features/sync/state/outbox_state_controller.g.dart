@@ -17,25 +17,28 @@ final outboxConnectionStateProvider = OutboxConnectionStateProvider._();
 /// Stream provider watching the Matrix sync enable flag.
 /// Replaces OutboxCubit's config flag watching.
 
-final class OutboxConnectionStateProvider extends $FunctionalProvider<
-        AsyncValue<OutboxConnectionState>,
-        OutboxConnectionState,
-        Stream<OutboxConnectionState>>
+final class OutboxConnectionStateProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<OutboxConnectionState>,
+          OutboxConnectionState,
+          Stream<OutboxConnectionState>
+        >
     with
         $FutureModifier<OutboxConnectionState>,
         $StreamProvider<OutboxConnectionState> {
   /// Stream provider watching the Matrix sync enable flag.
   /// Replaces OutboxCubit's config flag watching.
   OutboxConnectionStateProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'outboxConnectionStateProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'outboxConnectionStateProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$outboxConnectionStateHash();
@@ -43,8 +46,8 @@ final class OutboxConnectionStateProvider extends $FunctionalProvider<
   @$internal
   @override
   $StreamProviderElement<OutboxConnectionState> $createElement(
-          $ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
 
   @override
   Stream<OutboxConnectionState> create(Ref ref) {
@@ -67,15 +70,15 @@ final class OutboxPendingCountProvider
     with $FutureModifier<int>, $StreamProvider<int> {
   /// Stream provider for outbox pending count (for badge display).
   OutboxPendingCountProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'outboxPendingCountProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'outboxPendingCountProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$outboxPendingCountHash();
@@ -103,25 +106,28 @@ final outboxDailyVolumeProvider = OutboxDailyVolumeProvider._();
 /// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
 /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
 
-final class OutboxDailyVolumeProvider extends $FunctionalProvider<
-        AsyncValue<List<Observation>>,
-        List<Observation>,
-        FutureOr<List<Observation>>>
+final class OutboxDailyVolumeProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Observation>>,
+          List<Observation>,
+          FutureOr<List<Observation>>
+        >
     with
         $FutureModifier<List<Observation>>,
         $FutureProvider<List<Observation>> {
   /// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
   /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
   OutboxDailyVolumeProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'outboxDailyVolumeProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'outboxDailyVolumeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$outboxDailyVolumeHash();
@@ -129,8 +135,8 @@ final class OutboxDailyVolumeProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<List<Observation>> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<List<Observation>> create(Ref ref) {

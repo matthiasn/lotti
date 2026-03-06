@@ -69,18 +69,21 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     BuildContext context,
     List<LabelDefinition> labels,
   ) {
-    final usageCounts = ref.watch(labelUsageStatsProvider).maybeWhen(
+    final usageCounts = ref
+        .watch(labelUsageStatsProvider)
+        .maybeWhen(
           data: (value) => value,
           orElse: () => const <String, int>{},
         );
-    final filtered = labels.where((label) {
-      if (_searchLower.isEmpty) return true;
-      return label.name.toLowerCase().contains(_searchLower) ||
-          (label.description?.toLowerCase().contains(_searchLower) ?? false);
-    }).toList()
-      ..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+    final filtered =
+        labels.where((label) {
+          if (_searchLower.isEmpty) return true;
+          return label.name.toLowerCase().contains(_searchLower) ||
+              (label.description?.toLowerCase().contains(_searchLower) ??
+                  false);
+        }).toList()..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
 
     return [
       SliverToBoxAdapter(
@@ -135,11 +138,16 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.search_off_rounded,
-                    size: 64, color: Theme.of(context).disabledColor),
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
+                  color: Theme.of(context).disabledColor,
+                ),
                 const SizedBox(height: 12),
-                Text('No labels match "$query"',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'No labels match "$query"',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: () {
@@ -162,21 +170,25 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.label_outline,
-                  size: 64, color: Theme.of(context).disabledColor),
+              Icon(
+                Icons.label_outline,
+                size: 64,
+                color: Theme.of(context).disabledColor,
+              ),
               const SizedBox(height: 16),
-              Text(context.messages.settingsLabelsEmptyState,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Theme.of(context).disabledColor)),
+              Text(
+                context.messages.settingsLabelsEmptyState,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).disabledColor,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 context.messages.settingsLabelsEmptyStateHint,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).disabledColor,
-                    ),
+                  color: Theme.of(context).disabledColor,
+                ),
               ),
             ],
           ),
@@ -236,25 +248,29 @@ class _LabelListCard extends StatelessWidget {
     if (ids == null || ids.isEmpty) {
       categories = <CategoryDefinition>[];
     } else {
-      categories = ids
-          .map(cache.getCategoryById)
-          .whereType<CategoryDefinition>()
-          .toList()
-        ..sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
+      categories =
+          ids
+              .map(cache.getCategoryById)
+              .whereType<CategoryDefinition>()
+              .toList()
+            ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
     }
 
     return ModernBaseCard(
       onTap: () => beamToNamed('/settings/labels/${label.id}'),
       padding: EdgeInsets.zero,
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         title: Text(
           label.name,
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,9 +364,9 @@ class _PrivateLabelBadge extends StatelessWidget {
           Text(
             context.messages.privateLabel,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

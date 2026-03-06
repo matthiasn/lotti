@@ -110,28 +110,38 @@ void main() {
 
     group('featureColor helper', () {
       test('returns journalTeal for journal feature', () {
-        expect(GameyColors.featureColor('journal'),
-            equals(GameyColors.journalTeal));
+        expect(
+          GameyColors.featureColor('journal'),
+          equals(GameyColors.journalTeal),
+        );
       });
 
       test('returns habitPink for habit feature', () {
         expect(
-            GameyColors.featureColor('habit'), equals(GameyColors.habitPink));
+          GameyColors.featureColor('habit'),
+          equals(GameyColors.habitPink),
+        );
       });
 
       test('returns taskYellow for task feature', () {
         expect(
-            GameyColors.featureColor('task'), equals(GameyColors.taskYellow));
+          GameyColors.featureColor('task'),
+          equals(GameyColors.taskYellow),
+        );
       });
 
       test('returns moodIndigo for mood feature', () {
         expect(
-            GameyColors.featureColor('mood'), equals(GameyColors.moodIndigo));
+          GameyColors.featureColor('mood'),
+          equals(GameyColors.moodIndigo),
+        );
       });
 
       test('returns healthGreen for health feature', () {
-        expect(GameyColors.featureColor('health'),
-            equals(GameyColors.healthGreen));
+        expect(
+          GameyColors.featureColor('health'),
+          equals(GameyColors.healthGreen),
+        );
       });
 
       test('returns aiCyan for ai feature', () {
@@ -139,11 +149,15 @@ void main() {
       });
 
       test('returns primaryBlue for unknown feature', () {
-        expect(GameyColors.featureColor('unknown'),
-            equals(GameyColors.primaryBlue));
+        expect(
+          GameyColors.featureColor('unknown'),
+          equals(GameyColors.primaryBlue),
+        );
         expect(GameyColors.featureColor(''), equals(GameyColors.primaryBlue));
-        expect(GameyColors.featureColor('random'),
-            equals(GameyColors.primaryBlue));
+        expect(
+          GameyColors.featureColor('random'),
+          equals(GameyColors.primaryBlue),
+        );
       });
     });
 

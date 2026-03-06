@@ -63,13 +63,15 @@ void main() {
         ),
       ];
 
-      when(() =>
-              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) => Stream.value(testProviders));
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value(testModels));
-      when(() => mockRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value(testProviders));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value(testModels));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value([]));
     });
 
     Widget createTestWidget({required Widget child}) {
@@ -90,8 +92,9 @@ void main() {
       );
     }
 
-    testWidgets('AiConfigCard displays provider information correctly',
-        (WidgetTester tester) async {
+    testWidgets('AiConfigCard displays provider information correctly', (
+      WidgetTester tester,
+    ) async {
       final provider = testProviders.first;
 
       await tester.pumpWidget(
@@ -109,8 +112,9 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
-    testWidgets('AiConfigCard displays model capabilities',
-        (WidgetTester tester) async {
+    testWidgets('AiConfigCard displays model capabilities', (
+      WidgetTester tester,
+    ) async {
       final model = testModels.first;
 
       await tester.pumpWidget(
@@ -131,8 +135,9 @@ void main() {
       expect(find.byIcon(Icons.visibility), findsOneWidget); // Vision
     });
 
-    testWidgets('AiConfigCard handles tap correctly',
-        (WidgetTester tester) async {
+    testWidgets('AiConfigCard handles tap correctly', (
+      WidgetTester tester,
+    ) async {
       var tapped = false;
       final provider = testProviders.first;
 
@@ -149,8 +154,9 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('TabBar widget displays correctly',
-        (WidgetTester tester) async {
+    testWidgets('TabBar widget displays correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           child: DefaultTabController(
@@ -223,14 +229,18 @@ void main() {
               Expanded(
                 child: ListView(
                   children: testProviders
-                      .where((p) =>
-                          searchQuery.isEmpty ||
-                          p.name
-                              .toLowerCase()
-                              .contains(searchQuery.toLowerCase()))
-                      .map((provider) => ListTile(
-                            title: Text(provider.name),
-                          ))
+                      .where(
+                        (p) =>
+                            searchQuery.isEmpty ||
+                            p.name.toLowerCase().contains(
+                              searchQuery.toLowerCase(),
+                            ),
+                      )
+                      .map(
+                        (provider) => ListTile(
+                          title: Text(provider.name),
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -265,14 +275,18 @@ void main() {
               Expanded(
                 child: ListView(
                   children: testProviders
-                      .where((p) =>
-                          searchQuery.isEmpty ||
-                          p.name
-                              .toLowerCase()
-                              .contains(searchQuery.toLowerCase()))
-                      .map((provider) => ListTile(
-                            title: Text(provider.name),
-                          ))
+                      .where(
+                        (p) =>
+                            searchQuery.isEmpty ||
+                            p.name.toLowerCase().contains(
+                              searchQuery.toLowerCase(),
+                            ),
+                      )
+                      .map(
+                        (provider) => ListTile(
+                          title: Text(provider.name),
+                        ),
+                      )
                       .toList(),
                 ),
               ),

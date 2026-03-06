@@ -59,13 +59,13 @@ class ResolvedProfile {
 
   @override
   int get hashCode => Object.hash(
-        thinkingModelId,
-        thinkingProvider,
-        imageRecognitionModelId,
-        imageRecognitionProvider,
-        transcriptionModelId,
-        transcriptionProvider,
-        imageGenerationModelId,
-        imageGenerationProvider,
-      );
+    thinkingModelId,
+    thinkingProvider,
+    imageRecognitionModelId,
+    imageRecognitionProvider,
+    transcriptionModelId,
+    transcriptionProvider,
+    imageGenerationModelId,
+    imageGenerationProvider,
+  );
 }

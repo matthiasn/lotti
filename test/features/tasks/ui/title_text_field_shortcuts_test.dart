@@ -39,7 +39,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved.length, 1);
-    expect(focusNode.hasFocus, isTrue,
-        reason: 'Focus should be retained after save');
+    expect(
+      focusNode.hasFocus,
+      isTrue,
+      reason: 'Focus should be retained after save',
+    );
   });
 }

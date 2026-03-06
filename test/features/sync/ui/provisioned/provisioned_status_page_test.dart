@@ -55,8 +55,9 @@ void main() {
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
-    when(() => mockMatrixService.keyVerificationStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockMatrixService.keyVerificationStream,
+    ).thenAnswer((_) => const Stream.empty());
     when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
@@ -106,8 +107,9 @@ void main() {
       );
     });
 
-    testWidgets('disconnect calls deleteConfig after confirmation',
-        (tester) async {
+    testWidgets('disconnect calls deleteConfig after confirmation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -122,8 +124,9 @@ void main() {
       await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
-      final disconnectFinder =
-          find.text(context.messages.provisionedSyncDisconnect);
+      final disconnectFinder = find.text(
+        context.messages.provisionedSyncDisconnect,
+      );
       await tester.ensureVisible(disconnectFinder);
       await tester.tap(disconnectFinder);
       await tester.pumpAndSettle();
@@ -175,8 +178,9 @@ void main() {
       expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
-      final disconnectFinder =
-          find.text(context.messages.provisionedSyncDisconnect);
+      final disconnectFinder = find.text(
+        context.messages.provisionedSyncDisconnect,
+      );
       await tester.ensureVisible(disconnectFinder);
       await tester.tap(disconnectFinder);
       await tester.pumpAndSettle();
@@ -188,8 +192,9 @@ void main() {
       expect(find.text('Open Sync Status'), findsOneWidget);
     });
 
-    testWidgets('disconnect does not call deleteConfig when cancelled',
-        (tester) async {
+    testWidgets('disconnect does not call deleteConfig when cancelled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -204,8 +209,9 @@ void main() {
       await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
-      final disconnectFinder =
-          find.text(context.messages.provisionedSyncDisconnect);
+      final disconnectFinder = find.text(
+        context.messages.provisionedSyncDisconnect,
+      );
       await tester.ensureVisible(disconnectFinder);
       await tester.tap(disconnectFinder);
       await tester.pumpAndSettle();
@@ -246,8 +252,9 @@ void main() {
       );
     });
 
-    testWidgets('shows no-unverified-devices indicator when list is empty',
-        (tester) async {
+    testWidgets('shows no-unverified-devices indicator when list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -264,8 +271,9 @@ void main() {
       expect(find.byType(UnverifiedDevices), findsOneWidget);
     });
 
-    testWidgets('shows device cards when unverified devices exist',
-        (tester) async {
+    testWidgets('shows device cards when unverified devices exist', (
+      tester,
+    ) async {
       final device = MockDeviceKeys();
       final keyVerification = MockKeyVerification();
       final runner = MockKeyVerificationRunner();
@@ -370,8 +378,9 @@ void main() {
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
       // Toggle reveal
-      final toggleFinder =
-          find.byKey(const Key('statusToggleHandoverVisibility'));
+      final toggleFinder = find.byKey(
+        const Key('statusToggleHandoverVisibility'),
+      );
       await tester.ensureVisible(toggleFinder);
       await tester.pumpAndSettle();
       await tester.tap(toggleFinder);
@@ -471,8 +480,9 @@ void main() {
       when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
       when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
       when(() => mockDevice.userId).thenReturn('@alice:example.com');
-      when(() => mockMatrixService.verifyDevice(mockDevice))
-          .thenAnswer((_) async {});
+      when(
+        () => mockMatrixService.verifyDevice(mockDevice),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

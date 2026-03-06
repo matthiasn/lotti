@@ -91,8 +91,9 @@ Learnings:
       expect(find.byIcon(Icons.expand_more), findsOneWidget);
     });
 
-    testWidgets('expands to show full content when chevron is tapped',
-        (tester) async {
+    testWidgets('expands to show full content when chevron is tapped', (
+      tester,
+    ) async {
       const responseWithTldr = '''
 # Task Title
 
@@ -220,8 +221,10 @@ More content here...''';
       expect(find.text('# Task Title to be Removed'), findsNothing);
 
       // TLDR should be visible
-      expect(find.textContaining('This summary should be visible'),
-          findsOneWidget);
+      expect(
+        find.textContaining('This summary should be visible'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Goal section is hidden when collapsed', (tester) async {
@@ -261,8 +264,10 @@ access their data from anywhere.
       expect(find.textContaining('Quick summary'), findsOneWidget);
 
       // Goal section should NOT be visible when collapsed
-      expect(find.textContaining('Enable secure user authentication'),
-          findsNothing);
+      expect(
+        find.textContaining('Enable secure user authentication'),
+        findsNothing,
+      );
       expect(find.textContaining('Achieved results:'), findsNothing);
     });
 
@@ -304,8 +309,10 @@ access their data from anywhere.
       }
 
       // Now Goal section should be visible
-      expect(find.textContaining('Enable secure user authentication'),
-          findsOneWidget);
+      expect(
+        find.textContaining('Enable secure user authentication'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Achieved results:'), findsOneWidget);
     });
 
@@ -336,12 +343,15 @@ Additional content after TLDR...''';
       );
 
       // TLDR content should be visible
-      expect(find.textContaining('entire paragraph should be bold'),
-          findsOneWidget);
+      expect(
+        find.textContaining('entire paragraph should be bold'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('renders links with custom styling and handles tap',
-        (tester) async {
+    testWidgets('renders links with custom styling and handles tap', (
+      tester,
+    ) async {
       // Set up mock URL launcher and capture original for cleanup
       final originalPlatform = UrlLauncherPlatform.instance;
       final mockUrlLauncher = MockUrlLauncher();
@@ -349,10 +359,12 @@ Additional content after TLDR...''';
       UrlLauncherPlatform.instance = mockUrlLauncher;
       addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
 
-      when(() => mockUrlLauncher.canLaunch(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockUrlLauncher.launchUrl(any(), any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.canLaunch(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
 
       // Use a simpler markdown structure without bullets
       const responseWithLink = '''
@@ -388,8 +400,9 @@ See [Flutter Docs](https://docs.flutter.dev) for more information.''';
       // Find GestureDetector widgets with onTap and manually call the callback
       // to verify the URL launcher integration
       var linkCallbackFound = false;
-      final gestureDetectors =
-          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      final gestureDetectors = tester.widgetList<GestureDetector>(
+        find.byType(GestureDetector),
+      );
       for (final gd in gestureDetectors) {
         if (gd.onTap != null) {
           // Try to invoke the callback and check if it triggers URL launcher
@@ -398,19 +411,23 @@ See [Flutter Docs](https://docs.flutter.dev) for more information.''';
 
           // Check if URL launcher was called with the expected URL
           try {
-            verify(() => mockUrlLauncher.launchUrl(
-                  'https://docs.flutter.dev',
-                  any(),
-                )).called(1);
+            verify(
+              () => mockUrlLauncher.launchUrl(
+                'https://docs.flutter.dev',
+                any(),
+              ),
+            ).called(1);
             linkCallbackFound = true;
             break;
           } catch (_) {
             // This callback didn't trigger the right URL, continue searching
             reset(mockUrlLauncher);
-            when(() => mockUrlLauncher.canLaunch(any()))
-                .thenAnswer((_) async => true);
-            when(() => mockUrlLauncher.launchUrl(any(), any()))
-                .thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.canLaunch(any()),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.launchUrl(any(), any()),
+            ).thenAnswer((_) async => true);
           }
         }
       }
@@ -425,10 +442,12 @@ See [Flutter Docs](https://docs.flutter.dev) for more information.''';
       UrlLauncherPlatform.instance = mockUrlLauncher;
       addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
 
-      when(() => mockUrlLauncher.canLaunch(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockUrlLauncher.launchUrl(any(), any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.canLaunch(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
 
       const responseWithTldrLink = '''
 # Task Title
@@ -458,8 +477,9 @@ Additional content here.''';
       // Find GestureDetector widgets with onTap and manually call the callback
       // to verify the URL launcher integration
       var linkCallbackFound = false;
-      final gestureDetectors =
-          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      final gestureDetectors = tester.widgetList<GestureDetector>(
+        find.byType(GestureDetector),
+      );
       for (final gd in gestureDetectors) {
         if (gd.onTap != null) {
           // Try to invoke the callback and check if it triggers URL launcher
@@ -468,19 +488,23 @@ Additional content here.''';
 
           // Check if URL launcher was called with the expected URL
           try {
-            verify(() => mockUrlLauncher.launchUrl(
-                  'https://github.com/test/repo/issues/123',
-                  any(),
-                )).called(1);
+            verify(
+              () => mockUrlLauncher.launchUrl(
+                'https://github.com/test/repo/issues/123',
+                any(),
+              ),
+            ).called(1);
             linkCallbackFound = true;
             break;
           } catch (_) {
             // This callback didn't trigger the right URL, continue searching
             reset(mockUrlLauncher);
-            when(() => mockUrlLauncher.canLaunch(any()))
-                .thenAnswer((_) async => true);
-            when(() => mockUrlLauncher.launchUrl(any(), any()))
-                .thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.canLaunch(any()),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.launchUrl(any(), any()),
+            ).thenAnswer((_) async => true);
           }
         }
       }

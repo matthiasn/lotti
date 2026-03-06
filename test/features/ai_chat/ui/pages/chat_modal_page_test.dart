@@ -93,14 +93,15 @@ void _stubCreateSession(
   MockChatRepository repo, {
   required String categoryId,
 }) {
-  when(() => repo.createSession(categoryId: categoryId))
-      .thenAnswer((_) async => ChatSession(
-            id: 'test-session',
-            title: 'New Chat',
-            createdAt: DateTime(2024),
-            lastMessageAt: DateTime(2024),
-            messages: [],
-          ));
+  when(() => repo.createSession(categoryId: categoryId)).thenAnswer(
+    (_) async => ChatSession(
+      id: 'test-session',
+      title: 'New Chat',
+      createdAt: DateTime(2024),
+      lastMessageAt: DateTime(2024),
+      messages: [],
+    ),
+  );
 }
 
 void main() {
@@ -121,59 +122,67 @@ void main() {
       GetIt.instance.reset();
     });
 
-    testWidgets('displays category selection prompt when no category selected',
-        (tester) async {
-      await _pumpChatModalPage(
-        tester,
-        selectedCategoryIds: {},
-        chatRepository: mockChatRepository,
-      );
-      await tester.pump();
+    testWidgets(
+      'displays category selection prompt when no category selected',
+      (tester) async {
+        await _pumpChatModalPage(
+          tester,
+          selectedCategoryIds: {},
+          chatRepository: mockChatRepository,
+        );
+        await tester.pump();
 
-      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-      expect(find.text('Please select a single category'), findsOneWidget);
-      expect(
-        find.text(
-          'The AI assistant needs a specific category context '
-          'to help you with tasks',
-        ),
-        findsOneWidget,
-      );
-    });
+        expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+        expect(find.text('Please select a single category'), findsOneWidget);
+        expect(
+          find.text(
+            'The AI assistant needs a specific category context '
+            'to help you with tasks',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
-        'displays category selection prompt when multiple categories selected',
-        (tester) async {
-      await _pumpChatModalPage(
-        tester,
-        selectedCategoryIds: {'cat1', 'cat2'},
-        chatRepository: mockChatRepository,
-      );
-      await tester.pump();
+      'displays category selection prompt when multiple categories selected',
+      (tester) async {
+        await _pumpChatModalPage(
+          tester,
+          selectedCategoryIds: {'cat1', 'cat2'},
+          chatRepository: mockChatRepository,
+        );
+        await tester.pump();
 
-      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-      expect(find.text('Please select a single category'), findsOneWidget);
-    });
+        expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+        expect(find.text('Please select a single category'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'displays RefactoredChatInterface when single category selected',
-        (tester) async {
-      _stubCreateSession(mockChatRepository, categoryId: 'single-category-id');
+      'displays RefactoredChatInterface when single category selected',
+      (tester) async {
+        _stubCreateSession(
+          mockChatRepository,
+          categoryId: 'single-category-id',
+        );
 
-      await _pumpChatModalPage(
-        tester,
-        selectedCategoryIds: {'single-category-id'},
-        chatRepository: mockChatRepository,
-      );
-      await tester.pump();
+        await _pumpChatModalPage(
+          tester,
+          selectedCategoryIds: {'single-category-id'},
+          chatRepository: mockChatRepository,
+        );
+        await tester.pump();
 
-      expect(find.byType(ChatInterface), findsOneWidget);
-      expect(find.byIcon(Icons.category_outlined), findsNothing);
-      expect(find.text('Please select a single category'), findsNothing);
-    });
+        expect(find.byType(ChatInterface), findsOneWidget);
+        expect(find.byIcon(Icons.category_outlined), findsNothing);
+        expect(find.text('Please select a single category'), findsNothing);
+      },
+    );
 
-    testWidgets('passes correct categoryId to RefactoredChatInterface',
-        (tester) async {
+    testWidgets('passes correct categoryId to RefactoredChatInterface', (
+      tester,
+    ) async {
       const categoryId = 'test-category-123';
       _stubCreateSession(mockChatRepository, categoryId: categoryId);
 
@@ -190,8 +199,9 @@ void main() {
       expect(chatInterfaceWidget.categoryId, equals(categoryId));
     });
 
-    testWidgets('uses SizedBox with 85% screen height constraint',
-        (tester) async {
+    testWidgets('uses SizedBox with 85% screen height constraint', (
+      tester,
+    ) async {
       _stubCreateSession(
         mockChatRepository,
         categoryId: 'single-category-id',
@@ -226,8 +236,9 @@ void main() {
       expect(find.byType(ChatInterface), findsNothing);
     });
 
-    testWidgets('shows chat interface with single category selected',
-        (tester) async {
+    testWidgets('shows chat interface with single category selected', (
+      tester,
+    ) async {
       _stubCreateSession(mockChatRepository, categoryId: 'test-category');
 
       await _pumpChatModalPage(
@@ -241,8 +252,9 @@ void main() {
       expect(find.byType(ChatInterface), findsOneWidget);
     });
 
-    testWidgets('ambient pulse overlay toggles with streaming state',
-        (tester) async {
+    testWidgets('ambient pulse overlay toggles with streaming state', (
+      tester,
+    ) async {
       if (!GetIt.instance.isRegistered<LoggingService>()) {
         GetIt.instance.registerSingleton<LoggingService>(LoggingService());
       }
@@ -252,8 +264,9 @@ void main() {
         tester,
         selectedCategoryIds: {'cat'},
         extraOverrides: [
-          chatSessionControllerProvider('cat')
-              .overrideWith(_StreamingChatController.new),
+          chatSessionControllerProvider(
+            'cat',
+          ).overrideWith(_StreamingChatController.new),
         ],
       );
       await tester.pump();
@@ -275,8 +288,9 @@ void main() {
         tester,
         selectedCategoryIds: {'cat'},
         extraOverrides: [
-          chatSessionControllerProvider('cat')
-              .overrideWith(_IdleChatController.new),
+          chatSessionControllerProvider(
+            'cat',
+          ).overrideWith(_IdleChatController.new),
         ],
       );
       await tester.pump();

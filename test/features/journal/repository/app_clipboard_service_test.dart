@@ -13,18 +13,19 @@ void main() {
       service = makeSuperClipboardService();
       // Mock platform clipboard channel
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform,
-              (MethodCall call) async {
-        if (call.method == 'Clipboard.setData') {
-          final args = call.arguments as Map;
-          stored = args['text'] as String?;
-          return null;
-        }
-        if (call.method == 'Clipboard.getData') {
-          return <String, dynamic>{'text': stored};
-        }
-        return null;
-      });
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            if (call.method == 'Clipboard.setData') {
+              final args = call.arguments as Map;
+              stored = args['text'] as String?;
+              return null;
+            }
+            if (call.method == 'Clipboard.getData') {
+              return <String, dynamic>{'text': stored};
+            }
+            return null;
+          });
       stored = '';
     });
 

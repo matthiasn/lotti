@@ -146,8 +146,9 @@ class _ProviderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : context.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.6),
+            : context.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.6,
+              ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
@@ -185,8 +186,9 @@ class _ProviderCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.colorScheme.primary.withValues(alpha: 0.15)
-                        : context.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.8),
+                        : context.colorScheme.surfaceContainerHigh.withValues(
+                            alpha: 0.8,
+                          ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
@@ -225,8 +227,9 @@ class _ProviderCard extends StatelessWidget {
                         Text(
                           provider.description!,
                           style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
+                            color: context.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
                             height: 1.4,
                           ),
                           maxLines: 2,
@@ -246,8 +249,9 @@ class _ProviderCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: context.colorScheme.primary
-                              .withValues(alpha: 0.3),
+                          color: context.colorScheme.primary.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -265,8 +269,9 @@ class _ProviderCard extends StatelessWidget {
                     height: 28,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color:
-                            context.colorScheme.outline.withValues(alpha: 0.3),
+                        color: context.colorScheme.outline.withValues(
+                          alpha: 0.3,
+                        ),
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(20),

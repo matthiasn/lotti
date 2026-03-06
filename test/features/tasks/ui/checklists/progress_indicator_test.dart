@@ -28,8 +28,9 @@ void main() {
       expect(sizedBox.height, 24);
     });
 
-    testWidgets('renders CircularProgressIndicator with correct properties',
-        (tester) async {
+    testWidgets('renders CircularProgressIndicator with correct properties', (
+      tester,
+    ) async {
       const completionRate = 0.75;
 
       await tester.pumpWidget(
@@ -51,8 +52,10 @@ void main() {
       expect(progressIndicator.semanticsLabel, 'Checklist progress');
       expect(progressIndicator.color, successColor);
       // Background is a light green (20% opacity of success color)
-      expect(progressIndicator.backgroundColor,
-          successColor.withValues(alpha: 0.2));
+      expect(
+        progressIndicator.backgroundColor,
+        successColor.withValues(alpha: 0.2),
+      );
     });
 
     testWidgets('handles different completion rates correctly', (tester) async {
@@ -85,8 +88,9 @@ void main() {
       expect(progressIndicator.value, 1.0);
     });
 
-    testWidgets('renders correctly with empty checklist (totalCount = 0)',
-        (tester) async {
+    testWidgets('renders correctly with empty checklist (totalCount = 0)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const WidgetTestBench(
           child: ChecklistProgressIndicator(

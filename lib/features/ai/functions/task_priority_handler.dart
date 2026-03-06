@@ -173,7 +173,8 @@ class TaskPriorityHandler {
 
       // Validate priority value
       if (priority == null) {
-        final message = 'Invalid priority: must be P0, P1, P2, or P3. '
+        final message =
+            'Invalid priority: must be P0, P1, P2, or P3. '
             'Received: $rawPriority';
         _sendResponse(call.id, message, manager);
         return TaskPriorityResult(

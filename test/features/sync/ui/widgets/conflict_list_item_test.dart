@@ -105,8 +105,10 @@ _ConflictTestData _buildConflictData({
   final baseStatusLabel = status == ConflictStatus.resolved
       ? l10n.conflictsResolved
       : l10n.conflictsUnresolved;
-  final formattedStatusLabel =
-      toBeginningOfSentenceCase(baseStatusLabel, l10n.localeName);
+  final formattedStatusLabel = toBeginningOfSentenceCase(
+    baseStatusLabel,
+    l10n.localeName,
+  );
   final semanticsLabel =
       '$formattedStatusLabel, $timestampLabel, ${l10n.entryTypeLabelJournalEntry}';
 

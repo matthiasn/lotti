@@ -70,8 +70,9 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
 
     // Set up mock behavior for UpdateNotifications
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -105,8 +106,9 @@ void main() {
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Set up default mock behavior for AI config repository
-    when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
-        .thenAnswer((_) => Stream.value([]));
+    when(
+      () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+    ).thenAnswer((_) => Stream.value([]));
 
     container = ProviderContainer(
       overrides: [
@@ -167,8 +169,9 @@ void main() {
         // Override the aiConfigByIdProvider to return our test prompt
         final testContainer = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
@@ -188,8 +191,9 @@ void main() {
         ).thenAnswer((invocation) async {
           final onProgress =
               invocation.namedArguments[#onProgress] as void Function(String);
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           // Simulate progress updates
           onStatusChange(InferenceStatus.running);
@@ -288,8 +292,9 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigByIdProvider('prompt-1').overrideWith(
             (ref) => Future.value(promptConfig),
           ),
@@ -308,8 +313,9 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         runCount++;
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
+        final onStatusChange =
+            invocation.namedArguments[#onStatusChange]
+                as void Function(InferenceStatus);
         onStatusChange(InferenceStatus.running);
         await completer.future;
         onStatusChange(InferenceStatus.idle);
@@ -370,8 +376,9 @@ void main() {
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
@@ -388,8 +395,9 @@ void main() {
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
           onStatusChange(InferenceStatus.running);
           throw Exception('Test error');
         });
@@ -479,8 +487,9 @@ void main() {
       ];
 
       // Mock the AI config stream
-      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value(expectedPrompts));
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value(expectedPrompts));
 
       when(
         () => mockRepository.getActivePromptsForContext(
@@ -491,8 +500,9 @@ void main() {
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           createEntryControllerOverride(taskEntity),
@@ -507,13 +517,15 @@ void main() {
       );
 
       // Wait for entry controller to be ready
-      await testContainer
-          .read(entryControllerProvider(id: taskEntity.id).future);
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
 
       // Wait for config provider to be ready
       await testContainer.read(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-            .future,
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.prompt,
+        ).future,
       );
 
       final prompts = await testContainer.read(
@@ -568,8 +580,9 @@ void main() {
       );
 
       // Mock the AI config stream
-      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value([availablePrompt]));
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value([availablePrompt]));
 
       when(
         () => mockRepository.getActivePromptsForContext(
@@ -580,8 +593,9 @@ void main() {
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           createEntryControllerOverride(taskEntity),
@@ -596,13 +610,15 @@ void main() {
       );
 
       // Wait for entry controller to be ready
-      await testContainer
-          .read(entryControllerProvider(id: taskEntity.id).future);
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
 
       // Wait for config provider to be ready
       await testContainer.read(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-            .future,
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.prompt,
+        ).future,
       );
 
       final hasPrompts = await testContainer.read(
@@ -625,8 +641,9 @@ void main() {
       );
 
       // Mock the AI config stream
-      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value([]));
 
       when(
         () => mockRepository.getActivePromptsForContext(
@@ -637,8 +654,9 @@ void main() {
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           createEntryControllerOverride(journalEntry),
@@ -653,13 +671,15 @@ void main() {
       );
 
       // Wait for entry controller to be ready
-      await testContainer
-          .read(entryControllerProvider(id: journalEntry.id).future);
+      await testContainer.read(
+        entryControllerProvider(id: journalEntry.id).future,
+      );
 
       // Wait for config provider to be ready
       await testContainer.read(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-            .future,
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.prompt,
+        ).future,
       );
 
       final hasPrompts = await testContainer.read(
@@ -689,8 +709,9 @@ void main() {
       // Override the aiConfigByIdProvider to return our test prompt
       container = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigByIdProvider('prompt-1').overrideWith(
             (ref) => Future.value(promptConfig),
           ),
@@ -755,8 +776,9 @@ void main() {
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
@@ -779,7 +801,6 @@ void main() {
             },
             fireImmediately: true,
           )
-
           // Listen to inference status for linked entity
           ..listen(
             inferenceStatusControllerProvider(
@@ -803,8 +824,9 @@ void main() {
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           // Simulate status changes
           onStatusChange(InferenceStatus.running);
@@ -853,8 +875,9 @@ void main() {
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
@@ -877,7 +900,6 @@ void main() {
             },
             fireImmediately: true,
           )
-
           // Listen to inference status for linked entity
           ..listen(
             inferenceStatusControllerProvider(
@@ -901,8 +923,9 @@ void main() {
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           // Simulate running status then error
           onStatusChange(InferenceStatus.running);
@@ -949,8 +972,9 @@ void main() {
         active: true,
       );
 
-      when(() => mockCategoryRepository.watchCategory(categoryId))
-          .thenAnswer((_) => categoryChangesStream.stream);
+      when(
+        () => mockCategoryRepository.watchCategory(categoryId),
+      ).thenAnswer((_) => categoryChangesStream.stream);
 
       // Start listening to the provider
       final subscription = container.listen(
@@ -1011,8 +1035,9 @@ void main() {
       ];
 
       // Mock the AI config stream
-      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value(expectedPrompts));
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value(expectedPrompts));
 
       // Mock category watching with an immediate value
       final testCategory = CategoryDefinition(
@@ -1025,18 +1050,22 @@ void main() {
         active: true,
       );
 
-      when(() => mockCategoryRepository.watchCategory(categoryId))
-          .thenAnswer((_) => Stream.value(testCategory));
+      when(
+        () => mockCategoryRepository.watchCategory(categoryId),
+      ).thenAnswer((_) => Stream.value(testCategory));
 
-      when(() => mockRepository.getActivePromptsForContext(
-              entity: any(named: 'entity')))
-          .thenAnswer((_) async => expectedPrompts);
+      when(
+        () => mockRepository.getActivePromptsForContext(
+          entity: any(named: 'entity'),
+        ),
+      ).thenAnswer((_) async => expectedPrompts);
 
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           createEntryControllerOverride(taskEntity),
@@ -1051,13 +1080,15 @@ void main() {
       );
 
       // Wait for entry controller to be ready
-      await testContainer
-          .read(entryControllerProvider(id: taskEntity.id).future);
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
 
       // Wait for config provider to be ready
       await testContainer.read(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-            .future,
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.prompt,
+        ).future,
       );
 
       // Track if categoryChangesProvider was accessed
@@ -1122,18 +1153,22 @@ void main() {
       ];
 
       // Mock the AI config stream
-      when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value(expectedPrompts));
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value(expectedPrompts));
 
-      when(() => mockRepository.getActivePromptsForContext(
-              entity: any(named: 'entity')))
-          .thenAnswer((_) async => expectedPrompts);
+      when(
+        () => mockRepository.getActivePromptsForContext(
+          entity: any(named: 'entity'),
+        ),
+      ).thenAnswer((_) async => expectedPrompts);
 
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           createEntryControllerOverride(taskEntity),
@@ -1148,13 +1183,15 @@ void main() {
       );
 
       // Wait for entry controller to be ready
-      await testContainer
-          .read(entryControllerProvider(id: taskEntity.id).future);
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
 
       // Wait for config provider to be ready
       await testContainer.read(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-            .future,
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.prompt,
+        ).future,
       );
 
       // Read the provider

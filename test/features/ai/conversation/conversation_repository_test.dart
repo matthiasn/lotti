@@ -155,16 +155,18 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage in background
         final sendFuture = repository.sendMessage(
@@ -205,16 +207,18 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage
         final sendFuture = repository.sendMessage(
@@ -277,24 +281,29 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-        when(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).thenAnswer((_) async => ConversationAction.continueConversation);
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((_) async => ConversationAction.continueConversation);
 
-        when(() => mockStrategy.getContinuationPrompt(any()))
-            .thenReturn('Continue processing');
+        when(
+          () => mockStrategy.getContinuationPrompt(any()),
+        ).thenReturn('Continue processing');
 
         // Start sendMessage
         final sendFuture = repository.sendMessage(
@@ -343,7 +352,6 @@ void main() {
               created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
             ),
           )
-
           // Second response after continuation
           ..add(
             CreateChatCompletionStreamResponse(
@@ -364,10 +372,12 @@ void main() {
         await streamController.close();
         await sendFuture;
 
-        verify(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).called(1);
+        verify(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).called(1);
         verify(() => mockStrategy.getContinuationPrompt(any())).called(1);
       });
 
@@ -375,21 +385,25 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-        when(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).thenAnswer((_) async => ConversationAction.complete);
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((_) async => ConversationAction.complete);
 
         // Start sendMessage
         final sendFuture = repository.sendMessage(
@@ -441,10 +455,12 @@ void main() {
         await streamController.close();
         await sendFuture;
 
-        verify(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).called(1);
+        verify(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).called(1);
         verifyNever(() => mockStrategy.getContinuationPrompt(any()));
       });
 
@@ -454,16 +470,18 @@ void main() {
 
         // Mock all three stream responses upfront
         var callCount = 0;
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) {
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) {
           callCount++;
           return Stream.value(
             CreateChatCompletionStreamResponse(
@@ -534,15 +552,17 @@ void main() {
       });
 
       test('handles errors during API call', () async {
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenThrow(Exception('API Error'));
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenThrow(Exception('API Error'));
 
         final manager = repository.getConversation(conversationId)!;
 
@@ -567,12 +587,14 @@ void main() {
         await errorExpectation;
       });
 
-      test('handles tool call arguments accumulation with StringBuffer',
-          () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+      test(
+        'handles tool call arguments accumulation with StringBuffer',
+        () async {
+          final streamController =
+              StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
+          when(
+            () => mockOllamaRepo.generateTextWithMessages(
               messages: any(named: 'messages'),
               model: any(named: 'model'),
               provider: any(named: 'provider'),
@@ -581,110 +603,113 @@ void main() {
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
               turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+            ),
+          ).thenAnswer((_) => streamController.stream);
 
-        final sendFuture = repository.sendMessage(
-          conversationId: conversationId,
-          message: 'Accumulate tool args',
-          model: 'test-model',
-          provider: provider,
-          inferenceRepo: mockOllamaRepo,
-          tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
+          final sendFuture = repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Accumulate tool args',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            tools: [
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'test_function',
+                  description: 'A test function',
+                ),
               ),
-            ),
-          ],
-        );
-
-        // First chunk with tool call name and partial arguments
-        streamController
-          ..add(
-            CreateChatCompletionStreamResponse(
-              id: 'test-response',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
-                    toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{"arg',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            ),
-          )
-
-          // Second chunk with more arguments
-          ..add(
-            CreateChatCompletionStreamResponse(
-              id: 'test-response',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
-                    toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          arguments: '": "value"}',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            ),
+            ],
           );
 
-        await streamController.close();
-        await sendFuture;
+          // First chunk with tool call name and partial arguments
+          streamController
+            ..add(
+              CreateChatCompletionStreamResponse(
+                id: 'test-response',
+                choices: [
+                  const ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: 0,
+                          id: 'tool-1',
+                          type: ChatCompletionStreamMessageToolCallChunkType
+                              .function,
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            name: 'test_function',
+                            arguments: '{"arg',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+            )
+            // Second chunk with more arguments
+            ..add(
+              CreateChatCompletionStreamResponse(
+                id: 'test-response',
+                choices: [
+                  const ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: 0,
+                          id: 'tool-1',
+                          type: ChatCompletionStreamMessageToolCallChunkType
+                              .function,
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            arguments: '": "value"}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              ),
+            );
 
-        // Verify the conversation was updated
-        final manager = repository.getConversation(conversationId);
-        expect(manager, isNotNull);
+          await streamController.close();
+          await sendFuture;
 
-        // The assistant message should have the complete tool call with proper JSON
-        final messages = manager!.messages;
-        expect(messages.length, 2); // User + Assistant
+          // Verify the conversation was updated
+          final manager = repository.getConversation(conversationId);
+          expect(manager, isNotNull);
 
-        // Tool calls would have been accumulated properly
-        // Arguments would be '{"arg": "value"}'
-      });
+          // The assistant message should have the complete tool call with proper JSON
+          final messages = manager!.messages;
+          expect(messages.length, 2); // User + Assistant
+
+          // Tool calls would have been accumulated properly
+          // Arguments would be '{"arg": "value"}'
+        },
+      );
 
       test('handles split UTF-8 characters in tool call arguments', () async {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
           conversationId: conversationId,
@@ -731,7 +756,6 @@ void main() {
               created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
             ),
           )
-
           // Second chunk with emoji and rest
           ..add(
             CreateChatCompletionStreamResponse(
@@ -772,16 +796,18 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
           conversationId: conversationId,
@@ -840,16 +866,18 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
           conversationId: conversationId,
@@ -936,16 +964,18 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
           conversationId: conversationId,
@@ -1009,7 +1039,6 @@ void main() {
               created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
             ),
           )
-
           // Second chunk completing both
           ..add(
             CreateChatCompletionStreamResponse(
@@ -1065,12 +1094,14 @@ void main() {
         // - function_b with arguments: {"b": 2}
       });
 
-      test('handles Gemini-style multiple complete tool calls in one chunk',
-          () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+      test(
+        'handles Gemini-style multiple complete tool calls in one chunk',
+        () async {
+          final streamController =
+              StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
+          when(
+            () => mockOllamaRepo.generateTextWithMessages(
               messages: any(named: 'messages'),
               model: any(named: 'model'),
               provider: any(named: 'provider'),
@@ -1079,108 +1110,114 @@ void main() {
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
               turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
-
-        final sendFuture = repository.sendMessage(
-          conversationId: conversationId,
-          message: 'Gemini-style tool calls',
-          model: 'test-model',
-          provider: provider,
-          inferenceRepo: mockOllamaRepo,
-          tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'function_a',
-                description: 'First function',
-              ),
             ),
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'function_b',
-                description: 'Second function',
-              ),
-            ),
-          ],
-        );
+          ).thenAnswer((_) => streamController.stream);
 
-        // Gemini sends multiple complete tool calls in one chunk
-        // with empty IDs and null indices
-        streamController.add(
-          CreateChatCompletionStreamResponse(
-            id: 'gemini-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: [
-                    // First tool call - empty ID, null index, complete arguments
-                    ChatCompletionStreamMessageToolCallChunk(
-                      id: '', // Empty ID
-                      // index is null (not specified)
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'function_a',
-                        arguments: '{"param": "value1"}',
-                      ),
-                    ),
-                    // Second tool call - empty ID, null index, complete arguments
-                    ChatCompletionStreamMessageToolCallChunk(
-                      id: '', // Empty ID
-                      // index is null (not specified)
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'function_b',
-                        arguments: '{"param": "value2"}',
-                      ),
-                    ),
-                  ],
+          final sendFuture = repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Gemini-style tool calls',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            tools: [
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'function_a',
+                  description: 'First function',
+                ),
+              ),
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'function_b',
+                  description: 'Second function',
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
+          );
 
-        await streamController.close();
-        await sendFuture;
+          // Gemini sends multiple complete tool calls in one chunk
+          // with empty IDs and null indices
+          streamController.add(
+            CreateChatCompletionStreamResponse(
+              id: 'gemini-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      // First tool call - empty ID, null index, complete arguments
+                      ChatCompletionStreamMessageToolCallChunk(
+                        id: '', // Empty ID
+                        // index is null (not specified)
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'function_a',
+                          arguments: '{"param": "value1"}',
+                        ),
+                      ),
+                      // Second tool call - empty ID, null index, complete arguments
+                      ChatCompletionStreamMessageToolCallChunk(
+                        id: '', // Empty ID
+                        // index is null (not specified)
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'function_b',
+                          arguments: '{"param": "value2"}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
 
-        // Verify both tool calls were detected as Gemini-style and processed
-        final manager = repository.getConversation(conversationId);
-        expect(manager, isNotNull);
-        expect(manager!.messages.length, 2);
+          await streamController.close();
+          await sendFuture;
 
-        // The assistant message should have the tool calls
-        final assistantMsg = manager.messages.last;
-        expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
+          // Verify both tool calls were detected as Gemini-style and processed
+          final manager = repository.getConversation(conversationId);
+          expect(manager, isNotNull);
+          expect(manager!.messages.length, 2);
 
-        // Tool calls would have been given turn-prefixed IDs:
-        // tool_turn0_0 and tool_turn0_1
-      });
+          // The assistant message should have the tool calls
+          final assistantMsg = manager.messages.last;
+          expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
+
+          // Tool calls would have been given turn-prefixed IDs:
+          // tool_turn0_0 and tool_turn0_1
+        },
+      );
 
       test('handles strategy with wait action', () async {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-        when(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).thenAnswer((_) async => ConversationAction.wait);
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((_) async => ConversationAction.wait);
 
         final sendFuture = repository.sendMessage(
           conversationId: conversationId,
@@ -1231,10 +1268,12 @@ void main() {
         await sendFuture;
 
         // Verify strategy was called
-        verify(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).called(1);
+        verify(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).called(1);
 
         // getContinuationPrompt should NOT be called for wait action
         verifyNever(() => mockStrategy.getContinuationPrompt(any()));
@@ -1244,21 +1283,25 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-        when(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).thenAnswer((_) async => ConversationAction.continueConversation);
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((_) async => ConversationAction.continueConversation);
 
         // Return null for continuation prompt - should stop the loop
         when(() => mockStrategy.getContinuationPrompt(any())).thenReturn(null);
@@ -1312,10 +1355,12 @@ void main() {
         await sendFuture;
 
         // Verify strategy was called but loop ended
-        verify(() => mockStrategy.processToolCalls(
-              toolCalls: any(named: 'toolCalls'),
-              manager: any(named: 'manager'),
-            )).called(1);
+        verify(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).called(1);
         verify(() => mockStrategy.getContinuationPrompt(any())).called(1);
 
         // Should only have 2 messages (user + assistant) since loop ended
@@ -1326,16 +1371,18 @@ void main() {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
           conversationId: conversationId,
@@ -1381,11 +1428,13 @@ void main() {
         expect(usage.outputTokens, 50);
       });
 
-      test('returns accumulated usage across multi-turn conversation',
-          () async {
-        var callCount = 0;
+      test(
+        'returns accumulated usage across multi-turn conversation',
+        () async {
+          var callCount = 0;
 
-        when(() => mockOllamaRepo.generateTextWithMessages(
+          when(
+            () => mockOllamaRepo.generateTextWithMessages(
               messages: any(named: 'messages'),
               model: any(named: 'model'),
               provider: any(named: 'provider'),
@@ -1394,107 +1443,114 @@ void main() {
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
               turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer((_) {
-          callCount++;
-          if (callCount == 1) {
-            // First turn: tool call with usage
-            return Stream.fromIterable([
-              const CreateChatCompletionStreamResponse(
-                id: 'resp-1',
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
-                      toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
-                          index: 0,
-                          id: 'tool-1',
-                          type: ChatCompletionStreamMessageToolCallChunkType
-                              .function,
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: 'test_function',
-                            arguments: '{}',
+            ),
+          ).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) {
+              // First turn: tool call with usage
+              return Stream.fromIterable([
+                const CreateChatCompletionStreamResponse(
+                  id: 'resp-1',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(
+                        toolCalls: [
+                          ChatCompletionStreamMessageToolCallChunk(
+                            index: 0,
+                            id: 'tool-1',
+                            type: ChatCompletionStreamMessageToolCallChunkType
+                                .function,
+                            function: ChatCompletionStreamMessageFunctionCall(
+                              name: 'test_function',
+                              arguments: '{}',
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: 1700000000,
+                  usage: CompletionUsage(
+                    promptTokens: 80,
+                    completionTokens: 20,
+                    totalTokens: 100,
                   ),
-                ],
-                object: 'chat.completion.chunk',
-                created: 1700000000,
-                usage: CompletionUsage(
-                  promptTokens: 80,
-                  completionTokens: 20,
-                  totalTokens: 100,
                 ),
-              ),
-            ]);
-          } else {
-            // Second turn: final response with usage
-            return Stream.fromIterable([
-              const CreateChatCompletionStreamResponse(
-                id: 'resp-2',
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    index: 0,
-                    delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+              ]);
+            } else {
+              // Second turn: final response with usage
+              return Stream.fromIterable([
+                const CreateChatCompletionStreamResponse(
+                  id: 'resp-2',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: 1700000000,
+                  usage: CompletionUsage(
+                    promptTokens: 120,
+                    completionTokens: 30,
+                    totalTokens: 150,
                   ),
-                ],
-                object: 'chat.completion.chunk',
-                created: 1700000000,
-                usage: CompletionUsage(
-                  promptTokens: 120,
-                  completionTokens: 30,
-                  totalTokens: 150,
                 ),
-              ),
-            ]);
-          }
-        });
+              ]);
+            }
+          });
 
-        when(() => mockStrategy.processToolCalls(
+          when(
+            () => mockStrategy.processToolCalls(
               toolCalls: any(named: 'toolCalls'),
               manager: any(named: 'manager'),
-            )).thenAnswer((_) async => ConversationAction.continueConversation);
-
-        when(() => mockStrategy.getContinuationPrompt(any()))
-            .thenReturn('Continue');
-
-        final usage = await repository.sendMessage(
-          conversationId: conversationId,
-          message: 'Multi-turn',
-          model: 'test-model',
-          provider: provider,
-          inferenceRepo: mockOllamaRepo,
-          strategy: mockStrategy,
-          tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
             ),
-          ],
-        );
+          ).thenAnswer((_) async => ConversationAction.continueConversation);
 
-        expect(usage, isNotNull);
-        // 80 + 120 = 200 input, 20 + 30 = 50 output
-        expect(usage!.inputTokens, 200);
-        expect(usage.outputTokens, 50);
-      });
+          when(
+            () => mockStrategy.getContinuationPrompt(any()),
+          ).thenReturn('Continue');
+
+          final usage = await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Multi-turn',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+            tools: [
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'test_function',
+                  description: 'A test function',
+                ),
+              ),
+            ],
+          );
+
+          expect(usage, isNotNull);
+          // 80 + 120 = 200 input, 20 + 30 = 50 output
+          expect(usage!.inputTokens, 200);
+          expect(usage.outputTokens, 50);
+        },
+      );
 
       test('returns null when no usage data in response', () async {
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer(
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer(
           (_) => Stream.fromIterable([
             const CreateChatCompletionStreamResponse(
               id: 'resp',
@@ -1522,16 +1578,18 @@ void main() {
       });
 
       test('captures reasoning and cached tokens from usage details', () async {
-        when(() => mockOllamaRepo.generateTextWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-              temperature: any(named: 'temperature'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-              turnIndex: any(named: 'turnIndex'),
-            )).thenAnswer(
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer(
           (_) => Stream.fromIterable([
             const CreateChatCompletionStreamResponse(
               id: 'resp',
@@ -1584,33 +1642,36 @@ void main() {
         expect(stream, isNotNull);
       });
 
-      test('conversationEvents provider handles non-existent conversation',
-          () async {
-        // Listen to the provider which will emit AsyncValue states
-        final streamProvider = conversationEventsProvider('non-existent');
+      test(
+        'conversationEvents provider handles non-existent conversation',
+        () async {
+          // Listen to the provider which will emit AsyncValue states
+          final streamProvider = conversationEventsProvider('non-existent');
 
-        // Listen to the stream of AsyncValue states
-        final completer = Completer<void>();
-        final subscription = container.listen(
-          streamProvider,
-          (previous, next) {
-            // Check if we got an error state
-            if (next.hasError) {
-              expect(next.error.toString(), contains('not found'));
-              completer.complete();
-            }
-          },
-        );
+          // Listen to the stream of AsyncValue states
+          final completer = Completer<void>();
+          final subscription = container.listen(
+            streamProvider,
+            (previous, next) {
+              // Check if we got an error state
+              if (next.hasError) {
+                expect(next.error.toString(), contains('not found'));
+                completer.complete();
+              }
+            },
+          );
 
-        // Wait for the error to be emitted
-        // No real wait: use a shorter, deterministic timeout for unit tests
-        await completer.future.timeout(
-          const Duration(milliseconds: 50),
-          onTimeout: () => throw TestFailure('Expected error was not emitted'),
-        );
+          // Wait for the error to be emitted
+          // No real wait: use a shorter, deterministic timeout for unit tests
+          await completer.future.timeout(
+            const Duration(milliseconds: 50),
+            onTimeout: () =>
+                throw TestFailure('Expected error was not emitted'),
+          );
 
-        subscription.close();
-      });
+          subscription.close();
+        },
+      );
 
       test('conversationMessages provider returns messages', () {
         final id = repository.createConversation(
@@ -1626,8 +1687,9 @@ void main() {
       });
 
       test('conversationMessages provider returns empty for non-existent', () {
-        final messages =
-            container.read(conversationMessagesProvider('non-existent'));
+        final messages = container.read(
+          conversationMessagesProvider('non-existent'),
+        );
         expect(messages, isEmpty);
       });
     });

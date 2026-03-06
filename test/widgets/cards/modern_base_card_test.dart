@@ -23,8 +23,9 @@ void main() {
       when(() => mockCallbacks.onTap()).thenAnswer((_) {});
     });
 
-    testWidgets('renders with light theme (solid color, no gradient)',
-        (tester) async {
+    testWidgets('renders with light theme (solid color, no gradient)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernBaseCard(
@@ -49,8 +50,9 @@ void main() {
       expect(decoration.gradient, isA<LinearGradient>());
     });
 
-    testWidgets('renders with dark theme (gradient, no solid color)',
-        (tester) async {
+    testWidgets('renders with dark theme (gradient, no solid color)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernBaseCard(
@@ -347,8 +349,9 @@ void main() {
       );
     });
 
-    testWidgets('theme changes apply instantly without animation',
-        (tester) async {
+    testWidgets('theme changes apply instantly without animation', (
+      tester,
+    ) async {
       // Start with light theme
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

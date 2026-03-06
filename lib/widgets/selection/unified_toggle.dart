@@ -113,15 +113,17 @@ class UnifiedToggle extends StatelessWidget {
     switch (variant) {
       case UnifiedToggleVariant.cupertino:
         // CupertinoSwitch default behavior
-        return context.colorScheme.outline
-            .withValues(alpha: _UnifiedToggleConstants.inactiveTrackOpacity);
+        return context.colorScheme.outline.withValues(
+          alpha: _UnifiedToggleConstants.inactiveTrackOpacity,
+        );
       case UnifiedToggleVariant.normal:
       case UnifiedToggleVariant.warning:
       case UnifiedToggleVariant.priority:
       case UnifiedToggleVariant.archived:
         // FormSwitch default behavior - preserve exact opacity
-        return context.colorScheme.outline
-            .withValues(alpha: _UnifiedToggleConstants.inactiveTrackOpacity);
+        return context.colorScheme.outline.withValues(
+          alpha: _UnifiedToggleConstants.inactiveTrackOpacity,
+        );
     }
   }
 
@@ -226,7 +228,8 @@ class UnifiedToggleField extends StatelessWidget {
         onTap: enabled && onChanged != null ? () => onChanged!(!value) : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: contentPadding ??
+          padding:
+              contentPadding ??
               EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: dense ? 8 : 12,
@@ -248,8 +251,9 @@ class UnifiedToggleField extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: enabled
                             ? context.colorScheme.onSurface
-                            : context.colorScheme.onSurface
-                                .withValues(alpha: 0.38),
+                            : context.colorScheme.onSurface.withValues(
+                                alpha: 0.38,
+                              ),
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -259,8 +263,9 @@ class UnifiedToggleField extends StatelessWidget {
                         style: context.textTheme.bodyMedium?.copyWith(
                           color: enabled
                               ? context.colorScheme.onSurfaceVariant
-                              : context.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.38),
+                              : context.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.38,
+                                ),
                           height: 1.3,
                         ),
                       ),
@@ -333,10 +338,11 @@ class UnifiedAiToggleField extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: value
-                          ? context.colorScheme.primaryContainer
-                              .withValues(alpha: 0.3)
+                          ? context.colorScheme.primaryContainer.withValues(
+                              alpha: 0.3,
+                            )
                           : context.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.5),
+                                .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -344,8 +350,9 @@ class UnifiedAiToggleField extends StatelessWidget {
                       size: 18,
                       color: value
                           ? context.colorScheme.primary
-                          : context.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.6),
+                          : context.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -361,8 +368,9 @@ class UnifiedAiToggleField extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: enabled
                               ? context.colorScheme.onSurface
-                              : context.colorScheme.onSurface
-                                  .withValues(alpha: 0.5),
+                              : context.colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
                           letterSpacing: 0.3,
                         ),
                       ),

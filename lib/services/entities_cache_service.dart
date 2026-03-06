@@ -10,8 +10,8 @@ class EntitiesCacheService {
   EntitiesCacheService({
     required JournalDb journalDb,
     required UpdateNotifications updateNotifications,
-  })  : _journalDb = journalDb,
-        _updateNotifications = updateNotifications;
+  }) : _journalDb = journalDb,
+       _updateNotifications = updateNotifications;
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
@@ -48,8 +48,9 @@ class EntitiesCacheService {
   /// Subscribes to notifications BEFORE the initial fetch so that any
   /// writes occurring during the fetch will trigger a subsequent refetch.
   Future<void> init() async {
-    _notificationSub =
-        _updateNotifications.updateStream.listen(_onNotification);
+    _notificationSub = _updateNotifications.updateStream.listen(
+      _onNotification,
+    );
 
     await Future.wait([
       _loadMeasurables(),
@@ -63,17 +64,23 @@ class EntitiesCacheService {
   }
 
   void _onNotification(Set<String> ids) {
-    final needCategories = ids.contains(categoriesNotification) ||
+    final needCategories =
+        ids.contains(categoriesNotification) ||
         ids.contains(privateToggleNotification);
-    final needHabits = ids.contains(habitsNotification) ||
+    final needHabits =
+        ids.contains(habitsNotification) ||
         ids.contains(privateToggleNotification);
-    final needDashboards = ids.contains(dashboardsNotification) ||
+    final needDashboards =
+        ids.contains(dashboardsNotification) ||
         ids.contains(privateToggleNotification);
-    final needMeasurables = ids.contains(measurablesNotification) ||
+    final needMeasurables =
+        ids.contains(measurablesNotification) ||
         ids.contains(privateToggleNotification);
-    final needLabels = ids.contains(labelsNotification) ||
+    final needLabels =
+        ids.contains(labelsNotification) ||
         ids.contains(privateToggleNotification);
-    final needTags = ids.contains(tagsNotification) ||
+    final needTags =
+        ids.contains(tagsNotification) ||
         ids.contains(privateToggleNotification);
 
     if (ids.contains(privateToggleNotification)) {
@@ -282,11 +289,12 @@ class EntitiesCacheService {
   }
 
   List<LabelDefinition> get sortedLabels {
-    final res = labelsById.values
-        .where((label) => label.deletedAt == null)
-        .where((label) => _showPrivateEntries || !(label.private ?? false))
-        .toList()
-      ..sortBy((label) => label.name.toLowerCase());
+    final res =
+        labelsById.values
+            .where((label) => label.deletedAt == null)
+            .where((label) => _showPrivateEntries || !(label.private ?? false))
+            .toList()
+          ..sortBy((label) => label.name.toLowerCase());
     return res;
   }
 

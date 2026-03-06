@@ -27,15 +27,15 @@ final class GeminiIncludeThoughtsProvider
   /// UI can toggle this; CloudInferenceRepository reads it to override the
   /// `includeThoughts` flag in the final thinking config.
   GeminiIncludeThoughtsProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'geminiIncludeThoughtsProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'geminiIncludeThoughtsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$geminiIncludeThoughtsHash();
@@ -67,8 +67,14 @@ abstract class _$GeminiIncludeThoughts extends $Notifier<bool> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<bool, bool>, bool, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

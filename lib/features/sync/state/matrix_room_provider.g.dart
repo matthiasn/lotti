@@ -15,15 +15,15 @@ final matrixRoomControllerProvider = MatrixRoomControllerProvider._();
 final class MatrixRoomControllerProvider
     extends $AsyncNotifierProvider<MatrixRoomController, String?> {
   MatrixRoomControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'matrixRoomControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'matrixRoomControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$matrixRoomControllerHash();
@@ -42,11 +42,14 @@ abstract class _$MatrixRoomController extends $AsyncNotifier<String?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<String?>, String?>,
-        AsyncValue<String?>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<String?>, String?>,
+              AsyncValue<String?>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

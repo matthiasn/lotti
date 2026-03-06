@@ -35,8 +35,9 @@ void main() {
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Setup the mock update notifications
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     // Register mocks in GetIt
     getIt.allowReassignment = true;
@@ -73,8 +74,9 @@ void main() {
 
     test('loads links on initialization', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
 
       // Act
       final container = ProviderContainer(
@@ -87,10 +89,12 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller =
-          container.read(linkedEntriesControllerProvider(id: testId).notifier);
-      final result = await container
-          .read(linkedEntriesControllerProvider(id: testId).future);
+      final controller = container.read(
+        linkedEntriesControllerProvider(id: testId).notifier,
+      );
+      final result = await container.read(
+        linkedEntriesControllerProvider(id: testId).future,
+      );
 
       // Assert
       expect(result, equals(testLinks));
@@ -104,8 +108,9 @@ void main() {
 
     test('updates state when affected IDs are notified', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
 
       final updatedLinks = [
         EntryLink.basic(
@@ -129,10 +134,12 @@ void main() {
       ];
 
       // Setup the second call to return updated links
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => updatedLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => updatedLinks);
 
       // Act
       final container = ProviderContainer(
@@ -145,8 +152,9 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller =
-          container.read(linkedEntriesControllerProvider(id: testId).notifier);
+      final controller = container.read(
+        linkedEntriesControllerProvider(id: testId).notifier,
+      );
       await container.read(linkedEntriesControllerProvider(id: testId).future);
 
       // Simulate an update notification for one of the watched IDs
@@ -156,8 +164,9 @@ void main() {
       await pumpEventQueue();
 
       // Get the updated state
-      final updatedState =
-          container.read(linkedEntriesControllerProvider(id: testId));
+      final updatedState = container.read(
+        linkedEntriesControllerProvider(id: testId),
+      );
 
       // Assert
       expect(updatedState.value, equals(updatedLinks));
@@ -172,8 +181,9 @@ void main() {
 
     test('removes link when removeLink is called', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
 
       when(
         () => mockJournalRepository.removeLink(
@@ -193,8 +203,9 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller =
-          container.read(linkedEntriesControllerProvider(id: testId).notifier);
+      final controller = container.read(
+        linkedEntriesControllerProvider(id: testId).notifier,
+      );
       await container.read(linkedEntriesControllerProvider(id: testId).future);
 
       // Call removeLink
@@ -211,8 +222,9 @@ void main() {
 
     test('updates link when updateLink is called', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
 
       final linkToUpdate = EntryLink.basic(
         id: 'link-1',
@@ -224,8 +236,9 @@ void main() {
         hidden: true, // Changed to hidden
       );
 
-      when(() => mockJournalRepository.updateLink(linkToUpdate))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepository.updateLink(linkToUpdate),
+      ).thenAnswer((_) async => true);
 
       // Act
       final container = ProviderContainer(
@@ -238,8 +251,9 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller =
-          container.read(linkedEntriesControllerProvider(id: testId).notifier);
+      final controller = container.read(
+        linkedEntriesControllerProvider(id: testId).notifier,
+      );
       await container.read(linkedEntriesControllerProvider(id: testId).future);
 
       // Call updateLink
@@ -277,8 +291,9 @@ void main() {
 
     test('disposes subscription when disposed', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
 
       // Act
       final container = ProviderContainer(
@@ -291,8 +306,9 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller =
-          container.read(linkedEntriesControllerProvider(id: testId).notifier);
+      final controller = container.read(
+        linkedEntriesControllerProvider(id: testId).notifier,
+      );
       await container.read(linkedEntriesControllerProvider(id: testId).future);
 
       // We can't directly access the private _updateSubscription field
@@ -313,8 +329,9 @@ void main() {
     test('initializes with default value of false', () {
       // Act
       final container = ProviderContainer();
-      final result =
-          container.read(includeHiddenControllerProvider(id: testId));
+      final result = container.read(
+        includeHiddenControllerProvider(id: testId),
+      );
 
       // Assert
       expect(result, isFalse);
@@ -323,8 +340,9 @@ void main() {
     test('can update value', () {
       // Act
       final container = ProviderContainer();
-      final controller =
-          container.read(includeHiddenControllerProvider(id: testId).notifier);
+      final controller = container.read(
+        includeHiddenControllerProvider(id: testId).notifier,
+      );
 
       // Initial state should be false
       expect(controller.includeHidden, isFalse);
@@ -347,8 +365,9 @@ void main() {
     test('initializes with default value of false', () {
       // Act
       final container = ProviderContainer();
-      final result =
-          container.read(includeAiEntriesControllerProvider(id: testId));
+      final result = container.read(
+        includeAiEntriesControllerProvider(id: testId),
+      );
 
       // Assert
       expect(result, isFalse);
@@ -357,8 +376,9 @@ void main() {
     test('can update value', () {
       // Act
       final container = ProviderContainer();
-      final controller = container
-          .read(includeAiEntriesControllerProvider(id: testId).notifier);
+      final controller = container.read(
+        includeAiEntriesControllerProvider(id: testId).notifier,
+      );
 
       // Initial state should be false
       expect(controller.includeAiEntries, isFalse);
@@ -410,8 +430,9 @@ void main() {
     test('returns null when id is null', () async {
       // Act
       final container = ProviderContainer();
-      final result = await container
-          .read(newestLinkedIdControllerProvider(id: null).future);
+      final result = await container.read(
+        newestLinkedIdControllerProvider(id: null).future,
+      );
 
       // Assert
       expect(result, isNull);
@@ -419,8 +440,9 @@ void main() {
 
     test('returns the newest linked ID based on creation date', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => testLinks);
 
       // Act
       final container = ProviderContainer(
@@ -436,8 +458,9 @@ void main() {
       await container.read(linkedEntriesControllerProvider(id: testId).future);
 
       // Get the newest linked ID
-      final newestId = await container
-          .read(newestLinkedIdControllerProvider(id: testId).future);
+      final newestId = await container.read(
+        newestLinkedIdControllerProvider(id: testId).future,
+      );
 
       // Assert
       expect(newestId, equals('linked-id-3')); // The most recently created link
@@ -445,8 +468,9 @@ void main() {
 
     test('returns null when there are no linked entries', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinksFromId(testId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => []);
 
       // Act
       final container = ProviderContainer(
@@ -462,8 +486,9 @@ void main() {
       await container.read(linkedEntriesControllerProvider(id: testId).future);
 
       // Get the newest linked ID
-      final newestId = await container
-          .read(newestLinkedIdControllerProvider(id: testId).future);
+      final newestId = await container.read(
+        newestLinkedIdControllerProvider(id: testId).future,
+      );
 
       // Assert
       expect(newestId, isNull);
@@ -475,36 +500,36 @@ void main() {
     final now = DateTime(2025, 12, 31, 12);
 
     Task buildTask(String id) => Task(
-          meta: Metadata(
-            id: id,
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-          ),
-          data: TaskData(
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: now,
-              utcOffset: 0,
-            ),
-            dateFrom: now,
-            dateTo: now,
-            statusHistory: const [],
-            title: 'Test Task',
-          ),
-        );
+      meta: Metadata(
+        id: id,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: const [],
+        title: 'Test Task',
+      ),
+    );
 
     JournalEntry buildJournalEntry(String id) => JournalEntry(
-          meta: Metadata(
-            id: id,
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-          ),
-          entryText: const EntryText(plainText: 'Test entry'),
-        );
+      meta: Metadata(
+        id: id,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      ),
+      entryText: const EntryText(plainText: 'Test entry'),
+    );
 
     test('returns false when resolved entities is empty', () {
       // Act

@@ -27,15 +27,15 @@ final class FtueTriggerServiceProvider
   /// This service encapsulates the logic for deciding when to show the FTUE setup
   /// dialog, making it independently testable from the UI layer.
   FtueTriggerServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'ftueTriggerServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ftueTriggerServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$ftueTriggerServiceHash();
@@ -59,11 +59,14 @@ abstract class _$FtueTriggerService extends $AsyncNotifier<void> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<void>, void>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<void>, void>,
-        AsyncValue<void>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>, void>,
+              AsyncValue<void>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

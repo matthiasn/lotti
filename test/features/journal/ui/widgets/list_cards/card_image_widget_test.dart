@@ -101,8 +101,9 @@ void main() {
       expect(sizedBox.height, testHeight.toDouble());
     });
 
-    testWidgets('returns container when file does not exist',
-        (WidgetTester tester) async {
+    testWidgets('returns container when file does not exist', (
+      WidgetTester tester,
+    ) async {
       // For this test, we don't create the file, so existsSync() returns false
       final filePath = getExpectedImagePath();
 
@@ -155,8 +156,9 @@ void main() {
       // widget, but we've confirmed it accepts the parameter
     });
 
-    testWidgets('didUpdateWidget resets watcher when journalImage.id changes',
-        (WidgetTester tester) async {
+    testWidgets('didUpdateWidget resets watcher when journalImage.id changes', (
+      WidgetTester tester,
+    ) async {
       // Setup: Create the directory structure for both images
       Directory(
         p.join(
@@ -224,8 +226,9 @@ void main() {
       expect(find.byType(CardImageWidget), findsOneWidget);
     });
 
-    testWidgets('does not reset watcher when other props change',
-        (WidgetTester tester) async {
+    testWidgets('does not reset watcher when other props change', (
+      WidgetTester tester,
+    ) async {
       // Setup: Create the file to make existsSync() return true
       Directory(
         p.join(

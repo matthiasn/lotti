@@ -103,39 +103,42 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
       vsync: this,
       duration: GameyAnimations.celebration,
     );
-    _iconScaleAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _iconController,
-        curve: GameyAnimations.bounce,
-      ),
-    );
+    _iconScaleAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _iconController,
+            curve: GameyAnimations.bounce,
+          ),
+        );
 
     // Content animation
     _contentController = AnimationController(
       vsync: this,
       duration: GameyAnimations.normal,
     );
-    _contentFadeAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _contentController,
-        curve: GameyAnimations.smooth,
-      ),
-    );
-    _contentSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _contentController,
-        curve: GameyAnimations.smooth,
-      ),
-    );
+    _contentFadeAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: GameyAnimations.smooth,
+          ),
+        );
+    _contentSlideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 0.2),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: GameyAnimations.smooth,
+          ),
+        );
 
     // Confetti animation
     _confettiController = AnimationController(
@@ -171,8 +174,10 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
     for (var i = 0; i < 50; i++) {
       _confetti.add(
         _ConfettiParticle(
-          color: GameyColors.confettiColors[
-              random.nextInt(GameyColors.confettiColors.length)],
+          color:
+              GameyColors.confettiColors[random.nextInt(
+                GameyColors.confettiColors.length,
+              )],
           startX: random.nextDouble(),
           startY: -0.1 - random.nextDouble() * 0.3,
           endY: 1.2,
@@ -322,8 +327,9 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                           decoration: BoxDecoration(
                             gradient: GameyGradients.gold,
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow:
-                                GameyGlows.achievementGlow(highlighted: true),
+                            boxShadow: GameyGlows.achievementGlow(
+                              highlighted: true,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -439,9 +445,11 @@ class _ConfettiPainter extends CustomPainter {
           ((progress - particle.delay) / (1 - particle.delay)).clamp(0.0, 1.0);
       if (adjustedProgress <= 0) continue;
 
-      final x = size.width *
+      final x =
+          size.width *
           (particle.startX + particle.horizontalDrift * adjustedProgress);
-      final y = size.height *
+      final y =
+          size.height *
           (particle.startY +
               (particle.endY - particle.startY) * adjustedProgress);
       final rotation =
@@ -576,7 +584,8 @@ class _BurstPainter extends CustomPainter {
     for (final particle in confetti) {
       final x =
           size.width * (particle.startX + particle.horizontalDrift * progress);
-      final y = size.height *
+      final y =
+          size.height *
           (particle.startY + (particle.endY - particle.startY) * progress);
       final rotation = particle.rotation + particle.rotationSpeed * progress;
       final opacity = (1 - progress).clamp(0.0, 1.0);

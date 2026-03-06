@@ -28,8 +28,9 @@ void main() {
     getIt.allowReassignment = true;
 
     // Create a temp directory to simulate the documents directory
-    mockDocumentsDirectory =
-        Directory.systemTemp.createTempSync('cover_art_thumbnail_test_');
+    mockDocumentsDirectory = Directory.systemTemp.createTempSync(
+      'cover_art_thumbnail_test_',
+    );
 
     // Register temp directory for getDocumentsDirectory()
     getIt.registerSingleton<Directory>(mockDocumentsDirectory);
@@ -40,8 +41,9 @@ void main() {
     final mockJournalDb = MockJournalDb();
     final mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<EditorStateService>(mockEditorStateService)
@@ -90,12 +92,14 @@ void main() {
     final fullPath = getFullImagePath(image);
 
     // Create parent directories
-    Directory(fullPath.substring(0, fullPath.lastIndexOf('/')))
-        .createSync(recursive: true);
+    Directory(
+      fullPath.substring(0, fullPath.lastIndexOf('/')),
+    ).createSync(recursive: true);
 
     // Create a minimal valid file (not a real image, but exists)
-    File(fullPath)
-        .writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG magic bytes
+    File(
+      fullPath,
+    ).writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG magic bytes
 
     return fullPath;
   }
@@ -211,8 +215,9 @@ void main() {
         expect(fittedBox.alignment, Alignment.centerRight);
       });
 
-      testWidgets('alignment reflects cropX=0.25 (quarter left)',
-          (tester) async {
+      testWidgets('alignment reflects cropX=0.25 (quarter left)', (
+        tester,
+      ) async {
         final image = buildJournalImage();
         createImageFile(image);
 
@@ -366,8 +371,9 @@ void main() {
     });
 
     group('when image file is absent', () {
-      testWidgets('renders fallback SizedBox when file does not exist',
-          (tester) async {
+      testWidgets('renders fallback SizedBox when file does not exist', (
+        tester,
+      ) async {
         // Create JournalImage but DON'T create the file on disk
         final image = buildJournalImage(
           imageFile: 'nonexistent.jpg',
@@ -404,32 +410,33 @@ void main() {
       });
 
       testWidgets(
-          'renders fallback even with valid JournalImage but missing file',
-          (tester) async {
-        final image = buildJournalImage();
-        // Note: NOT calling createImageFile - file doesn't exist
+        'renders fallback even with valid JournalImage but missing file',
+        (tester) async {
+          final image = buildJournalImage();
+          // Note: NOT calling createImageFile - file doesn't exist
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 50,
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                createEntryControllerOverride(image),
+              ],
+              child: const MaterialApp(
+                home: Scaffold(
+                  body: CoverArtThumbnail(
+                    imageId: 'image-1',
+                    size: 50,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // File doesn't exist, so should show fallback
-        expect(find.byType(Image), findsNothing);
-        expect(find.byType(ClipRect), findsNothing);
-      });
+          // File doesn't exist, so should show fallback
+          expect(find.byType(Image), findsNothing);
+          expect(find.byType(ClipRect), findsNothing);
+        },
+      );
     });
 
     group('didUpdateWidget behavior', () {
@@ -490,8 +497,9 @@ void main() {
         expect(find.byType(Image), findsOneWidget);
       });
 
-      testWidgets('does not reset when same imageId with different props',
-          (tester) async {
+      testWidgets('does not reset when same imageId with different props', (
+        tester,
+      ) async {
         final image = buildJournalImage();
         createImageFile(image);
 
@@ -542,8 +550,9 @@ void main() {
         expect(fittedBox.alignment, Alignment.centerRight);
       });
 
-      testWidgets('handles switching from existing to non-existing file',
-          (tester) async {
+      testWidgets('handles switching from existing to non-existing file', (
+        tester,
+      ) async {
         final image1 = buildJournalImage();
         final image2 = buildJournalImage(
           id: 'image-2',

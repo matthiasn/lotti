@@ -7,8 +7,9 @@ import '../../../../../../widget_test_utils.dart';
 
 void main() {
   group('EvolutionMttrChart', () {
-    testWidgets('renders LineChart when >= 2 non-zero MTTR data points',
-        (tester) async {
+    testWidgets('renders LineChart when >= 2 non-zero MTTR data points', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EvolutionMttrChart(buckets: _makeBuckets(3)),

@@ -96,7 +96,8 @@ class LottiTextField extends StatelessWidget {
       textCapitalization: textCapitalization,
       focusNode: focusNode,
       // default platform context menu
-      style: style ??
+      style:
+          style ??
           TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w400,
@@ -134,7 +135,8 @@ class LottiTextField extends StatelessWidget {
               )
             : suffix,
         filled: true,
-        fillColor: fillColor ??
+        fillColor:
+            fillColor ??
             (enabled
                 ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
                 : colorScheme.surfaceContainerHighest.withValues(alpha: 0.1)),

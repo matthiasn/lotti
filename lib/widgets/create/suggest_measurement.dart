@@ -18,7 +18,8 @@ class MeasurementSuggestions extends ConsumerWidget {
     required MeasurableDataType measurableDataType,
     required DateTime measurementTime,
     num? value,
-  }) saveMeasurement;
+  })
+  saveMeasurement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,10 +41,10 @@ class MeasurementSuggestions extends ConsumerWidget {
         final label = value.toDouble().toString().replaceAll(regex, '');
 
         void onPressed() => saveMeasurement(
-              value: value,
-              measurableDataType: measurableDataType,
-              measurementTime: measurementTime,
-            );
+          value: value,
+          measurableDataType: measurableDataType,
+          measurementTime: measurementTime,
+        );
 
         return ActionChip(
           onPressed: onPressed,

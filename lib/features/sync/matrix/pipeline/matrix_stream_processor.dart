@@ -61,25 +61,25 @@ class MatrixStreamProcessor {
     int? maxRetriesPerEvent,
     Duration circuitCooldown = const Duration(seconds: 30),
     Directory? documentsDirectory,
-  })  : _roomManager = roomManager,
-        _loggingService = loggingService,
-        _journalDb = journalDb,
-        _settingsDb = settingsDb,
-        _eventProcessor = eventProcessor,
-        _readMarkerService = readMarkerService,
-        _sentEventRegistry = sentEventRegistry,
-        _clientProvider = clientProvider,
-        _liveTimelineProvider = liveTimelineProvider,
-        _attachmentIndex = attachmentIndex,
-        _collectMetrics = collectMetrics,
-        _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
-        _markerDebounce = markerDebounce,
-        _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
-        _retryTtl = const Duration(minutes: 10),
-        _retryMaxEntries = 2000,
-        _circuitFailureThreshold = 50,
-        _circuitCooldown = circuitCooldown,
-        _ingestor = AttachmentIngestor(documentsDirectory: documentsDirectory) {
+  }) : _roomManager = roomManager,
+       _loggingService = loggingService,
+       _journalDb = journalDb,
+       _settingsDb = settingsDb,
+       _eventProcessor = eventProcessor,
+       _readMarkerService = readMarkerService,
+       _sentEventRegistry = sentEventRegistry,
+       _clientProvider = clientProvider,
+       _liveTimelineProvider = liveTimelineProvider,
+       _attachmentIndex = attachmentIndex,
+       _collectMetrics = collectMetrics,
+       _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
+       _markerDebounce = markerDebounce,
+       _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
+       _retryTtl = const Duration(minutes: 10),
+       _retryMaxEntries = 2000,
+       _circuitFailureThreshold = 50,
+       _circuitCooldown = circuitCooldown,
+       _ingestor = AttachmentIngestor(documentsDirectory: documentsDirectory) {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,
@@ -487,7 +487,8 @@ class MatrixStreamProcessor {
         }
       } else {
         // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
-        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+        final validFallback =
+            ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
             content['msgtype'] != syncMessageType;
 
         if (validFallback) {
@@ -638,14 +639,19 @@ class MatrixStreamProcessor {
   }
 
   Map<String, int> metricsSnapshot() {
-    final map = _metrics.snapshot(
-      retryStateSize: _retryTracker.size(),
-      circuitIsOpen: _circuit.isOpen(clock.now()),
-    )
-      ..putIfAbsent(
-          'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
-      ..putIfAbsent(
-          'descriptorCatchUpRuns', () => _descriptorCatchUp?.runs ?? 0);
+    final map =
+        _metrics.snapshot(
+            retryStateSize: _retryTracker.size(),
+            circuitIsOpen: _circuit.isOpen(clock.now()),
+          )
+          ..putIfAbsent(
+            'pendingJsonPaths',
+            () => _descriptorCatchUp?.pendingLength ?? 0,
+          )
+          ..putIfAbsent(
+            'descriptorCatchUpRuns',
+            () => _descriptorCatchUp?.runs ?? 0,
+          );
     // Derived metric to assess processing efficiency when metrics collection is
     // enabled. When either value is zero, omit the ratio.
     try {

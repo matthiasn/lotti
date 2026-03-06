@@ -17,27 +17,27 @@ class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 const _uuid = Uuid();
 
 Task _task() => Task(
-      meta: Metadata(
-        id: _uuid.v4(),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        categoryId: 'cat',
-      ),
-      data: TaskData(
-        title: 'T',
-        checklistIds: const [],
-        status: TaskStatus.open(
-          id: 'status-1',
-          createdAt: DateTime.now(),
-          utcOffset: 0,
-        ),
-        statusHistory: const [],
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-      ),
-    );
+  meta: Metadata(
+    id: _uuid.v4(),
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+    categoryId: 'cat',
+  ),
+  data: TaskData(
+    title: 'T',
+    checklistIds: const [],
+    status: TaskStatus.open(
+      id: 'status-1',
+      createdAt: DateTime.now(),
+      utcOffset: 0,
+    ),
+    statusHistory: const [],
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+  ),
+);
 
 ChatCompletionMessageToolCall _call(String args) =>
     ChatCompletionMessageToolCall(
@@ -74,33 +74,42 @@ void main() {
   group('LottiChecklistItemHandler guard', () {
     test('rejects bracketed array pattern', () {
       final result = handler.processFunctionCall(
-          _call('{"actionItemDescription": "[item1, item2, item3]"}'));
+        _call('{"actionItemDescription": "[item1, item2, item3]"}'),
+      );
       expect(result.success, false);
       expect(result.error, contains('Multiple items detected'));
     });
 
     test('rejects comma-separated list (top-level 2+ commas)', () {
       final result = handler.processFunctionCall(
-          _call('{"actionItemDescription": "item1, item2, item3"}'));
+        _call('{"actionItemDescription": "item1, item2, item3"}'),
+      );
       expect(result.success, false);
       expect(result.error, contains('Multiple items detected'));
     });
 
     test('accepts single item with commas in parentheses', () {
-      final result = handler.processFunctionCall(_call(
-          '{"actionItemDescription": "Setup database (cache, indexes, warm-up)"}'));
+      final result = handler.processFunctionCall(
+        _call(
+          '{"actionItemDescription": "Setup database (cache, indexes, warm-up)"}',
+        ),
+      );
       expect(result.success, true);
     });
 
     test('accepts single item with one comma', () {
       final result = handler.processFunctionCall(
-          _call('{"actionItemDescription": "Buy milk, 2%"}'));
+        _call('{"actionItemDescription": "Buy milk, 2%"}'),
+      );
       expect(result.success, true);
     });
 
     test('matches screenshot issue exactly', () {
-      final result = handler.processFunctionCall(_call(
-          '{"actionItemDescription": "[Investigate audio quality from Bluetooth headphones,Find out if network connectivity detection triggers sending,Come up with an implementation plan to fix the network issue]"}'));
+      final result = handler.processFunctionCall(
+        _call(
+          '{"actionItemDescription": "[Investigate audio quality from Bluetooth headphones,Find out if network connectivity detection triggers sending,Come up with an implementation plan to fix the network issue]"}',
+        ),
+      );
       expect(result.success, false);
       expect(result.error, contains('Multiple items detected'));
     });
@@ -109,35 +118,41 @@ void main() {
       final longList = '[${List.generate(50, (i) => 'item$i').join(', ')}]';
       DevLogger.clear();
 
-      final result = handler
-          .processFunctionCall(_call('{"actionItemDescription": "$longList"}'));
+      final result = handler.processFunctionCall(
+        _call('{"actionItemDescription": "$longList"}'),
+      );
       expect(result.success, false);
 
       // Expect our dev log captured a line containing this rejection
       expect(
-        DevLogger.capturedLogs.any((l) =>
-            l.contains('[LottiChecklistItemHandler]') &&
-            l.contains('Rejected multi-item') &&
-            l.contains('item0')),
+        DevLogger.capturedLogs.any(
+          (l) =>
+              l.contains('[LottiChecklistItemHandler]') &&
+              l.contains('Rejected multi-item') &&
+              l.contains('item0'),
+        ),
         true,
       );
     });
 
     test('accepts brackets in description (no escape needed)', () {
       final result = handler.processFunctionCall(
-          _call('{"actionItemDescription": "Buy [organic] milk"}'));
+        _call('{"actionItemDescription": "Buy [organic] milk"}'),
+      );
       expect(result.success, true);
     });
 
     test('accepts nested brackets without commas', () {
       final result = handler.processFunctionCall(
-          _call('{"actionItemDescription": "[[nested]]"}'));
+        _call('{"actionItemDescription": "[[nested]]"}'),
+      );
       expect(result.success, true);
     });
 
     test('mixed bracket then comma outside is accepted (current behavior)', () {
       final result = handler.processFunctionCall(
-          _call('{"actionItemDescription": "[item1, item2], and item3"}'));
+        _call('{"actionItemDescription": "[item1, item2], and item3"}'),
+      );
       expect(result.success, true);
     });
 

@@ -15,15 +15,15 @@ final matrixLoginControllerProvider = MatrixLoginControllerProvider._();
 final class MatrixLoginControllerProvider
     extends $AsyncNotifierProvider<MatrixLoginController, LoginState?> {
   MatrixLoginControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'matrixLoginControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'matrixLoginControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$matrixLoginControllerHash();
@@ -42,11 +42,14 @@ abstract class _$MatrixLoginController extends $AsyncNotifier<LoginState?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<LoginState?>, LoginState?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<LoginState?>, LoginState?>,
-        AsyncValue<LoginState?>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<LoginState?>, LoginState?>,
+              AsyncValue<LoginState?>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -54,19 +57,24 @@ abstract class _$MatrixLoginController extends $AsyncNotifier<LoginState?> {
 @ProviderFor(loginStateStream)
 final loginStateStreamProvider = LoginStateStreamProvider._();
 
-final class LoginStateStreamProvider extends $FunctionalProvider<
-        AsyncValue<LoginState>, LoginState, Stream<LoginState>>
+final class LoginStateStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<LoginState>,
+          LoginState,
+          Stream<LoginState>
+        >
     with $FutureModifier<LoginState>, $StreamProvider<LoginState> {
   LoginStateStreamProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'loginStateStreamProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'loginStateStreamProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$loginStateStreamHash();
@@ -91,15 +99,15 @@ final class IsLoggedInProvider
     extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
     with $FutureModifier<bool>, $FutureProvider<bool> {
   IsLoggedInProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'isLoggedInProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'isLoggedInProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$isLoggedInHash();
@@ -124,15 +132,15 @@ final class LoggedInUserIdProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
     with $FutureModifier<String?>, $FutureProvider<String?> {
   LoggedInUserIdProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'loggedInUserIdProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'loggedInUserIdProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$loggedInUserIdHash();

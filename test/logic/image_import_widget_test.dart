@@ -77,15 +77,15 @@ void main() {
       // Override PhotoManager.requestPermissionExtend to return denied
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return denied permission state (index 2 in PermissionState enum)
-            return 2;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return denied permission state (index 2 in PermissionState enum)
+                return 2;
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -109,24 +109,24 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
     });
 
     testWidgets('returns early when context is not mounted', (tester) async {
       // Override PhotoManager.requestPermissionExtend to return authorized
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              return null;
+            },
+          );
 
       BuildContext? savedContext;
 
@@ -156,40 +156,41 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
     });
 
-    testWidgets('handles null assets list when picker is cancelled',
-        (tester) async {
+    testWidgets('handles null assets list when picker is cancelled', (
+      tester,
+    ) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       // Mock wechat_assets_picker to return null (user cancelled)
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async {
-          if (call.method == 'pickAssets') {
-            return null; // User cancelled
-          }
-          return null;
-        },
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async {
+              if (call.method == 'pickAssets') {
+                return null; // User cancelled
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -213,43 +214,43 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
 
     testWidgets('handles empty assets list', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async {
-          if (call.method == 'pickAssets') {
-            return []; // Empty list
-          }
-          return null;
-        },
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async {
+              if (call.method == 'pickAssets') {
+                return []; // Empty list
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -273,43 +274,43 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
 
     testWidgets('passes linkedId parameter correctly', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async {
-          if (call.method == 'pickAssets') {
-            return null;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async {
+              if (call.method == 'pickAssets') {
+                return null;
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -335,43 +336,43 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
 
     testWidgets('passes categoryId parameter correctly', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async {
-          if (call.method == 'pickAssets') {
-            return null;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async {
+              if (call.method == 'pickAssets') {
+                return null;
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -397,44 +398,45 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
 
-    testWidgets('passes both linkedId and categoryId parameters',
-        (tester) async {
+    testWidgets('passes both linkedId and categoryId parameters', (
+      tester,
+    ) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async {
-          if (call.method == 'pickAssets') {
-            return null;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async {
+              if (call.method == 'pickAssets') {
+                return null;
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -461,14 +463,14 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
 
     testWidgets('handles permission request flow', (tester) async {
@@ -476,16 +478,16 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            permissionRequested = true;
-            // Return denied permission state (index 2 in PermissionState enum)
-            return 2;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                permissionRequested = true;
+                // Return denied permission state (index 2 in PermissionState enum)
+                return 2;
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -508,32 +510,33 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
     });
 
-    testWidgets('configures asset picker with correct parameters',
-        (tester) async {
+    testWidgets('configures asset picker with correct parameters', (
+      tester,
+    ) async {
       var pickerConfigReceived = false;
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            pickerConfigReceived = true;
-            // AssetPicker is called, which internally calls getAssetPathList
-            // Return empty map with empty data array to simulate no assets available
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                pickerConfigReceived = true;
+                // AssetPicker is called, which internally calls getAssetPathList
+                // Return empty map with empty data array to simulate no assets available
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -556,9 +559,9 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
     });
 
     testWidgets('handles multiple rapid calls gracefully', (tester) async {
@@ -566,20 +569,20 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            callCount++;
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                callCount++;
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -610,9 +613,9 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
     });
   });
 
@@ -620,25 +623,25 @@ void main() {
     testWidgets('handles PermissionState.authorized', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return authorized permission state (index 3 in PermissionState enum)
-            return 3;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return authorized permission state (index 3 in PermissionState enum)
+                return 3;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async => null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async => null,
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -661,28 +664,28 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
 
     testWidgets('handles PermissionState.denied', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return denied permission state (index 2 in PermissionState enum)
-            return 2;
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return denied permission state (index 2 in PermissionState enum)
+                return 2;
+              }
+              return null;
+            },
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -706,33 +709,33 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
     });
 
     testWidgets('handles PermissionState.limited', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        (call) async {
-          if (call.method == 'requestPermissionExtend') {
-            // Return limited permission state (index 4 in PermissionState enum)
-            return 4;
-          }
-          if (call.method == 'getAssetPathList') {
-            // Return empty map with empty data array
-            return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-          }
-          return null;
-        },
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            (call) async {
+              if (call.method == 'requestPermissionExtend') {
+                // Return limited permission state (index 4 in PermissionState enum)
+                return 4;
+              }
+              if (call.method == 'getAssetPathList') {
+                // Return empty map with empty data array
+                return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+              }
+              return null;
+            },
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        (call) async => null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            (call) async => null,
+          );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -755,14 +758,14 @@ void main() {
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('com.fluttercandies/photo_manager'),
-        null,
-      );
+            const MethodChannel('com.fluttercandies/photo_manager'),
+            null,
+          );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wechat_assets_picker'),
-        null,
-      );
+            const MethodChannel('wechat_assets_picker'),
+            null,
+          );
     });
   });
 }

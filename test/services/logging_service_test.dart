@@ -22,14 +22,16 @@ void main() {
 
   setUpAll(() {
     // Required by mocktail for `any<LogEntry>()`
-    registerFallbackValue(const LogEntry(
-      id: 'x',
-      createdAt: '1970-01-01T00:00:00Z',
-      domain: 'D',
-      type: 'LOG',
-      level: 'INFO',
-      message: 'M',
-    ));
+    registerFallbackValue(
+      const LogEntry(
+        id: 'x',
+        createdAt: '1970-01-01T00:00:00Z',
+        domain: 'D',
+        type: 'LOG',
+        level: 'INFO',
+        message: 'M',
+      ),
+    );
   });
 
   late Directory tempDocs;
@@ -40,8 +42,9 @@ void main() {
   setUp(() async {
     // Fresh temp directory per test for file sink
     tempDocs = Directory.systemTemp.createTempSync('logging_svc_test_');
-    addTearDown(() =>
-        tempDocs.existsSync() ? tempDocs.deleteSync(recursive: true) : null);
+    addTearDown(
+      () => tempDocs.existsSync() ? tempDocs.deleteSync(recursive: true) : null,
+    );
 
     // Clear captured logs from previous tests
     DevLogger.capturedLogs.clear();
@@ -60,8 +63,9 @@ void main() {
       ..registerSingleton<JournalDb>(journalDb);
 
     // By default, tests run with logging disabled; enable it via config flag
-    when(() => journalDb.watchConfigFlag(enableLoggingFlag))
-        .thenAnswer((_) => Stream<bool>.value(true));
+    when(
+      () => journalDb.watchConfigFlag(enableLoggingFlag),
+    ).thenAnswer((_) => Stream<bool>.value(true));
 
     logging = getIt<LoggingService>();
     logging.listenToConfigFlag();
@@ -81,8 +85,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      verify(() => loggingDb.log(any(that: isA<LogEntry>())))
-          .called(greaterThanOrEqualTo(1));
+      verify(
+        () => loggingDb.log(any(that: isA<LogEntry>())),
+      ).called(greaterThanOrEqualTo(1));
 
       final logPath = p.join(
         tempDocs.path,
@@ -157,7 +162,9 @@ void main() {
       );
       final content = File(logPath).readAsStringSync();
       expect(
-          content.contains(' [ERROR] PIPE liveScan: Exception: boom'), isTrue);
+        content.contains(' [ERROR] PIPE liveScan: Exception: boom'),
+        isTrue,
+      );
 
       // Verify DevLogger.error was called (lines 237-242 in logging_service.dart)
       expect(
@@ -184,11 +191,13 @@ void main() {
 
       async.flushMicrotasks();
 
-      final content = File(p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      )).readAsStringSync();
+      final content = File(
+        p.join(
+          tempDocs.path,
+          'logs',
+          'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+        ),
+      ).readAsStringSync();
       expect(content.contains(' [ERROR] DB insert: oops trace'), isTrue);
 
       // Verify DevLogger.error calls for both captureException and DB failure
@@ -231,8 +240,7 @@ void main() {
     });
   });
 
-  test(
-      'captureEvent CRITICAL fallback failure logs all errors when both '
+  test('captureEvent CRITICAL fallback failure logs all errors when both '
       'DB and file write fail', () {
     fakeAsync((async) {
       // Override DI to use a directory that doesn't exist and can't be created
@@ -270,8 +278,7 @@ void main() {
     });
   });
 
-  test(
-      'captureException CRITICAL fallback failure logs all errors when both '
+  test('captureException CRITICAL fallback failure logs all errors when both '
       'DB and file write fail', () {
     fakeAsync((async) {
       // Override DI to use a directory that doesn't exist and can't be created
@@ -395,8 +402,9 @@ void main() {
     final flagController = StreamController<bool>();
     addTearDown(flagController.close);
 
-    when(() => journalDb.watchConfigFlag(enableLoggingFlag))
-        .thenAnswer((_) => flagController.stream);
+    when(
+      () => journalDb.watchConfigFlag(enableLoggingFlag),
+    ).thenAnswer((_) => flagController.stream);
     when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
     final svc = LoggingService()..listenToConfigFlag();
@@ -444,7 +452,9 @@ void main() {
       );
       final content = File(logPath).readAsStringSync();
       expect(
-          content.contains('[ERROR] NULL_STACK: error without stack'), isTrue);
+        content.contains('[ERROR] NULL_STACK: error without stack'),
+        isTrue,
+      );
     });
   });
 
@@ -503,8 +513,9 @@ void main() {
       // Switch to non-test env to exercise buffered path
       platform.isTestEnv = false;
 
-      bufferedTempDocs =
-          Directory.systemTemp.createTempSync('logging_svc_buf_test_');
+      bufferedTempDocs = Directory.systemTemp.createTempSync(
+        'logging_svc_buf_test_',
+      );
       addTearDown(() {
         platform.isTestEnv = true;
         if (bufferedTempDocs.existsSync()) {
@@ -525,8 +536,9 @@ void main() {
         ..registerSingleton<LoggingDb>(bufferedLoggingDb)
         ..registerSingleton<JournalDb>(bufferedJournalDb);
 
-      when(() => bufferedJournalDb.watchConfigFlag(enableLoggingFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => bufferedJournalDb.watchConfigFlag(enableLoggingFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
       when(() => bufferedLoggingDb.log(any())).thenAnswer((_) async => 1);
 
       bufferedLogging = getIt<LoggingService>()..listenToConfigFlag();
@@ -534,10 +546,10 @@ void main() {
     });
 
     String logPath0() => p.join(
-          bufferedTempDocs.path,
-          'logs',
-          'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-        );
+      bufferedTempDocs.path,
+      'logs',
+      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    );
 
     test('timer flush writes buffered lines after interval', () async {
       bufferedLogging.captureEvent(

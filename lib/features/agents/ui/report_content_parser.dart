@@ -51,7 +51,8 @@
   // Final fallback: first paragraph as TLDR
   final paragraphs = content.split(RegExp(r'\n\n+'));
   final tldr = paragraphs.first.trim();
-  final additional =
-      paragraphs.length > 1 ? paragraphs.skip(1).join('\n\n').trim() : null;
+  final additional = paragraphs.length > 1
+      ? paragraphs.skip(1).join('\n\n').trim()
+      : null;
   return (tldr: tldr, additional: additional);
 }

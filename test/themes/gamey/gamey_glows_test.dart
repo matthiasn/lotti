@@ -7,27 +7,37 @@ void main() {
     group('Glow intensity constants', () {
       test('subtle intensity is smallest', () {
         expect(GameyGlows.glowBlurSubtle, lessThan(GameyGlows.glowBlurMedium));
-        expect(GameyGlows.glowOpacitySubtle,
-            lessThan(GameyGlows.glowOpacityMedium));
+        expect(
+          GameyGlows.glowOpacitySubtle,
+          lessThan(GameyGlows.glowOpacityMedium),
+        );
       });
 
       test('medium intensity is between subtle and strong', () {
         expect(
-            GameyGlows.glowBlurMedium, greaterThan(GameyGlows.glowBlurSubtle));
+          GameyGlows.glowBlurMedium,
+          greaterThan(GameyGlows.glowBlurSubtle),
+        );
         expect(GameyGlows.glowBlurMedium, lessThan(GameyGlows.glowBlurStrong));
       });
 
       test('strong intensity is between medium and intense', () {
         expect(
-            GameyGlows.glowBlurStrong, greaterThan(GameyGlows.glowBlurMedium));
+          GameyGlows.glowBlurStrong,
+          greaterThan(GameyGlows.glowBlurMedium),
+        );
         expect(GameyGlows.glowBlurStrong, lessThan(GameyGlows.glowBlurIntense));
       });
 
       test('intense intensity is largest', () {
         expect(
-            GameyGlows.glowBlurIntense, greaterThan(GameyGlows.glowBlurStrong));
-        expect(GameyGlows.glowOpacityIntense,
-            greaterThan(GameyGlows.glowOpacityStrong));
+          GameyGlows.glowBlurIntense,
+          greaterThan(GameyGlows.glowBlurStrong),
+        );
+        expect(
+          GameyGlows.glowOpacityIntense,
+          greaterThan(GameyGlows.glowOpacityStrong),
+        );
       });
     });
 
@@ -94,8 +104,10 @@ void main() {
       });
 
       test('dark mode variant exists', () {
-        final shadows =
-            GameyGlows.cardGlowHighlighted(Colors.blue, isDark: true);
+        final shadows = GameyGlows.cardGlowHighlighted(
+          Colors.blue,
+          isDark: true,
+        );
         expect(shadows, isNotEmpty);
       });
     });
@@ -108,8 +120,10 @@ void main() {
 
       test('active state has stronger glow', () {
         final inactiveShadows = GameyGlows.iconGlow(Colors.purple);
-        final activeShadows =
-            GameyGlows.iconGlow(Colors.purple, isActive: true);
+        final activeShadows = GameyGlows.iconGlow(
+          Colors.purple,
+          isActive: true,
+        );
 
         expect(inactiveShadows, isNotEmpty, reason: 'Should have shadows');
         expect(activeShadows, isNotEmpty, reason: 'Should have shadows');
@@ -151,8 +165,10 @@ void main() {
 
       test('forFeature highlight parameter affects intensity', () {
         final normalShadows = GameyGlows.forFeature('journal');
-        final highlightedShadows =
-            GameyGlows.forFeature('journal', highlighted: true);
+        final highlightedShadows = GameyGlows.forFeature(
+          'journal',
+          highlighted: true,
+        );
 
         expect(normalShadows, isNotEmpty, reason: 'Should have shadows');
         expect(highlightedShadows, isNotEmpty, reason: 'Should have shadows');
@@ -185,8 +201,10 @@ void main() {
 
       test('pulseGlow pulseValue parameter works', () {
         final lowIntensity = GameyGlows.pulseGlow(Colors.pink, pulseValue: 0.2);
-        final highIntensity =
-            GameyGlows.pulseGlow(Colors.pink, pulseValue: 0.8);
+        final highIntensity = GameyGlows.pulseGlow(
+          Colors.pink,
+          pulseValue: 0.8,
+        );
 
         expect(lowIntensity, isNotEmpty, reason: 'Should have shadows');
         expect(highIntensity, isNotEmpty, reason: 'Should have shadows');
@@ -252,7 +270,9 @@ void main() {
       test('journalGlow returns shadows', () {
         expect(GameyGlows.journalGlow(), isA<List<BoxShadow>>());
         expect(
-            GameyGlows.journalGlow(highlighted: true), isA<List<BoxShadow>>());
+          GameyGlows.journalGlow(highlighted: true),
+          isA<List<BoxShadow>>(),
+        );
       });
 
       test('habitGlow returns shadows', () {
@@ -272,14 +292,18 @@ void main() {
 
       test('achievementGlow returns shadows', () {
         expect(GameyGlows.achievementGlow(), isA<List<BoxShadow>>());
-        expect(GameyGlows.achievementGlow(highlighted: true),
-            isA<List<BoxShadow>>());
+        expect(
+          GameyGlows.achievementGlow(highlighted: true),
+          isA<List<BoxShadow>>(),
+        );
       });
 
       test('streakGlow returns shadows', () {
         expect(GameyGlows.streakGlow(), isA<List<BoxShadow>>());
         expect(
-            GameyGlows.streakGlow(highlighted: true), isA<List<BoxShadow>>());
+          GameyGlows.streakGlow(highlighted: true),
+          isA<List<BoxShadow>>(),
+        );
       });
 
       test('levelGlow returns shadows', () {
@@ -290,13 +314,17 @@ void main() {
       test('successGlow returns shadows', () {
         expect(GameyGlows.successGlow(), isA<List<BoxShadow>>());
         expect(
-            GameyGlows.successGlow(highlighted: true), isA<List<BoxShadow>>());
+          GameyGlows.successGlow(highlighted: true),
+          isA<List<BoxShadow>>(),
+        );
       });
 
       test('warningGlow returns shadows', () {
         expect(GameyGlows.warningGlow(), isA<List<BoxShadow>>());
         expect(
-            GameyGlows.warningGlow(highlighted: true), isA<List<BoxShadow>>());
+          GameyGlows.warningGlow(highlighted: true),
+          isA<List<BoxShadow>>(),
+        );
       });
     });
 

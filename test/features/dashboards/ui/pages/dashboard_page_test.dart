@@ -53,8 +53,9 @@ void main() {
       );
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -70,9 +71,11 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<UserActivityService>(UserActivityService());
 
-      when(() => mockEntitiesCacheService.getDashboardById(
-            testDashboardConfig.id,
-          )).thenReturn(testDashboardConfig);
+      when(
+        () => mockEntitiesCacheService.getDashboardById(
+          testDashboardConfig.id,
+        ),
+      ).thenReturn(testDashboardConfig);
 
       // when(
       //   () => mockJournalDb.watchWorkouts(
@@ -87,11 +90,13 @@ void main() {
         () => mockHealthImport.fetchHealthDataDelta(any()),
       ).thenAnswer((_) async {});
 
-      when(mockHealthImport.getWorkoutsHealthDataDelta)
-          .thenAnswer((_) async {});
+      when(
+        mockHealthImport.getWorkoutsHealthDataDelta,
+      ).thenAnswer((_) async {});
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
     tearDown(getIt.reset);
 

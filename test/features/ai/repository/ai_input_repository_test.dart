@@ -47,7 +47,7 @@ class FakeId extends Mock {}
 // Create real implementations rather than mocks that can cause test issues
 class TestTaskProgressState implements TaskProgressState {
   TestTaskProgressState(this._progress, {Duration? estimate})
-      : _estimate = estimate ?? Duration.zero;
+    : _estimate = estimate ?? Duration.zero;
   final Duration _progress;
   final Duration _estimate;
 
@@ -79,16 +79,18 @@ class TestContainerBuilder {
   final _progressOverrides = <String, TaskProgressState?>{};
 
   void setTaskProgress(String taskId, Duration? progress) {
-    final progressState =
-        progress != null ? TestTaskProgressState(progress) : null;
+    final progressState = progress != null
+        ? TestTaskProgressState(progress)
+        : null;
     _progressOverrides[taskId] = progressState;
   }
 
   ProviderContainer build() {
     return ProviderContainer(
       overrides: [
-        taskProgressRepositoryProvider
-            .overrideWithValue(_mockTaskProgressRepository),
+        taskProgressRepositoryProvider.overrideWithValue(
+          _mockTaskProgressRepository,
+        ),
       ],
     );
   }
@@ -180,8 +182,9 @@ void main() {
 
       // Set default return value for journalEntityById to avoid null subtype errors
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
-      when(() => mockDb.getLinkedEntities(any()))
-          .thenAnswer((_) async => <JournalEntity>[]);
+      when(
+        () => mockDb.getLinkedEntities(any()),
+      ).thenAnswer((_) async => <JournalEntity>[]);
     });
 
     tearDown(() {
@@ -214,147 +217,157 @@ void main() {
       verify(() => mockDb.journalEntityById(taskId)).called(1);
     });
 
-    test('generate returns AiInputTaskObject with correct data for a Task',
-        () async {
-      // Arrange
-      const taskTitle = 'Test Task';
-      const checklistId = 'checklist-123';
-      const checklistItemId = 'checklist-item-123';
-      const linkedEntryId = 'linked-entry-123';
-      const statusId = 'status-123';
+    test(
+      'generate returns AiInputTaskObject with correct data for a Task',
+      () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const checklistId = 'checklist-123';
+        const checklistItemId = 'checklist-item-123';
+        const linkedEntryId = 'linked-entry-123';
+        const statusId = 'status-123';
 
-      // Set up specific mock for the task progress repository for this test
-      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-          .thenAnswer(
-        (_) async => (
-          const Duration(minutes: 60), // estimate
-          {
-            'entry1': TimeRange(
-              start: DateTime(2022, 7, 7, 9),
-              end: DateTime(2022, 7, 7, 9, 45),
-            ),
-          },
-        ),
-      );
-
-      // Mock the task
-      final task = JournalEntity.task(
-        meta: Metadata(
-          id: taskId,
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: TaskData(
-          title: taskTitle,
-          status: TaskStatus.inProgress(
-            id: statusId,
-            createdAt: creationDate,
-            utcOffset: 0,
+        // Set up specific mock for the task progress repository for this test
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (
+            const Duration(minutes: 60), // estimate
+            {
+              'entry1': TimeRange(
+                start: DateTime(2022, 7, 7, 9),
+                end: DateTime(2022, 7, 7, 9, 45),
+              ),
+            },
           ),
-          statusHistory: [],
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          checklistIds: [checklistId],
-          estimate: const Duration(minutes: 60),
-        ),
-      );
+        );
 
-      // Mock the checklist
-      final checklist = JournalEntity.checklist(
-        meta: Metadata(
-          id: checklistId,
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: const ChecklistData(
-          title: 'Test Checklist',
-          linkedChecklistItems: [checklistItemId],
-          linkedTasks: [taskId],
-        ),
-      );
+        // Mock the task
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.inProgress(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            checklistIds: [checklistId],
+            estimate: const Duration(minutes: 60),
+          ),
+        );
 
-      // Mock the checklist item
-      final checklistItem = JournalEntity.checklistItem(
-        meta: Metadata(
-          id: checklistItemId,
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: const ChecklistItemData(
-          title: 'Test Checklist Item',
-          isChecked: true,
-          linkedChecklists: [checklistId],
-        ),
-      );
+        // Mock the checklist
+        final checklist = JournalEntity.checklist(
+          meta: Metadata(
+            id: checklistId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: [checklistItemId],
+            linkedTasks: [taskId],
+          ),
+        );
 
-      // Mock the linked entry
-      final linkedEntry = JournalEntity.journalEntry(
-        meta: Metadata(
-          id: linkedEntryId,
-          dateFrom: creationDate,
-          dateTo: creationDate.add(const Duration(minutes: 30)),
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        entryText: const EntryText(plainText: 'Test Journal Entry'),
-      );
+        // Mock the checklist item
+        final checklistItem = JournalEntity.checklistItem(
+          meta: Metadata(
+            id: checklistItemId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: const ChecklistItemData(
+            title: 'Test Checklist Item',
+            isChecked: true,
+            linkedChecklists: [checklistId],
+          ),
+        );
 
-      // Set up mocks
-      when(() => mockDb.journalEntityById(taskId))
-          .thenAnswer((_) async => task);
-      when(() => mockDb.getLinkedEntities(taskId))
-          .thenAnswer((_) async => [linkedEntry]);
-      when(() => mockDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockDb.journalEntityById(checklistItemId))
-          .thenAnswer((_) async => checklistItem);
+        // Mock the linked entry
+        final linkedEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: linkedEntryId,
+            dateFrom: creationDate,
+            dateTo: creationDate.add(const Duration(minutes: 30)),
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          entryText: const EntryText(plainText: 'Test Journal Entry'),
+        );
 
-      // Set task progress via the mock repository
-      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-          .thenAnswer((_) async => (
-                const Duration(hours: 1),
-                <String, TimeRange>{
-                  'entry': TimeRange(
-                    start: DateTime(2022, 7, 7, 9),
-                    end: DateTime(2022, 7, 7, 9, 45),
-                  ),
-                },
-              ));
+        // Set up mocks
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [linkedEntry]);
+        when(
+          () => mockDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => checklist);
+        when(
+          () => mockDb.journalEntityById(checklistItemId),
+        ).thenAnswer((_) async => checklistItem);
 
-      // Act
-      final result = await repository.generate(taskId);
+        // Set task progress via the mock repository
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (
+            const Duration(hours: 1),
+            <String, TimeRange>{
+              'entry': TimeRange(
+                start: DateTime(2022, 7, 7, 9),
+                end: DateTime(2022, 7, 7, 9, 45),
+              ),
+            },
+          ),
+        );
 
-      // Assert
-      expect(result, isNotNull);
-      expect(result!.title, equals(taskTitle));
-      expect(result.status, equals('IN PROGRESS'));
-      expect(result.creationDate, isNotNull);
-      expect(result.estimatedDuration, equals('01:00'));
-      expect(result.timeSpent, equals('00:45'));
+        // Act
+        final result = await repository.generate(taskId);
 
-      // Check action items
-      expect(result.actionItems.length, 1);
-      expect(result.actionItems[0].title, 'Test Checklist Item');
-      expect(result.actionItems[0].completed, true);
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.title, equals(taskTitle));
+        expect(result.status, equals('IN PROGRESS'));
+        expect(result.creationDate, isNotNull);
+        expect(result.estimatedDuration, equals('01:00'));
+        expect(result.timeSpent, equals('00:45'));
 
-      // Check log entries
-      expect(result.logEntries.length, 1);
-      expect(result.logEntries[0].text, 'Test Journal Entry');
-      expect(result.logEntries[0].creationTimestamp, equals(creationDate));
-      expect(result.logEntries[0].loggedDuration, equals('00:30'));
+        // Check action items
+        expect(result.actionItems.length, 1);
+        expect(result.actionItems[0].title, 'Test Checklist Item');
+        expect(result.actionItems[0].completed, true);
 
-      // Verify calls
-      verify(() => mockDb.journalEntityById(taskId)).called(1);
-      verify(() => mockDb.getLinkedEntities(taskId)).called(1);
-      verify(() => mockDb.journalEntityById(checklistId)).called(1);
-      verify(() => mockDb.journalEntityById(checklistItemId)).called(1);
-    });
+        // Check log entries
+        expect(result.logEntries.length, 1);
+        expect(result.logEntries[0].text, 'Test Journal Entry');
+        expect(result.logEntries[0].creationTimestamp, equals(creationDate));
+        expect(result.logEntries[0].loggedDuration, equals('00:30'));
+
+        // Verify calls
+        verify(() => mockDb.journalEntityById(taskId)).called(1);
+        verify(() => mockDb.getLinkedEntities(taskId)).called(1);
+        verify(() => mockDb.journalEntityById(checklistId)).called(1);
+        verify(() => mockDb.journalEntityById(checklistItemId)).called(1);
+      },
+    );
 
     test('generate handles null checklist items and time properly', () async {
       // Arrange
@@ -362,8 +375,9 @@ void main() {
       const statusId = 'status-123';
 
       // Set up specific mock for the task progress repository for this test
-      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-          .thenAnswer(
+      when(
+        () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+      ).thenAnswer(
         (_) async => (
           null, // null estimate
           <String, TimeRange>{}, // empty time ranges
@@ -393,8 +407,9 @@ void main() {
       );
 
       // Set up mocks
-      when(() => mockDb.journalEntityById(taskId))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => task);
       when(() => mockDb.getLinkedEntities(taskId)).thenAnswer((_) async => []);
 
       // Don't set any progress to keep the default null
@@ -416,132 +431,137 @@ void main() {
       verify(() => mockDb.getLinkedEntities(taskId)).called(1);
     });
 
-    test('generate processes different types of linked entities correctly',
-        () async {
-      // Arrange
-      const taskTitle = 'Test Task';
-      const entryId = 'entry-123';
-      const imageId = 'image-123';
-      const audioId = 'audio-123';
-      const statusId = 'status-123';
+    test(
+      'generate processes different types of linked entities correctly',
+      () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const entryId = 'entry-123';
+        const imageId = 'image-123';
+        const audioId = 'audio-123';
+        const statusId = 'status-123';
 
-      // Set up specific mock for the task progress repository for this test
-      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-          .thenAnswer(
-        (_) async => (
-          const Duration(minutes: 30), // estimate
-          <String, TimeRange>{
-            'entry-123': TimeRange(
-              start: DateTime(2022, 7, 7, 9),
-              end: DateTime(2022, 7, 7, 9, 15),
-            ),
-            'image-123': TimeRange(
-              start: DateTime(2022, 7, 7, 10),
-              end: DateTime(2022, 7, 7, 10, 30),
-            ),
-            'audio-123': TimeRange(
-              start: DateTime(2022, 7, 7, 11),
-              end: DateTime(2022, 7, 7, 11, 45),
-            ),
-          },
-        ),
-      );
-
-      // Mock the task
-      final task = JournalEntity.task(
-        meta: Metadata(
-          id: taskId,
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: TaskData(
-          title: taskTitle,
-          status: TaskStatus.inProgress(
-            id: statusId,
-            createdAt: creationDate,
-            utcOffset: 0,
+        // Set up specific mock for the task progress repository for this test
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (
+            const Duration(minutes: 30), // estimate
+            <String, TimeRange>{
+              'entry-123': TimeRange(
+                start: DateTime(2022, 7, 7, 9),
+                end: DateTime(2022, 7, 7, 9, 15),
+              ),
+              'image-123': TimeRange(
+                start: DateTime(2022, 7, 7, 10),
+                end: DateTime(2022, 7, 7, 10, 30),
+              ),
+              'audio-123': TimeRange(
+                start: DateTime(2022, 7, 7, 11),
+                end: DateTime(2022, 7, 7, 11, 45),
+              ),
+            },
           ),
-          dateFrom: creationDate,
-          dateTo: creationDate,
-          statusHistory: [],
-          checklistIds: [],
-        ),
-      );
+        );
 
-      // Mock different types of linked entities
-      final journalEntry = JournalEntity.journalEntry(
-        meta: Metadata(
-          id: entryId,
-          dateFrom: creationDate,
-          dateTo: creationDate.add(const Duration(minutes: 15)),
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        entryText: const EntryText(plainText: 'Journal Entry Text'),
-      );
+        // Mock the task
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.inProgress(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            statusHistory: [],
+            checklistIds: [],
+          ),
+        );
 
-      final journalImage = JournalEntity.journalImage(
-        meta: Metadata(
-          id: imageId,
-          dateFrom: creationDate,
-          dateTo: creationDate.add(const Duration(minutes: 30)),
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: ImageData(
-          capturedAt: creationDate,
-          imageId: 'img-1',
-          imageFile: 'test.jpg',
-          imageDirectory: '/test',
-        ),
-        entryText: const EntryText(plainText: 'Image Caption'),
-      );
+        // Mock different types of linked entities
+        final journalEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: entryId,
+            dateFrom: creationDate,
+            dateTo: creationDate.add(const Duration(minutes: 15)),
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          entryText: const EntryText(plainText: 'Journal Entry Text'),
+        );
 
-      final journalAudio = JournalEntity.journalAudio(
-        meta: Metadata(
-          id: audioId,
-          dateFrom: creationDate,
-          dateTo: creationDate.add(const Duration(minutes: 45)),
-          createdAt: creationDate,
-          updatedAt: creationDate,
-        ),
-        data: AudioData(
-          dateFrom: creationDate,
-          dateTo: creationDate.add(const Duration(minutes: 45)),
-          audioFile: 'test.mp3',
-          audioDirectory: '/test',
-          duration: const Duration(minutes: 45),
-        ),
-        entryText: const EntryText(plainText: 'Audio Transcription'),
-      );
+        final journalImage = JournalEntity.journalImage(
+          meta: Metadata(
+            id: imageId,
+            dateFrom: creationDate,
+            dateTo: creationDate.add(const Duration(minutes: 30)),
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: ImageData(
+            capturedAt: creationDate,
+            imageId: 'img-1',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+          ),
+          entryText: const EntryText(plainText: 'Image Caption'),
+        );
 
-      // Set up mocks
-      when(() => mockDb.journalEntityById(taskId))
-          .thenAnswer((_) async => task);
-      when(() => mockDb.getLinkedEntities(taskId))
-          .thenAnswer((_) async => [journalEntry, journalImage, journalAudio]);
+        final journalAudio = JournalEntity.journalAudio(
+          meta: Metadata(
+            id: audioId,
+            dateFrom: creationDate,
+            dateTo: creationDate.add(const Duration(minutes: 45)),
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: AudioData(
+            dateFrom: creationDate,
+            dateTo: creationDate.add(const Duration(minutes: 45)),
+            audioFile: 'test.mp3',
+            audioDirectory: '/test',
+            duration: const Duration(minutes: 45),
+          ),
+          entryText: const EntryText(plainText: 'Audio Transcription'),
+        );
 
-      // Act
-      final result = await repository.generate(taskId);
+        // Set up mocks
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [journalEntry, journalImage, journalAudio]);
 
-      // Assert
-      expect(result, isNotNull);
-      expect(result!.logEntries.length, 3);
+        // Act
+        final result = await repository.generate(taskId);
 
-      // Verify the journal entry
-      expect(result.logEntries[0].text, 'Journal Entry Text');
-      expect(result.logEntries[0].loggedDuration, '00:15');
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.logEntries.length, 3);
 
-      // Verify the image entry
-      expect(result.logEntries[1].text, 'Image Caption');
-      expect(result.logEntries[1].loggedDuration, '00:30');
+        // Verify the journal entry
+        expect(result.logEntries[0].text, 'Journal Entry Text');
+        expect(result.logEntries[0].loggedDuration, '00:15');
 
-      // Verify the audio entry
-      expect(result.logEntries[2].text, 'Audio Transcription');
-      expect(result.logEntries[2].loggedDuration, '00:45');
-    });
+        // Verify the image entry
+        expect(result.logEntries[1].text, 'Image Caption');
+        expect(result.logEntries[1].loggedDuration, '00:30');
+
+        // Verify the audio entry
+        expect(result.logEntries[2].text, 'Audio Transcription');
+        expect(result.logEntries[2].loggedDuration, '00:45');
+      },
+    );
 
     // Tests for getEntity method
     group('getEntity', () {
@@ -568,8 +588,9 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => expectedEntity);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => expectedEntity);
 
         // Act
         final result = await repository.getEntity(taskId);
@@ -581,8 +602,9 @@ void main() {
 
       test('returns null when entity does not exist', () async {
         // Arrange
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.getEntity(taskId);
@@ -596,48 +618,49 @@ void main() {
     // Tests for createAiResponseEntry method
     group('createAiResponseEntry', () {
       test(
-          'calls PersistenceLogic.createAiResponseEntry with correct parameters',
-          () async {
-        // Arrange
-        const testData = AiResponseData(
-          model: 'test-model',
-          systemMessage: 'test-system-message',
-          prompt: 'test-prompt',
-          thoughts: 'test-thoughts',
-          response: 'test-response',
-        );
+        'calls PersistenceLogic.createAiResponseEntry with correct parameters',
+        () async {
+          // Arrange
+          const testData = AiResponseData(
+            model: 'test-model',
+            systemMessage: 'test-system-message',
+            prompt: 'test-prompt',
+            thoughts: 'test-thoughts',
+            response: 'test-response',
+          );
 
-        final testStart = DateTime(2023);
-        const testLinkedId = 'linked-123';
-        const testCategoryId = 'category-123';
+          final testStart = DateTime(2023);
+          const testLinkedId = 'linked-123';
+          const testCategoryId = 'category-123';
 
-        when(
-          () => mockPersistenceLogic.createAiResponseEntry(
-            data: any(named: 'data'),
-            dateFrom: any(named: 'dateFrom'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+          when(
+            () => mockPersistenceLogic.createAiResponseEntry(
+              data: any(named: 'data'),
+              dateFrom: any(named: 'dateFrom'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        // Act
-        await repository.createAiResponseEntry(
-          data: testData,
-          start: testStart,
-          linkedId: testLinkedId,
-          categoryId: testCategoryId,
-        );
-
-        // Assert
-        verify(
-          () => mockPersistenceLogic.createAiResponseEntry(
+          // Act
+          await repository.createAiResponseEntry(
             data: testData,
-            dateFrom: testStart,
+            start: testStart,
             linkedId: testLinkedId,
             categoryId: testCategoryId,
-          ),
-        ).called(1);
-      });
+          );
+
+          // Assert
+          verify(
+            () => mockPersistenceLogic.createAiResponseEntry(
+              data: testData,
+              dateFrom: testStart,
+              linkedId: testLinkedId,
+              categoryId: testCategoryId,
+            ),
+          ).called(1);
+        },
+      );
 
       test('handles optional parameters correctly', () async {
         // Arrange
@@ -684,8 +707,9 @@ void main() {
         const statusId = 'status-123';
 
         // Set up specific mock for the task progress repository
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer(
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
           (_) async => (
             const Duration(minutes: 30), // estimate
             <String, TimeRange>{
@@ -721,10 +745,12 @@ void main() {
         );
 
         // Set up mocks
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
 
         // Act
         final result = await repository.buildTaskDetailsJson(id: taskId);
@@ -766,8 +792,9 @@ void main() {
 
       test('returns null for non-existent entity', () async {
         // Arrange
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.buildTaskDetailsJson(id: taskId);
@@ -785,8 +812,9 @@ void main() {
         const statusId = 'status-123';
 
         // Set up specific mock for the task progress repository
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer(
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
           (_) async => (
             const Duration(minutes: 60), // estimate
             <String, TimeRange>{
@@ -867,14 +895,18 @@ void main() {
         );
 
         // Set up mocks
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => [linkedEntry]);
-        when(() => mockDb.journalEntityById(checklistId))
-            .thenAnswer((_) async => checklist);
-        when(() => mockDb.journalEntityById(checklistItemId))
-            .thenAnswer((_) async => checklistItem);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [linkedEntry]);
+        when(
+          () => mockDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => checklist);
+        when(
+          () => mockDb.journalEntityById(checklistItemId),
+        ).thenAnswer((_) async => checklistItem);
 
         // Act
         final result = await repository.buildTaskDetailsJson(id: taskId);
@@ -893,7 +925,9 @@ void main() {
         expect(jsonData['actionItems'], isList);
         expect(jsonData['actionItems'].length, equals(1));
         expect(
-            jsonData['actionItems'][0]['title'], equals('Test Checklist Item'));
+          jsonData['actionItems'][0]['title'],
+          equals('Test Checklist Item'),
+        );
         expect(jsonData['actionItems'][0]['completed'], isTrue);
 
         // Check log entries
@@ -909,9 +943,11 @@ void main() {
         const statusId = 'status-abc';
 
         // Provide progress data
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer((_) async =>
-                (const Duration(minutes: 10), <String, TimeRange>{}));
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (const Duration(minutes: 10), <String, TimeRange>{}),
+        );
 
         // Task with assigned labels
         final task = JournalEntity.task(
@@ -937,10 +973,12 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
 
         // Label definitions
         final defs = [
@@ -963,8 +1001,9 @@ void main() {
             private: false,
           ),
         ];
-        when(() => mockDb.getAllLabelDefinitions())
-            .thenAnswer((_) async => defs);
+        when(
+          () => mockDb.getAllLabelDefinitions(),
+        ).thenAnswer((_) async => defs);
 
         // Act
         final jsonString = await repository.buildTaskDetailsJson(id: taskId);
@@ -989,9 +1028,11 @@ void main() {
         const statusId = 'status-prio';
         final dueDate = DateTime(2025, 6, 15, 12);
 
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer((_) async =>
-                (const Duration(minutes: 20), <String, TimeRange>{}));
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (const Duration(minutes: 20), <String, TimeRange>{}),
+        );
 
         final task = JournalEntity.task(
           meta: Metadata(
@@ -1017,12 +1058,15 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
-        when(() => mockDb.getAllLabelDefinitions())
-            .thenAnswer((_) async => const []);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getAllLabelDefinitions(),
+        ).thenAnswer((_) async => const []);
 
         // Act
         final jsonString = await repository.buildTaskDetailsJson(id: taskId);
@@ -1042,9 +1086,11 @@ void main() {
         const taskTitle = 'Task without due date';
         const statusId = 'status-nodue';
 
-        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
-            .thenAnswer((_) async =>
-                (const Duration(minutes: 15), <String, TimeRange>{}));
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (const Duration(minutes: 15), <String, TimeRange>{}),
+        );
 
         final task = JournalEntity.task(
           meta: Metadata(
@@ -1068,12 +1114,15 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
-        when(() => mockDb.getAllLabelDefinitions())
-            .thenAnswer((_) async => const []);
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getAllLabelDefinitions(),
+        ).thenAnswer((_) async => const []);
 
         // Act
         final jsonString = await repository.buildTaskDetailsJson(id: taskId);

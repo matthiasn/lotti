@@ -6,16 +6,26 @@ class ChatStreamUtils {
   static const String ellipsis = '…';
 
   // Regex patterns for open/close tokens (whitespace-tolerant)
-  static final RegExp htmlOpen =
-      RegExp(r'<think(?:ing)?\s*>', caseSensitive: false);
-  static final RegExp htmlClose =
-      RegExp(r'</think(?:ing)?\s*>', caseSensitive: false);
-  static final RegExp bracketOpen =
-      RegExp(r'\[(?:think|thinking)\s*\]', caseSensitive: false);
-  static final RegExp bracketClose =
-      RegExp(r'\[/(?:think|thinking)\s*\]', caseSensitive: false);
-  static final RegExp fenceOpen =
-      RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n', caseSensitive: false);
+  static final RegExp htmlOpen = RegExp(
+    r'<think(?:ing)?\s*>',
+    caseSensitive: false,
+  );
+  static final RegExp htmlClose = RegExp(
+    r'</think(?:ing)?\s*>',
+    caseSensitive: false,
+  );
+  static final RegExp bracketOpen = RegExp(
+    r'\[(?:think|thinking)\s*\]',
+    caseSensitive: false,
+  );
+  static final RegExp bracketClose = RegExp(
+    r'\[/(?:think|thinking)\s*\]',
+    caseSensitive: false,
+  );
+  static final RegExp fenceOpen = RegExp(
+    r'```[ \t]*(?:think|thinking)[ \t]*\n',
+    caseSensitive: false,
+  );
   static final RegExp fenceClose = RegExp('```', caseSensitive: false);
 
   /// Returns a regex for the closing token that matches the given opening token.

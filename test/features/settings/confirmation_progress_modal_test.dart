@@ -46,7 +46,8 @@ void main() {
                         progressBuilder: (context) => const Text('Progress...'),
                         operation: () async {
                           await Future<void>.delayed(
-                              const Duration(milliseconds: 100));
+                            const Duration(milliseconds: 100),
+                          );
                         },
                       );
                     },
@@ -65,14 +66,17 @@ void main() {
 
       // Verify confirmation page content
       expect(
-          find.text('Are you sure you want to delete this?'), findsOneWidget);
+        find.text('Are you sure you want to delete this?'),
+        findsOneWidget,
+      );
       expect(find.text('DELETE'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
 
-    testWidgets('shows non-destructive modal without warning icon',
-        (tester) async {
+    testWidgets('shows non-destructive modal without warning icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -91,7 +95,8 @@ void main() {
                         progressBuilder: (context) => const Text('Progress...'),
                         operation: () async {
                           await Future<void>.delayed(
-                              const Duration(milliseconds: 100));
+                            const Duration(milliseconds: 100),
+                          );
                         },
                         isDestructive: false,
                       );
@@ -115,8 +120,9 @@ void main() {
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
     });
 
-    testWidgets('cancels operation when cancel button is pressed',
-        (tester) async {
+    testWidgets('cancels operation when cancel button is pressed', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -228,7 +234,8 @@ void main() {
                         operation: () async {
                           operationCalled = true;
                           await Future<void>.delayed(
-                              const Duration(milliseconds: 200));
+                            const Duration(milliseconds: 200),
+                          );
                         },
                       );
                     },
@@ -323,8 +330,9 @@ void main() {
       expect(operationRan, isTrue);
     });
 
-    testWidgets('keeps modal open when closeOnComplete is false',
-        (tester) async {
+    testWidgets('keeps modal open when closeOnComplete is false', (
+      tester,
+    ) async {
       var confirmed = false;
 
       await tester.pumpWidget(
@@ -385,8 +393,9 @@ void main() {
       expect(confirmed, isTrue);
     });
 
-    testWidgets('uses correct styling for destructive operations',
-        (tester) async {
+    testWidgets('uses correct styling for destructive operations', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -405,7 +414,8 @@ void main() {
                         progressBuilder: (context) => const Text('Progress...'),
                         operation: () async {
                           await Future<void>.delayed(
-                              const Duration(milliseconds: 100));
+                            const Duration(milliseconds: 100),
+                          );
                         },
                       );
                     },
@@ -427,8 +437,9 @@ void main() {
         of: find.text('DELETE'),
         matching: find.byType(LottiPrimaryButton),
       );
-      final confirmButton =
-          tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+      final confirmButton = tester.widget<LottiPrimaryButton>(
+        confirmButtonFinder,
+      );
       Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses error styling for destructive operations
@@ -438,8 +449,9 @@ void main() {
       );
     });
 
-    testWidgets('uses correct styling for non-destructive operations',
-        (tester) async {
+    testWidgets('uses correct styling for non-destructive operations', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -458,7 +470,8 @@ void main() {
                         progressBuilder: (context) => const Text('Progress...'),
                         operation: () async {
                           await Future<void>.delayed(
-                              const Duration(milliseconds: 100));
+                            const Duration(milliseconds: 100),
+                          );
                         },
                         isDestructive: false,
                       );
@@ -481,8 +494,9 @@ void main() {
         of: find.text('CONTINUE'),
         matching: find.byType(LottiPrimaryButton),
       );
-      final confirmButton =
-          tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+      final confirmButton = tester.widget<LottiPrimaryButton>(
+        confirmButtonFinder,
+      );
       Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses primary styling for non-destructive operations

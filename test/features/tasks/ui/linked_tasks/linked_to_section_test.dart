@@ -54,7 +54,8 @@ void main() {
         dateTo: now,
       ),
       data: TaskData(
-        status: status ??
+        status:
+            status ??
             TaskStatus.open(
               id: 'status-1',
               createdAt: now,
@@ -74,10 +75,12 @@ void main() {
     final mockUpdateNotifications = MockUpdateNotifications();
     final mockJournalDb = MockJournalDb();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
-    when(() => mockJournalDb.journalEntityById(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockJournalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
 
     getIt
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -87,8 +90,9 @@ void main() {
   tearDownAll(getIt.reset);
 
   group('LinkedToSection', () {
-    testWidgets('returns SizedBox.shrink when outgoingTasks is empty',
-        (tester) async {
+    testWidgets('returns SizedBox.shrink when outgoingTasks is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: WidgetTestBench(
@@ -196,8 +200,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            linkedEntriesControllerProvider(id: 'task-main')
-                .overrideWith(() => mockController),
+            linkedEntriesControllerProvider(
+              id: 'task-main',
+            ).overrideWith(() => mockController),
           ],
           child: WidgetTestBench(
             child: LinkedToSection(
@@ -214,8 +219,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Unlink Task'), findsOneWidget);
-      expect(find.text('Are you sure you want to unlink this task?'),
-          findsOneWidget);
+      expect(
+        find.text('Are you sure you want to unlink this task?'),
+        findsOneWidget,
+      );
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Unlink'), findsOneWidget);
     });
@@ -247,16 +254,18 @@ void main() {
       expect(find.text('Unlink Task'), findsNothing);
     });
 
-    testWidgets('confirm unlink calls removeLink on controller',
-        (tester) async {
+    testWidgets('confirm unlink calls removeLink on controller', (
+      tester,
+    ) async {
       final task = buildTask(title: 'Linked Task');
       final trackingController = TrackingLinkedEntriesController();
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            linkedEntriesControllerProvider(id: 'task-main')
-                .overrideWith(() => trackingController),
+            linkedEntriesControllerProvider(
+              id: 'task-main',
+            ).overrideWith(() => trackingController),
           ],
           child: WidgetTestBench(
             child: LinkedToSection(

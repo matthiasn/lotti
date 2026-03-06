@@ -38,8 +38,9 @@ void main() {
       expect(find.text('Test error message'), findsOneWidget);
     });
 
-    testWidgets('shows check icon when completed with all four counts',
-        (tester) async {
+    testWidgets('shows check icon when completed with all four counts', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const SequenceLogPopulateState(
@@ -126,8 +127,9 @@ void main() {
       expect(find.text('Processing agent links...'), findsOneWidget);
     });
 
-    testWidgets('shows idle state when not running and not completed',
-        (tester) async {
+    testWidgets('shows idle state when not running and not completed', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const SequenceLogPopulateState(),

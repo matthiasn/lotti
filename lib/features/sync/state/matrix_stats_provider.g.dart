@@ -12,19 +12,24 @@ part of 'matrix_stats_provider.dart';
 @ProviderFor(matrixStatsStream)
 final matrixStatsStreamProvider = MatrixStatsStreamProvider._();
 
-final class MatrixStatsStreamProvider extends $FunctionalProvider<
-        AsyncValue<MatrixStats>, MatrixStats, Stream<MatrixStats>>
+final class MatrixStatsStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<MatrixStats>,
+          MatrixStats,
+          Stream<MatrixStats>
+        >
     with $FutureModifier<MatrixStats>, $StreamProvider<MatrixStats> {
   MatrixStatsStreamProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'matrixStatsStreamProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'matrixStatsStreamProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$matrixStatsStreamHash();
@@ -32,8 +37,8 @@ final class MatrixStatsStreamProvider extends $FunctionalProvider<
   @$internal
   @override
   $StreamProviderElement<MatrixStats> $createElement(
-          $ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
 
   @override
   Stream<MatrixStats> create(Ref ref) {
@@ -49,15 +54,15 @@ final matrixStatsControllerProvider = MatrixStatsControllerProvider._();
 final class MatrixStatsControllerProvider
     extends $AsyncNotifierProvider<MatrixStatsController, MatrixStats> {
   MatrixStatsControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'matrixStatsControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'matrixStatsControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$matrixStatsControllerHash();
@@ -76,11 +81,14 @@ abstract class _$MatrixStatsController extends $AsyncNotifier<MatrixStats> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<MatrixStats>, MatrixStats>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<MatrixStats>, MatrixStats>,
-        AsyncValue<MatrixStats>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<MatrixStats>, MatrixStats>,
+              AsyncValue<MatrixStats>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -98,15 +106,15 @@ final class SyncMetricsHistoryProvider
   /// Rolling in-memory history for a few KPI metrics to power sparklines.
   /// Kept UI-side to avoid coupling to the pipeline internals.
   SyncMetricsHistoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'syncMetricsHistoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncMetricsHistoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$syncMetricsHistoryHash();
@@ -137,11 +145,14 @@ abstract class _$SyncMetricsHistory extends $Notifier<Map<String, List<int>>> {
   void runBuild() {
     final ref =
         this.ref as $Ref<Map<String, List<int>>, Map<String, List<int>>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<Map<String, List<int>>, Map<String, List<int>>>,
-        Map<String, List<int>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<Map<String, List<int>>, Map<String, List<int>>>,
+              Map<String, List<int>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

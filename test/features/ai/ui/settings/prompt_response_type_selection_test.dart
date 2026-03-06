@@ -7,8 +7,9 @@ import '../../../../test_helper.dart';
 
 void main() {
   group('ResponseTypeSelectionModal', () {
-    testWidgets('displays all response type options with correct icons',
-        (tester) async {
+    testWidgets('displays all response type options with correct icons', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Scaffold(
@@ -40,8 +41,9 @@ void main() {
       expect(find.byIcon(Icons.palette_outlined), findsOneWidget);
     });
 
-    testWidgets('imagePromptGeneration shows palette icon when selected',
-        (tester) async {
+    testWidgets('imagePromptGeneration shows palette icon when selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Scaffold(

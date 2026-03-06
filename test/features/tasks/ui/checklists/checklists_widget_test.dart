@@ -75,23 +75,28 @@ void main() {
     final mockSecureStorage = MockSecureStorage();
     final settingsDb = SettingsDb(inMemoryDatabase: true);
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-    when(() => mockEditorStateService.getUnsavedStream(any(), any()))
-        .thenAnswer((_) => Stream<bool>.fromIterable([false]));
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+    when(
+      () => mockEditorStateService.getUnsavedStream(any(), any()),
+    ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
     when(() => mockEditorStateService.getDelta(any())).thenReturn(null);
     when(() => mockEditorStateService.getSelection(any())).thenReturn(null);
     when(() => mockEditorStateService.entryIsUnsaved(any())).thenReturn(false);
 
     // Mock secure storage for vector clock
-    when(() => mockSecureStorage.readValue(any()))
-        .thenAnswer((_) async => null);
-    when(() => mockSecureStorage.writeValue(any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockSecureStorage.readValue(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockSecureStorage.writeValue(any(), any()),
+    ).thenAnswer((_) async {});
 
     // Mock journal db
-    when(() => mockJournalDb.getConfigFlag(any()))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalDb.getConfigFlag(any()),
+    ).thenAnswer((_) async => false);
 
     getIt
       ..registerSingleton<SettingsDb>(settingsDb)
@@ -121,74 +126,79 @@ void main() {
       final dateTime = DateTime(2024);
       final dateTimeTo = DateTime(2024, 1, 1, 1);
       final mockJournalDb = getIt<JournalDb>() as MockJournalDb;
-      mockTask = JournalEntity.task(
-        meta: Metadata(
-          id: 'task1',
-          createdAt: dateTime,
-          updatedAt: dateTime,
-          dateFrom: dateTime,
-          dateTo: dateTimeTo,
-          starred: false,
-          private: false,
-          categoryId: 'category1',
-        ),
-        entryText: const EntryText(plainText: 'Test Task'),
-        data: TaskData(
-          title: 'Test Task',
-          status: TaskStatus.open(
-            id: 'status1',
-            createdAt: dateTime,
-            utcOffset: 0,
-          ),
-          dateFrom: dateTime,
-          dateTo: dateTimeTo,
-          statusHistory: [],
-          checklistIds: ['checklist1', 'checklist2'],
-        ),
-      ) as Task;
+      mockTask =
+          JournalEntity.task(
+                meta: Metadata(
+                  id: 'task1',
+                  createdAt: dateTime,
+                  updatedAt: dateTime,
+                  dateFrom: dateTime,
+                  dateTo: dateTimeTo,
+                  starred: false,
+                  private: false,
+                  categoryId: 'category1',
+                ),
+                entryText: const EntryText(plainText: 'Test Task'),
+                data: TaskData(
+                  title: 'Test Task',
+                  status: TaskStatus.open(
+                    id: 'status1',
+                    createdAt: dateTime,
+                    utcOffset: 0,
+                  ),
+                  dateFrom: dateTime,
+                  dateTo: dateTimeTo,
+                  statusHistory: [],
+                  checklistIds: ['checklist1', 'checklist2'],
+                ),
+              )
+              as Task;
 
       mockChecklistRepository = MockChecklistRepository();
 
       // Setup journal db mock for this test
-      when(() => mockJournalDb.journalEntityById(mockTask.id))
-          .thenAnswer((_) async => mockTask);
+      when(
+        () => mockJournalDb.journalEntityById(mockTask.id),
+      ).thenAnswer((_) async => mockTask);
 
       // Mock checklist entities
-      when(() => mockJournalDb.journalEntityById('checklist1'))
-          .thenAnswer((_) async => JournalEntity.checklist(
-                meta: Metadata(
-                  id: 'checklist1',
-                  createdAt: dateTime,
-                  updatedAt: dateTime,
-                  dateFrom: dateTime,
-                  dateTo: dateTime,
-                  starred: false,
-                  private: false,
-                ),
-                data: const ChecklistData(
-                  title: 'Checklist 1',
-                  linkedChecklistItems: [],
-                  linkedTasks: ['task1'],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('checklist1')).thenAnswer(
+        (_) async => JournalEntity.checklist(
+          meta: Metadata(
+            id: 'checklist1',
+            createdAt: dateTime,
+            updatedAt: dateTime,
+            dateFrom: dateTime,
+            dateTo: dateTime,
+            starred: false,
+            private: false,
+          ),
+          data: const ChecklistData(
+            title: 'Checklist 1',
+            linkedChecklistItems: [],
+            linkedTasks: ['task1'],
+          ),
+        ),
+      );
 
-      when(() => mockJournalDb.journalEntityById('checklist2'))
-          .thenAnswer((_) async => JournalEntity.checklist(
-                meta: Metadata(
-                  id: 'checklist2',
-                  createdAt: dateTime,
-                  updatedAt: dateTime,
-                  dateFrom: dateTime,
-                  dateTo: dateTime,
-                  starred: false,
-                  private: false,
-                ),
-                data: const ChecklistData(
-                  title: 'Checklist 2',
-                  linkedChecklistItems: [],
-                  linkedTasks: ['task1'],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('checklist2')).thenAnswer(
+        (_) async => JournalEntity.checklist(
+          meta: Metadata(
+            id: 'checklist2',
+            createdAt: dateTime,
+            updatedAt: dateTime,
+            dateFrom: dateTime,
+            dateTo: dateTime,
+            starred: false,
+            private: false,
+          ),
+          data: const ChecklistData(
+            title: 'Checklist 2',
+            linkedChecklistItems: [],
+            linkedTasks: ['task1'],
+          ),
+        ),
+      );
 
       // Mock any other entity id (for cases where we don't have checklists)
       // Note: This must come BEFORE the specific mocks to avoid conflicts
@@ -211,8 +221,9 @@ void main() {
           entryControllerProvider(id: testTask.id).overrideWith(
             () => MockEntryController(mockEntry: taskWithIds),
           ),
-          checklistRepositoryProvider
-              .overrideWithValue(mockChecklistRepository),
+          checklistRepositoryProvider.overrideWithValue(
+            mockChecklistRepository,
+          ),
         ],
         child: WidgetTestBench(
           child: ChecklistsWidget(
@@ -288,8 +299,9 @@ void main() {
       expect(find.byType(ModernBaseCard), findsNothing);
     });
 
-    testWidgets('returns SizedBox.shrink when entry is not a Task',
-        (tester) async {
+    testWidgets('returns SizedBox.shrink when entry is not a Task', (
+      tester,
+    ) async {
       final dateTime = DateTime(2024);
       final dateTimeTo = DateTime(2024, 1, 1, 1);
       final journalEntry = JournalEntity.journalEntry(
@@ -325,8 +337,9 @@ void main() {
       expect(find.byType(ModernBaseCard), findsNothing);
     });
 
-    testWidgets('calls createChecklist when add button is pressed',
-        (tester) async {
+    testWidgets('calls createChecklist when add button is pressed', (
+      tester,
+    ) async {
       final newChecklist = JournalEntity.checklist(
         meta: Metadata(
           id: 'new-checklist',
@@ -344,12 +357,16 @@ void main() {
         ),
       );
 
-      when(() => mockChecklistRepository
-              .createChecklist(taskId: any(named: 'taskId')))
-          .thenAnswer((_) async => (
-                checklist: newChecklist,
-                createdItems: <({String id, String title, bool isChecked})>[],
-              ));
+      when(
+        () => mockChecklistRepository.createChecklist(
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          checklist: newChecklist,
+          createdItems: <({String id, String title, bool isChecked})>[],
+        ),
+      );
 
       await tester.pumpWidget(createTestWidget());
 
@@ -370,8 +387,9 @@ void main() {
             entryControllerProvider(id: 'task1').overrideWith(
               () => controller,
             ),
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
           ],
           child: WidgetTestBench(
             child: ChecklistsWidget(
@@ -390,8 +408,9 @@ void main() {
       // More detailed reordering tests require ChecklistWrapper widgets to render
     });
 
-    testWidgets('maintains correct keys for ChecklistWrapper widgets',
-        (tester) async {
+    testWidgets('maintains correct keys for ChecklistWrapper widgets', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
 
       // Test that ChecklistsWidget renders

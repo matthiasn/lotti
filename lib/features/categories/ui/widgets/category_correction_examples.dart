@@ -103,8 +103,9 @@ class CategoryCorrectionExamples extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: context.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.5),
+              color: context.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.5,
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -210,8 +211,9 @@ class _CorrectionExampleTile extends StatelessWidget {
                         TextSpan(
                           text: '"${example.before}"',
                           style: TextStyle(
-                            color: context.colorScheme.error
-                                .withValues(alpha: 0.8),
+                            color: context.colorScheme.error.withValues(
+                              alpha: 0.8,
+                            ),
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),
@@ -240,8 +242,9 @@ class _CorrectionExampleTile extends StatelessWidget {
               Text(
                 capturedAtText,
                 style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.7),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.7,
+                  ),
                   fontSize: 11,
                 ),
               ),

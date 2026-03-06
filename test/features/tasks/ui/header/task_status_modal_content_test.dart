@@ -17,12 +17,12 @@ class MockTask extends Mock implements Task {
 
   @override
   Metadata get meta => Metadata(
-        id: 'test-task-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-      );
+    id: 'test-task-id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+  );
 }
 
 void main() {
@@ -130,8 +130,9 @@ void main() {
       );
 
       // Assert - find all chips
-      final chips =
-          tester.widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip));
+      final chips = tester.widgetList<FilterChoiceChip>(
+        find.byType(FilterChoiceChip),
+      );
 
       // Find selected chips
       final selectedChips = chips.where((chip) => chip.isSelected).toList();
@@ -184,8 +185,9 @@ void main() {
       }
     });
 
-    testWidgets('chip onTap handler calls Navigator.pop with correct status',
-        (tester) async {
+    testWidgets('chip onTap handler calls Navigator.pop with correct status', (
+      tester,
+    ) async {
       // Status to test
       const statusToTest = 'DONE';
 

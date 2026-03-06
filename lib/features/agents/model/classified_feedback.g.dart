@@ -7,33 +7,35 @@ part of 'classified_feedback.dart';
 // **************************************************************************
 
 _ClassifiedFeedbackItem _$ClassifiedFeedbackItemFromJson(
-        Map<String, dynamic> json) =>
-    _ClassifiedFeedbackItem(
-      sentiment: $enumDecode(_$FeedbackSentimentEnumMap, json['sentiment']),
-      category: $enumDecode(_$FeedbackCategoryEnumMap, json['category']),
-      source: json['source'] as String,
-      detail: json['detail'] as String,
-      agentId: json['agentId'] as String,
-      sourceEntityId: json['sourceEntityId'] as String?,
-      confidence: (json['confidence'] as num?)?.toDouble(),
-      observationPriority: $enumDecodeNullable(
-          _$ObservationPriorityEnumMap, json['observationPriority'],
-          unknownValue: JsonKey.nullForUndefinedEnumValue),
-    );
+  Map<String, dynamic> json,
+) => _ClassifiedFeedbackItem(
+  sentiment: $enumDecode(_$FeedbackSentimentEnumMap, json['sentiment']),
+  category: $enumDecode(_$FeedbackCategoryEnumMap, json['category']),
+  source: json['source'] as String,
+  detail: json['detail'] as String,
+  agentId: json['agentId'] as String,
+  sourceEntityId: json['sourceEntityId'] as String?,
+  confidence: (json['confidence'] as num?)?.toDouble(),
+  observationPriority: $enumDecodeNullable(
+    _$ObservationPriorityEnumMap,
+    json['observationPriority'],
+    unknownValue: JsonKey.nullForUndefinedEnumValue,
+  ),
+);
 
 Map<String, dynamic> _$ClassifiedFeedbackItemToJson(
-        _ClassifiedFeedbackItem instance) =>
-    <String, dynamic>{
-      'sentiment': _$FeedbackSentimentEnumMap[instance.sentiment]!,
-      'category': _$FeedbackCategoryEnumMap[instance.category]!,
-      'source': instance.source,
-      'detail': instance.detail,
-      'agentId': instance.agentId,
-      'sourceEntityId': instance.sourceEntityId,
-      'confidence': instance.confidence,
-      'observationPriority':
-          _$ObservationPriorityEnumMap[instance.observationPriority],
-    };
+  _ClassifiedFeedbackItem instance,
+) => <String, dynamic>{
+  'sentiment': _$FeedbackSentimentEnumMap[instance.sentiment]!,
+  'category': _$FeedbackCategoryEnumMap[instance.category]!,
+  'source': instance.source,
+  'detail': instance.detail,
+  'agentId': instance.agentId,
+  'sourceEntityId': instance.sourceEntityId,
+  'confidence': instance.confidence,
+  'observationPriority':
+      _$ObservationPriorityEnumMap[instance.observationPriority],
+};
 
 const _$FeedbackSentimentEnumMap = {
   FeedbackSentiment.positive: 'positive',
@@ -56,18 +58,17 @@ const _$ObservationPriorityEnumMap = {
   ObservationPriority.critical: 'critical',
 };
 
-_ClassifiedFeedback _$ClassifiedFeedbackFromJson(Map<String, dynamic> json) =>
-    _ClassifiedFeedback(
-      items: (json['items'] as List<dynamic>)
-          .map(
-              (e) => ClassifiedFeedbackItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      windowStart: DateTime.parse(json['windowStart'] as String),
-      windowEnd: DateTime.parse(json['windowEnd'] as String),
-      totalObservationsScanned:
-          (json['totalObservationsScanned'] as num).toInt(),
-      totalDecisionsScanned: (json['totalDecisionsScanned'] as num).toInt(),
-    );
+_ClassifiedFeedback _$ClassifiedFeedbackFromJson(
+  Map<String, dynamic> json,
+) => _ClassifiedFeedback(
+  items: (json['items'] as List<dynamic>)
+      .map((e) => ClassifiedFeedbackItem.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  windowStart: DateTime.parse(json['windowStart'] as String),
+  windowEnd: DateTime.parse(json['windowEnd'] as String),
+  totalObservationsScanned: (json['totalObservationsScanned'] as num).toInt(),
+  totalDecisionsScanned: (json['totalDecisionsScanned'] as num).toInt(),
+);
 
 Map<String, dynamic> _$ClassifiedFeedbackToJson(_ClassifiedFeedback instance) =>
     <String, dynamic>{

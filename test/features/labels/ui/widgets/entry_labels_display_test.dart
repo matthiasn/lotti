@@ -140,8 +140,9 @@ void main() {
       expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('returns empty when no labels and showEditButton is false',
-        (tester) async {
+    testWidgets('returns empty when no labels and showEditButton is false', (
+      tester,
+    ) async {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildWrapper(entry));
@@ -178,8 +179,9 @@ void main() {
   });
 
   group('EntryLabelsDisplay private labels', () {
-    testWidgets('shows private labels when showPrivate is true',
-        (tester) async {
+    testWidgets('shows private labels when showPrivate is true', (
+      tester,
+    ) async {
       when(() => cacheService.showPrivateEntries).thenReturn(true);
       final entry = textEntryWithLabels(['label-a', 'label-private']);
 
@@ -191,8 +193,9 @@ void main() {
       expect(find.text('Private Label'), findsOneWidget);
     });
 
-    testWidgets('hides private labels when showPrivate is false',
-        (tester) async {
+    testWidgets('hides private labels when showPrivate is false', (
+      tester,
+    ) async {
       when(() => cacheService.showPrivateEntries).thenReturn(false);
       final entry = textEntryWithLabels(['label-a', 'label-private']);
 
@@ -243,8 +246,9 @@ void main() {
       expect(find.byType(LabelChip), findsOneWidget);
     });
 
-    testWidgets('shows "no labels" message when empty with header',
-        (tester) async {
+    testWidgets('shows "no labels" message when empty with header', (
+      tester,
+    ) async {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(
@@ -256,8 +260,9 @@ void main() {
       expect(find.text('No labels assigned'), findsOneWidget);
     });
 
-    testWidgets('shows edit button when showEditButton is true',
-        (tester) async {
+    testWidgets('shows edit button when showEditButton is true', (
+      tester,
+    ) async {
       final entry = textEntryWithLabels(['label-a']);
 
       await tester.pumpWidget(
@@ -269,8 +274,9 @@ void main() {
       expect(find.byTooltip('Edit labels'), findsOneWidget);
     });
 
-    testWidgets('hides edit button when showEditButton is false',
-        (tester) async {
+    testWidgets('hides edit button when showEditButton is false', (
+      tester,
+    ) async {
       final entry = textEntryWithLabels(['label-a']);
 
       // showEditButton defaults to false
@@ -340,8 +346,9 @@ void main() {
       expect(iconWidget.size, equals(18));
     });
 
-    testWidgets('edit button is shown even when labels are empty',
-        (tester) async {
+    testWidgets('edit button is shown even when labels are empty', (
+      tester,
+    ) async {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(
@@ -355,8 +362,9 @@ void main() {
   });
 
   group('EntryLabelsDisplay with header empty state', () {
-    testWidgets('shows empty message with edit button when no labels',
-        (tester) async {
+    testWidgets('shows empty message with edit button when no labels', (
+      tester,
+    ) async {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(

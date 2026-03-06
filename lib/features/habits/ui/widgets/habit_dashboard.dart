@@ -84,30 +84,33 @@ class SelectDashboardWidget extends ConsumerWidget {
       readOnly: true,
       focusNode: FocusNode(),
       controller: controller,
-      decoration: inputDecoration(
-        labelText: undefined ? '' : context.messages.habitDashboardLabel,
-        themeData: Theme.of(context),
-      ).copyWith(
-        suffixIcon: undefined
-            ? null
-            : GestureDetector(
-                child: Icon(
-                  Icons.close_rounded,
-                  color: style?.color,
-                ),
-                onTap: () {
-                  controller.clear();
-                  ref
-                      .read(habitSettingsControllerProvider(habitId).notifier)
-                      .setDashboard(null);
-                },
-              ),
-        hintText: context.messages.habitDashboardHint,
-        hintStyle: style?.copyWith(
-          color: context.colorScheme.outline.withAlpha(127),
-        ),
-        border: InputBorder.none,
-      ),
+      decoration:
+          inputDecoration(
+            labelText: undefined ? '' : context.messages.habitDashboardLabel,
+            themeData: Theme.of(context),
+          ).copyWith(
+            suffixIcon: undefined
+                ? null
+                : GestureDetector(
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: style?.color,
+                    ),
+                    onTap: () {
+                      controller.clear();
+                      ref
+                          .read(
+                            habitSettingsControllerProvider(habitId).notifier,
+                          )
+                          .setDashboard(null);
+                    },
+                  ),
+            hintText: context.messages.habitDashboardHint,
+            hintStyle: style?.copyWith(
+              color: context.colorScheme.outline.withAlpha(127),
+            ),
+            border: InputBorder.none,
+          ),
       style: style,
     );
   }

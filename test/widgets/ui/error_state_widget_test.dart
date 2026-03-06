@@ -184,7 +184,8 @@ void main() {
     });
 
     testWidgets('handles long error messages gracefully', (tester) async {
-      const longError = 'This is a very long error message that should '
+      const longError =
+          'This is a very long error message that should '
           'wrap properly when displayed in the error widget. It contains '
           'multiple lines of text to test the wrapping behavior.';
 

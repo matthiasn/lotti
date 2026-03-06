@@ -48,12 +48,15 @@ void main() {
     mockBackfillService = MockBackfillRequestService();
     mockUserActivityService = MockUserActivityService();
 
-    when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-        .thenAnswer((_) => Stream<bool>.value(true));
-    when(() => mockSequenceService.getBackfillStats())
-        .thenAnswer((_) async => testStats);
-    when(() => mockBackfillService.processFullBackfill())
-        .thenAnswer((_) async => 5);
+    when(
+      () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+    ).thenAnswer((_) => Stream<bool>.value(true));
+    when(
+      () => mockSequenceService.getBackfillStats(),
+    ).thenAnswer((_) async => testStats);
+    when(
+      () => mockBackfillService.processFullBackfill(),
+    ).thenAnswer((_) async => 5);
     when(() => mockUserActivityService.updateActivity()).thenReturn(null);
 
     getIt
@@ -179,10 +182,12 @@ void main() {
       mockBackfillService = MockBackfillRequestService();
       mockUserActivityService = MockUserActivityService();
 
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(false));
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(false));
+      when(
+        () => mockSequenceService.getBackfillStats(),
+      ).thenAnswer((_) async => testStats);
       when(() => mockUserActivityService.updateActivity()).thenReturn(null);
 
       getIt
@@ -299,11 +304,13 @@ void main() {
       mockBackfillService = MockBackfillRequestService();
       mockUserActivityService = MockUserActivityService();
 
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
       // Return empty stats (no hosts)
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => BackfillStats.fromHostStats(const []));
+      when(
+        () => mockSequenceService.getBackfillStats(),
+      ).thenAnswer((_) async => BackfillStats.fromHostStats(const []));
       when(() => mockUserActivityService.updateActivity()).thenReturn(null);
 
       getIt
@@ -321,20 +328,24 @@ void main() {
       expect(find.text('0'), findsWidgets);
     });
 
-    testWidgets('shows error message when manual backfill fails',
-        (tester) async {
+    testWidgets('shows error message when manual backfill fails', (
+      tester,
+    ) async {
       await getIt.reset();
       mockJournalDb = MockJournalDb();
       mockSequenceService = MockSyncSequenceLogService();
       mockBackfillService = MockBackfillRequestService();
       mockUserActivityService = MockUserActivityService();
 
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processFullBackfill())
-          .thenThrow(Exception('Backfill failed'));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockSequenceService.getBackfillStats(),
+      ).thenAnswer((_) async => testStats);
+      when(
+        () => mockBackfillService.processFullBackfill(),
+      ).thenThrow(Exception('Backfill failed'));
       when(() => mockUserActivityService.updateActivity()).thenReturn(null);
 
       getIt
@@ -407,16 +418,18 @@ void main() {
       expect(buttonFinder, findsOneWidget);
     });
 
-    testWidgets('re-request button is disabled when requestedCount is 0',
-        (tester) async {
+    testWidgets('re-request button is disabled when requestedCount is 0', (
+      tester,
+    ) async {
       await getIt.reset();
       mockJournalDb = MockJournalDb();
       mockSequenceService = MockSyncSequenceLogService();
       mockBackfillService = MockBackfillRequestService();
       mockUserActivityService = MockUserActivityService();
 
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
       // Return stats with 0 requested entries
       when(() => mockSequenceService.getBackfillStats()).thenAnswer(
         (_) async => BackfillStats.fromHostStats([
@@ -464,10 +477,12 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('re-request button triggers service when requestedCount > 0',
-        (tester) async {
-      when(() => mockBackfillService.processReRequest())
-          .thenAnswer((_) async => 5);
+    testWidgets('re-request button triggers service when requestedCount > 0', (
+      tester,
+    ) async {
+      when(
+        () => mockBackfillService.processReRequest(),
+      ).thenAnswer((_) async => 5);
 
       await tester.pumpWidget(
         const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
@@ -498,10 +513,12 @@ void main() {
       verify(() => mockBackfillService.processReRequest()).called(1);
     });
 
-    testWidgets('shows success message after re-request completes',
-        (tester) async {
-      when(() => mockBackfillService.processReRequest())
-          .thenAnswer((_) async => 5);
+    testWidgets('shows success message after re-request completes', (
+      tester,
+    ) async {
+      when(
+        () => mockBackfillService.processReRequest(),
+      ).thenAnswer((_) async => 5);
 
       await tester.pumpWidget(
         const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
@@ -526,18 +543,20 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsWidgets);
     });
 
-    testWidgets('re-request section shows orange icon when requestedCount > 0',
-        (tester) async {
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      're-request section shows orange icon when requestedCount > 0',
+      (tester) async {
+        await tester.pumpWidget(
+          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+        );
+        await tester.pumpAndSettle();
 
-      // With testStats having requestedCount = 2, the replay icon should have
-      // an orange color. Find the replay icon.
-      final replayIconFinder = find.byIcon(Icons.replay);
-      expect(replayIconFinder, findsWidgets);
-    });
+        // With testStats having requestedCount = 2, the replay icon should have
+        // an orange color. Find the replay icon.
+        final replayIconFinder = find.byIcon(Icons.replay);
+        expect(replayIconFinder, findsWidgets);
+      },
+    );
 
     testWidgets('displays unresolvable count when present', (tester) async {
       // Setup stats with unresolvable count > 0

@@ -44,8 +44,9 @@ void main() {
     expect(tapped, isTrue);
   });
 
-  testWidgets('does not invoke callback when onPressed is null',
-      (tester) async {
+  testWidgets('does not invoke callback when onPressed is null', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject());
     await tester.pump();
 
@@ -57,8 +58,9 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('shows active gradient when forceActive even without onPressed',
-      (tester) async {
+  testWidgets('shows active gradient when forceActive even without onPressed', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject(forceActive: true));
     await tester.pump();
 

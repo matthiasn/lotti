@@ -72,13 +72,15 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
       );
-      when(() => mockEntitiesCacheService.sortedLabels)
-          .thenReturn(<LabelDefinition>[]);
+      when(
+        () => mockEntitiesCacheService.sortedLabels,
+      ).thenReturn(<LabelDefinition>[]);
       when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -103,7 +105,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -122,8 +124,9 @@ void main() {
         (_) async => [testTextEntry],
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -139,8 +142,9 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('Task Entry is rendered', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -207,13 +211,15 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
       );
-      when(() => mockEntitiesCacheService.sortedLabels)
-          .thenReturn(<LabelDefinition>[]);
+      when(
+        () => mockEntitiesCacheService.sortedLabels,
+      ).thenReturn(<LabelDefinition>[]);
       when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -238,7 +244,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -257,8 +263,9 @@ void main() {
         (_) async => [testTextEntry],
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -268,8 +275,9 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       // Ensure ThemingController dependencies are registered
       ensureThemingServicesRegistered();
@@ -301,17 +309,20 @@ void main() {
           );
 
       await tester.pumpAndSettle();
-      for (var i = 0;
-          i < 20 &&
-              container.read(taskFocusControllerProvider(id: testTask.id)) !=
-                  null;
-          i++) {
+      for (
+        var i = 0;
+        i < 20 &&
+            container.read(taskFocusControllerProvider(id: testTask.id)) !=
+                null;
+        i++
+      ) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
       // Verify intent was cleared after consumption
-      final intent =
-          container.read(taskFocusControllerProvider(id: testTask.id));
+      final intent = container.read(
+        taskFocusControllerProvider(id: testTask.id),
+      );
       expect(intent, isNull);
     });
 
@@ -326,8 +337,9 @@ void main() {
           );
 
       // Verify intent exists
-      final intentBefore =
-          container.read(taskFocusControllerProvider(id: testTask.id));
+      final intentBefore = container.read(
+        taskFocusControllerProvider(id: testTask.id),
+      );
       expect(intentBefore, isNotNull);
       expect(intentBefore!.entryId, equals(testTextEntry.meta.id));
 
@@ -341,17 +353,20 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      for (var i = 0;
-          i < 20 &&
-              container.read(taskFocusControllerProvider(id: testTask.id)) !=
-                  null;
-          i++) {
+      for (
+        var i = 0;
+        i < 20 &&
+            container.read(taskFocusControllerProvider(id: testTask.id)) !=
+                null;
+        i++
+      ) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
       // Verify intent was cleared after handling
-      final intentAfter =
-          container.read(taskFocusControllerProvider(id: testTask.id));
+      final intentAfter = container.read(
+        taskFocusControllerProvider(id: testTask.id),
+      );
       expect(intentAfter, isNull);
 
       container.dispose();

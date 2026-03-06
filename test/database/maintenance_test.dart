@@ -195,8 +195,9 @@ void main() {
       getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
 
       vectorClockService = MockVectorClockService();
-      when(() => vectorClockService.getHost())
-          .thenAnswer((_) async => 'test-host-id');
+      when(
+        () => vectorClockService.getHost(),
+      ).thenAnswer((_) async => 'test-host-id');
       getIt.registerSingleton<VectorClockService>(vectorClockService);
 
       initialFts5 = Fts5Db(inMemoryDatabase: true);
@@ -205,18 +206,22 @@ void main() {
       mockPathProvider = _MockPathProviderPlatform();
       originalPathProvider = PathProviderPlatform.instance;
       PathProviderPlatform.instance = mockPathProvider;
-      when(mockPathProvider.getApplicationDocumentsPath)
-          .thenAnswer((_) async => tempDir.path);
-      when(mockPathProvider.getApplicationSupportPath)
-          .thenAnswer((_) async => tempDir.path);
-      when(mockPathProvider.getTemporaryPath)
-          .thenAnswer((_) async => tempDir.path);
+      when(
+        mockPathProvider.getApplicationDocumentsPath,
+      ).thenAnswer((_) async => tempDir.path);
+      when(
+        mockPathProvider.getApplicationSupportPath,
+      ).thenAnswer((_) async => tempDir.path);
+      when(
+        mockPathProvider.getTemporaryPath,
+      ).thenAnswer((_) async => tempDir.path);
 
       sentMessages = [];
       loggedEvents = [];
       loggedExceptions = [];
-      when(() => outboxService.enqueueMessage(any()))
-          .thenAnswer((invocation) async {
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((
+        invocation,
+      ) async {
         sentMessages.add(invocation.positionalArguments.first as SyncMessage);
       });
 
@@ -295,8 +300,9 @@ void main() {
           agentRepository: mockAgentRepo,
         );
 
-        final journalMessages =
-            sentMessages.whereType<SyncJournalEntity>().toList();
+        final journalMessages = sentMessages
+            .whereType<SyncJournalEntity>()
+            .toList();
         expect(journalMessages, hasLength(entries.length));
         expect(
           journalMessages.map((m) => m.id),
@@ -322,8 +328,9 @@ void main() {
           agentRepository: mockAgentRepo,
         );
 
-        final journalMessages =
-            sentMessages.whereType<SyncJournalEntity>().toList();
+        final journalMessages = sentMessages
+            .whereType<SyncJournalEntity>()
+            .toList();
         expect(journalMessages, hasLength(entries.length));
       });
 
@@ -355,8 +362,9 @@ void main() {
           agentRepository: mockAgentRepo,
         );
 
-        final journalMessages =
-            sentMessages.whereType<SyncJournalEntity>().toList();
+        final journalMessages = sentMessages
+            .whereType<SyncJournalEntity>()
+            .toList();
         final linkMessages = sentMessages.whereType<SyncEntryLink>().toList();
 
         expect(journalMessages, hasLength(2));
@@ -389,23 +397,26 @@ void main() {
           agentRepository: mockAgentRepo,
         );
 
-        final journalMessages =
-            sentMessages.whereType<SyncJournalEntity>().toList();
+        final journalMessages = sentMessages
+            .whereType<SyncJournalEntity>()
+            .toList();
 
         expect(journalMessages, hasLength(1));
         expect(journalMessages.first.id, equals(insideEntry.meta.id));
       });
 
-      test('completes without enqueuing messages for empty intervals',
-          () async {
-        await maintenance.reSyncInterval(
-          start: DateTime(2024, 5),
-          end: DateTime(2024, 5, 2),
-          agentRepository: mockAgentRepo,
-        );
+      test(
+        'completes without enqueuing messages for empty intervals',
+        () async {
+          await maintenance.reSyncInterval(
+            start: DateTime(2024, 5),
+            end: DateTime(2024, 5, 2),
+            agentRepository: mockAgentRepo,
+          );
 
-        expect(sentMessages, isEmpty);
-      });
+          expect(sentMessages, isEmpty);
+        },
+      );
 
       test('includes relative entity path in enqueued messages', () async {
         final timestamp = DateTime(2024, 6, 15, 10, 30);
@@ -422,11 +433,14 @@ void main() {
           agentRepository: mockAgentRepo,
         );
 
-        final journalMessage =
-            sentMessages.whereType<SyncJournalEntity>().single;
+        final journalMessage = sentMessages
+            .whereType<SyncJournalEntity>()
+            .single;
 
-        expect(journalMessage.jsonPath,
-            equals('/text_entries/2024-06-15/path-test.text.json'));
+        expect(
+          journalMessage.jsonPath,
+          equals('/text_entries/2024-06-15/path-test.text.json'),
+        );
       });
     });
 
@@ -483,8 +497,9 @@ void main() {
           agentRepository: agentRepo,
         );
 
-        final agentMessages =
-            sentMessages.whereType<SyncAgentEntity>().toList();
+        final agentMessages = sentMessages
+            .whereType<SyncAgentEntity>()
+            .toList();
         expect(agentMessages, hasLength(1));
         expect(
           agentMessages.first.agentEntity?.id,
@@ -561,8 +576,9 @@ void main() {
           agentRepository: agentRepo,
         );
 
-        final agentMessages =
-            sentMessages.whereType<SyncAgentEntity>().toList();
+        final agentMessages = sentMessages
+            .whereType<SyncAgentEntity>()
+            .toList();
         expect(agentMessages, isEmpty);
       });
 
@@ -614,8 +630,9 @@ void main() {
           agentRepository: agentRepo,
         );
 
-        final agentMessages =
-            sentMessages.whereType<SyncAgentEntity>().toList();
+        final agentMessages = sentMessages
+            .whereType<SyncAgentEntity>()
+            .toList();
         final linkMessages = sentMessages.whereType<SyncAgentLink>().toList();
 
         expect(agentMessages, hasLength(2));
@@ -677,17 +694,19 @@ void main() {
         ).called(1);
       });
 
-      test('database deletion is idempotent when file does not exist',
-          () async {
-        final dbFile = await getDatabaseFile(editorDbFileName);
-        if (dbFile.existsSync()) {
-          await dbFile.delete();
-        }
+      test(
+        'database deletion is idempotent when file does not exist',
+        () async {
+          final dbFile = await getDatabaseFile(editorDbFileName);
+          if (dbFile.existsSync()) {
+            await dbFile.delete();
+          }
 
-        await maintenance.deleteEditorDb();
+          await maintenance.deleteEditorDb();
 
-        expect(dbFile.existsSync(), isFalse);
-      });
+          expect(dbFile.existsSync(), isFalse);
+        },
+      );
 
       test('deleteAgentDb removes database and WAL companion files', () async {
         final dbFile = await getDatabaseFile(agentDbFileName);
@@ -743,8 +762,9 @@ void main() {
 
     group('recreateFts5', () {
       test('deletes existing index file and reindexes all entries', () async {
-        when(() => entitiesCacheService.getDataTypeById(measurableChocolate.id))
-            .thenReturn(measurableChocolate);
+        when(
+          () => entitiesCacheService.getDataTypeById(measurableChocolate.id),
+        ).thenReturn(measurableChocolate);
 
         final now = DateTime(2024, 7);
         final entries = [
@@ -779,12 +799,15 @@ void main() {
         expect(progress, isNotEmpty);
         expect(progress.last, closeTo(1.0, 1e-6));
 
-        final textMatches =
-            await newFtsDb.watchFullTextMatches('FTS text entry').first;
-        final measurementMatches =
-            await newFtsDb.watchFullTextMatches('"Chocolate 123 g"').first;
-        final quantMatches =
-            await newFtsDb.watchFullTextMatches('Weight').first;
+        final textMatches = await newFtsDb
+            .watchFullTextMatches('FTS text entry')
+            .first;
+        final measurementMatches = await newFtsDb
+            .watchFullTextMatches('"Chocolate 123 g"')
+            .first;
+        final quantMatches = await newFtsDb
+            .watchFullTextMatches('Weight')
+            .first;
 
         expect(textMatches, contains('fts-text'));
         expect(measurementMatches, contains('fts-measurement'));
@@ -809,8 +832,9 @@ void main() {
         await maintenance.recreateFts5();
 
         final newFtsDb = getIt<Fts5Db>();
-        final sampleMatches =
-            await newFtsDb.watchFullTextMatches('Bulk entry 519').first;
+        final sampleMatches = await newFtsDb
+            .watchFullTextMatches('Bulk entry 519')
+            .first;
 
         expect(sampleMatches, contains('bulk-519'));
       });
@@ -835,8 +859,9 @@ void main() {
         expect(loggedExceptions.last, isA<FileSystemException>());
 
         final newFtsDb = getIt<Fts5Db>();
-        final matches =
-            await newFtsDb.watchFullTextMatches('Should index').first;
+        final matches = await newFtsDb
+            .watchFullTextMatches('Should index')
+            .first;
         expect(matches, contains('fts-error'));
       });
     });

@@ -71,8 +71,9 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockLinkService = MockLinkService();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<EditorStateService>(mockEditorStateService)
@@ -161,8 +162,9 @@ void main() {
   }
 
   group('ModernToggleStarredItem', () {
-    testWidgets('renders with star outline icon when not starred',
-        (tester) async {
+    testWidgets('renders with star outline icon when not starred', (
+      tester,
+    ) async {
       final entry = buildTextEntry();
 
       await tester.pumpWidget(
@@ -195,8 +197,9 @@ void main() {
 
     testWidgets('calls toggleStarred on tap', (tester) async {
       final entry = buildTextEntry();
-      final (override, tracker) =
-          createEntryControllerOverrideWithTracker(entry);
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        entry,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -247,8 +250,9 @@ void main() {
 
     testWidgets('calls togglePrivate on tap', (tester) async {
       final entry = buildTextEntry();
-      final (override, tracker) =
-          createEntryControllerOverrideWithTracker(entry);
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        entry,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -266,8 +270,9 @@ void main() {
   });
 
   group('ModernToggleFlaggedItem', () {
-    testWidgets('renders with flag outline icon when not flagged',
-        (tester) async {
+    testWidgets('renders with flag outline icon when not flagged', (
+      tester,
+    ) async {
       final entry = buildTextEntry();
 
       await tester.pumpWidget(
@@ -300,8 +305,9 @@ void main() {
 
     testWidgets('calls toggleFlagged on tap', (tester) async {
       final entry = buildTextEntry();
-      final (override, tracker) =
-          createEntryControllerOverrideWithTracker(entry);
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        entry,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -319,8 +325,9 @@ void main() {
   });
 
   group('ModernDeleteItem', () {
-    testWidgets('renders with delete icon and destructive styling',
-        (tester) async {
+    testWidgets('renders with delete icon and destructive styling', (
+      tester,
+    ) async {
       final entry = buildTextEntry();
 
       await tester.pumpWidget(
@@ -575,8 +582,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            linkedEntriesControllerProvider(id: 'parent-1')
-                .overrideWith(_FakeLinkedEntriesController.new),
+            linkedEntriesControllerProvider(
+              id: 'parent-1',
+            ).overrideWith(_FakeLinkedEntriesController.new),
           ],
           child: ModernToggleHiddenItem(link: link),
         ),
@@ -603,8 +611,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            linkedEntriesControllerProvider(id: 'parent-1')
-                .overrideWith(_FakeLinkedEntriesController.new),
+            linkedEntriesControllerProvider(
+              id: 'parent-1',
+            ).overrideWith(_FakeLinkedEntriesController.new),
           ],
           child: ModernToggleHiddenItem(link: link),
         ),
@@ -632,8 +641,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            linkedEntriesControllerProvider(id: 'parent-1')
-                .overrideWith(() => controller),
+            linkedEntriesControllerProvider(
+              id: 'parent-1',
+            ).overrideWith(() => controller),
           ],
           child: ModernToggleHiddenItem(link: link),
         ),
@@ -691,8 +701,9 @@ void main() {
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
-    testWidgets('shows outlined image icon when not current cover',
-        (tester) async {
+    testWidgets('shows outlined image icon when not current cover', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -712,8 +723,9 @@ void main() {
       expect(find.text('Set cover'), findsOneWidget);
     });
 
-    testWidgets('shows filled image icon when image is current cover',
-        (tester) async {
+    testWidgets('shows filled image icon when image is current cover', (
+      tester,
+    ) async {
       final task = buildTask(coverArtId: 'image-1');
 
       await tester.pumpWidget(
@@ -733,8 +745,9 @@ void main() {
       expect(find.text('Cover'), findsOneWidget);
     });
 
-    testWidgets('calls setCoverArt with entryId and pops navigator',
-        (tester) async {
+    testWidgets('calls setCoverArt with entryId and pops navigator', (
+      tester,
+    ) async {
       final task = buildTask();
       final (override, tracker) = createTrackingEntryControllerOverride(task);
 
@@ -760,8 +773,9 @@ void main() {
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
-    testWidgets('calls setCoverArt with null and pops navigator',
-        (tester) async {
+    testWidgets('calls setCoverArt with null and pops navigator', (
+      tester,
+    ) async {
       final task = buildTask(coverArtId: 'image-1');
       final (override, tracker) = createTrackingEntryControllerOverride(task);
 
@@ -821,8 +835,10 @@ void main() {
 
     testWidgets('shows map_rounded icon when map shown', (tester) async {
       final entry = buildTextEntryWithGeolocation();
-      final (override, _) =
-          createEntryControllerOverrideWithTracker(entry, showMap: true);
+      final (override, _) = createEntryControllerOverrideWithTracker(
+        entry,
+        showMap: true,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -839,8 +855,9 @@ void main() {
 
     testWidgets('calls toggleMapVisible on tap', (tester) async {
       final entry = buildTextEntryWithGeolocation();
-      final (override, tracker) =
-          createEntryControllerOverrideWithTracker(entry);
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        entry,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(

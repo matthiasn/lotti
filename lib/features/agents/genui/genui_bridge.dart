@@ -33,45 +33,45 @@ class GenUiBridge {
 
   /// OpenAI-compatible tool definition for the `render_surface` tool.
   ChatCompletionTool get toolDefinition => const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: toolName,
-          description:
-              'Render rich UI content inline in the chat. Available widget '
-              'types: EvolutionProposal, EvolutionNoteConfirmation, '
-              'MetricsSummary, VersionComparison, CategoryRatings, '
-              'HighPriorityFeedback. Each surface needs a unique surfaceId '
-              'and a root component type with its data.',
-          parameters: {
-            'type': 'object',
-            'properties': {
-              'surfaceId': {
-                'type': 'string',
-                'description': 'Unique identifier for this surface',
-              },
-              'rootType': {
-                'type': 'string',
-                'enum': [
-                  'EvolutionProposal',
-                  'EvolutionNoteConfirmation',
-                  'MetricsSummary',
-                  'VersionComparison',
-                  'CategoryRatings',
-                  'HighPriorityFeedback',
-                ],
-                'description': 'Widget type to render',
-              },
-              'data': {
-                'type': 'object',
-                'description':
-                    'Properties matching the widget schema for the chosen type',
-              },
-            },
-            'required': ['surfaceId', 'rootType', 'data'],
-            'additionalProperties': false,
+    type: ChatCompletionToolType.function,
+    function: FunctionObject(
+      name: toolName,
+      description:
+          'Render rich UI content inline in the chat. Available widget '
+          'types: EvolutionProposal, EvolutionNoteConfirmation, '
+          'MetricsSummary, VersionComparison, CategoryRatings, '
+          'HighPriorityFeedback. Each surface needs a unique surfaceId '
+          'and a root component type with its data.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'surfaceId': {
+            'type': 'string',
+            'description': 'Unique identifier for this surface',
           },
-        ),
-      );
+          'rootType': {
+            'type': 'string',
+            'enum': [
+              'EvolutionProposal',
+              'EvolutionNoteConfirmation',
+              'MetricsSummary',
+              'VersionComparison',
+              'CategoryRatings',
+              'HighPriorityFeedback',
+            ],
+            'description': 'Widget type to render',
+          },
+          'data': {
+            'type': 'object',
+            'description':
+                'Properties matching the widget schema for the chosen type',
+          },
+        },
+        'required': ['surfaceId', 'rootType', 'data'],
+        'additionalProperties': false,
+      },
+    ),
+  );
 
   /// Process a `render_surface` tool call.
   ///
@@ -94,11 +94,12 @@ class GenUiBridge {
     final rootTypeValue = args['rootType'];
     final rootType =
         rootTypeValue is String && supportedRootTypes.contains(rootTypeValue)
-            ? rootTypeValue
-            : 'EvolutionProposal';
+        ? rootTypeValue
+        : 'EvolutionProposal';
     final rawData = args['data'];
-    final data =
-        rawData is Map<String, dynamic> ? rawData : <String, dynamic>{};
+    final data = rawData is Map<String, dynamic>
+        ? rawData
+        : <String, dynamic>{};
 
     const rootId = 'root';
 

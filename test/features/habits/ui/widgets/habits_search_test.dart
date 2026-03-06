@@ -29,8 +29,9 @@ void main() {
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
-    when(mockJournalDb.getAllHabitDefinitions)
-        .thenAnswer((_) async => <HabitDefinition>[]);
+    when(
+      mockJournalDb.getAllHabitDefinitions,
+    ).thenAnswer((_) async => <HabitDefinition>[]);
 
     when(
       () => mockJournalDb.getHabitCompletionsInRange(
@@ -38,8 +39,9 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateController.stream);
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -128,8 +130,10 @@ void main() {
       await tester.pump();
 
       // Verify text was entered
-      expect(capturedRef.read(habitsControllerProvider).searchString,
-          'test query');
+      expect(
+        capturedRef.read(habitsControllerProvider).searchString,
+        'test query',
+      );
 
       // Tap clear button
       await tester.tap(find.byIcon(Icons.clear_rounded));
@@ -159,8 +163,9 @@ void main() {
       expect(textField.controller?.text, 'persistent text');
     });
 
-    testWidgets('syncs controller text when state changes externally',
-        (tester) async {
+    testWidgets('syncs controller text when state changes externally', (
+      tester,
+    ) async {
       late WidgetRef capturedRef;
 
       await tester.pumpWidget(

@@ -44,8 +44,9 @@ void main() {
         pendingChangeSetsProvider(taskId).overrideWith(
           (ref) async => changeSets,
         ),
-        changeSetConfirmationServiceProvider
-            .overrideWithValue(mockConfirmationService),
+        changeSetConfirmationServiceProvider.overrideWithValue(
+          mockConfirmationService,
+        ),
         updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
       ],
       child: const MaterialApp(
@@ -66,8 +67,9 @@ void main() {
   }
 
   group('ChangeSetSummaryCard', () {
-    testWidgets('renders nothing when change sets list is empty',
-        (tester) async {
+    testWidgets('renders nothing when change sets list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
       await tester.pumpAndSettle();
 
@@ -170,8 +172,9 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('Confirm All button confirms all pending items',
-        (tester) async {
+    testWidgets('Confirm All button confirms all pending items', (
+      tester,
+    ) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(
@@ -274,8 +277,9 @@ void main() {
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
 
-    testWidgets('shows error snackbar when confirm returns failure result',
-        (tester) async {
+    testWidgets('shows error snackbar when confirm returns failure result', (
+      tester,
+    ) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(
@@ -410,8 +414,9 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('Confirm All shows error snackbar on partial failure',
-        (tester) async {
+    testWidgets('Confirm All shows error snackbar on partial failure', (
+      tester,
+    ) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(

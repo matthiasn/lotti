@@ -48,8 +48,9 @@ void main() {
       expect(find.byIcon(MdiIcons.security), findsNothing);
     });
 
-    testWidgets('displays test dashboard card with private icon',
-        (tester) async {
+    testWidgets('displays test dashboard card with private icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardDefinitionCard(
@@ -64,23 +65,25 @@ void main() {
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
     });
 
-    testWidgets('displays test dashboard card with private icon & review time',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          DashboardDefinitionCard(
-            dashboard: testItem.copyWith(
-              private: true,
-              reviewAt: DateTime(0, 0, 0, 7),
+    testWidgets(
+      'displays test dashboard card with private icon & review time',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardDefinitionCard(
+              dashboard: testItem.copyWith(
+                private: true,
+                reviewAt: DateTime(0, 0, 0, 7),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.text(testName), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
-    });
+        expect(find.text(testName), findsOneWidget);
+        expect(find.byIcon(MdiIcons.security), findsOneWidget);
+      },
+    );
   });
 }

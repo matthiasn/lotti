@@ -66,7 +66,8 @@ class LottiConversationProcessor {
     );
 
     // Create handlers
-    final effectiveAutoChecklistService = autoChecklistService ??
+    final effectiveAutoChecklistService =
+        autoChecklistService ??
         AutoChecklistService(
           checklistRepository: ref.read(checklistRepositoryProvider),
         );
@@ -107,7 +108,8 @@ class LottiConversationProcessor {
         level: 900, // WARNING level
       );
       throw ArgumentError(
-          'System message is required for conversation processing');
+        'System message is required for conversation processing',
+      );
     }
 
     final conversationId = conversationRepo.createConversation(
@@ -376,17 +378,20 @@ class LottiChecklistStrategy extends ConversationStrategy {
           'Redirecting deprecated add_checklist_item call to batch handler',
           name: 'LottiConversationProcessor',
         );
-        const errorMsg = 'The function "add_checklist_item" is not available. '
+        const errorMsg =
+            'The function "add_checklist_item" is not available. '
             'Use add_multiple_checklist_items with '
             '{"items": [{"title": "your item"}]} instead.';
         _hadErrors = true;
-        _failedResults.add(FunctionCallResult(
-          success: false,
-          functionName: checklistHandler.functionName,
-          arguments: call.function.arguments,
-          data: {'toolCallId': call.id},
-          error: errorMsg,
-        ));
+        _failedResults.add(
+          FunctionCallResult(
+            success: false,
+            functionName: checklistHandler.functionName,
+            arguments: call.function.arguments,
+            data: {'toolCallId': call.id},
+            error: errorMsg,
+          ),
+        );
         manager.addToolResponse(
           toolCallId: call.id,
           response: errorMsg,
@@ -416,8 +421,10 @@ class LottiChecklistStrategy extends ConversationStrategy {
         }
       } else if (call.function.name ==
           ChecklistCompletionFunctions.updateChecklistItems) {
-        final response =
-            await _processUpdateChecklistItemsCall(call, checklistHandler);
+        final response = await _processUpdateChecklistItemsCall(
+          call,
+          checklistHandler,
+        );
 
         manager.addToolResponse(
           toolCallId: call.id,
@@ -518,14 +525,16 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
 
           final parsed = parseLabelCallArgs(call.function.arguments);
-          final selected =
-              LinkedHashSet<String>.from(parsed.selectedIds).toList();
+          final selected = LinkedHashSet<String>.from(
+            parsed.selectedIds,
+          ).toList();
           // Phase 3: filter out suppressed IDs for this task (hard filter)
           final suppressedSet =
               checklistHandler.task.data.aiSuppressedLabelIds ??
-                  const <String>{};
-          final proposed =
-              selected.where((id) => !suppressedSet.contains(id)).toList();
+              const <String>{};
+          final proposed = selected
+              .where((id) => !suppressedSet.contains(id))
+              .toList();
 
           // Short-circuit if everything was suppressed
           if (proposed.isEmpty && selected.isNotEmpty) {
@@ -607,11 +616,14 @@ class LottiChecklistStrategy extends ConversationStrategy {
           final suggestions = args['suggestions'] as List<dynamic>?;
           if (suggestions != null && suggestions.isNotEmpty) {
             final itemDescriptions = suggestions
-                .map((s) => s is Map<String, dynamic>
-                    ? s['title'] ?? s['description']
-                    : s.toString())
+                .map(
+                  (s) => s is Map<String, dynamic>
+                      ? s['title'] ?? s['description']
+                      : s.toString(),
+                )
                 .where(
-                    (desc) => desc != null && desc.toString().trim().isNotEmpty)
+                  (desc) => desc != null && desc.toString().trim().isNotEmpty,
+                )
                 .take(5) // Limit to first 5 for brevity
                 .join(', ');
 
@@ -666,8 +678,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
       );
 
       try {
-        final createdCount =
-            await batchChecklistHandler.createBatchItems(coalescedResult);
+        final createdCount = await batchChecklistHandler.createBatchItems(
+          coalescedResult,
+        );
 
         developer.log(
           'Coalesced batch creation result: created $createdCount items',
@@ -678,12 +691,14 @@ class LottiChecklistStrategy extends ConversationStrategy {
           _hadErrors = true;
         }
         // Copy successful items to the single item handler for consistency
-        checklistHandler
-            .addSuccessfulItems(batchChecklistHandler.successfulItems);
+        checklistHandler.addSuccessfulItems(
+          batchChecklistHandler.successfulItems,
+        );
 
         // Send tool responses for each original call
-        final responseJson =
-            batchChecklistHandler.createToolResponse(coalescedResult);
+        final responseJson = batchChecklistHandler.createToolResponse(
+          coalescedResult,
+        );
         for (final callId in pendingBatchCallIds) {
           manager.addToolResponse(toolCallId: callId, response: responseJson);
         }
@@ -720,7 +735,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
     // For cloud providers (Gemini): only continue if there are failed items to retry
     // This exercises the thought signature multi-turn wiring when retrying.
     // For Ollama: continue for multiple rounds as models may need guidance.
-    final shouldContinue = _rounds < 10 &&
+    final shouldContinue =
+        _rounds < 10 &&
         (hasFailedItems || // Retry failed items for any provider
             (!isCloudProvider && (_rounds == 1 || totalWorkDone > 0)));
 
@@ -834,8 +850,9 @@ Continue until all items from the user's request have been added.''';
           r.functionName == batchChecklistHandler.functionName,
     );
 
-    final errorSummary =
-        _failedResults.map((item) => '- ${item.error}').join('\n');
+    final errorSummary = _failedResults
+        .map((item) => '- ${item.error}')
+        .join('\n');
 
     if (hasUpdateFailures && !hasCreateFailures) {
       // Only update failures - provide update-specific guidance

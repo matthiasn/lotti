@@ -49,15 +49,16 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
       vsync: this,
       duration: GameyAnimations.pulse,
     );
-    _pulseAnimation = Tween<double>(
-      begin: GameyAnimations.pulseScaleMin,
-      end: GameyAnimations.pulseScaleMax,
-    ).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: GameyAnimations.symmetrical,
-      ),
-    );
+    _pulseAnimation =
+        Tween<double>(
+          begin: GameyAnimations.pulseScaleMin,
+          end: GameyAnimations.pulseScaleMax,
+        ).animate(
+          CurvedAnimation(
+            parent: _pulseController,
+            curve: GameyAnimations.symmetrical,
+          ),
+        );
     if (widget.isWaiting) {
       _pulseController.repeat(reverse: true);
     }
@@ -146,20 +147,19 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
                     .stopAndTranscribe(),
               )
             : isRealtimeRecording
-                ? EvolutionRealtimeView(
-                    partialTranscript: recState.partialTranscript,
-                    onCancel: () => ref
-                        .read(chatRecorderControllerProvider.notifier)
-                        .cancel(),
-                    onStop: () => ref
-                        .read(chatRecorderControllerProvider.notifier)
-                        .stopRealtime(),
-                  )
-                : isProcessing && recState.partialTranscript != null
-                    ? EvolutionTranscriptionProgress(
-                        partialTranscript: recState.partialTranscript!,
-                      )
-                    : _buildIdleRow(recState),
+            ? EvolutionRealtimeView(
+                partialTranscript: recState.partialTranscript,
+                onCancel: () =>
+                    ref.read(chatRecorderControllerProvider.notifier).cancel(),
+                onStop: () => ref
+                    .read(chatRecorderControllerProvider.notifier)
+                    .stopRealtime(),
+              )
+            : isProcessing && recState.partialTranscript != null
+            ? EvolutionTranscriptionProgress(
+                partialTranscript: recState.partialTranscript!,
+              )
+            : _buildIdleRow(recState),
       ),
     );
   }
@@ -257,8 +257,8 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
             icon: useRealtime ? Icons.graphic_eq : Icons.mic,
             onPressed: useRealtime
                 ? ref
-                    .read(chatRecorderControllerProvider.notifier)
-                    .startRealtime
+                      .read(chatRecorderControllerProvider.notifier)
+                      .startRealtime
                 : ref.read(chatRecorderControllerProvider.notifier).start,
             tooltip: useRealtime
                 ? context.messages.chatInputStartRealtime

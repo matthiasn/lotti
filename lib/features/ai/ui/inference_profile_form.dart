@@ -176,21 +176,23 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     setState(() => _isSaving = true);
     try {
       final now = DateTime.now();
-      final profile = AiConfig.inferenceProfile(
-        id: widget.existingProfile?.id ?? const Uuid().v4(),
-        name: _nameController.text.trim(),
-        thinkingModelId: _thinkingModelId!,
-        imageRecognitionModelId: _imageRecognitionModelId,
-        transcriptionModelId: _transcriptionModelId,
-        imageGenerationModelId: _imageGenerationModelId,
-        desktopOnly: _desktopOnly,
-        isDefault: widget.existingProfile?.isDefault ?? false,
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-        createdAt: widget.existingProfile?.createdAt ?? now,
-        updatedAt: now,
-      ) as AiConfigInferenceProfile;
+      final profile =
+          AiConfig.inferenceProfile(
+                id: widget.existingProfile?.id ?? const Uuid().v4(),
+                name: _nameController.text.trim(),
+                thinkingModelId: _thinkingModelId!,
+                imageRecognitionModelId: _imageRecognitionModelId,
+                transcriptionModelId: _transcriptionModelId,
+                imageGenerationModelId: _imageGenerationModelId,
+                desktopOnly: _desktopOnly,
+                isDefault: widget.existingProfile?.isDefault ?? false,
+                description: _descriptionController.text.trim().isNotEmpty
+                    ? _descriptionController.text.trim()
+                    : null,
+                createdAt: widget.existingProfile?.createdAt ?? now,
+                updatedAt: now,
+              )
+              as AiConfigInferenceProfile;
 
       await ref
           .read(inferenceProfileControllerProvider.notifier)
@@ -259,10 +261,10 @@ class _ModelSlotField extends ConsumerWidget {
     return InkWell(
       onTap: filteredModels.isNotEmpty
           ? () => _showModelPicker(
-                context,
-                filteredModels,
-                providers,
-              )
+              context,
+              filteredModels,
+              providers,
+            )
           : null,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
@@ -391,8 +393,9 @@ class _SlotModelPickerContent extends StatelessWidget {
                             Text(
                               subtitle,
                               style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: context.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ),
                           ],

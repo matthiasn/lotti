@@ -25,7 +25,8 @@ void main() {
           dateTo: now,
         ),
         data: TaskData(
-          status: status ??
+          status:
+              status ??
               TaskStatus.open(
                 id: 'status-1',
                 createdAt: now,
@@ -88,8 +89,9 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
 
-    testWidgets('shows unlink button when showUnlinkButton is true',
-        (tester) async {
+    testWidgets('shows unlink button when showUnlinkButton is true', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -208,7 +210,8 @@ void main() {
     });
 
     testWidgets('long title truncates with ellipsis', (tester) async {
-      const longTitle = 'This is a very long task title that should be '
+      const longTitle =
+          'This is a very long task title that should be '
           'truncated when it exceeds the available width in the card';
       final task = buildTask(title: longTitle);
 

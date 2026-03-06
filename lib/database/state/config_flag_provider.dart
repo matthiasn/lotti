@@ -19,9 +19,9 @@ Stream<bool> configFlag(Ref ref, String flagName) {
 
   return db.watchConfigFlags().map((Set<ConfigFlag> flags) {
     final flag = flags.cast<ConfigFlag?>().firstWhere(
-          (ConfigFlag? f) => f?.name == flagName,
-          orElse: () => null,
-        );
+      (ConfigFlag? f) => f?.name == flagName,
+      orElse: () => null,
+    );
     return flag?.status ?? false;
   });
 }

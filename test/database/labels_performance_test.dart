@@ -63,7 +63,8 @@ void main() {
         labelIds: labelIds,
       ),
       data: TaskData(
-        status: status ??
+        status:
+            status ??
             TaskStatus.open(
               id: 'status-$index',
               createdAt: now,
@@ -107,8 +108,11 @@ void main() {
 
     // Verify results
     expect(filtered.isNotEmpty, isTrue);
-    expect(stopwatch.elapsedMilliseconds, lessThan(100),
-        reason: 'Filtering should complete under 100ms');
+    expect(
+      stopwatch.elapsedMilliseconds,
+      lessThan(100),
+      reason: 'Filtering should complete under 100ms',
+    );
   });
 
   // intentionally giving more time because of anemic GitHub Actions test runner
@@ -130,8 +134,11 @@ void main() {
     }
     stopwatch.stop();
 
-    expect(stopwatch.elapsedMilliseconds, lessThan(5000),
-        reason: 'Reconciliation should complete under 5s for 500 tasks');
+    expect(
+      stopwatch.elapsedMilliseconds,
+      lessThan(5000),
+      reason: 'Reconciliation should complete under 5s for 500 tasks',
+    );
 
     // Verify labeled table populated
     final labeled = await db.labeledForJournal('task-0').get();
@@ -165,62 +172,72 @@ void main() {
     stopwatch.stop();
 
     expect(filtered.isNotEmpty, isTrue);
-    expect(stopwatch.elapsedMilliseconds, lessThan(50),
-        reason: 'Multi-label filtering should use efficient joins');
-  });
-
-  test('reconciliation handles mixed add/remove operations efficiently',
-      () async {
-    // Create 5 labels
-    for (var i = 0; i < 5; i++) {
-      await db.upsertLabelDefinition(buildLabel(i));
-    }
-
-    // Create task with 3 labels
-    final task = buildTask(0, ['label-0', 'label-1', 'label-2']);
-    await db.updateJournalEntity(task);
-
-    // Benchmark: swap labels (remove 2, keep 1, add 2 new)
-    final stopwatch = Stopwatch()..start();
-    final updated = buildTask(0, ['label-1', 'label-3', 'label-4']);
-    await db.updateJournalEntity(updated);
-    stopwatch.stop();
-
-    expect(stopwatch.elapsedMilliseconds, lessThan(50),
-        reason: 'Diff-based reconciliation should be fast');
-
-    // Verify correct labels in denormalized table
-    final labelIds = await db.labeledForJournal('task-0').get();
-    expect(labelIds, hasLength(3));
-    expect(labelIds, containsAll(['label-1', 'label-3', 'label-4']));
-    expect(labelIds, isNot(contains('label-0')));
-    expect(labelIds, isNot(contains('label-2')));
-  });
-
-  test('unassigned filter performs under 60ms with heavily labeled data',
-      () async {
-    for (var i = 0; i < 20; i++) {
-      await db.upsertLabelDefinition(buildLabel(i));
-    }
-
-    for (var i = 0; i < 800; i++) {
-      final hasLabel = i % 5 != 0;
-      final labels = hasLabel ? ['label-${i % 20}'] : <String>[];
-      await db.updateJournalEntity(buildTask(i, labels));
-    }
-
-    final stopwatch = Stopwatch()..start();
-    final unlabeled = await db.getTasks(
-      starredStatuses: const [true, false],
-      taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
-      categoryIds: const [''],
-      labelIds: const [''],
+    expect(
+      stopwatch.elapsedMilliseconds,
+      lessThan(50),
+      reason: 'Multi-label filtering should use efficient joins',
     );
-    stopwatch.stop();
-
-    expect(unlabeled.length, greaterThan(100));
-    expect(stopwatch.elapsedMilliseconds, lessThan(60));
   });
+
+  test(
+    'reconciliation handles mixed add/remove operations efficiently',
+    () async {
+      // Create 5 labels
+      for (var i = 0; i < 5; i++) {
+        await db.upsertLabelDefinition(buildLabel(i));
+      }
+
+      // Create task with 3 labels
+      final task = buildTask(0, ['label-0', 'label-1', 'label-2']);
+      await db.updateJournalEntity(task);
+
+      // Benchmark: swap labels (remove 2, keep 1, add 2 new)
+      final stopwatch = Stopwatch()..start();
+      final updated = buildTask(0, ['label-1', 'label-3', 'label-4']);
+      await db.updateJournalEntity(updated);
+      stopwatch.stop();
+
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(50),
+        reason: 'Diff-based reconciliation should be fast',
+      );
+
+      // Verify correct labels in denormalized table
+      final labelIds = await db.labeledForJournal('task-0').get();
+      expect(labelIds, hasLength(3));
+      expect(labelIds, containsAll(['label-1', 'label-3', 'label-4']));
+      expect(labelIds, isNot(contains('label-0')));
+      expect(labelIds, isNot(contains('label-2')));
+    },
+  );
+
+  test(
+    'unassigned filter performs under 60ms with heavily labeled data',
+    () async {
+      for (var i = 0; i < 20; i++) {
+        await db.upsertLabelDefinition(buildLabel(i));
+      }
+
+      for (var i = 0; i < 800; i++) {
+        final hasLabel = i % 5 != 0;
+        final labels = hasLabel ? ['label-${i % 20}'] : <String>[];
+        await db.updateJournalEntity(buildTask(i, labels));
+      }
+
+      final stopwatch = Stopwatch()..start();
+      final unlabeled = await db.getTasks(
+        starredStatuses: const [true, false],
+        taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
+        categoryIds: const [''],
+        labelIds: const [''],
+      );
+      stopwatch.stop();
+
+      expect(unlabeled.length, greaterThan(100));
+      expect(stopwatch.elapsedMilliseconds, lessThan(60));
+    },
+  );
 
   test('mixed label/category/status filters complete quickly', () async {
     for (var i = 0; i < 10; i++) {
@@ -285,8 +302,11 @@ void main() {
       await db.upsertLabelDefinition(buildLabel(i));
     }
 
-    final labelIds =
-        List.generate(labelCount, (index) => 'label-$index', growable: false);
+    final labelIds = List.generate(
+      labelCount,
+      (index) => 'label-$index',
+      growable: false,
+    );
 
     final stopwatch = Stopwatch()..start();
     await db.updateJournalEntity(buildTask(0, labelIds));

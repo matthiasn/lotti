@@ -75,8 +75,9 @@ class AnimatedModernSettingsCardWithIcon extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: AppTheme.chevronSize,
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: AppTheme.alphaSurfaceVariantChevron,
+                  ),
                 ),
               ],
             ],

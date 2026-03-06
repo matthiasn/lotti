@@ -91,7 +91,7 @@ class TaskToolDispatcher {
           taskEntity,
           TaskAgentToolNames.addMultipleChecklistItems,
           {
-            'items': [args]
+            'items': [args],
           },
           taskId,
         );
@@ -104,7 +104,7 @@ class TaskToolDispatcher {
           taskEntity,
           TaskAgentToolNames.updateChecklistItems,
           {
-            'items': [args]
+            'items': [args],
           },
           taskId,
         );
@@ -176,7 +176,8 @@ class TaskToolDispatcher {
       if (value is! String || value.isEmpty) {
         return ToolExecutionResult(
           success: false,
-          output: 'Error: "$expectedStringKey" must be a non-empty string, '
+          output:
+              'Error: "$expectedStringKey" must be a non-empty string, '
               'got ${value.runtimeType}',
           errorMessage: 'Type validation failed for $expectedStringKey',
         );
@@ -270,7 +271,8 @@ class TaskToolDispatcher {
     if (labels is! List) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: "labels" must be an array, '
+        output:
+            'Error: "labels" must be an array, '
             'got ${labels.runtimeType}',
         errorMessage: 'Type validation failed for labels',
       );
@@ -303,7 +305,8 @@ class TaskToolDispatcher {
     if (languageCode is! String) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: "languageCode" must be a string, '
+        output:
+            'Error: "languageCode" must be a string, '
             'got ${languageCode.runtimeType}',
         errorMessage: 'Type validation failed for languageCode',
       );
@@ -332,7 +335,8 @@ class TaskToolDispatcher {
     if (status is! String) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: "status" must be a string, '
+        output:
+            'Error: "status" must be a string, '
             'got ${status.runtimeType}',
         errorMessage: 'Type validation failed for status',
       );
@@ -366,7 +370,8 @@ class TaskToolDispatcher {
     if (items is! List || items.isEmpty) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: "items" must be a non-empty array, '
+        output:
+            'Error: "items" must be a non-empty array, '
             'got ${items.runtimeType}',
         errorMessage: 'Type validation failed for items',
       );
@@ -426,7 +431,8 @@ class TaskToolDispatcher {
     if (items is! List || items.isEmpty) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: "items" must be a non-empty array, '
+        output:
+            'Error: "items" must be a non-empty array, '
             'got ${items.runtimeType}',
         errorMessage: 'Type validation failed for items',
       );
@@ -456,7 +462,8 @@ class TaskToolDispatcher {
     }
 
     final count = await handler.executeUpdates(parseResult);
-    final hasRealFailures = count == 0 &&
+    final hasRealFailures =
+        count == 0 &&
         handler.skippedItems.any(
           (s) => s.reason != 'No changes detected',
         );

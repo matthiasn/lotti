@@ -14,16 +14,16 @@ final promptFormControllerProvider = PromptFormControllerFamily._();
 
 final class PromptFormControllerProvider
     extends $AsyncNotifierProvider<PromptFormController, PromptFormState?> {
-  PromptFormControllerProvider._(
-      {required PromptFormControllerFamily super.from,
-      required String? super.argument})
-      : super(
-          retry: null,
-          name: r'promptFormControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  PromptFormControllerProvider._({
+    required PromptFormControllerFamily super.from,
+    required String? super.argument,
+  }) : super(
+         retry: null,
+         name: r'promptFormControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$promptFormControllerHash();
@@ -55,21 +55,25 @@ String _$promptFormControllerHash() =>
 
 final class PromptFormControllerFamily extends $Family
     with
-        $ClassFamilyOverride<PromptFormController, AsyncValue<PromptFormState?>,
-            PromptFormState?, FutureOr<PromptFormState?>, String?> {
+        $ClassFamilyOverride<
+          PromptFormController,
+          AsyncValue<PromptFormState?>,
+          PromptFormState?,
+          FutureOr<PromptFormState?>,
+          String?
+        > {
   PromptFormControllerFamily._()
-      : super(
-          retry: null,
-          name: r'promptFormControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'promptFormControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   PromptFormControllerProvider call({
     required String? configId,
-  }) =>
-      PromptFormControllerProvider._(argument: configId, from: this);
+  }) => PromptFormControllerProvider._(argument: configId, from: this);
 
   @override
   String toString() => r'promptFormControllerProvider';
@@ -87,15 +91,19 @@ abstract class _$PromptFormController extends $AsyncNotifier<PromptFormState?> {
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<PromptFormState?>, PromptFormState?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<PromptFormState?>, PromptFormState?>,
-        AsyncValue<PromptFormState?>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<PromptFormState?>, PromptFormState?>,
+              AsyncValue<PromptFormState?>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              configId: _$args,
-            ));
+      ref,
+      () => build(
+        configId: _$args,
+      ),
+    );
   }
 }

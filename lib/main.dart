@@ -35,87 +35,91 @@ class AppConstants {
 }
 
 Future<void> main() async {
-  await runZonedGuarded(() async {
-    getIt
-      ..registerSingleton<LoggingDb>(LoggingDb())
-      ..registerSingleton<LoggingService>(LoggingService());
+  await runZonedGuarded(
+    () async {
+      getIt
+        ..registerSingleton<LoggingDb>(LoggingDb())
+        ..registerSingleton<LoggingService>(LoggingService());
 
-    WidgetsFlutterBinding.ensureInitialized();
-    try {
-      MediaKit.ensureInitialized();
-    } catch (e) {
+      WidgetsFlutterBinding.ensureInitialized();
+      try {
+        MediaKit.ensureInitialized();
+      } catch (e) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'MAIN',
+          subDomain:
+              'MediaKit initialization failed - continuing without media support',
+        );
+      }
+      Animate.restartOnHotReload = true;
+
+      if (isDesktop) {
+        await windowManager.ensureInitialized();
+        await hotKeyManager.unregisterAll();
+
+        // Configure window options for flatpak compatibility
+        const windowOptions = WindowOptions(
+          size: AppConstants.defaultWindowSize,
+          minimumSize: AppConstants.minimumWindowSize,
+          center: true,
+          backgroundColor: Colors.transparent,
+          skipTaskbar: false,
+          titleBarStyle: TitleBarStyle.normal,
+        );
+        await windowManager.waitUntilReadyToShow(windowOptions, () async {
+          await windowManager.show();
+          await windowManager.focus();
+        });
+      }
+
+      final docDir = await findDocumentsDirectory();
+
+      getIt
+        ..registerSingleton<SecureStorage>(SecureStorage())
+        ..registerSingleton<Directory>(docDir)
+        ..registerSingleton<SettingsDb>(SettingsDb())
+        ..registerSingleton<WindowService>(WindowService());
+
+      await getIt<WindowService>().restore();
+      tz.initializeTimeZones();
+
+      await registerSingletons();
+
+      FlutterError.onError = (FlutterErrorDetails details) {
+        getIt<LoggingService>().captureException(
+          details.exception,
+          domain: 'MAIN',
+          subDomain: details.library,
+          stackTrace: details.stack,
+        );
+      };
+
+      runApp(
+        ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
+            maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
+            journalDbProvider.overrideWithValue(getIt<JournalDb>()),
+            loggingDbProvider.overrideWithValue(getIt<LoggingDb>()),
+            syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
+            loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
+            outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
+            aiConfigRepositoryProvider.overrideWithValue(
+              getIt<AiConfigRepository>(),
+            ),
+          ],
+          child: const AppLifecycleRescanObserver(child: MyBeamerApp()),
+        ),
+      );
+    },
+    (Object error, StackTrace stackTrace) {
       getIt<LoggingService>().captureException(
-        e,
+        error,
         domain: 'MAIN',
-        subDomain:
-            'MediaKit initialization failed - continuing without media support',
+        subDomain: 'runZonedGuarded',
+        stackTrace: stackTrace,
       );
-    }
-    Animate.restartOnHotReload = true;
-
-    if (isDesktop) {
-      await windowManager.ensureInitialized();
-      await hotKeyManager.unregisterAll();
-
-      // Configure window options for flatpak compatibility
-      const windowOptions = WindowOptions(
-        size: AppConstants.defaultWindowSize,
-        minimumSize: AppConstants.minimumWindowSize,
-        center: true,
-        backgroundColor: Colors.transparent,
-        skipTaskbar: false,
-        titleBarStyle: TitleBarStyle.normal,
-      );
-      await windowManager.waitUntilReadyToShow(windowOptions, () async {
-        await windowManager.show();
-        await windowManager.focus();
-      });
-    }
-
-    final docDir = await findDocumentsDirectory();
-
-    getIt
-      ..registerSingleton<SecureStorage>(SecureStorage())
-      ..registerSingleton<Directory>(docDir)
-      ..registerSingleton<SettingsDb>(SettingsDb())
-      ..registerSingleton<WindowService>(WindowService());
-
-    await getIt<WindowService>().restore();
-    tz.initializeTimeZones();
-
-    await registerSingletons();
-
-    FlutterError.onError = (FlutterErrorDetails details) {
-      getIt<LoggingService>().captureException(
-        details.exception,
-        domain: 'MAIN',
-        subDomain: details.library,
-        stackTrace: details.stack,
-      );
-    };
-
-    runApp(
-      ProviderScope(
-        overrides: [
-          matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
-          maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
-          journalDbProvider.overrideWithValue(getIt<JournalDb>()),
-          loggingDbProvider.overrideWithValue(getIt<LoggingDb>()),
-          syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
-          loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
-          outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
-          aiConfigRepositoryProvider
-              .overrideWithValue(getIt<AiConfigRepository>()),
-        ],
-        child: const AppLifecycleRescanObserver(child: MyBeamerApp()),
-      ),
-    );
-  }, (Object error, StackTrace stackTrace) {
-    getIt<LoggingService>().captureException(
-      error,
-      domain: 'MAIN',
-      subDomain: 'runZonedGuarded',
-      stackTrace: stackTrace,
-    );
-  });
+    },
+  );
 }

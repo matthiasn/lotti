@@ -40,12 +40,15 @@ void main() {
         lifecycle: lifecycle,
       ),
       overrides: [
-        agentServiceProvider
-            .overrideWithValue(agentService ?? mockAgentService),
-        taskAgentServiceProvider
-            .overrideWithValue(taskAgentService ?? mockTaskAgentService),
-        agentRepositoryProvider
-            .overrideWithValue(agentRepository ?? mockAgentRepository),
+        agentServiceProvider.overrideWithValue(
+          agentService ?? mockAgentService,
+        ),
+        taskAgentServiceProvider.overrideWithValue(
+          taskAgentService ?? mockTaskAgentService,
+        ),
+        agentRepositoryProvider.overrideWithValue(
+          agentRepository ?? mockAgentRepository,
+        ),
         // Override identity provider to prevent real DB access on invalidation
         agentIdentityProvider.overrideWith((ref, agentId) async => null),
         taskAgentProvider.overrideWith((ref, taskId) async => null),
@@ -64,8 +67,9 @@ void main() {
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
     });
 
-    testWidgets('shows Resume button when lifecycle is dormant',
-        (tester) async {
+    testWidgets('shows Resume button when lifecycle is dormant', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(lifecycle: AgentLifecycle.dormant),
       );
@@ -142,8 +146,9 @@ void main() {
     );
 
     testWidgets('Pause button calls pauseAgent on service', (tester) async {
-      when(() => mockAgentService.pauseAgent(testAgentId))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockAgentService.pauseAgent(testAgentId),
+      ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
         buildSubject(lifecycle: AgentLifecycle.active),
@@ -156,12 +161,15 @@ void main() {
       verify(() => mockAgentService.pauseAgent(testAgentId)).called(1);
     });
 
-    testWidgets('Resume button calls resumeAgent and restores subscriptions',
-        (tester) async {
-      when(() => mockAgentService.resumeAgent(testAgentId))
-          .thenAnswer((_) async => true);
-      when(() => mockTaskAgentService.restoreSubscriptionsForAgent(testAgentId))
-          .thenAnswer((_) async {});
+    testWidgets('Resume button calls resumeAgent and restores subscriptions', (
+      tester,
+    ) async {
+      when(
+        () => mockAgentService.resumeAgent(testAgentId),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockTaskAgentService.restoreSubscriptionsForAgent(testAgentId),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         buildSubject(lifecycle: AgentLifecycle.dormant),
@@ -178,8 +186,9 @@ void main() {
     });
 
     testWidgets('Re-analyze button calls triggerReanalysis', (tester) async {
-      when(() => mockTaskAgentService.triggerReanalysis(testAgentId))
-          .thenReturn(null);
+      when(
+        () => mockTaskAgentService.triggerReanalysis(testAgentId),
+      ).thenReturn(null);
 
       await tester.pumpWidget(
         buildSubject(lifecycle: AgentLifecycle.active),
@@ -189,8 +198,9 @@ void main() {
       await tester.tap(find.text('Re-analyze'));
       await tester.pump();
 
-      verify(() => mockTaskAgentService.triggerReanalysis(testAgentId))
-          .called(1);
+      verify(
+        () => mockTaskAgentService.triggerReanalysis(testAgentId),
+      ).called(1);
     });
 
     testWidgets('Destroy button shows confirmation dialog', (tester) async {
@@ -234,8 +244,9 @@ void main() {
     testWidgets(
       'Destroy dialog Confirm calls destroyAgent',
       (tester) async {
-        when(() => mockAgentService.destroyAgent(testAgentId))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockAgentService.destroyAgent(testAgentId),
+        ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.active),
@@ -319,8 +330,9 @@ void main() {
             type: 'agent_task',
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAgentService.deleteAgent(testAgentId))
-            .thenAnswer((_) async {});
+        when(
+          () => mockAgentService.deleteAgent(testAgentId),
+        ).thenAnswer((_) async {});
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.destroyed),
@@ -358,8 +370,9 @@ void main() {
             type: 'agent_task',
           ),
         ).thenAnswer((_) async => [link]);
-        when(() => mockAgentService.deleteAgent(testAgentId))
-            .thenAnswer((_) async {});
+        when(
+          () => mockAgentService.deleteAgent(testAgentId),
+        ).thenAnswer((_) async {});
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.destroyed),
@@ -403,8 +416,9 @@ void main() {
     testWidgets(
       'shows snackbar when pauseAgent throws',
       (tester) async {
-        when(() => mockAgentService.pauseAgent(testAgentId))
-            .thenThrow(Exception('network error'));
+        when(
+          () => mockAgentService.pauseAgent(testAgentId),
+        ).thenThrow(Exception('network error'));
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.active),
@@ -426,8 +440,9 @@ void main() {
       (tester) async {
         // Use a completer to control when the future resolves
         final completer = Completer<bool>();
-        when(() => mockAgentService.pauseAgent(testAgentId))
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockAgentService.pauseAgent(testAgentId),
+        ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.active),
@@ -459,8 +474,9 @@ void main() {
     testWidgets(
       'shows snackbar when resumeAgent throws',
       (tester) async {
-        when(() => mockAgentService.resumeAgent(testAgentId))
-            .thenThrow(Exception('resume failed'));
+        when(
+          () => mockAgentService.resumeAgent(testAgentId),
+        ).thenThrow(Exception('resume failed'));
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.dormant),
@@ -477,8 +493,9 @@ void main() {
     testWidgets(
       'shows snackbar when destroyAgent throws',
       (tester) async {
-        when(() => mockAgentService.destroyAgent(testAgentId))
-            .thenThrow(Exception('destroy failed'));
+        when(
+          () => mockAgentService.destroyAgent(testAgentId),
+        ).thenThrow(Exception('destroy failed'));
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.active),
@@ -573,8 +590,9 @@ void main() {
     testWidgets(
       'Re-analyze in dormant calls triggerReanalysis',
       (tester) async {
-        when(() => mockTaskAgentService.triggerReanalysis(testAgentId))
-            .thenReturn(null);
+        when(
+          () => mockTaskAgentService.triggerReanalysis(testAgentId),
+        ).thenReturn(null);
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.dormant),
@@ -584,16 +602,18 @@ void main() {
         await tester.tap(find.text('Re-analyze'));
         await tester.pump();
 
-        verify(() => mockTaskAgentService.triggerReanalysis(testAgentId))
-            .called(1);
+        verify(
+          () => mockTaskAgentService.triggerReanalysis(testAgentId),
+        ).called(1);
       },
     );
 
     testWidgets(
       'shows snackbar when triggerReanalysis throws',
       (tester) async {
-        when(() => mockTaskAgentService.triggerReanalysis(testAgentId))
-            .thenThrow(Exception('reanalysis failed'));
+        when(
+          () => mockTaskAgentService.triggerReanalysis(testAgentId),
+        ).thenThrow(Exception('reanalysis failed'));
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.active),
@@ -617,8 +637,9 @@ void main() {
             type: 'agent_task',
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAgentService.deleteAgent(testAgentId))
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockAgentService.deleteAgent(testAgentId),
+        ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(
           buildSubject(lifecycle: AgentLifecycle.destroyed),

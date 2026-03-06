@@ -51,8 +51,9 @@ void main() {
       );
     }
 
-    testWidgets('normal expanded mode shows title, chevron, menu, filters',
-        (tester) async {
+    testWidgets('normal expanded mode shows title, chevron, menu, filters', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildHeader(title: 'My Checklist'));
 
       expect(find.text('My Checklist'), findsOneWidget);
@@ -63,8 +64,9 @@ void main() {
       expect(find.byType(ChecklistProgressIndicator), findsWidgets);
     });
 
-    testWidgets('sorting mode shows drag handle, hides chevron and menu',
-        (tester) async {
+    testWidgets('sorting mode shows drag handle, hides chevron and menu', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildHeader(isSortingMode: true));
 
       expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
@@ -73,17 +75,18 @@ void main() {
     });
 
     testWidgets(
-        'drag handle wrapped in ReorderableDragStartListener when reorderIndex provided',
-        (tester) async {
-      await tester.pumpWidget(
-        buildHeader(isSortingMode: true, reorderIndex: 0),
-      );
-      expect(find.byType(ReorderableDragStartListener), findsOneWidget);
+      'drag handle wrapped in ReorderableDragStartListener when reorderIndex provided',
+      (tester) async {
+        await tester.pumpWidget(
+          buildHeader(isSortingMode: true, reorderIndex: 0),
+        );
+        expect(find.byType(ReorderableDragStartListener), findsOneWidget);
 
-      // Without reorderIndex, no ReorderableDragStartListener
-      await tester.pumpWidget(buildHeader(isSortingMode: true));
-      expect(find.byType(ReorderableDragStartListener), findsNothing);
-    });
+        // Without reorderIndex, no ReorderableDragStartListener
+        await tester.pumpWidget(buildHeader(isSortingMode: true));
+        expect(find.byType(ReorderableDragStartListener), findsNothing);
+      },
+    );
 
     testWidgets('hides filter tabs when collapsed', (tester) async {
       await tester.pumpWidget(buildHeader(isExpanded: false));
@@ -97,8 +100,9 @@ void main() {
       expect(hiddenCount, greaterThan(0));
     });
 
-    testWidgets('hides filter tabs when empty (totalCount = 0)',
-        (tester) async {
+    testWidgets('hides filter tabs when empty (totalCount = 0)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildHeader(totalCount: 0));
 
       final crossFades = tester.widgetList<AnimatedCrossFade>(
@@ -112,9 +116,11 @@ void main() {
 
     testWidgets('calls onToggleExpand when chevron tapped', (tester) async {
       var toggled = false;
-      await tester.pumpWidget(buildHeader(
-        onToggleExpand: () => toggled = true,
-      ));
+      await tester.pumpWidget(
+        buildHeader(
+          onToggleExpand: () => toggled = true,
+        ),
+      );
 
       await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pump();
@@ -122,12 +128,15 @@ void main() {
       expect(toggled, isTrue);
     });
 
-    testWidgets('calls onTitleTap when title tapped in expanded mode',
-        (tester) async {
+    testWidgets('calls onTitleTap when title tapped in expanded mode', (
+      tester,
+    ) async {
       var titleTapped = false;
-      await tester.pumpWidget(buildHeader(
-        onTitleTap: () => titleTapped = true,
-      ));
+      await tester.pumpWidget(
+        buildHeader(
+          onTitleTap: () => titleTapped = true,
+        ),
+      );
 
       await tester.tap(find.text('Test Checklist'));
       await tester.pump();
@@ -137,9 +146,11 @@ void main() {
 
     testWidgets('calls onFilterChanged when filter tab tapped', (tester) async {
       ChecklistFilter? selectedFilter;
-      await tester.pumpWidget(buildHeader(
-        onFilterChanged: (f) => selectedFilter = f,
-      ));
+      await tester.pumpWidget(
+        buildHeader(
+          onFilterChanged: (f) => selectedFilter = f,
+        ),
+      );
 
       await tester.tap(find.text('All'));
       await tester.pump();
@@ -147,8 +158,9 @@ void main() {
       expect(selectedFilter, ChecklistFilter.all);
     });
 
-    testWidgets('shows delete dialog when delete menu item selected',
-        (tester) async {
+    testWidgets('shows delete dialog when delete menu item selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildHeader(onDelete: () {}));
 
       await tester.tap(find.byIcon(Icons.more_horiz_rounded));

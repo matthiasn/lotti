@@ -26,17 +26,20 @@ void main() {
   });
   setUpAll(() {
     // Required when verifying saveSession argument types in mocktail
-    registerFallbackValue(ChatSession(
-      id: 'fallback',
-      title: 'f',
-      createdAt: DateTime(2024),
-      lastMessageAt: DateTime(2024),
-      messages: const [],
-    ));
+    registerFallbackValue(
+      ChatSession(
+        id: 'fallback',
+        title: 'f',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: const [],
+      ),
+    );
   });
 
-  testWidgets('opens settings, shows model dropdown and persists selection',
-      (tester) async {
+  testWidgets('opens settings, shows model dropdown and persists selection', (
+    tester,
+  ) async {
     final mockChatRepository = MockChatRepository();
     final mockLoggingService = MockLoggingService();
     final mockAiRepo = MockAiConfigRepository();
@@ -64,29 +67,33 @@ void main() {
       supportsFunctionCalling: true,
     );
 
-    when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
-        .thenAnswer((_) async => [provider]);
-    when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
-        .thenAnswer((_) async => [model]);
+    when(
+      () => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer((_) async => [provider]);
+    when(
+      () => mockAiRepo.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => [model]);
 
-    when(() => mockChatRepository.createSession(categoryId: 'cat'))
-        .thenAnswer((_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ));
+    when(() => mockChatRepository.createSession(categoryId: 'cat')).thenAnswer(
+      (_) async => ChatSession(
+        id: 's1',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: const [],
+      ),
+    );
 
-    when(() => mockChatRepository.saveSession(any()))
-        .thenAnswer((_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-              metadata: const {'selectedModelId': 'model-1'},
-            ));
+    when(() => mockChatRepository.saveSession(any())).thenAnswer(
+      (_) async => ChatSession(
+        id: 's1',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: const [],
+        metadata: const {'selectedModelId': 'model-1'},
+      ),
+    );
 
     await tester.pumpWidget(
       ProviderScope(

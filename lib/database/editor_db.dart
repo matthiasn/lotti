@@ -22,13 +22,13 @@ class EditorDb extends _$EditorDb {
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
-          openDbConnection(
-            editorDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-            documentsDirectoryProvider: documentsDirectoryProvider,
-            tempDirectoryProvider: tempDirectoryProvider,
-          ),
-        );
+         openDbConnection(
+           editorDbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   final bool inMemoryDatabase;
 
@@ -61,14 +61,14 @@ class EditorDb extends _$EditorDb {
     required DateTime lastSaved,
     required String draftDeltaJson,
   }) async {
-    await (update(editorDrafts)
-          ..where(
-            (EditorDrafts draft) =>
-                draft.entryId.equals(entryId) &
-                draft.status.equals(_draftStatusDraft),
-          ))
+    await (update(editorDrafts)..where(
+          (EditorDrafts draft) =>
+              draft.entryId.equals(entryId) &
+              draft.status.equals(_draftStatusDraft),
+        ))
         .write(
-            const EditorDraftsCompanion(status: Value(_draftStatusArchived)));
+          const EditorDraftsCompanion(status: Value(_draftStatusArchived)),
+        );
 
     final draftState = EditorDraftState(
       id: uuid.v1(),
@@ -103,13 +103,12 @@ class EditorDb extends _$EditorDb {
     required String entryId,
     required DateTime lastSaved,
   }) async {
-    return (update(editorDrafts)
-          ..where(
-            (EditorDrafts draft) =>
-                draft.entryId.equals(entryId) &
-                draft.status.equals(_draftStatusDraft) &
-                draft.lastSaved.equals(lastSaved),
-          ))
+    return (update(editorDrafts)..where(
+          (EditorDrafts draft) =>
+              draft.entryId.equals(entryId) &
+              draft.status.equals(_draftStatusDraft) &
+              draft.lastSaved.equals(lastSaved),
+        ))
         .write(const EditorDraftsCompanion(status: Value(_draftStatusSaved)));
   }
 

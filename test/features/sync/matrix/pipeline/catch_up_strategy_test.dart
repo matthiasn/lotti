@@ -17,100 +17,107 @@ void main() {
   });
 
   group('CatchUpStrategy', () {
-    test('escalates when marker missing after backfill and snapshot is full',
-        () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final created = <MockTimeline>[];
+    test(
+      'escalates when marker missing after backfill and snapshot is full',
+      () async {
+        final room = MockRoom();
+        final log = MockLogging();
+        final created = <MockTimeline>[];
 
-      // Large dataset e0..e4999
-      final all = List<Event>.generate(5000, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
-        return e;
-      });
+        // Large dataset e0..e4999
+        final all = List<Event>.generate(5000, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+          return e;
+        });
 
-      // Snapshot returns the last `limit` events in ascending order
-      Future<Timeline> timelineForLimit(int limit) async {
-        final tl = MockTimeline();
-        created.add(tl);
-        final start = all.length > limit ? all.length - limit : 0;
-        when(() => tl.events).thenReturn(all.sublist(start));
-        when(() => tl.cancelSubscriptions()).thenReturn(null);
-        return tl;
-      }
+        // Snapshot returns the last `limit` events in ascending order
+        Future<Timeline> timelineForLimit(int limit) async {
+          final tl = MockTimeline();
+          created.add(tl);
+          final start = all.length > limit ? all.length - limit : 0;
+          when(() => tl.events).thenReturn(all.sublist(start));
+          when(() => tl.cancelSubscriptions()).thenReturn(null);
+          return tl;
+        }
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((invocation) async {
-        final limit = invocation.namedArguments[#limit] as int? ?? 200;
-        return timelineForLimit(limit);
-      });
+        when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
+          invocation,
+        ) async {
+          final limit = invocation.namedArguments[#limit] as int? ?? 200;
+          return timelineForLimit(limit);
+        });
 
-      // Backfill attempted but marker never found in any snapshot
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'e999999',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
-        maxLookback: 1000,
-      );
+        // Backfill attempted but marker never found in any snapshot
+        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'e999999',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+              }) async => true,
+          maxLookback: 1000,
+        );
 
-      // Should escalate to maxLookback and return that full window
-      expect(slice.length, 1000);
-      for (final tl in created) {
-        verify(() => tl.cancelSubscriptions()).called(1);
-      }
-    });
+        // Should escalate to maxLookback and return that full window
+        expect(slice.length, 1000);
+        for (final tl in created) {
+          verify(() => tl.cancelSubscriptions()).called(1);
+        }
+      },
+    );
 
     test(
-        'does not escalate when marker missing after backfill but snapshot not full',
-        () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final tl = MockTimeline();
+      'does not escalate when marker missing after backfill but snapshot not full',
+      () async {
+        final room = MockRoom();
+        final log = MockLogging();
+        final tl = MockTimeline();
 
-      // Data shorter than the initial limit
-      final all = List<Event>.generate(150, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
-        return e;
-      });
+        // Data shorter than the initial limit
+        final all = List<Event>.generate(150, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+          return e;
+        });
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
-      when(() => tl.events).thenReturn(all);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(all);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'does_not_exist',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
-        maxLookback: 1000,
-      );
+        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'does_not_exist',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+              }) async => true,
+          maxLookback: 1000,
+        );
 
-      // No escalation: returns the existing snapshot (150)
-      expect(slice.length, 150);
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
+        // No escalation: returns the existing snapshot (150)
+        expect(slice.length, 150);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
     test('preContextCount=80 bounds pre-context inclusion window', () async {
       final room = MockRoom();
       final log = MockLogging();
@@ -120,13 +127,15 @@ void main() {
       final events = List<Event>.generate(200, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
         return e;
       });
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
       when(() => tl.events).thenReturn(events);
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
@@ -135,14 +144,14 @@ void main() {
         room: room,
         lastEventId: 'e120',
         logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async => true,
         preContextCount: 80,
         maxLookback: 2000,
       );
@@ -160,8 +169,9 @@ void main() {
       final all = List<Event>.generate(10000, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
         return e;
       });
 
@@ -174,8 +184,9 @@ void main() {
         return tl;
       }
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((invocation) async {
+      when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
+        invocation,
+      ) async {
         final limit = invocation.namedArguments[#limit] as int? ?? 200;
         return timelineForLimit(limit);
       });
@@ -185,14 +196,14 @@ void main() {
         room: room,
         lastEventId: 'e0',
         logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            false,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async => false,
         initialLimit: 50,
         maxLookback: 1000,
       );
@@ -203,8 +214,7 @@ void main() {
         verify(() => tl.cancelSubscriptions()).called(1);
       }
     });
-    test('uses backfill and returns slice strictly after lastEventId',
-        () async {
+    test('uses backfill and returns slice strictly after lastEventId', () async {
       final room = MockRoom();
       final log = MockLogging();
       final tl = MockTimeline();
@@ -213,13 +223,15 @@ void main() {
       final events = List<Event>.generate(3, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
         return e;
       });
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
       when(() => tl.events).thenReturn(events);
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
@@ -227,16 +239,17 @@ void main() {
         room: room,
         lastEventId: 'e1',
         logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async {
-          // backfill attempts and succeeds (but current snapshot already contains last)
-          return true;
-        },
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async {
+              // backfill attempts and succeeds (but current snapshot already contains last)
+              return true;
+            },
       );
 
       expect(slice.map((e) => e.eventId), ['e2']);
@@ -252,8 +265,9 @@ void main() {
       final all = List<Event>.generate(10, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
         return e;
       });
 
@@ -266,8 +280,9 @@ void main() {
         return tl;
       }
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((invocation) async {
+      when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
+        invocation,
+      ) async {
         final limit = invocation.namedArguments[#limit] as int? ?? 200;
         return timelineForLimit(limit);
       });
@@ -276,14 +291,14 @@ void main() {
         room: room,
         lastEventId: 'e3',
         logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            false,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async => false,
         initialLimit: 2,
         maxLookback: 8,
       );
@@ -306,22 +321,25 @@ void main() {
       final window300 = List<Event>.generate(10, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e3_$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(300 + i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(300 + i));
         return e;
       });
       final window200 = List<Event>.generate(10, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e2_$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(200 + i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(200 + i));
         return e;
       });
       final window100 = List<Event>.generate(10, (i) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn('e1_$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
         return e;
       });
 
@@ -329,8 +347,9 @@ void main() {
       var current = window300;
       when(() => tl.events).thenAnswer((_) => current);
       when(() => tl.cancelSubscriptions()).thenReturn(null);
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
 
       // Allow pagination twice
       var page = 0;
@@ -348,14 +367,14 @@ void main() {
         room: room,
         lastEventId: null,
         logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async => true,
       );
 
       expect(slice, isNotEmpty);
@@ -365,49 +384,54 @@ void main() {
       verify(() => tl.cancelSubscriptions()).called(1);
     });
 
-    test('includes pre-context by count even when strictly-after is non-empty',
-        () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final tl = MockTimeline();
+    test(
+      'includes pre-context by count even when strictly-after is non-empty',
+      () async {
+        final room = MockRoom();
+        final log = MockLogging();
+        final tl = MockTimeline();
 
-      // Build ordered events: o1(ts=100), x1(ts=150), x2(ts=200)
-      Event mk(String id, int ts) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn(id);
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-        return e;
-      }
+        // Build ordered events: o1(ts=100), x1(ts=150), x2(ts=200)
+        Event mk(String id, int ts) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          return e;
+        }
 
-      final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
+        final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
-      when(() => tl.events).thenReturn(events);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'x1',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async {
-          // Marker already present; no need to paginate.
-          return true;
-        },
-        preContextCount: 2, // should include o1 and x1
-      );
+        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'x1',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+              }) async {
+                // Marker already present; no need to paginate.
+                return true;
+              },
+          preContextCount: 2, // should include o1 and x1
+        );
 
-      // Start should rewind to include o1 (pre-context), not just strictly-after x1
-      expect(slice.map((e) => e.eventId), ['o1', 'x1', 'x2']);
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
+        // Start should rewind to include o1 (pre-context), not just strictly-after x1
+        expect(slice.map((e) => e.eventId), ['o1', 'x1', 'x2']);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
 
     test('includes pre-context by timestamp (since last sync)', () async {
       final room = MockRoom();
@@ -418,15 +442,17 @@ void main() {
       Event mk(String id, int ts) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn(id);
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
         return e;
       }
 
       final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
       when(() => tl.events).thenReturn(events);
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
@@ -435,14 +461,14 @@ void main() {
         room: room,
         lastEventId: 'x1',
         logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async => true,
         preContextSinceTs: sinceTs,
       );
 
@@ -450,137 +476,151 @@ void main() {
       verify(() => tl.cancelSubscriptions()).called(1);
     });
 
-    test('preContextCount=1 includes exactly one before marker and marker',
-        () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final tl = MockTimeline();
+    test(
+      'preContextCount=1 includes exactly one before marker and marker',
+      () async {
+        final room = MockRoom();
+        final log = MockLogging();
+        final tl = MockTimeline();
 
-      // Ordered events: e0(ts=100), m(ts=150)[marker], e1(ts=200)
-      Event mk(String id, int ts) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn(id);
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-        return e;
-      }
+        // Ordered events: e0(ts=100), m(ts=150)[marker], e1(ts=200)
+        Event mk(String id, int ts) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          return e;
+        }
 
-      final e0 = mk('e0', 100);
-      final m = mk('m', 150);
-      final e1 = mk('e1', 200);
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
-      when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
+        final e0 = mk('e0', 100);
+        final m = mk('m', 150);
+        final e1 = mk('e1', 200);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'm',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
-        preContextCount: 1,
-      );
+        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'm',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+              }) async => true,
+          preContextCount: 1,
+        );
 
-      // Expect exactly one event before the marker and the marker present.
-      expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
+        // Expect exactly one event before the marker and the marker present.
+        expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
 
-    test('preContextSinceTs equals earliest timestamp does not over-include',
-        () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final tl = MockTimeline();
+    test(
+      'preContextSinceTs equals earliest timestamp does not over-include',
+      () async {
+        final room = MockRoom();
+        final log = MockLogging();
+        final tl = MockTimeline();
 
-      // Earliest ts is 100; marker at 150; latest 200
-      Event mk(String id, int ts) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn(id);
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-        return e;
-      }
+        // Earliest ts is 100; marker at 150; latest 200
+        Event mk(String id, int ts) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          return e;
+        }
 
-      final e0 = mk('e0', 100);
-      final m = mk('m', 150);
-      final e1 = mk('e1', 200);
+        final e0 = mk('e0', 100);
+        final m = mk('m', 150);
+        final e1 = mk('e1', 200);
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
-      when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'm',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
-        preContextSinceTs: 100, // equals earliest
-      );
+        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'm',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+              }) async => true,
+          preContextSinceTs: 100, // equals earliest
+        );
 
-      // Expect inclusion from the earliest, with no over-inclusion, and marker present
-      expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
+        // Expect inclusion from the earliest, with no over-inclusion, and marker present
+        expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
 
-    test('marker missing with preContext does not escalate or over-include',
-        () async {
-      final room = MockRoom();
-      final log = MockLogging();
-      final tl = MockTimeline();
+    test(
+      'marker missing with preContext does not escalate or over-include',
+      () async {
+        final room = MockRoom();
+        final log = MockLogging();
+        final tl = MockTimeline();
 
-      // Simple window e0..e2, marker not present
-      final events = List<Event>.generate(3, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e$i');
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
-        return e;
-      });
+        // Simple window e0..e2, marker not present
+        final events = List<Event>.generate(3, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
+          return e;
+        });
 
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => tl);
-      when(() => tl.events).thenReturn(events);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      // Simulate backfill attempted but marker still missing (attempted=true)
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: 'missing',
-        logging: log,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int maxPages,
-          required LoggingService logging,
-        }) async =>
-            true,
-        preContextCount: 5,
-        preContextSinceTs: 50,
-      );
+        // Simulate backfill attempted but marker still missing (attempted=true)
+        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'missing',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+              }) async => true,
+          preContextCount: 5,
+          preContextSinceTs: 50,
+        );
 
-      // With marker missing and backfill attempted, pre-context should not trigger
-      // escalation or over-inclusion. Return current snapshot as-is.
-      expect(slice.length, events.length);
-      expect(slice.map((e) => e.eventId).toList(),
-          events.map((e) => e.eventId).toList());
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
+        // With marker missing and backfill attempted, pre-context should not trigger
+        // escalation or over-inclusion. Return current snapshot as-is.
+        expect(slice.length, events.length);
+        expect(
+          slice.map((e) => e.eventId).toList(),
+          events.map((e) => e.eventId).toList(),
+        );
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
   });
 }
 

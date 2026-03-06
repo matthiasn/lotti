@@ -147,10 +147,12 @@ class _RatingModalState extends ConsumerState<RatingModal> {
   @override
   Widget build(BuildContext context) {
     ref
-        .watch(ratingControllerProvider(
-          targetId: widget.targetId,
-          catalogId: widget.catalogId,
-        ))
+        .watch(
+          ratingControllerProvider(
+            targetId: widget.targetId,
+            catalogId: widget.catalogId,
+          ),
+        )
         .whenData(_prePopulate);
 
     final messages = context.messages;
@@ -234,8 +236,9 @@ class _RatingModalState extends ConsumerState<RatingModal> {
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: FilledButton(
-                    onPressed:
-                        _canSubmit(catalog) && !_isSubmitting ? _submit : null,
+                    onPressed: _canSubmit(catalog) && !_isSubmitting
+                        ? _submit
+                        : null,
                     child: _isSubmitting
                         ? const SizedBox(
                             width: 16,
@@ -277,10 +280,12 @@ class _RatingModalState extends ConsumerState<RatingModal> {
   /// unknown. No save button — only a close button.
   Widget _buildReadOnlyView(BuildContext context) {
     final existing = ref
-        .watch(ratingControllerProvider(
-          targetId: widget.targetId,
-          catalogId: widget.catalogId,
-        ))
+        .watch(
+          ratingControllerProvider(
+            targetId: widget.targetId,
+            catalogId: widget.catalogId,
+          ),
+        )
         .value;
 
     final dimensions = existing is RatingEntry

@@ -27,8 +27,9 @@ void main() {
     expect(next.isAfter(start), isTrue);
 
     // Advance just under the window: still rate limited
-    clock.advance(LabelAssignmentRateLimiter.rateLimitWindow -
-        const Duration(seconds: 1));
+    clock.advance(
+      LabelAssignmentRateLimiter.rateLimitWindow - const Duration(seconds: 1),
+    );
     expect(limiter.isRateLimited(taskId), isTrue);
 
     // Advance past the window: not rate limited; entry pruned

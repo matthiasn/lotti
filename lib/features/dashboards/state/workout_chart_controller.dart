@@ -25,8 +25,9 @@ class WorkoutChartDataController extends _$WorkoutChartDataController {
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   void listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(workoutNotification)) {
         final latest = await _fetch();
         if (latest != state.value) {
@@ -70,7 +71,8 @@ class WorkoutObservationsController extends _$WorkoutObservationsController {
   }) async {
     ref.cacheFor(dashboardCacheDuration);
 
-    final items = ref
+    final items =
+        ref
             .watch(
               workoutChartDataControllerProvider(
                 rangeStart: rangeStart,

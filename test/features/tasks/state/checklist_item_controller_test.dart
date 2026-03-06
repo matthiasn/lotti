@@ -74,15 +74,19 @@ void main() {
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Setup stubs
-    when(() => mockDb.journalEntityById('item-1'))
-        .thenAnswer((_) async => testChecklistItem);
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
-    when(() => mockChecklistRepository.updateChecklistItem(
-          checklistItemId: any(named: 'checklistItemId'),
-          data: any(named: 'data'),
-          taskId: any(named: 'taskId'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => mockDb.journalEntityById('item-1'),
+    ).thenAnswer((_) async => testChecklistItem);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockChecklistRepository.updateChecklistItem(
+        checklistItemId: any(named: 'checklistItemId'),
+        data: any(named: 'data'),
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenAnswer((_) async => true);
   });
 
   tearDown(() async {
@@ -98,17 +102,21 @@ void main() {
   group('ChecklistItemController', () {
     group('updateTitle with correction capture', () {
       test('captures correction and notifies on success', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.updateCategory(any()),
+        ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -127,13 +135,17 @@ void main() {
 
         // Wait for the async build to complete before calling methods
         await container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .future,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .notifier,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).notifier,
         );
 
         // Update title - this should trigger correction capture
@@ -153,8 +165,9 @@ void main() {
         ).called(1);
 
         // Verify correction capture called getCategoryById for validation
-        verify(() => mockCategoryRepository.getCategoryById('category-1'))
-            .called(1);
+        verify(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).called(1);
 
         // Note: updateCategory is NOT called immediately - it's delayed
         // The pending correction should be set instead
@@ -169,28 +182,35 @@ void main() {
 
       test('does not notify when capture returns non-success', () async {
         // Make capture return noChange by using identical text
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
 
         // Wait for the async build to complete before calling methods
         await container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .future,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .notifier,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).notifier,
         );
 
         // Update with normalized identical text (should be noChange)
@@ -221,28 +241,35 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById('item-no-cat'))
-            .thenAnswer((_) async => itemNoCategory);
+        when(
+          () => mockDb.journalEntityById('item-no-cat'),
+        ).thenAnswer((_) async => itemNoCategory);
 
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
 
         // Wait for the async build to complete before calling methods
         await container.read(
-          checklistItemControllerProvider((id: 'item-no-cat', taskId: 'task-1'))
-              .future,
+          checklistItemControllerProvider((
+            id: 'item-no-cat',
+            taskId: 'task-1',
+          )).future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider((id: 'item-no-cat', taskId: 'task-1'))
-              .notifier,
+          checklistItemControllerProvider((
+            id: 'item-no-cat',
+            taskId: 'task-1',
+          )).notifier,
         );
 
         // Update should work even without category
@@ -267,23 +294,29 @@ void main() {
       test('does nothing when title is null', () async {
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
 
         // Wait for the async build to complete before calling methods
         await container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .future,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .notifier,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).notifier,
         );
 
         // ignore: cascade_invocations
@@ -308,21 +341,26 @@ void main() {
       test('stamps checkedBy: user and checkedAt on check', () async {
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
             clockProvider.overrideWithValue(() => fixedTime),
           ],
         );
         addTearDown(container.dispose);
 
         await container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .future,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .notifier,
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).notifier,
         );
 
         // ignore: cascade_invocations
@@ -366,13 +404,15 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById('item-checked'))
-            .thenAnswer((_) async => checkedItem);
+        when(
+          () => mockDb.journalEntityById('item-checked'),
+        ).thenAnswer((_) async => checkedItem);
 
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
             clockProvider.overrideWithValue(() => fixedTime),
           ],
         );
@@ -412,45 +452,52 @@ void main() {
     });
 
     group('archive and unarchive', () {
-      test('archive sets isArchived to true and keeps isChecked unchanged',
-          () async {
-        final container = ProviderContainer(
-          overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+      test(
+        'archive sets isArchived to true and keeps isChecked unchanged',
+        () async {
+          final container = ProviderContainer(
+            overrides: [
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
 
-        await container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .future,
-        );
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
 
-        final notifier = container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
-              .notifier,
-        );
+          final notifier = container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).notifier,
+          );
 
-        // ignore: cascade_invocations
-        notifier.archive();
+          // ignore: cascade_invocations
+          notifier.archive();
 
-        // Verify the state was updated with isArchived = true
-        final updatedState = container.read(
-          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
-        );
-        expect(updatedState.value?.data.isArchived, isTrue);
-        expect(updatedState.value?.data.isChecked, isFalse);
+          // Verify the state was updated with isArchived = true
+          final updatedState = container.read(
+            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+          );
+          expect(updatedState.value?.data.isArchived, isTrue);
+          expect(updatedState.value?.data.isChecked, isFalse);
 
-        // Verify the repository was called
-        verify(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: 'task-1',
-          ),
-        ).called(1);
-      });
+          // Verify the repository was called
+          verify(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: 'item-1',
+              data: any(named: 'data'),
+              taskId: 'task-1',
+            ),
+          ).called(1);
+        },
+      );
 
       test('unarchive sets isArchived to false', () async {
         // Create an item that's already archived
@@ -470,13 +517,15 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById('item-archived'))
-            .thenAnswer((_) async => archivedItem);
+        when(
+          () => mockDb.journalEntityById('item-archived'),
+        ).thenAnswer((_) async => archivedItem);
 
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -523,13 +572,15 @@ void main() {
           ),
         );
 
-        when(() => mockDb.journalEntityById('item-checked'))
-            .thenAnswer((_) async => checkedItem);
+        when(
+          () => mockDb.journalEntityById('item-checked'),
+        ).thenAnswer((_) async => checkedItem);
 
         final container = ProviderContainer(
           overrides: [
-            checklistRepositoryProvider
-                .overrideWithValue(mockChecklistRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);

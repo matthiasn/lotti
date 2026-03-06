@@ -56,8 +56,9 @@ void main() {
     expect(find.text(profile.name), findsNothing);
   });
 
-  testWidgets('shows selected profile name when profileId matches',
-      (tester) async {
+  testWidgets('shows selected profile name when profileId matches', (
+    tester,
+  ) async {
     final profile = testInferenceProfile(
       id: 'profile-abc',
       name: 'My Profile',
@@ -96,8 +97,9 @@ void main() {
     expect(clearedTo, isNull);
   });
 
-  testWidgets('opens picker and selecting a profile calls callback',
-      (tester) async {
+  testWidgets('opens picker and selecting a profile calls callback', (
+    tester,
+  ) async {
     final profileA = testInferenceProfile(id: 'p-a', name: 'Alpha');
     final profileB = testInferenceProfile(id: 'p-b', name: 'Beta');
     String? selectedId;
@@ -126,8 +128,9 @@ void main() {
     expect(selectedId, 'p-b');
   });
 
-  testWidgets('shows check icon for the currently selected profile',
-      (tester) async {
+  testWidgets('shows check icon for the currently selected profile', (
+    tester,
+  ) async {
     final profile = testInferenceProfile(id: 'p-1', name: 'Selected One');
 
     await tester.pumpWidget(

@@ -69,44 +69,53 @@ void main() {
 
     group('Base Layout', () {
       testWidgets('renders with title and content', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: const Text('Test Content'),
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: const Text('Test Content'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Test Modal'), findsOneWidget);
         expect(find.text('Test Content'), findsOneWidget);
       });
 
-      testWidgets('includes save button when onSave is provided',
-          (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          onSave: () {},
-          child: const Text('Test Content'),
-        ));
+      testWidgets('includes save button when onSave is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            onSave: () {},
+            child: const Text('Test Content'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(SelectionSaveButton), findsOneWidget);
       });
 
       testWidgets('hides save button when onSave is null', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: const Text('Test Content'),
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: const Text('Test Content'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(SelectionSaveButton), findsNothing);
       });
 
       testWidgets('renders trailing widget when provided', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          trailing: const Icon(Icons.info),
-          child: const Text('Test Content'),
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            trailing: const Icon(Icons.info),
+            child: const Text('Test Content'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.info), findsOneWidget);
@@ -144,16 +153,18 @@ void main() {
 
     group('Child Content', () {
       testWidgets('properly displays child widgets', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: const Column(
-            children: [
-              Text('Child 1'),
-              Text('Child 2'),
-              Text('Child 3'),
-            ],
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: const Column(
+              children: [
+                Text('Child 1'),
+                Text('Child 2'),
+                Text('Child 3'),
+              ],
+            ),
           ),
-        ));
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Child 1'), findsOneWidget);
@@ -163,19 +174,21 @@ void main() {
       });
 
       testWidgets('handles complex child layouts', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: ListView(
-            shrinkWrap: true,
-            children: List.generate(
-              5,
-              (index) => ListTile(
-                title: Text('Item $index'),
-                leading: const Icon(Icons.star),
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: ListView(
+              shrinkWrap: true,
+              children: List.generate(
+                5,
+                (index) => ListTile(
+                  title: Text('Item $index'),
+                  leading: const Icon(Icons.star),
+                ),
               ),
             ),
           ),
-        ));
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(ListView), findsOneWidget);
@@ -188,11 +201,13 @@ void main() {
       testWidgets('save button calls onSave when tapped', (tester) async {
         var saved = false;
 
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          onSave: () => saved = true,
-          child: const Text('Test Content'),
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            onSave: () => saved = true,
+            child: const Text('Test Content'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         await tester.tap(find.byType(SelectionSaveButton));
@@ -200,10 +215,12 @@ void main() {
       });
 
       testWidgets('handles disabled save button', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: const Text('Test Content'),
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: const Text('Test Content'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Save button should not exist when onSave is null
@@ -213,10 +230,12 @@ void main() {
 
     group('Edge Cases', () {
       testWidgets('handles empty content', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: const SizedBox.shrink(),
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: const SizedBox.shrink(),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(SizedBox), findsAtLeastNWidgets(1));
@@ -255,16 +274,18 @@ void main() {
       });
 
       testWidgets('handles scrollable content', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          title: 'Test Modal',
-          child: SingleChildScrollView(
-            child: Container(
-              height: 1000,
-              color: Colors.blue,
-              child: const Center(child: Text('Very tall content')),
+        await tester.pumpWidget(
+          createTestWidget(
+            title: 'Test Modal',
+            child: SingleChildScrollView(
+              child: Container(
+                height: 1000,
+                color: Colors.blue,
+                child: const Center(child: Text('Very tall content')),
+              ),
             ),
           ),
-        ));
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Very tall content'), findsOneWidget);
@@ -288,9 +309,11 @@ void main() {
     }
 
     testWidgets('applies correct default padding', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        children: const [Text('Test Content')],
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          children: const [Text('Test Content')],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final padding = tester.widget<Padding>(
@@ -300,27 +323,33 @@ void main() {
     });
 
     testWidgets('applies custom padding', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        children: const [Text('Test Content')],
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          children: const [Text('Test Content')],
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final padding = tester.widget<Padding>(
         find.byType(Padding).first,
       );
-      expect(padding.padding,
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 5));
+      expect(
+        padding.padding,
+        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      );
     });
 
     testWidgets('renders all children', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        children: const [
-          Text('Child 1'),
-          Text('Child 2'),
-          Text('Child 3'),
-        ],
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          children: const [
+            Text('Child 1'),
+            Text('Child 2'),
+            Text('Child 3'),
+          ],
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Child 1'), findsOneWidget);
@@ -329,9 +358,11 @@ void main() {
     });
 
     testWidgets('uses Column with mainAxisSize.min', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        children: const [Text('Content')],
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          children: const [Text('Content')],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final column = tester.widget<Column>(find.byType(Column).first);
@@ -339,9 +370,11 @@ void main() {
     });
 
     testWidgets('handles empty children list', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        children: const [],
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          children: const [],
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(SelectionModalContent), findsOneWidget);
@@ -372,10 +405,12 @@ void main() {
     }
 
     testWidgets('renders correct number of items', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        itemCount: 5,
-        itemBuilder: (context, index) => Text('Item $index'),
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          itemCount: 5,
+          itemBuilder: (context, index) => Text('Item $index'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       for (var i = 0; i < 5; i++) {
@@ -384,26 +419,32 @@ void main() {
     });
 
     testWidgets('uses default separator height', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        itemCount: 3,
-        itemBuilder: (context, index) => SizedBox(
-          height: 50,
-          child: Text('Item $index'),
+      await tester.pumpWidget(
+        createTestWidget(
+          itemCount: 3,
+          itemBuilder: (context, index) => SizedBox(
+            height: 50,
+            child: Text('Item $index'),
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       // Check ListView.separated is used
       final listView = tester.widget<ListView>(find.byType(ListView));
-      expect(listView.itemExtent,
-          isNull); // ListView.separated doesn't use itemExtent
+      expect(
+        listView.itemExtent,
+        isNull,
+      ); // ListView.separated doesn't use itemExtent
     });
 
     testWidgets('handles empty list', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        itemCount: 0,
-        itemBuilder: (context, index) => Text('Item $index'),
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          itemCount: 0,
+          itemBuilder: (context, index) => Text('Item $index'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(ListView), findsOneWidget);
@@ -411,10 +452,12 @@ void main() {
     });
 
     testWidgets('uses shrinkWrap', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        itemCount: 3,
-        itemBuilder: (context, index) => Text('Item $index'),
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          itemCount: 3,
+          itemBuilder: (context, index) => Text('Item $index'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final listView = tester.widget<ListView>(find.byType(ListView));

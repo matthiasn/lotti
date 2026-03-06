@@ -6,8 +6,8 @@ class UserActivityGate {
   UserActivityGate({
     required UserActivityService activityService,
     this.idleThreshold = const Duration(seconds: 1),
-  })  : _activityService = activityService,
-        _controller = StreamController<bool>.broadcast() {
+  }) : _activityService = activityService,
+       _controller = StreamController<bool>.broadcast() {
     final elapsed = DateTime.now().difference(_activityService.lastActivity);
     final isIdle = elapsed >= idleThreshold;
     _canProcess = isIdle;
@@ -17,8 +17,9 @@ class UserActivityGate {
       _scheduleTimer(idleThreshold - elapsed);
     }
 
-    _activitySubscription =
-        _activityService.activityStream.listen(_handleActivity);
+    _activitySubscription = _activityService.activityStream.listen(
+      _handleActivity,
+    );
   }
 
   final UserActivityService _activityService;

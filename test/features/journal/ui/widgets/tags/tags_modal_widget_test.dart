@@ -44,7 +44,7 @@ void main() {
         [
           testStoryTag1,
           testPersonTag1,
-        ]
+        ],
       ]),
     );
 
@@ -52,15 +52,16 @@ void main() {
       () => mockPersistenceLogic.updateMetadata(any()),
     ).thenAnswer((_) async => testTextEntry.meta);
 
-    when(() => mockTagsService.getFilteredStoryTagIds(any()))
-        .thenAnswer((_) => <String>[]);
+    when(
+      () => mockTagsService.getFilteredStoryTagIds(any()),
+    ).thenAnswer((_) => <String>[]);
 
     when(mockTagsService.watchTags).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
         [
           testStoryTag1,
           testPersonTag1,
-        ]
+        ],
       ]),
     );
 
@@ -71,17 +72,21 @@ void main() {
       ],
     );
 
-    when(() => mockTagsService.getTagById(testTag1.id))
-        .thenAnswer((_) => testTag1);
+    when(
+      () => mockTagsService.getTagById(testTag1.id),
+    ).thenAnswer((_) => testTag1);
 
-    when(() => mockTagsService.getTagById(testPersonTag1.id))
-        .thenAnswer((_) => testPersonTag1);
+    when(
+      () => mockTagsService.getTagById(testPersonTag1.id),
+    ).thenAnswer((_) => testPersonTag1);
 
-    when(() => mockTagsService.getTagById(testStoryTag1.id))
-        .thenAnswer((_) => testStoryTag1);
+    when(
+      () => mockTagsService.getTagById(testStoryTag1.id),
+    ).thenAnswer((_) => testStoryTag1);
 
-    when(() => mockTagsService.getMatchingTags(any()))
-        .thenAnswer((_) async => [testTag1]);
+    when(
+      () => mockTagsService.getMatchingTags(any()),
+    ).thenAnswer((_) async => [testTag1]);
 
     setUpAll(() async {
       await getIt.reset();
@@ -121,8 +126,9 @@ void main() {
         () => mockPersistenceLogic.updateDbEntity(any()),
       ).thenAnswer((invocation) async => true);
 
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       when(
         () => mockEditorStateService.getUnsavedStream(
@@ -133,8 +139,9 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(() => mockJournalDb.journalEntityById(testTextEntryWithTags.meta.id))
-          .thenAnswer((_) async => testTextEntryWithTags);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntryWithTags.meta.id),
+      ).thenAnswer((_) async => testTextEntryWithTags);
     });
 
     tearDownAll(() async {
@@ -208,8 +215,9 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockTagsService.getTagById(newTagId))
-          .thenAnswer((_) => newTag);
+      when(
+        () => mockTagsService.getTagById(newTagId),
+      ).thenAnswer((_) => newTag);
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([
@@ -218,7 +226,7 @@ void main() {
             testPersonTag1,
             testTag1,
             newTag,
-          ]
+          ],
         ]),
       );
 
@@ -246,7 +254,7 @@ void main() {
             testStoryTag1,
             testPersonTag1,
             testTag1,
-          ]
+          ],
         ]),
       );
 

@@ -44,10 +44,11 @@ void main() {
 
     // Register a mock for the HapticFeedback service
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform,
-            (MethodCall methodCall) async {
-      return null;
-    });
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
 
     mockPagingController = MockPagingController();
   });
@@ -79,8 +80,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: const TaskDueDateDisplayToggle(),
       ),
@@ -88,8 +90,9 @@ void main() {
   }
 
   group('TaskDueDateDisplayToggle', () {
-    testWidgets('renders correctly with SwitchListTile and label',
-        (tester) async {
+    testWidgets('renders correctly with SwitchListTile and label', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -119,8 +122,9 @@ void main() {
       expect(switchWidget.value, isFalse);
     });
 
-    testWidgets('calls setShowDueDate(show: false) when Switch is turned off',
-        (tester) async {
+    testWidgets('calls setShowDueDate(show: false) when Switch is turned off', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -131,8 +135,9 @@ void main() {
       expect(fakeController.showDueDateCalls, contains(false));
     });
 
-    testWidgets('calls setShowDueDate(show: true) when Switch is turned on',
-        (tester) async {
+    testWidgets('calls setShowDueDate(show: true) when Switch is turned on', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState(showDueDate: false)));
       await tester.pumpAndSettle();
 

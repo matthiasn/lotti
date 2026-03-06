@@ -136,8 +136,9 @@ void main() {
       expect(find.byType(TimeHistoryHeader), findsOneWidget);
     });
 
-    testWidgets('shows loading indicator when isLoadingMore is true',
-        (tester) async {
+    testWidgets('shows loading indicator when isLoadingMore is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           historyData: createTestHistoryData(isLoadingMore: true),
@@ -182,8 +183,9 @@ void main() {
       expect(find.textContaining('Thursday'), findsOneWidget);
     });
 
-    testWidgets('triggers loadMoreDays when scrolling near end',
-        (tester) async {
+    testWidgets('triggers loadMoreDays when scrolling near end', (
+      tester,
+    ) async {
       // Create enough days to allow scrolling beyond 80% threshold
       final days = createTestDays(count: 50);
       final historyData = createTestHistoryData(days: days);
@@ -238,8 +240,9 @@ void main() {
       expect(trackingController.loadMoreDaysCallCount, greaterThan(0));
     });
 
-    testWidgets('shows multi-month label spanning different years',
-        (tester) async {
+    testWidgets('shows multi-month label spanning different years', (
+      tester,
+    ) async {
       // Create days spanning Dec 2025 and Jan 2026
       final days = [
         DayTimeSummary(
@@ -327,8 +330,9 @@ void main() {
       expect(find.text('13'), findsOneWidget);
     });
 
-    testWidgets('Today button is tappable and triggers navigation',
-        (tester) async {
+    testWidgets('Today button is tappable and triggers navigation', (
+      tester,
+    ) async {
       final fixedToday = DateTime(2026, 1, 15, 12);
       final yesterday = DateTime(2026, 1, 14);
       final todayMidnight = DateTime(2026, 1, 15);
@@ -358,14 +362,17 @@ void main() {
               timeHistoryHeaderControllerProvider.overrideWith(
                 () => TestTimeHistoryController(historyData),
               ),
-              unifiedDailyOsDataControllerProvider(date: yesterday)
-                  .overrideWith(
+              unifiedDailyOsDataControllerProvider(
+                date: yesterday,
+              ).overrideWith(
                 () => TestUnifiedController(createUnifiedData(date: yesterday)),
               ),
-              unifiedDailyOsDataControllerProvider(date: todayMidnight)
-                  .overrideWith(
+              unifiedDailyOsDataControllerProvider(
+                date: todayMidnight,
+              ).overrideWith(
                 () => TestUnifiedController(
-                    createUnifiedData(date: todayMidnight)),
+                  createUnifiedData(date: todayMidnight),
+                ),
               ),
               dayBudgetStatsProvider(date: yesterday).overrideWith(
                 (ref) async => const DayBudgetStats(

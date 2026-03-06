@@ -206,8 +206,9 @@ void main() {
       expect(decoration.gradient, isNotNull);
     });
 
-    testWidgets('disposes properly when removed from widget tree',
-        (tester) async {
+    testWidgets('disposes properly when removed from widget tree', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           child: LottiSearchBar(controller: controller),
@@ -319,8 +320,9 @@ void main() {
         expect(find.text(unicodeText), findsOneWidget);
       });
 
-      testWidgets('clear button only calls onClear if provided',
-          (tester) async {
+      testWidgets('clear button only calls onClear if provided', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             child: LottiSearchBar(
@@ -405,8 +407,9 @@ void main() {
         expect(rebuildCount, equals(2));
       });
 
-      testWidgets('accessibility - semantic labels are present',
-          (tester) async {
+      testWidgets('accessibility - semantic labels are present', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             child: LottiSearchBar(controller: controller),
@@ -414,8 +417,9 @@ void main() {
         );
 
         // Check search icon semantic label
-        final searchIcon =
-            tester.widget<Icon>(find.byIcon(Icons.search_rounded));
+        final searchIcon = tester.widget<Icon>(
+          find.byIcon(Icons.search_rounded),
+        );
         expect(searchIcon.semanticLabel, equals('Search icon'));
 
         // Add text to show clear button
@@ -490,11 +494,16 @@ void main() {
         final darkDecoration = darkContainer.decoration! as BoxDecoration;
 
         // In dark theme, non-compact mode should have gradient
-        expect(darkDecoration.gradient, isNotNull,
-            reason: 'Dark theme should have gradient background');
-        expect(darkDecoration.color, isNull,
-            reason:
-                'Dark theme should not have color when gradient is present');
+        expect(
+          darkDecoration.gradient,
+          isNotNull,
+          reason: 'Dark theme should have gradient background',
+        );
+        expect(
+          darkDecoration.color,
+          isNull,
+          reason: 'Dark theme should not have color when gradient is present',
+        );
       });
 
       testWidgets('compact mode styling with dark theme', (tester) async {
@@ -526,8 +535,9 @@ void main() {
     });
 
     group('Hover Effect', () {
-      testWidgets('uses AnimatedContainer for smooth hover transitions',
-          (tester) async {
+      testWidgets('uses AnimatedContainer for smooth hover transitions', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             child: LottiSearchBar(controller: controller),
@@ -548,8 +558,9 @@ void main() {
         );
       });
 
-      testWidgets('decoration includes border and shadow styling',
-          (tester) async {
+      testWidgets('decoration includes border and shadow styling', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             child: LottiSearchBar(controller: controller),
@@ -567,8 +578,9 @@ void main() {
         expect(decoration.borderRadius, isNotNull);
       });
 
-      testWidgets('hover adds additional shadow for glow effect',
-          (tester) async {
+      testWidgets('hover adds additional shadow for glow effect', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             child: LottiSearchBar(controller: controller),
@@ -583,8 +595,9 @@ void main() {
         final initialShadowCount = decorationBefore.boxShadow?.length ?? 0;
 
         // Simulate mouse enter
-        final gesture =
-            await tester.createGesture(kind: PointerDeviceKind.mouse);
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
         await gesture.addPointer(location: Offset.zero);
         addTearDown(gesture.removePointer);
         await tester.pump();

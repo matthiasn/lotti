@@ -56,8 +56,9 @@ void main() {
       expect(pressed, isTrue);
     });
 
-    testWidgets('does not call onPressed when disabled',
-        (WidgetTester tester) async {
+    testWidgets('does not call onPressed when disabled', (
+      WidgetTester tester,
+    ) async {
       var pressed = false;
 
       await tester.pumpWidget(
@@ -76,8 +77,9 @@ void main() {
       expect(pressed, isFalse);
     });
 
-    testWidgets('does not call onPressed when onPressed is null',
-        (WidgetTester tester) async {
+    testWidgets('does not call onPressed when onPressed is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -93,8 +95,9 @@ void main() {
       await tester.tap(find.byType(TextButton));
     });
 
-    testWidgets('renders with full width when fullWidth is true',
-        (WidgetTester tester) async {
+    testWidgets('renders with full width when fullWidth is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -108,16 +111,19 @@ void main() {
       );
 
       tester.widget<TextButton>(find.byType(TextButton));
-      final parent = tester.widget<SizedBox>(find.ancestor(
-        of: find.byType(TextButton),
-        matching: find.byType(SizedBox),
-      ));
+      final parent = tester.widget<SizedBox>(
+        find.ancestor(
+          of: find.byType(TextButton),
+          matching: find.byType(SizedBox),
+        ),
+      );
 
       expect(parent.width, equals(double.infinity));
     });
 
-    testWidgets('renders with destructive styling when isDestructive is true',
-        (WidgetTester tester) async {
+    testWidgets('renders with destructive styling when isDestructive is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -132,12 +138,15 @@ void main() {
 
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final theme = Theme.of(tester.element(find.byType(TextButton)));
-      expect(button.style?.foregroundColor?.resolve({}),
-          equals(theme.colorScheme.error));
+      expect(
+        button.style?.foregroundColor?.resolve({}),
+        equals(theme.colorScheme.error),
+      );
     });
 
-    testWidgets('renders with primary color when not destructive',
-        (WidgetTester tester) async {
+    testWidgets('renders with primary color when not destructive', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -151,12 +160,15 @@ void main() {
 
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final theme = Theme.of(tester.element(find.byType(TextButton)));
-      expect(button.style?.foregroundColor?.resolve({}),
-          equals(theme.colorScheme.primary));
+      expect(
+        button.style?.foregroundColor?.resolve({}),
+        equals(theme.colorScheme.primary),
+      );
     });
 
-    testWidgets('renders with disabled color when disabled',
-        (WidgetTester tester) async {
+    testWidgets('renders with disabled color when disabled', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -171,13 +183,15 @@ void main() {
 
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final theme = Theme.of(tester.element(find.byType(TextButton)));
-      final expectedColor =
-          theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+      final expectedColor = theme.colorScheme.onSurfaceVariant.withValues(
+        alpha: 0.5,
+      );
       expect(button.style?.foregroundColor?.resolve({}), equals(expectedColor));
     });
 
-    testWidgets('renders with disabled color when onPressed is null',
-        (WidgetTester tester) async {
+    testWidgets('renders with disabled color when onPressed is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -191,8 +205,9 @@ void main() {
 
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final theme = Theme.of(tester.element(find.byType(TextButton)));
-      final expectedColor =
-          theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+      final expectedColor = theme.colorScheme.onSurfaceVariant.withValues(
+        alpha: 0.5,
+      );
       expect(button.style?.foregroundColor?.resolve({}), equals(expectedColor));
     });
 
@@ -211,10 +226,14 @@ void main() {
       final button = tester.widget<TextButton>(find.byType(TextButton));
       final style = button.style;
 
-      expect(style?.padding?.resolve({}),
-          equals(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)));
       expect(
-          style?.textStyle?.resolve({})?.fontWeight, equals(FontWeight.w500));
+        style?.padding?.resolve({}),
+        equals(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+      );
+      expect(
+        style?.textStyle?.resolve({})?.fontWeight,
+        equals(FontWeight.w500),
+      );
       expect(style?.textStyle?.resolve({})?.fontSize, equals(16));
     });
   });

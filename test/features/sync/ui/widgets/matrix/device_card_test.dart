@@ -26,8 +26,9 @@ void main() {
   });
 
   testWidgets('deletes device and shows success feedback', (tester) async {
-    when(() => mockMatrixService.deleteDevice(mockDeviceKeys))
-        .thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.deleteDevice(mockDeviceKeys),
+    ).thenAnswer((_) async {});
 
     var refreshed = false;
 
@@ -59,8 +60,9 @@ void main() {
   });
 
   testWidgets('shows error feedback when deletion fails', (tester) async {
-    when(() => mockMatrixService.deleteDevice(mockDeviceKeys))
-        .thenThrow(Exception('boom'));
+    when(
+      () => mockMatrixService.deleteDevice(mockDeviceKeys),
+    ).thenThrow(Exception('boom'));
 
     var refreshed = false;
 

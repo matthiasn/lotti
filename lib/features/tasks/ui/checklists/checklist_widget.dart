@@ -46,7 +46,7 @@ class ChecklistWidget extends StatefulWidget {
   final StringCallback onTitleSave;
   final Future<String?> Function(String?) onCreateChecklistItem;
   final Future<void> Function(List<String> linkedChecklistItems)
-      updateItemOrder;
+  updateItemOrder;
   final double completionRate;
   final int? completedCount;
   final int? totalCount;
@@ -96,7 +96,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   void initState() {
     super.initState();
     _itemIds = widget.itemIds;
-    _isExpanded = widget.initiallyExpanded ??
+    _isExpanded =
+        widget.initiallyExpanded ??
         (widget.completionRate < 1 || widget.itemIds.isEmpty);
 
     // Notify parent of initial expansion state so it can track it for sorting
@@ -167,7 +168,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
   @override
   Widget build(BuildContext context) {
     final total = widget.totalCount ?? _itemIds.length;
-    final completed = widget.completedCount ??
+    final completed =
+        widget.completedCount ??
         (total == 0 ? 0 : (widget.completionRate * total).round());
 
     // In sorting mode, always show collapsed
@@ -209,8 +211,9 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           AnimatedCrossFade(
             duration: checklistCardCollapseAnimationDuration,
             sizeCurve: Curves.easeInOut,
-            crossFadeState:
-                showBody ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            crossFadeState: showBody
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
             firstChild: ChecklistCardBody(
               itemIds: _itemIds,
               checklistId: widget.id,
@@ -237,8 +240,9 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                     FocusScope.of(context).requestFocus(_focusNode);
                   }
                   try {
-                    await SystemChannels.textInput
-                        .invokeMethod('TextInput.show');
+                    await SystemChannels.textInput.invokeMethod(
+                      'TextInput.show',
+                    );
                   } catch (_) {}
                   final editable = FocusManager.instance.primaryFocus?.context
                       ?.findAncestorStateOfType<EditableTextState>();
@@ -248,8 +252,9 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
               onReorder: (int oldIndex, int newIndex) {
                 final itemIds = [..._itemIds];
                 final movedItem = itemIds.removeAt(oldIndex);
-                final insertionIndex =
-                    newIndex > oldIndex ? newIndex - 1 : newIndex;
+                final insertionIndex = newIndex > oldIndex
+                    ? newIndex - 1
+                    : newIndex;
                 itemIds.insert(insertionIndex, movedItem);
                 setState(() {
                   _itemIds = itemIds;

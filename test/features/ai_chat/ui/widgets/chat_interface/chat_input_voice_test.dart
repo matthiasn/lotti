@@ -35,8 +35,9 @@ Future<void> _pumpChatInterface(
               _FakeChatRecorderController.new,
             ),
         sessionOverride,
-        eligibleChatModelsForCategoryProvider(_categoryId)
-            .overrideWith((_) async => []),
+        eligibleChatModelsForCategoryProvider(
+          _categoryId,
+        ).overrideWith((_) async => []),
       ],
       child: const MaterialApp(
         localizationsDelegates: [
@@ -62,8 +63,9 @@ Override _sendableSession({ValueNotifier<String?>? sink}) {
 
 /// Creates a non-sendable session override (no selected model).
 Override _nonSendableSession() {
-  return chatSessionControllerProvider(_categoryId)
-      .overrideWith(_NonSendableChatSessionController.new);
+  return chatSessionControllerProvider(
+    _categoryId,
+  ).overrideWith(_NonSendableChatSessionController.new);
 }
 
 void main() {
@@ -73,36 +75,37 @@ void main() {
   });
 
   testWidgets(
-      'Chat input shows mic by default, waveform + Cancel/Stop while recording',
-      (tester) async {
-    final lastSent = ValueNotifier<String?>(null);
+    'Chat input shows mic by default, waveform + Cancel/Stop while recording',
+    (tester) async {
+      final lastSent = ValueNotifier<String?>(null);
 
-    await _pumpChatInterface(
-      tester,
-      sessionOverride: _sendableSession(sink: lastSent),
-    );
+      await _pumpChatInterface(
+        tester,
+        sessionOverride: _sendableSession(sink: lastSent),
+      );
 
-    // Default: mic icon visible
-    expect(find.byIcon(Icons.mic), findsOneWidget);
+      // Default: mic icon visible
+      expect(find.byIcon(Icons.mic), findsOneWidget);
 
-    // Tap mic to start recording
-    await tester.tap(find.byIcon(Icons.mic));
-    await tester.pump();
+      // Tap mic to start recording
+      await tester.tap(find.byIcon(Icons.mic));
+      await tester.pump();
 
-    // Now Cancel (close) and Stop icons should be visible
-    expect(find.byIcon(Icons.close), findsOneWidget);
-    expect(find.byIcon(Icons.stop), findsOneWidget);
+      // Now Cancel (close) and Stop icons should be visible
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.stop), findsOneWidget);
 
-    // Stop → triggers fake transcription, which auto-sends
-    await tester.tap(find.byIcon(Icons.stop));
-    await tester.pump();
-    // Allow auto-scroll timer to complete and any queued frames to settle
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+      // Stop → triggers fake transcription, which auto-sends
+      await tester.tap(find.byIcon(Icons.stop));
+      await tester.pump();
+      // Allow auto-scroll timer to complete and any queued frames to settle
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
 
-    // Assert our fake session controller received the sent text
-    expect(lastSent.value, 'Hi there');
-  });
+      // Assert our fake session controller received the sent text
+      expect(lastSent.value, 'Hi there');
+    },
+  );
 
   testWidgets('Cancel discards recording and returns to mic', (tester) async {
     final lastSent = ValueNotifier<String?>(null);
@@ -141,8 +144,9 @@ void main() {
     expect(find.byIcon(Icons.mic), findsOneWidget);
   });
 
-  testWidgets('When cannot send, mic is hidden and settings opens sheet',
-      (tester) async {
+  testWidgets('When cannot send, mic is hidden and settings opens sheet', (
+    tester,
+  ) async {
     await _pumpChatInterface(
       tester,
       sessionOverride: _nonSendableSession(),
@@ -158,8 +162,9 @@ void main() {
     expect(find.text('Assistant Settings'), findsOneWidget);
   });
 
-  testWidgets('Processing state shows spinner and disables input',
-      (tester) async {
+  testWidgets('Processing state shows spinner and disables input', (
+    tester,
+  ) async {
     await _pumpChatInterface(
       tester,
       recorderOverride: chatRecorderControllerProvider.overrideWith(
@@ -183,8 +188,9 @@ void main() {
     expect(textField.enabled, isFalse);
   });
 
-  testWidgets('Tooltips reflect state transitions (sendable session)',
-      (tester) async {
+  testWidgets('Tooltips reflect state transitions (sendable session)', (
+    tester,
+  ) async {
     await _pumpChatInterface(
       tester,
       sessionOverride: _sendableSession(),

@@ -16,8 +16,9 @@ class TimelineEventOrdering {
       indexed.add((event: events[i], index: i));
     }
     indexed.sort((a, b) {
-      final timestampComparison =
-          timestamp(a.event).compareTo(timestamp(b.event));
+      final timestampComparison = timestamp(
+        a.event,
+      ).compareTo(timestamp(b.event));
       if (timestampComparison != 0) {
         return timestampComparison;
       }
@@ -34,7 +35,8 @@ class TimelineEventOrdering {
     int groupCount,
     int eventCount,
     List<({num ts, int count})> sample,
-  }) timestampCollisionStats(
+  })
+  timestampCollisionStats(
     List<Event> events, {
     int sampleLimit = 8,
   }) {

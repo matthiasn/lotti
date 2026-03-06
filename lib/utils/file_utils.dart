@@ -92,8 +92,9 @@ Future<void> saveJournalEntityJson(
 File resolveJsonCandidateFile(String jsonPath) {
   final docDir = getDocumentsDirectory();
   final normalized = normalize(jsonPath);
-  final relative =
-      normalized.startsWith(separator) ? normalized.substring(1) : normalized;
+  final relative = normalized.startsWith(separator)
+      ? normalized.substring(1)
+      : normalized;
   final candidate = normalize(join(docDir.path, relative));
   final docPath = normalize(docDir.path);
   if (!isWithin(docPath, candidate) && docPath != candidate) {
@@ -110,8 +111,9 @@ Future<void> saveJson(String path, String json) async {
   final target = File(path);
   await target.parent.create(recursive: true);
   // Use shared atomic writer; logging is optional to avoid hard dependency in tests
-  final logger =
-      getIt.isRegistered<LoggingService>() ? getIt<LoggingService>() : null;
+  final logger = getIt.isRegistered<LoggingService>()
+      ? getIt<LoggingService>()
+      : null;
   await atomicWriteString(
     text: json,
     filePath: path,
@@ -122,8 +124,9 @@ Future<void> saveJson(String path, String json) async {
 
 Future<String> createAssetDirectory(String relativePath) async {
   final docDir = getDocumentsDirectory();
-  final directory =
-      await Directory('${docDir.path}$relativePath').create(recursive: true);
+  final directory = await Directory(
+    '${docDir.path}$relativePath',
+  ).create(recursive: true);
   return directory.path;
 }
 

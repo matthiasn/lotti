@@ -150,8 +150,9 @@ void main() {
       expect(capturedValue, equals(1.0));
     });
 
-    testWidgets('renders with empty selection when value is null',
-        (tester) async {
+    testWidgets('renders with empty selection when value is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           RatingSegmentedInput(

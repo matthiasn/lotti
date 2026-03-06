@@ -215,15 +215,16 @@ mixin GameyPulseAnimationMixin<T extends StatefulWidget>
       duration: duration,
     );
 
-    _pulseAnimation = Tween<double>(
-      begin: minScale,
-      end: maxScale,
-    ).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: GameyAnimations.symmetrical,
-      ),
-    );
+    _pulseAnimation =
+        Tween<double>(
+          begin: minScale,
+          end: maxScale,
+        ).animate(
+          CurvedAnimation(
+            parent: _pulseController,
+            curve: GameyAnimations.symmetrical,
+          ),
+        );
 
     _pulseController.repeat(reverse: true);
   }
@@ -250,17 +251,20 @@ mixin GameyWiggleAnimationMixin<T extends StatefulWidget>
       duration: duration,
     );
 
-    _wiggleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0, end: rotation), weight: 1),
-      TweenSequenceItem(
-          tween: Tween(begin: rotation, end: -rotation), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -rotation, end: 0), weight: 1),
-    ]).animate(
-      CurvedAnimation(
-        parent: _wiggleController,
-        curve: GameyAnimations.bounce,
-      ),
-    );
+    _wiggleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0, end: rotation), weight: 1),
+          TweenSequenceItem(
+            tween: Tween(begin: rotation, end: -rotation),
+            weight: 2,
+          ),
+          TweenSequenceItem(tween: Tween(begin: -rotation, end: 0), weight: 1),
+        ]).animate(
+          CurvedAnimation(
+            parent: _wiggleController,
+            curve: GameyAnimations.bounce,
+          ),
+        );
   }
 
   void triggerWiggle() {

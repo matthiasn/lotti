@@ -17,8 +17,9 @@ const String _testAgentId = kTestAgentId;
 void main() {
   Widget buildSubject({
     required AsyncValue<Map<String, List<AgentDomainEntity>>> threadsValue,
-    AsyncValue<List<AgentDomainEntity>> reportsValue =
-        const AsyncValue.data([]),
+    AsyncValue<List<AgentDomainEntity>> reportsValue = const AsyncValue.data(
+      [],
+    ),
     FutureOr<String?> Function(Ref, String)? payloadOverride,
   }) {
     return makeTestableWidgetWithScaffold(
@@ -83,8 +84,9 @@ void main() {
       expect(find.text('No conversations yet.'), findsOneWidget);
     });
 
-    testWidgets('shows thread tiles with message count and tool call count',
-        (tester) async {
+    testWidgets('shows thread tiles with message count and tool call count', (
+      tester,
+    ) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-1': [
           makeTestMessage(
@@ -119,8 +121,9 @@ void main() {
       expect(find.textContaining('1 tool calls'), findsOneWidget);
     });
 
-    testWidgets('shows report inline when thread has matching report',
-        (tester) async {
+    testWidgets('shows report inline when thread has matching report', (
+      tester,
+    ) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-abc': [
           makeTestMessage(
@@ -160,8 +163,9 @@ void main() {
       );
     });
 
-    testWidgets('does not show report when threadId does not match',
-        (tester) async {
+    testWidgets('does not show report when threadId does not match', (
+      tester,
+    ) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-abc': [
           makeTestMessage(
@@ -197,8 +201,9 @@ void main() {
       expect(find.text('Report'), findsNothing);
     });
 
-    testWidgets('does not show report when report has no threadId',
-        (tester) async {
+    testWidgets('does not show report when report has no threadId', (
+      tester,
+    ) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-abc': [
           makeTestMessage(
@@ -284,8 +289,9 @@ void main() {
       expect(tile.initiallyExpanded, isTrue);
     });
 
-    testWidgets('shows model ID in thread subtitle when available',
-        (tester) async {
+    testWidgets('shows model ID in thread subtitle when available', (
+      tester,
+    ) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-model': [
           makeTestMessage(
@@ -349,8 +355,9 @@ void main() {
       expect(find.textContaining('2m 30s'), findsOneWidget);
     });
 
-    testWidgets('shows token count in thread subtitle when available',
-        (tester) async {
+    testWidgets('shows token count in thread subtitle when available', (
+      tester,
+    ) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-tokens': [
           makeTestMessage(

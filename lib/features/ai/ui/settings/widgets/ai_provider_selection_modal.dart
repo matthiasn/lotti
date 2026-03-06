@@ -117,8 +117,9 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
         ),
         LottiPrimaryButton(
           onPressed: _selectedProvider != null
-              ? () => widget
-                  .onProviderSelected(_selectedProvider!.inferenceProviderType)
+              ? () => widget.onProviderSelected(
+                  _selectedProvider!.inferenceProviderType,
+                )
               : null,
           icon: Icons.arrow_forward,
           label: 'Continue',

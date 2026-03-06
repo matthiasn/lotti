@@ -225,7 +225,9 @@ class GameyGradients {
 
   /// Theme-aware card gradient that adapts to current theme
   static LinearGradient cardFromContext(
-      BuildContext context, Color accentColor) {
+    BuildContext context,
+    Color accentColor,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = colorScheme.surfaceContainer;

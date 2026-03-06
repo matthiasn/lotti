@@ -208,8 +208,11 @@ class TemplateEvolutionWorkflow {
         // Optimized path: context is provided but session number is not.
         // Fetch only sessions instead of full gatherEvolutionData.
         final sessions = await svc.getEvolutionSessions(templateId);
-        sessionNumber = sessions.fold(
-                0, (max, s) => s.sessionNumber > max ? s.sessionNumber : max) +
+        sessionNumber =
+            sessions.fold(
+              0,
+              (max, s) => s.sessionNumber > max ? s.sessionNumber : max,
+            ) +
             1;
         ctx = contextOverride;
       } else {
@@ -232,16 +235,18 @@ class TemplateEvolutionWorkflow {
 
       // Create the session entity, conversation, and send initial message.
       final now = clock.now();
-      final session = AgentDomainEntity.evolutionSession(
-        id: sessionId,
-        agentId: templateId,
-        templateId: templateId,
-        sessionNumber: sessionNumber,
-        status: EvolutionSessionStatus.active,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      ) as EvolutionSessionEntity;
+      final session =
+          AgentDomainEntity.evolutionSession(
+                id: sessionId,
+                agentId: templateId,
+                templateId: templateId,
+                sessionNumber: sessionNumber,
+                status: EvolutionSessionStatus.active,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              )
+              as EvolutionSessionEntity;
       await sync.upsertEntity(session);
 
       // Set up GenUI infrastructure.
@@ -375,7 +380,8 @@ class TemplateEvolutionWorkflow {
         'generalDirective': proposal.generalDirective,
         'reportDirective': proposal.reportDirective,
       });
-      final newVersion = active.getCachedVersion(cacheKey) ??
+      final newVersion =
+          active.getCachedVersion(cacheKey) ??
           await _createVersionIdempotent(
             svc: svc,
             templateId: active.templateId,
@@ -595,9 +601,11 @@ class TemplateEvolutionWorkflow {
     required AgentSyncService sync,
   }) async {
     final now = clock.now();
-    for (var note = strategy.removeFirstNote();
-        note != null;
-        note = strategy.removeFirstNote()) {
+    for (
+      var note = strategy.removeFirstNote();
+      note != null;
+      note = strategy.removeFirstNote()
+    ) {
       final entity = AgentDomainEntity.evolutionNote(
         id: _uuid.v4(),
         agentId: templateId,
@@ -660,8 +668,9 @@ class TemplateEvolutionWorkflow {
     if (manager == null) return null;
 
     for (final message in manager.messages.reversed) {
-      if (message
-          case ChatCompletionAssistantMessage(content: final content?)) {
+      if (message case ChatCompletionAssistantMessage(
+        content: final content?,
+      )) {
         if (content.isNotEmpty) return content;
       }
     }

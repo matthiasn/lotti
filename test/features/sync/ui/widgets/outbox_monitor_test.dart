@@ -56,12 +56,14 @@ MockSyncDatabase _prepareMock({
 }) {
   final mock = mockSyncDatabaseWithCount(count);
 
-  when(() => mock.getDailyOutboxVolume(days: kOutboxVolumeDays))
-      .thenAnswer((_) async => volumeData);
+  when(
+    () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
+  ).thenAnswer((_) async => volumeData);
 
   if (itemStream != null) {
-    when(() => mock.watchOutboxItems(limit: any(named: 'limit')))
-        .thenAnswer((_) => itemStream);
+    when(
+      () => mock.watchOutboxItems(limit: any(named: 'limit')),
+    ).thenAnswer((_) => itemStream);
   }
 
   return mock;
@@ -73,15 +75,18 @@ MockSyncDatabase _prepareMock({
 
 void main() {
   group('OutboxMonitorPage', () {
-    setUp(() => setUpTestGetIt(
-          additionalSetup: () {
-            getIt.registerSingleton<UserActivityService>(UserActivityService());
-          },
-        ));
+    setUp(
+      () => setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<UserActivityService>(UserActivityService());
+        },
+      ),
+    );
     tearDown(tearDownTestGetIt);
 
-    testWidgets('renders filter tabs, items, and switches filters',
-        (tester) async {
+    testWidgets('renders filter tabs, items, and switches filters', (
+      tester,
+    ) async {
       final mock = _prepareMock(
         count: 999,
         itemStream: Stream<List<OutboxItem>>.fromIterable([
@@ -210,8 +215,9 @@ void main() {
       expect(find.textContaining('0 items'), findsOneWidget);
     });
 
-    testWidgets('shows loader before first snapshot then empty state',
-        (tester) async {
+    testWidgets('shows loader before first snapshot then empty state', (
+      tester,
+    ) async {
       final controller = StreamController<List<OutboxItem>>();
       final mock = _prepareMock(itemStream: controller.stream);
 

@@ -27,14 +27,18 @@ void main() {
       fakeAsync((async) {
         domainLogger.enabledDomains.add(LogDomains.sync);
 
-        when(() => mockSyncDb.getPendingOutboxCount())
-            .thenAnswer((_) async => 42);
-        when(() => mockSyncDb.getMissingSequenceCount())
-            .thenAnswer((_) async => 3);
-        when(() => mockSyncDb.getRequestedSequenceCount())
-            .thenAnswer((_) async => 7);
-        when(() => mockSyncDb.getSentCountSince(any()))
-            .thenAnswer((_) async => 128);
+        when(
+          () => mockSyncDb.getPendingOutboxCount(),
+        ).thenAnswer((_) async => 42);
+        when(
+          () => mockSyncDb.getMissingSequenceCount(),
+        ).thenAnswer((_) async => 3);
+        when(
+          () => mockSyncDb.getRequestedSequenceCount(),
+        ).thenAnswer((_) async => 7);
+        when(
+          () => mockSyncDb.getSentCountSince(any()),
+        ).thenAnswer((_) async => 128);
 
         final reporter = SyncHealthReporter(
           syncDatabase: mockSyncDb,
@@ -89,13 +93,14 @@ void main() {
       fakeAsync((async) {
         domainLogger.enabledDomains.add(LogDomains.sync);
 
-        final reporter = SyncHealthReporter(
-          syncDatabase: mockSyncDb,
-          domainLogger: domainLogger,
-          interval: const Duration(minutes: 5),
-        )
-          ..start()
-          ..dispose();
+        final reporter =
+            SyncHealthReporter(
+                syncDatabase: mockSyncDb,
+                domainLogger: domainLogger,
+                interval: const Duration(minutes: 5),
+              )
+              ..start()
+              ..dispose();
 
         async.elapse(const Duration(minutes: 10));
 
@@ -109,8 +114,9 @@ void main() {
       fakeAsync((async) {
         domainLogger.enabledDomains.add(LogDomains.sync);
 
-        when(() => mockSyncDb.getPendingOutboxCount())
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockSyncDb.getPendingOutboxCount(),
+        ).thenThrow(Exception('DB error'));
 
         final reporter = SyncHealthReporter(
           syncDatabase: mockSyncDb,

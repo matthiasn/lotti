@@ -26,7 +26,7 @@ class CategoryPromptSelection extends StatefulWidget {
   final List<AiConfigPrompt> prompts;
   final List<String> allowedPromptIds;
   final void Function(String promptId, {required bool isAllowed})
-      onPromptToggled;
+  onPromptToggled;
   final bool isLoading;
   final List<AiConfigModel> models;
   final List<AiConfigInferenceProvider> providers;
@@ -57,8 +57,9 @@ class _CategoryPromptSelectionState extends State<CategoryPromptSelection> {
     // Reset filter when the selected provider is no longer relevant.
     if (_selectedProviderId != null) {
       final relevantIds = _providerIdsWithPrompts();
-      final stillExists =
-          widget.providers.any((p) => p.id == _selectedProviderId);
+      final stillExists = widget.providers.any(
+        (p) => p.id == _selectedProviderId,
+      );
       if (!relevantIds.contains(_selectedProviderId) || !stillExists) {
         setState(() => _selectedProviderId = null);
       }
@@ -172,10 +173,9 @@ class _CategoryPromptSelectionState extends State<CategoryPromptSelection> {
 
   Widget _buildProviderFilterRow(BuildContext context) {
     final relevantIds = _providerIdsWithPrompts();
-    final relevantProviders = widget.providers
-        .where((p) => relevantIds.contains(p.id))
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final relevantProviders =
+        widget.providers.where((p) => relevantIds.contains(p.id)).toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

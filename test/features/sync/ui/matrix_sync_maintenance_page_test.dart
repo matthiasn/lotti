@@ -32,8 +32,9 @@ void main() {
 
     setUp(() {
       mockJournalDb = MockJournalDb();
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
 
       mockMaintenance = MockMaintenance();
       when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});
@@ -88,8 +89,9 @@ void main() {
       );
     });
 
-    testWidgets('delete sync database card shows confirmation dialog',
-        (tester) async {
+    testWidgets('delete sync database card shows confirmation dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -109,8 +111,9 @@ void main() {
       );
     });
 
-    testWidgets('delete sync database card deletes database when confirmed',
-        (tester) async {
+    testWidgets('delete sync database card deletes database when confirmed', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -118,8 +121,9 @@ void main() {
       await tester.tap(find.text(context.messages.maintenanceDeleteSyncDb));
       await tester.pumpAndSettle();
 
-      await tester
-          .tap(find.text(context.messages.maintenanceDeleteDatabaseConfirm));
+      await tester.tap(
+        find.text(context.messages.maintenanceDeleteDatabaseConfirm),
+      );
       await tester.pumpAndSettle();
 
       verify(() => mockMaintenance.deleteSyncDb()).called(1);
@@ -154,8 +158,9 @@ void main() {
       await getIt.reset();
       mockJournalDb = MockJournalDb();
       mockMaintenance = MockMaintenance();
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(false));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(false));
       when(
         () => mockMaintenance.reSyncInterval(
           start: any(named: 'start'),

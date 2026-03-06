@@ -70,18 +70,21 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
               gradient: widget.isDestructive
                   ? LinearGradient(
                       colors: [
-                        context.colorScheme.errorContainer
-                            .withValues(alpha: 0.3),
-                        context.colorScheme.errorContainer
-                            .withValues(alpha: 0.2),
+                        context.colorScheme.errorContainer.withValues(
+                          alpha: 0.3,
+                        ),
+                        context.colorScheme.errorContainer.withValues(
+                          alpha: 0.2,
+                        ),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : null,
               borderColor: widget.isDestructive
-                  ? context.colorScheme.error
-                      .withValues(alpha: AppTheme.alphaDestructive)
+                  ? context.colorScheme.error.withValues(
+                      alpha: AppTheme.alphaDestructive,
+                    )
                   : null,
             ),
             const SizedBox(width: AppTheme.spacingLarge),
@@ -109,7 +112,8 @@ class _ModernModalActionItemState extends State<ModernModalActionItem> {
                   if (widget.subtitle != null &&
                       widget.subtitle!.isNotEmpty) ...[
                     const SizedBox(
-                        height: AppTheme.spacingBetweenTitleAndSubtitle),
+                      height: AppTheme.spacingBetweenTitleAndSubtitle,
+                    ),
                     Text(
                       widget.subtitle!,
                       style: context.textTheme.bodySmall?.copyWith(

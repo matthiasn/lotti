@@ -67,7 +67,8 @@ void main() {
       library: 'Gemini',
       model: 'models/gemini-2.5-flash-preview-04-17',
       detectedLanguage: 'en',
-      transcript: 'The other task is to do some testing of the synchronization '
+      transcript:
+          'The other task is to do some testing of the synchronization '
           'from mobile to desktop in my test instance.',
       processingTime: const Duration(seconds: 6),
     );
@@ -134,8 +135,10 @@ void main() {
         find.byType(ExpansionTile),
       );
 
-      expect(expansionTile.tilePadding,
-          const EdgeInsets.symmetric(horizontal: 16));
+      expect(
+        expansionTile.tilePadding,
+        const EdgeInsets.symmetric(horizontal: 16),
+      );
     });
 
     testWidgets('trailing buttons have width constraint', (tester) async {
@@ -180,18 +183,21 @@ void main() {
       expect(find.textContaining('00m06s'), findsOneWidget);
     });
 
-    testWidgets('does not display processing time when not available',
-        (tester) async {
-      await tester
-          .pumpWidget(makeTestableWidget(testTranscriptNoProcessingTime));
+    testWidgets('does not display processing time when not available', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(testTranscriptNoProcessingTime),
+      );
       await tester.pumpAndSettle();
 
       // Check that processing time is not shown
       expect(find.textContaining('⏳'), findsNothing);
     });
 
-    testWidgets('toggle button expands and collapses transcript',
-        (tester) async {
+    testWidgets('toggle button expands and collapses transcript', (
+      tester,
+    ) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
       await tester.pumpAndSettle();
 
@@ -266,8 +272,9 @@ void main() {
       expect(opacity.opacity, 1);
     });
 
-    testWidgets('icon buttons have zero padding and minimal constraints',
-        (tester) async {
+    testWidgets('icon buttons have zero padding and minimal constraints', (
+      tester,
+    ) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
       await tester.pumpAndSettle();
 
@@ -279,13 +286,16 @@ void main() {
       // All icon buttons should have zero padding and minimal constraints
       for (final button in iconButtons) {
         expect(button.padding, EdgeInsets.zero);
-        expect(button.constraints,
-            const BoxConstraints(minWidth: 40, minHeight: 40));
+        expect(
+          button.constraints,
+          const BoxConstraints(minWidth: 40, minHeight: 40),
+        );
       }
     });
 
-    testWidgets('handles long model names with Flexible and ellipsis',
-        (tester) async {
+    testWidgets('handles long model names with Flexible and ellipsis', (
+      tester,
+    ) async {
       await tester.pumpWidget(makeTestableWidget(testTranscriptLongModel));
       await tester.pumpAndSettle();
 
@@ -344,8 +354,9 @@ void main() {
     });
 
     testWidgets('displays different languages correctly', (tester) async {
-      await tester
-          .pumpWidget(makeTestableWidget(testTranscriptNoProcessingTime));
+      await tester.pumpWidget(
+        makeTestableWidget(testTranscriptNoProcessingTime),
+      );
       await tester.pumpAndSettle();
 
       // Check that German language is displayed in uppercase
@@ -411,8 +422,9 @@ void main() {
       expect(find.textContaining('2025'), findsOneWidget);
     });
 
-    testWidgets('maintains layout integrity with multiple transcripts',
-        (tester) async {
+    testWidgets('maintains layout integrity with multiple transcripts', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           Column(
@@ -482,19 +494,22 @@ void main() {
       );
 
       // Mock journalEntityById to return the entity
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalAudio);
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalAudio);
 
       // Mock updateMetadata to return updated metadata
-      when(() => mockPersistenceLogic.updateMetadata(any()))
-          .thenAnswer((invocation) async {
+      when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer((
+        invocation,
+      ) async {
         final meta = invocation.positionalArguments[0] as Metadata;
         return meta.copyWith(updatedAt: DateTime.now());
       });
 
       // Mock updateDbEntity
-      when(() => mockPersistenceLogic.updateDbEntity(any()))
-          .thenAnswer((_) async {
+      when(() => mockPersistenceLogic.updateDbEntity(any())).thenAnswer((
+        _,
+      ) async {
         return null;
       });
 
@@ -519,16 +534,18 @@ void main() {
       final updatedEntity = captured.first as JournalAudio;
       // The updated entity should not contain testTranscript
       expect(
-        updatedEntity.data.transcripts
-            ?.any((t) => t.created == testTranscript.created),
+        updatedEntity.data.transcripts?.any(
+          (t) => t.created == testTranscript.created,
+        ),
         false,
       );
       // But should still contain the other transcript
       expect(updatedEntity.data.transcripts?.length, 1);
     });
 
-    testWidgets('hidden delete button does not respond to taps',
-        (tester) async {
+    testWidgets('hidden delete button does not respond to taps', (
+      tester,
+    ) async {
       const entryId = 'test-entry-id';
       final now = DateTime(2025, 1, 21, 13, 9);
 
@@ -553,17 +570,20 @@ void main() {
         data: audioData,
       );
 
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalAudio);
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalAudio);
 
-      when(() => mockPersistenceLogic.updateMetadata(any()))
-          .thenAnswer((invocation) async {
+      when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer((
+        invocation,
+      ) async {
         final meta = invocation.positionalArguments[0] as Metadata;
         return meta.copyWith(updatedAt: DateTime.now());
       });
 
-      when(() => mockPersistenceLogic.updateDbEntity(any()))
-          .thenAnswer((_) async {
+      when(() => mockPersistenceLogic.updateDbEntity(any())).thenAnswer((
+        _,
+      ) async {
         return null;
       });
 

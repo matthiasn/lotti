@@ -32,8 +32,9 @@ void main() {
     mockJournalDb = MockJournalDb();
 
     final mockUpdateNotifications = MockUpdateNotifications();
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
 
     // Mock JournalDb methods
     when(() => mockJournalDb.getAllCategories()).thenAnswer(
@@ -61,8 +62,9 @@ void main() {
   }
 
   testWidgets('displays category icon with correct size', (tester) async {
-    when(() => mockCacheService.getCategoryById('test-id'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('test-id'),
+    ).thenReturn(testCategory);
 
     await tester.pumpWidget(
       createTestWidget(
@@ -71,8 +73,9 @@ void main() {
       ),
     );
 
-    final icon =
-        tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
+    final icon = tester.widget<CategoryIconCompact>(
+      find.byType(CategoryIconCompact),
+    );
     expect(icon.size, equals(CategoryIconConstants.iconSizeMedium));
   });
 }

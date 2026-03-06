@@ -15,8 +15,9 @@ class TaskLabelQuickFilter extends ConsumerWidget {
     final cache = getIt<EntitiesCacheService>();
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     final selected = state.selectedLabelIds;
     if (!state.showTasks || selected.isEmpty) {

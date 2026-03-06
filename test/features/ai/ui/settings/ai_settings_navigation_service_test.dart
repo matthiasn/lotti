@@ -44,8 +44,10 @@ void main() {
     group('Config Type Recognition', () {
       test('should correctly identify provider configs', () {
         expect(testProvider, isA<AiConfigInferenceProvider>());
-        expect(testProvider.runtimeType.toString(),
-            contains('AiConfigInferenceProvider'));
+        expect(
+          testProvider.runtimeType.toString(),
+          contains('AiConfigInferenceProvider'),
+        );
       });
 
       test('should correctly identify model configs', () {
@@ -61,9 +63,11 @@ void main() {
       test('should work with different inference provider types', () {
         final anthropicProvider = AiTestDataFactory.createTestProvider();
         final openAiProvider = AiTestDataFactory.createTestProvider(
-            type: InferenceProviderType.openAi);
+          type: InferenceProviderType.openAi,
+        );
         final genericProvider = AiTestDataFactory.createTestProvider(
-            type: InferenceProviderType.genericOpenAi);
+          type: InferenceProviderType.genericOpenAi,
+        );
 
         expect(anthropicProvider, isA<AiConfigInferenceProvider>());
         expect(openAiProvider, isA<AiConfigInferenceProvider>());
@@ -72,11 +76,13 @@ void main() {
 
       test('should work with different modality combinations', () {
         final textModel = AiTestDataFactory.createTestModel(
-            inputModalities: [Modality.text],
-            outputModalities: [Modality.text]);
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+        );
         final multiModalModel = AiTestDataFactory.createTestModel(
-            inputModalities: [Modality.text, Modality.image],
-            outputModalities: [Modality.text, Modality.image]);
+          inputModalities: [Modality.text, Modality.image],
+          outputModalities: [Modality.text, Modality.image],
+        );
 
         expect(textModel, isA<AiConfigModel>());
         expect(multiModalModel, isA<AiConfigModel>());
@@ -85,24 +91,32 @@ void main() {
 
     group('Navigation Method Contracts', () {
       testWidgets(
-          'navigateToConfigEdit should accept valid contexts and configs',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        'navigateToConfigEdit should accept valid contexts and configs',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        final context = tester.element(find.byType(Scaffold));
+          final context = tester.element(find.byType(Scaffold));
 
-        // Test that the method signature accepts the expected parameters
-        expect(() => service.navigateToConfigEdit(context, testProvider),
-            returnsNormally);
-        expect(() => service.navigateToConfigEdit(context, testModel),
-            returnsNormally);
-        expect(() => service.navigateToConfigEdit(context, testPrompt),
-            returnsNormally);
-      });
+          // Test that the method signature accepts the expected parameters
+          expect(
+            () => service.navigateToConfigEdit(context, testProvider),
+            returnsNormally,
+          );
+          expect(
+            () => service.navigateToConfigEdit(context, testModel),
+            returnsNormally,
+          );
+          expect(
+            () => service.navigateToConfigEdit(context, testPrompt),
+            returnsNormally,
+          );
+        },
+      );
 
-      testWidgets('create navigation methods should accept valid contexts',
-          (WidgetTester tester) async {
+      testWidgets('create navigation methods should accept valid contexts', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -110,15 +124,18 @@ void main() {
 
         // Test that create methods don't throw on invocation
         expect(
-            () => service.navigateToCreateProvider(context), returnsNormally);
+          () => service.navigateToCreateProvider(context),
+          returnsNormally,
+        );
         expect(() => service.navigateToCreateModel(context), returnsNormally);
         expect(() => service.navigateToCreatePrompt(context), returnsNormally);
       });
     });
 
     group('Profile Navigation', () {
-      testWidgets('navigateToConfigEdit accepts inference profile config',
-          (WidgetTester tester) async {
+      testWidgets('navigateToConfigEdit accepts inference profile config', (
+        WidgetTester tester,
+      ) async {
         final testProfile = AiTestDataFactory.createTestProfile(
           id: 'test-profile-id',
           description: 'A test profile for navigation testing',
@@ -135,8 +152,9 @@ void main() {
         );
       });
 
-      testWidgets('navigateToCreateProfile accepts valid context',
-          (WidgetTester tester) async {
+      testWidgets('navigateToCreateProfile accepts valid context', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -150,28 +168,39 @@ void main() {
     });
 
     group('Route Creation Logic', () {
-      testWidgets('should handle route creation for different config types',
-          (WidgetTester tester) async {
+      testWidgets('should handle route creation for different config types', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
         // Test that route creation methods can be called without throwing
         expect(
-            () => service.navigateToConfigEdit(
-                tester.element(find.byType(Scaffold)), testProvider),
-            returnsNormally);
+          () => service.navigateToConfigEdit(
+            tester.element(find.byType(Scaffold)),
+            testProvider,
+          ),
+          returnsNormally,
+        );
         expect(
-            () => service.navigateToConfigEdit(
-                tester.element(find.byType(Scaffold)), testModel),
-            returnsNormally);
+          () => service.navigateToConfigEdit(
+            tester.element(find.byType(Scaffold)),
+            testModel,
+          ),
+          returnsNormally,
+        );
         expect(
-            () => service.navigateToConfigEdit(
-                tester.element(find.byType(Scaffold)), testPrompt),
-            returnsNormally);
+          () => service.navigateToConfigEdit(
+            tester.element(find.byType(Scaffold)),
+            testPrompt,
+          ),
+          returnsNormally,
+        );
       });
 
-      testWidgets('should handle page builder functions correctly',
-          (WidgetTester tester) async {
+      testWidgets('should handle page builder functions correctly', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -179,19 +208,24 @@ void main() {
 
         // These should not throw when called
         expect(
-            () => service.navigateToCreateProvider(context), returnsNormally);
+          () => service.navigateToCreateProvider(context),
+          returnsNormally,
+        );
         expect(() => service.navigateToCreateModel(context), returnsNormally);
         expect(() => service.navigateToCreatePrompt(context), returnsNormally);
       });
     });
 
     group('Integration with Flutter Framework', () {
-      testWidgets('should work with themed MaterialApp',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(body: Container()),
-        ));
+      testWidgets('should work with themed MaterialApp', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.dark(),
+            home: Scaffold(body: Container()),
+          ),
+        );
         await tester.pumpAndSettle();
       });
     });

@@ -55,8 +55,9 @@ void main() {
       expect(find.text('Rate this session'), findsOneWidget);
     });
 
-    testWidgets('renders all rating dimension labels from catalog',
-        (tester) async {
+    testWidgets('renders all rating dimension labels from catalog', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
@@ -90,8 +91,9 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
-    testWidgets('Save button is disabled when not all dimensions are set',
-        (tester) async {
+    testWidgets('Save button is disabled when not all dimensions are set', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
@@ -176,8 +178,9 @@ void main() {
       expect(find.byType(RatingModal), findsOneWidget);
     });
 
-    testWidgets('submit calls repository when all dimensions set',
-        (tester) async {
+    testWidgets('submit calls repository when all dimensions set', (
+      tester,
+    ) async {
       final existingRating = RatingEntry(
         meta: Metadata(
           id: 'rating-1',
@@ -233,8 +236,9 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('submitted dimensions contain snapshotted question metadata',
-        (tester) async {
+    testWidgets('submitted dimensions contain snapshotted question metadata', (
+      tester,
+    ) async {
       final existingRating = RatingEntry(
         meta: Metadata(
           id: 'rating-1',
@@ -276,13 +280,15 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       // Capture the dimensions passed to the repository
-      final captured = verify(
-        () => mockRepository.createOrUpdateRating(
-          targetId: testTimeEntryId,
-          dimensions: captureAny(named: 'dimensions'),
-          note: any(named: 'note'),
-        ),
-      ).captured.single as List<RatingDimension>;
+      final captured =
+          verify(
+                () => mockRepository.createOrUpdateRating(
+                  targetId: testTimeEntryId,
+                  dimensions: captureAny(named: 'dimensions'),
+                  note: any(named: 'note'),
+                ),
+              ).captured.single
+              as List<RatingDimension>;
 
       // All dimensions should have snapshotted metadata
       for (final dim in captured) {
@@ -319,8 +325,9 @@ void main() {
       expect(challengeSkill.optionValues, equals([0.0, 0.5, 1.0]));
     });
 
-    testWidgets('tapping all tap bars and challenge button enables Save',
-        (tester) async {
+    testWidgets('tapping all tap bars and challenge button enables Save', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
@@ -363,8 +370,9 @@ void main() {
   });
 
   group('RatingModal unknown catalog', () {
-    testWidgets('renders read-only view for unregistered catalogId',
-        (tester) async {
+    testWidgets('renders read-only view for unregistered catalogId', (
+      tester,
+    ) async {
       final existingRating = RatingEntry(
         meta: Metadata(
           id: 'rating-1',
@@ -431,8 +439,9 @@ void main() {
       expect(find.text('Skip'), findsOneWidget);
     });
 
-    testWidgets('renders read-only with no stored metadata falls back to key',
-        (tester) async {
+    testWidgets('renders read-only with no stored metadata falls back to key', (
+      tester,
+    ) async {
       final existingRating = RatingEntry(
         meta: Metadata(
           id: 'rating-2',

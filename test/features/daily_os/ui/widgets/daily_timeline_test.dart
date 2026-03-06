@@ -55,8 +55,9 @@ void main() {
 
   setUp(() {
     mockCacheService = MockEntitiesCacheService();
-    when(() => mockCacheService.getCategoryById('cat-1'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('cat-1'),
+    ).thenReturn(testCategory);
     when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
 
     if (getIt.isRegistered<EntitiesCacheService>()) {
@@ -108,8 +109,9 @@ void main() {
         unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
         ),
-        highlightedCategoryIdProvider
-            .overrideWith((ref) => highlightedCategoryId),
+        highlightedCategoryIdProvider.overrideWith(
+          (ref) => highlightedCategoryId,
+        ),
         // Override to avoid TimeService dependency in tests
         runningTimerCategoryIdProvider.overrideWithValue(null),
         ...additionalOverrides,
@@ -140,8 +142,9 @@ void main() {
     });
 
     testWidgets('renders timeline header', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -174,8 +177,9 @@ void main() {
     });
 
     testWidgets('shows plan and actual legend', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -208,8 +212,9 @@ void main() {
     });
 
     testWidgets('renders planned blocks with category name', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -240,10 +245,12 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('renders actual time entries as colored blocks',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('renders actual time entries as colored blocks', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       final taskMeta = Metadata(
         id: 'task-1',
@@ -292,8 +299,9 @@ void main() {
     });
 
     testWidgets('renders time axis labels', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -327,8 +335,9 @@ void main() {
     });
 
     testWidgets('renders DailyTimeline widget', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -402,10 +411,12 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(testCategory2);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-2'),
+      ).thenReturn(testCategory2);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -448,10 +459,12 @@ void main() {
       expect(find.text('Exercise'), findsOneWidget);
     });
 
-    testWidgets('renders actual entry as non-task with semantics label',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('renders actual entry as non-task with semantics label', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       final entryMeta = Metadata(
         id: 'entry-1',
@@ -486,10 +499,12 @@ void main() {
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
     });
 
-    testWidgets('highlights planned block when category is highlighted',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('highlights planned block when category is highlighted', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -521,10 +536,12 @@ void main() {
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
 
-    testWidgets('renders both planned and actual blocks simultaneously',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('renders both planned and actual blocks simultaneously', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       final taskMeta = Metadata(
         id: 'task-1',
@@ -587,8 +604,9 @@ void main() {
     });
 
     testWidgets('planned block is tappable', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -627,8 +645,9 @@ void main() {
     });
 
     testWidgets('actual block is tappable', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       final taskMeta = Metadata(
         id: 'task-1',
@@ -682,10 +701,12 @@ void main() {
       expect(gestureDetector, findsWidgets);
     });
 
-    testWidgets('tap on rating-linked actual block navigates to time entry',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('tap on rating-linked actual block navigates to time entry', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       String? navigatedPath;
       beamToNamedOverride = (path) => navigatedPath = path;
@@ -741,10 +762,12 @@ void main() {
       expect(navigatedPath, equals('/journal/time-entry-1'));
     });
 
-    testWidgets('tap on non-task linked actual block navigates to time entry',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('tap on non-task linked actual block navigates to time entry', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       String? navigatedPath;
       beamToNamedOverride = (path) => navigatedPath = path;
@@ -797,82 +820,87 @@ void main() {
     });
 
     testWidgets(
-        'tap on task-linked actual block navigates to task and publishes focus',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      'tap on task-linked actual block navigates to task and publishes focus',
+      (tester) async {
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      String? navigatedPath;
-      beamToNamedOverride = (path) => navigatedPath = path;
+        String? navigatedPath;
+        beamToNamedOverride = (path) => navigatedPath = path;
 
-      final timeEntry = JournalEntity.journalEntry(
-        meta: Metadata(
-          id: 'time-entry-1',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate.add(const Duration(hours: 10)),
-          dateTo: testDate.add(const Duration(hours: 11)),
-        ),
-      );
-
-      final parentTask = JournalEntity.task(
-        meta: Metadata(
-          id: 'task-1',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          categoryId: 'cat-1',
-        ),
-        data: TaskData(
-          title: 'Task 1',
-          status: TaskStatus.open(
-            id: 'status-1',
+        final timeEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'time-entry-1',
             createdAt: testDate,
-            utcOffset: 0,
+            updatedAt: testDate,
+            dateFrom: testDate.add(const Duration(hours: 10)),
+            dateTo: testDate.add(const Duration(hours: 11)),
           ),
-          dateFrom: testDate,
-          dateTo: testDate,
-          statusHistory: const [],
-        ),
-      );
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: [
-              ActualTimeSlot(
-                entry: timeEntry,
-                startTime: testDate.add(const Duration(hours: 10)),
-                endTime: testDate.add(const Duration(hours: 11)),
-                categoryId: testCategory.id,
-                linkedFrom: parentTask,
-              ),
-            ],
-            dayStartHour: 8,
-            dayEndHour: 18,
+        final parentTask = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            categoryId: 'cat-1',
           ),
-        ),
-      );
-      await tester.pump();
+          data: TaskData(
+            title: 'Task 1',
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+            dateFrom: testDate,
+            dateTo: testDate,
+            statusHistory: const [],
+          ),
+        );
 
-      await tester.tap(find.bySemanticsLabel('Work'));
-      await tester.pump();
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: [
+                ActualTimeSlot(
+                  entry: timeEntry,
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 11)),
+                  categoryId: testCategory.id,
+                  linkedFrom: parentTask,
+                ),
+              ],
+              dayStartHour: 8,
+              dayEndHour: 18,
+            ),
+          ),
+        );
+        await tester.pump();
 
-      expect(navigatedPath, equals('/tasks/task-1'));
+        await tester.tap(find.bySemanticsLabel('Work'));
+        await tester.pump();
 
-      final container =
-          ProviderScope.containerOf(tester.element(find.byType(DailyTimeline)));
-      final focusState =
-          container.read(taskFocusControllerProvider(id: 'task-1'));
-      expect(focusState?.entryId, equals('time-entry-1'));
-    });
+        expect(navigatedPath, equals('/tasks/task-1'));
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(DailyTimeline)),
+        );
+        final focusState = container.read(
+          taskFocusControllerProvider(id: 'task-1'),
+        );
+        expect(focusState?.entryId, equals('time-entry-1'));
+      },
+    );
 
     testWidgets('respects custom day bounds', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -905,47 +933,49 @@ void main() {
     });
 
     testWidgets(
-        'handles invalid day bounds without crashing (endHour < startHour)',
-        (tester) async {
-      // This test verifies the timeline handles edge cases gracefully.
-      // With smart folding, the timeline calculates visible regions from
-      // actual entries rather than using dayStartHour/dayEndHour directly.
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      'handles invalid day bounds without crashing (endHour < startHour)',
+      (tester) async {
+        // This test verifies the timeline handles edge cases gracefully.
+        // With smart folding, the timeline calculates visible regions from
+        // actual entries rather than using dayStartHour/dayEndHour directly.
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: [
-              PlannedTimeSlot(
-                block: PlannedBlock(
-                  id: 'block-1',
-                  categoryId: testCategory.id,
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: [
+                PlannedTimeSlot(
+                  block: PlannedBlock(
+                    id: 'block-1',
+                    categoryId: testCategory.id,
+                    startTime: testDate.add(const Duration(hours: 21)),
+                    endTime: testDate.add(const Duration(hours: 23)),
+                  ),
                   startTime: testDate.add(const Duration(hours: 21)),
                   endTime: testDate.add(const Duration(hours: 23)),
+                  categoryId: testCategory.id,
                 ),
-                startTime: testDate.add(const Duration(hours: 21)),
-                endTime: testDate.add(const Duration(hours: 23)),
-                categoryId: testCategory.id,
-              ),
-            ],
-            actualSlots: const [],
-            // Invalid: endHour < startHour (would cause negative totalHours)
-            dayStartHour: 22,
-            dayEndHour: 2, // This is less than startHour
+              ],
+              actualSlots: const [],
+              // Invalid: endHour < startHour (would cause negative totalHours)
+              dayStartHour: 22,
+              dayEndHour: 2, // This is less than startHour
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Should render without throwing RangeError
-      expect(find.byType(DailyTimeline), findsOneWidget);
-      // With smart folding, hours around the entry (21-23) with buffer
-      // become visible (20-24)
-      expect(find.text('21:00'), findsOneWidget);
-      expect(find.text('22:00'), findsOneWidget);
-    });
+        // Should render without throwing RangeError
+        expect(find.byType(DailyTimeline), findsOneWidget);
+        // With smart folding, hours around the entry (21-23) with buffer
+        // become visible (20-24)
+        expect(find.text('21:00'), findsOneWidget);
+        expect(find.text('22:00'), findsOneWidget);
+      },
+    );
   });
 
   group('DailyTimeline - Overlapping Entries Lane Assignment', () {
@@ -968,8 +998,9 @@ void main() {
     }
 
     testWidgets('renders single entry at full width', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1001,10 +1032,12 @@ void main() {
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
 
-    testWidgets('renders two non-overlapping entries in same lane',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('renders two non-overlapping entries in same lane', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1047,8 +1080,9 @@ void main() {
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
 
-    testWidgets('renders two overlapping entries in separate lanes',
-        (tester) async {
+    testWidgets('renders two overlapping entries in separate lanes', (
+      tester,
+    ) async {
       final category2 = CategoryDefinition(
         id: 'cat-2',
         name: 'Exercise',
@@ -1060,10 +1094,12 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(category2);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-2'),
+      ).thenReturn(category2);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1109,8 +1145,9 @@ void main() {
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
 
-    testWidgets('renders three overlapping entries in three lanes',
-        (tester) async {
+    testWidgets('renders three overlapping entries in three lanes', (
+      tester,
+    ) async {
       final category2 = CategoryDefinition(
         id: 'cat-2',
         name: 'Exercise',
@@ -1132,12 +1169,15 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(category2);
-      when(() => mockCacheService.getCategoryById('cat-3'))
-          .thenReturn(category3);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-2'),
+      ).thenReturn(category2);
+      when(
+        () => mockCacheService.getCategoryById('cat-3'),
+      ).thenReturn(category3);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1218,12 +1258,15 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(category2);
-      when(() => mockCacheService.getCategoryById('cat-3'))
-          .thenReturn(category3);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-2'),
+      ).thenReturn(category2);
+      when(
+        () => mockCacheService.getCategoryById('cat-3'),
+      ).thenReturn(category3);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1294,10 +1337,12 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(category2);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-2'),
+      ).thenReturn(category2);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1355,10 +1400,12 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(category2);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-2'),
+      ).thenReturn(category2);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1425,127 +1472,144 @@ void main() {
     }
 
     testWidgets(
-        'nests smaller entry inside larger entry of same category (gym trip scenario)',
-        (tester) async {
-      // This is the key use case: a 1.5h gym trip containing a 45m workout
-      // The workout should render INSIDE the gym trip block, not in a separate lane
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      'nests smaller entry inside larger entry of same category (gym trip scenario)',
+      (tester) async {
+        // This is the key use case: a 1.5h gym trip containing a 45m workout
+        // The workout should render INSIDE the gym trip block, not in a separate lane
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: [
-              // Gym trip: 10:00 - 11:30 (1.5 hours total)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'gym-trip',
-                  dateFrom: testDate.add(const Duration(hours: 10)),
-                  dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: [
+                // Gym trip: 10:00 - 11:30 (1.5 hours total)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'gym-trip',
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(
+                      const Duration(hours: 11, minutes: 30),
+                    ),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10)),
-                endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
-                categoryId: 'cat-1',
-              ),
-              // Workout: 10:30 - 11:15 (45 minutes, contained within gym trip)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'workout',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
-                  dateTo: testDate.add(const Duration(hours: 11, minutes: 15)),
+                // Workout: 10:30 - 11:15 (45 minutes, contained within gym trip)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'workout',
+                    dateFrom: testDate.add(
+                      const Duration(hours: 10, minutes: 30),
+                    ),
+                    dateTo: testDate.add(
+                      const Duration(hours: 11, minutes: 15),
+                    ),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
+                  endTime: testDate.add(const Duration(hours: 11, minutes: 15)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10, minutes: 30)),
-                endTime: testDate.add(const Duration(hours: 11, minutes: 15)),
-                categoryId: 'cat-1',
-              ),
-            ],
-            dayStartHour: 9,
-            dayEndHour: 13,
+              ],
+              dayStartHour: 9,
+              dayEndHour: 13,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Both entries should render - the nested one should be inside the parent
-      // Since they have the same category, we expect 2 semantics labels for 'Work'
-      expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
-      expect(find.byType(DailyTimeline), findsOneWidget);
-    });
+        // Both entries should render - the nested one should be inside the parent
+        // Since they have the same category, we expect 2 semantics labels for 'Work'
+        expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
+        expect(find.byType(DailyTimeline), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'does not nest entries of different categories even when one contains another',
-        (tester) async {
-      final category2 = CategoryDefinition(
-        id: 'cat-2',
-        name: 'Exercise',
-        color: '#34A853',
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-        private: false,
-        active: true,
-      );
+      'does not nest entries of different categories even when one contains another',
+      (tester) async {
+        final category2 = CategoryDefinition(
+          id: 'cat-2',
+          name: 'Exercise',
+          color: '#34A853',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
 
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
-      when(() => mockCacheService.getCategoryById('cat-2'))
-          .thenReturn(category2);
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
+        when(
+          () => mockCacheService.getCategoryById('cat-2'),
+        ).thenReturn(category2);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: [
-              // Work block: 10:00 - 12:00 (2 hours)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'work-block',
-                  dateFrom: testDate.add(const Duration(hours: 10)),
-                  dateTo: testDate.add(const Duration(hours: 12)),
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: [
+                // Work block: 10:00 - 12:00 (2 hours)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'work-block',
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(const Duration(hours: 12)),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 12)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10)),
-                endTime: testDate.add(const Duration(hours: 12)),
-                categoryId: 'cat-1',
-              ),
-              // Exercise: 10:30 - 11:00 (different category - should be in separate lane)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'exercise',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
-                  dateTo: testDate.add(const Duration(hours: 11)),
+                // Exercise: 10:30 - 11:00 (different category - should be in separate lane)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'exercise',
+                    dateFrom: testDate.add(
+                      const Duration(hours: 10, minutes: 30),
+                    ),
+                    dateTo: testDate.add(const Duration(hours: 11)),
+                    categoryId: 'cat-2',
+                  ),
+                  startTime: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
+                  endTime: testDate.add(const Duration(hours: 11)),
                   categoryId: 'cat-2',
                 ),
-                startTime: testDate.add(const Duration(hours: 10, minutes: 30)),
-                endTime: testDate.add(const Duration(hours: 11)),
-                categoryId: 'cat-2',
-              ),
-            ],
-            dayStartHour: 9,
-            dayEndHour: 14,
+              ],
+              dayStartHour: 9,
+              dayEndHour: 14,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Both should be visible - different categories don't nest
-      expect(find.bySemanticsLabel('Work'), findsOneWidget);
-      expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
-      expect(find.byType(DailyTimeline), findsOneWidget);
-    });
+        // Both should be visible - different categories don't nest
+        expect(find.bySemanticsLabel('Work'), findsOneWidget);
+        expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
+        expect(find.byType(DailyTimeline), findsOneWidget);
+      },
+    );
 
-    testWidgets('nests multiple children within parent of same category',
-        (tester) async {
+    testWidgets('nests multiple children within parent of same category', (
+      tester,
+    ) async {
       // Morning block with multiple specific activities logged within it
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1581,8 +1645,9 @@ void main() {
               ActualTimeSlot(
                 entry: createJournalEntry(
                   id: 'call-2',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
+                  dateFrom: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
                   dateTo: testDate.add(const Duration(hours: 11)),
                   categoryId: 'cat-1',
                 ),
@@ -1604,123 +1669,138 @@ void main() {
     });
 
     testWidgets(
-        'does not nest entries with same category that do not fully contain each other',
-        (tester) async {
-      // Partially overlapping entries of same category should still be in separate lanes
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      'does not nest entries with same category that do not fully contain each other',
+      (tester) async {
+        // Partially overlapping entries of same category should still be in separate lanes
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: [
-              // Entry 1: 10:00 - 11:00
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'entry-1',
-                  dateFrom: testDate.add(const Duration(hours: 10)),
-                  dateTo: testDate.add(const Duration(hours: 11)),
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: [
+                // Entry 1: 10:00 - 11:00
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'entry-1',
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(const Duration(hours: 11)),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 11)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10)),
-                endTime: testDate.add(const Duration(hours: 11)),
-                categoryId: 'cat-1',
-              ),
-              // Entry 2: 10:30 - 11:30 (overlaps but neither contains the other)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'entry-2',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
-                  dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+                // Entry 2: 10:30 - 11:30 (overlaps but neither contains the other)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'entry-2',
+                    dateFrom: testDate.add(
+                      const Duration(hours: 10, minutes: 30),
+                    ),
+                    dateTo: testDate.add(
+                      const Duration(hours: 11, minutes: 30),
+                    ),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
+                  endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10, minutes: 30)),
-                endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
-                categoryId: 'cat-1',
-              ),
-            ],
-            dayStartHour: 9,
-            dayEndHour: 13,
+              ],
+              dayStartHour: 9,
+              dayEndHour: 13,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Both entries should render (partial overlap = separate lanes, not nesting)
-      expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
-      expect(find.byType(DailyTimeline), findsOneWidget);
-    });
+        // Both entries should render (partial overlap = separate lanes, not nesting)
+        expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
+        expect(find.byType(DailyTimeline), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'renders overlapping nested children in separate lanes within parent',
-        (tester) async {
-      // When nested children overlap each other, they should be in separate
-      // lanes within the parent block (not rendered on top of each other)
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      'renders overlapping nested children in separate lanes within parent',
+      (tester) async {
+        // When nested children overlap each other, they should be in separate
+        // lanes within the parent block (not rendered on top of each other)
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: [
-              // Morning work block: 9:00 - 12:00 (3 hours)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'morning-block',
-                  dateFrom: testDate.add(const Duration(hours: 9)),
-                  dateTo: testDate.add(const Duration(hours: 12)),
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: [
+                // Morning work block: 9:00 - 12:00 (3 hours)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'morning-block',
+                    dateFrom: testDate.add(const Duration(hours: 9)),
+                    dateTo: testDate.add(const Duration(hours: 12)),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(const Duration(hours: 9)),
+                  endTime: testDate.add(const Duration(hours: 12)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 9)),
-                endTime: testDate.add(const Duration(hours: 12)),
-                categoryId: 'cat-1',
-              ),
-              // Call 1: 10:00 - 11:00 (overlaps with Call 2)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'call-1',
-                  dateFrom: testDate.add(const Duration(hours: 10)),
-                  dateTo: testDate.add(const Duration(hours: 11)),
+                // Call 1: 10:00 - 11:00 (overlaps with Call 2)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'call-1',
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(const Duration(hours: 11)),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 11)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10)),
-                endTime: testDate.add(const Duration(hours: 11)),
-                categoryId: 'cat-1',
-              ),
-              // Call 2: 10:30 - 11:30 (overlaps with Call 1)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'call-2',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
-                  dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+                // Call 2: 10:30 - 11:30 (overlaps with Call 1)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'call-2',
+                    dateFrom: testDate.add(
+                      const Duration(hours: 10, minutes: 30),
+                    ),
+                    dateTo: testDate.add(
+                      const Duration(hours: 11, minutes: 30),
+                    ),
+                    categoryId: 'cat-1',
+                  ),
+                  startTime: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
+                  endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
                   categoryId: 'cat-1',
                 ),
-                startTime: testDate.add(const Duration(hours: 10, minutes: 30)),
-                endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
-                categoryId: 'cat-1',
-              ),
-            ],
-            dayStartHour: 8,
-            dayEndHour: 14,
+              ],
+              dayStartHour: 8,
+              dayEndHour: 14,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // All three entries should render (parent + 2 overlapping nested children)
-      // The nested children should be in separate lanes within the parent
-      expect(find.bySemanticsLabel('Work'), findsNWidgets(3));
-      expect(find.byType(DailyTimeline), findsOneWidget);
-    });
+        // All three entries should render (parent + 2 overlapping nested children)
+        // The nested children should be in separate lanes within the parent
+        expect(find.bySemanticsLabel('Work'), findsNWidgets(3));
+        expect(find.byType(DailyTimeline), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders entry without category (null categoryId)',
-        (tester) async {
+    testWidgets('renders entry without category (null categoryId)', (
+      tester,
+    ) async {
       // Entries without a category should still render with default styling
       when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
 
@@ -1756,60 +1836,66 @@ void main() {
     });
 
     testWidgets(
-        'does not nest entries with null categoryId even when one contains another',
-        (tester) async {
-      // Entries with null categoryId should not be nested
-      when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
+      'does not nest entries with null categoryId even when one contains another',
+      (tester) async {
+        // Entries with null categoryId should not be nested
+        when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: [
-              // Larger entry: 10:00 - 12:00
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'larger',
-                  dateFrom: testDate.add(const Duration(hours: 10)),
-                  dateTo: testDate.add(const Duration(hours: 12)),
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: [
+                // Larger entry: 10:00 - 12:00
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'larger',
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(const Duration(hours: 12)),
+                  ),
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 12)),
+                  // No categoryId
                 ),
-                startTime: testDate.add(const Duration(hours: 10)),
-                endTime: testDate.add(const Duration(hours: 12)),
-                // No categoryId
-              ),
-              // Smaller entry: 10:30 - 11:00 (contained but no category)
-              ActualTimeSlot(
-                entry: createJournalEntry(
-                  id: 'smaller',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
-                  dateTo: testDate.add(const Duration(hours: 11)),
+                // Smaller entry: 10:30 - 11:00 (contained but no category)
+                ActualTimeSlot(
+                  entry: createJournalEntry(
+                    id: 'smaller',
+                    dateFrom: testDate.add(
+                      const Duration(hours: 10, minutes: 30),
+                    ),
+                    dateTo: testDate.add(const Duration(hours: 11)),
+                  ),
+                  startTime: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
+                  endTime: testDate.add(const Duration(hours: 11)),
+                  // No categoryId
                 ),
-                startTime: testDate.add(const Duration(hours: 10, minutes: 30)),
-                endTime: testDate.add(const Duration(hours: 11)),
-                // No categoryId
-              ),
-            ],
-            dayStartHour: 9,
-            dayEndHour: 14,
+              ],
+              dayStartHour: 9,
+              dayEndHour: 14,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Both entries should render (timeline visible)
-      expect(find.byType(DailyTimeline), findsOneWidget);
-      // Verify the timeline content rendered (hour labels for entries' hours)
-      expect(find.text('10:00'), findsOneWidget);
-      expect(find.text('11:00'), findsOneWidget);
-    });
+        // Both entries should render (timeline visible)
+        expect(find.byType(DailyTimeline), findsOneWidget);
+        // Verify the timeline content rendered (hour labels for entries' hours)
+        expect(find.text('10:00'), findsOneWidget);
+        expect(find.text('11:00'), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders single nested child without lane splitting',
-        (tester) async {
+    testWidgets('renders single nested child without lane splitting', (
+      tester,
+    ) async {
       // A parent with a single nested child should render the child at full width
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -1833,8 +1919,9 @@ void main() {
               ActualTimeSlot(
                 entry: createJournalEntry(
                   id: 'child',
-                  dateFrom:
-                      testDate.add(const Duration(hours: 10, minutes: 30)),
+                  dateFrom: testDate.add(
+                    const Duration(hours: 10, minutes: 30),
+                  ),
                   dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
                   categoryId: 'cat-1',
                 ),
@@ -1875,10 +1962,12 @@ void main() {
       );
     }
 
-    testWidgets('shows compressed region for large gap between entries',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('shows compressed region for large gap between entries', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry at 2AM and 8PM - large gap should create compressed region
       await tester.pumpWidget(
@@ -1924,8 +2013,9 @@ void main() {
     });
 
     testWidgets('compressed region shows time range label', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry only at 2AM - should compress before 1AM and after ~4AM
       await tester.pumpWidget(
@@ -1963,8 +2053,9 @@ void main() {
     });
 
     testWidgets('compressed region has unfold_more icon', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry at 12PM only - should compress morning and evening
       await tester.pumpWidget(
@@ -1999,10 +2090,12 @@ void main() {
       }
     });
 
-    testWidgets('no compressed regions when entries fill the day',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('no compressed regions when entries fill the day', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entries every 3 hours - no gap > 4 hours
       final slots = List.generate(8, (i) {
@@ -2039,30 +2132,33 @@ void main() {
     });
 
     testWidgets(
-        'empty day shows default 6AM-10PM visible with compressed edges',
-        (tester) async {
-      // No entries - should use default day bounds
-      await tester.pumpWidget(
-        createTestWidget(
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: const [],
-            actualSlots: const [],
-            dayStartHour: 6,
-            dayEndHour: 22,
+      'empty day shows default 6AM-10PM visible with compressed edges',
+      (tester) async {
+        // No entries - should use default day bounds
+        await tester.pumpWidget(
+          createTestWidget(
+            timelineData: DailyTimelineData(
+              date: testDate,
+              plannedSlots: const [],
+              actualSlots: const [],
+              dayStartHour: 6,
+              dayEndHour: 22,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Empty timeline shows empty state, not compressed regions
-      expect(find.text('No timeline entries'), findsOneWidget);
-    });
+        // Empty timeline shows empty state, not compressed regions
+        expect(find.text('No timeline entries'), findsOneWidget);
+      },
+    );
 
-    testWidgets('planned slots also affect folding calculation',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('planned slots also affect folding calculation', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Only planned slot at 10AM, no actual entries
       await tester.pumpWidget(
@@ -2096,10 +2192,12 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('visible hour labels appear in visible clusters',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('visible hour labels appear in visible clusters', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry at 10AM - visible cluster is 10-11 (no buffer padding)
       await tester.pumpWidget(
@@ -2132,8 +2230,9 @@ void main() {
     });
 
     testWidgets('tapping compressed region expands it', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry at 12PM only - should compress morning and evening
       await tester.pumpWidget(
@@ -2175,10 +2274,12 @@ void main() {
       expect(find.text('Fold'), findsOneWidget);
     });
 
-    testWidgets('expanded region shows fold button that collapses it',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('expanded region shows fold button that collapses it', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry at 12PM only - should compress morning and evening
       await tester.pumpWidget(
@@ -2207,8 +2308,10 @@ void main() {
       await tester.pump();
 
       // Count initial compressed regions
-      final initialCompressedCount =
-          find.byType(CompressedTimelineRegion).evaluate().length;
+      final initialCompressedCount = find
+          .byType(CompressedTimelineRegion)
+          .evaluate()
+          .length;
       expect(initialCompressedCount, greaterThan(0));
 
       // Tap a compressed region to expand it
@@ -2237,8 +2340,9 @@ void main() {
     });
 
     testWidgets('visible clusters do not show fold button', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Entry at 12PM - this creates a visible cluster, not a compressed region
       await tester.pumpWidget(

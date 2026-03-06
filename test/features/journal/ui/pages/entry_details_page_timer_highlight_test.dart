@@ -115,11 +115,13 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
-      when(() => mockJournalDb.getLinkedEntities(testTextEntry.meta.id))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.getLinkedEntities(testTextEntry.meta.id),
+      ).thenAnswer((_) async => []);
     });
 
     tearDown(() async {

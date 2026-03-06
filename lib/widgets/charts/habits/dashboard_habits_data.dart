@@ -30,10 +30,10 @@ Color habitCompletionColor(HabitCompletionType completionType) {
   return completionType == HabitCompletionType.fail
       ? alarm
       : completionType == HabitCompletionType.skip
-          ? habitSkipColor.withAlpha(102)
-          : completionType == HabitCompletionType.success
-              ? successColor
-              : failColor.withAlpha(153);
+      ? habitSkipColor.withAlpha(102)
+      : completionType == HabitCompletionType.success
+      ? successColor
+      : failColor.withAlpha(153);
 }
 
 List<HabitResult> habitResultsByDay(
@@ -46,8 +46,9 @@ List<HabitResult> habitResultsByDay(
   final rangeEndAtMidnight = rangeEnd.dayAtMidnight;
 
   final resultsByDay = <String, HabitResult>{};
-  final range =
-      rangeEndAtMidnight.dayAtMidnight.difference(rangeStartAtMidnight);
+  final range = rangeEndAtMidnight.dayAtMidnight.difference(
+    rangeStartAtMidnight,
+  );
   final dayStrings = List<String>.generate(range.inDays + 1, (days) {
     final day = rangeStartAtMidnight.add(Duration(days: days));
     return day.ymd;
@@ -58,7 +59,8 @@ List<HabitResult> habitResultsByDay(
 
   for (final dayString in dayStrings) {
     final day = DateTime.parse(dayString);
-    final completionType = (day.isAfter(activeFrom) || day == activeFrom) &&
+    final completionType =
+        (day.isAfter(activeFrom) || day == activeFrom) &&
             day.isBefore(activeUntil)
         ? HabitCompletionType.open
         : HabitCompletionType.skip;

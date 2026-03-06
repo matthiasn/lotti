@@ -11,38 +11,55 @@ class JournalFts extends Table
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   JournalFts(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _plainTextMeta =
-      const VerificationMeta('plainText');
+  static const VerificationMeta _plainTextMeta = const VerificationMeta(
+    'plainText',
+  );
   late final GeneratedColumn<String> plainText = GeneratedColumn<String>(
-      'plain_text', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: '');
+    'plain_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: '');
-  static const VerificationMeta _summaryMeta =
-      const VerificationMeta('summary');
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _summaryMeta = const VerificationMeta(
+    'summary',
+  );
   late final GeneratedColumn<String> summary = GeneratedColumn<String>(
-      'summary', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: '');
+    'summary',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
   static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
   late final GeneratedColumn<String> tags = GeneratedColumn<String>(
-      'tags', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: '');
+    'tags',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
   static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
   late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
-      'uuid', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: '');
+    'uuid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
   @override
   List<GeneratedColumn> get $columns => [plainText, title, summary, tags, uuid];
   @override
@@ -51,37 +68,49 @@ class JournalFts extends Table
   String get actualTableName => $name;
   static const String $name = 'journal_fts';
   @override
-  VerificationContext validateIntegrity(Insertable<JournalFt> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<JournalFt> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('plain_text')) {
-      context.handle(_plainTextMeta,
-          plainText.isAcceptableOrUnknown(data['plain_text']!, _plainTextMeta));
+      context.handle(
+        _plainTextMeta,
+        plainText.isAcceptableOrUnknown(data['plain_text']!, _plainTextMeta),
+      );
     } else if (isInserting) {
       context.missing(_plainTextMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
     if (data.containsKey('summary')) {
-      context.handle(_summaryMeta,
-          summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta));
+      context.handle(
+        _summaryMeta,
+        summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
+      );
     } else if (isInserting) {
       context.missing(_summaryMeta);
     }
     if (data.containsKey('tags')) {
       context.handle(
-          _tagsMeta, tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta));
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
     } else if (isInserting) {
       context.missing(_tagsMeta);
     }
     if (data.containsKey('uuid')) {
       context.handle(
-          _uuidMeta, uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta));
+        _uuidMeta,
+        uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta),
+      );
     } else if (isInserting) {
       context.missing(_uuidMeta);
     }
@@ -94,16 +123,26 @@ class JournalFts extends Table
   JournalFt map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return JournalFt(
-      plainText: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plain_text'])!,
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
-      summary: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}summary'])!,
-      tags: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}tags'])!,
-      uuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}uuid'])!,
+      plainText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plain_text'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      summary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary'],
+      )!,
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      )!,
+      uuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uuid'],
+      )!,
     );
   }
 
@@ -124,12 +163,13 @@ class JournalFt extends DataClass implements Insertable<JournalFt> {
   final String summary;
   final String tags;
   final String uuid;
-  const JournalFt(
-      {required this.plainText,
-      required this.title,
-      required this.summary,
-      required this.tags,
-      required this.uuid});
+  const JournalFt({
+    required this.plainText,
+    required this.title,
+    required this.summary,
+    required this.tags,
+    required this.uuid,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -151,8 +191,10 @@ class JournalFt extends DataClass implements Insertable<JournalFt> {
     );
   }
 
-  factory JournalFt.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory JournalFt.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return JournalFt(
       plainText: serializer.fromJson<String>(json['plain_text']),
@@ -174,19 +216,19 @@ class JournalFt extends DataClass implements Insertable<JournalFt> {
     };
   }
 
-  JournalFt copyWith(
-          {String? plainText,
-          String? title,
-          String? summary,
-          String? tags,
-          String? uuid}) =>
-      JournalFt(
-        plainText: plainText ?? this.plainText,
-        title: title ?? this.title,
-        summary: summary ?? this.summary,
-        tags: tags ?? this.tags,
-        uuid: uuid ?? this.uuid,
-      );
+  JournalFt copyWith({
+    String? plainText,
+    String? title,
+    String? summary,
+    String? tags,
+    String? uuid,
+  }) => JournalFt(
+    plainText: plainText ?? this.plainText,
+    title: title ?? this.title,
+    summary: summary ?? this.summary,
+    tags: tags ?? this.tags,
+    uuid: uuid ?? this.uuid,
+  );
   JournalFt copyWithCompanion(JournalFtsCompanion data) {
     return JournalFt(
       plainText: data.plainText.present ? data.plainText.value : this.plainText,
@@ -244,11 +286,11 @@ class JournalFtsCompanion extends UpdateCompanion<JournalFt> {
     required String tags,
     required String uuid,
     this.rowid = const Value.absent(),
-  })  : plainText = Value(plainText),
-        title = Value(title),
-        summary = Value(summary),
-        tags = Value(tags),
-        uuid = Value(uuid);
+  }) : plainText = Value(plainText),
+       title = Value(title),
+       summary = Value(summary),
+       tags = Value(tags),
+       uuid = Value(uuid);
   static Insertable<JournalFt> custom({
     Expression<String>? plainText,
     Expression<String>? title,
@@ -267,13 +309,14 @@ class JournalFtsCompanion extends UpdateCompanion<JournalFt> {
     });
   }
 
-  JournalFtsCompanion copyWith(
-      {Value<String>? plainText,
-      Value<String>? title,
-      Value<String>? summary,
-      Value<String>? tags,
-      Value<String>? uuid,
-      Value<int>? rowid}) {
+  JournalFtsCompanion copyWith({
+    Value<String>? plainText,
+    Value<String>? title,
+    Value<String>? summary,
+    Value<String>? tags,
+    Value<String>? uuid,
+    Value<int>? rowid,
+  }) {
     return JournalFtsCompanion(
       plainText: plainText ?? this.plainText,
       title: title ?? this.title,
@@ -327,8 +370,13 @@ abstract class _$Fts5Db extends GeneratedDatabase {
   _$Fts5Db.connect(DatabaseConnection c) : super.connect(c);
   $Fts5DbManager get managers => $Fts5DbManager(this);
   late final JournalFts journalFts = JournalFts(this);
-  Future<int> insertJournalEntry(String plainText, String title, String summary,
-      String tags, String uuid) {
+  Future<int> insertJournalEntry(
+    String plainText,
+    String title,
+    String summary,
+    String tags,
+    String uuid,
+  ) {
     return customInsert(
       'INSERT INTO journal_fts (plain_text, title, summary, tags, uuid) VALUES (?1, ?2, ?3, ?4, ?5)',
       variables: [
@@ -336,7 +384,7 @@ abstract class _$Fts5Db extends GeneratedDatabase {
         Variable<String>(title),
         Variable<String>(summary),
         Variable<String>(tags),
-        Variable<String>(uuid)
+        Variable<String>(uuid),
       ],
       updates: {journalFts},
     );
@@ -344,13 +392,12 @@ abstract class _$Fts5Db extends GeneratedDatabase {
 
   Selectable<String> findMatching(String query) {
     return customSelect(
-        'SELECT uuid FROM journal_fts WHERE journal_fts MATCH ?1',
-        variables: [
-          Variable<String>(query)
-        ],
-        readsFrom: {
-          journalFts,
-        }).map((QueryRow row) => row.read<String>('uuid'));
+      'SELECT uuid FROM journal_fts WHERE journal_fts MATCH ?1',
+      variables: [Variable<String>(query)],
+      readsFrom: {
+        journalFts,
+      },
+    ).map((QueryRow row) => row.read<String>('uuid'));
   }
 
   Future<int> deleteEntry(String uuid) {
@@ -369,22 +416,24 @@ abstract class _$Fts5Db extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [journalFts];
 }
 
-typedef $JournalFtsCreateCompanionBuilder = JournalFtsCompanion Function({
-  required String plainText,
-  required String title,
-  required String summary,
-  required String tags,
-  required String uuid,
-  Value<int> rowid,
-});
-typedef $JournalFtsUpdateCompanionBuilder = JournalFtsCompanion Function({
-  Value<String> plainText,
-  Value<String> title,
-  Value<String> summary,
-  Value<String> tags,
-  Value<String> uuid,
-  Value<int> rowid,
-});
+typedef $JournalFtsCreateCompanionBuilder =
+    JournalFtsCompanion Function({
+      required String plainText,
+      required String title,
+      required String summary,
+      required String tags,
+      required String uuid,
+      Value<int> rowid,
+    });
+typedef $JournalFtsUpdateCompanionBuilder =
+    JournalFtsCompanion Function({
+      Value<String> plainText,
+      Value<String> title,
+      Value<String> summary,
+      Value<String> tags,
+      Value<String> uuid,
+      Value<int> rowid,
+    });
 
 class $JournalFtsFilterComposer extends Composer<_$Fts5Db, JournalFts> {
   $JournalFtsFilterComposer({
@@ -395,19 +444,29 @@ class $JournalFtsFilterComposer extends Composer<_$Fts5Db, JournalFts> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get plainText => $composableBuilder(
-      column: $table.plainText, builder: (column) => ColumnFilters(column));
+    column: $table.plainText,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnFilters(column));
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get summary => $composableBuilder(
-      column: $table.summary, builder: (column) => ColumnFilters(column));
+    column: $table.summary,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get tags => $composableBuilder(
-      column: $table.tags, builder: (column) => ColumnFilters(column));
+    column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get uuid => $composableBuilder(
-      column: $table.uuid, builder: (column) => ColumnFilters(column));
+    column: $table.uuid,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $JournalFtsOrderingComposer extends Composer<_$Fts5Db, JournalFts> {
@@ -419,19 +478,29 @@ class $JournalFtsOrderingComposer extends Composer<_$Fts5Db, JournalFts> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get plainText => $composableBuilder(
-      column: $table.plainText, builder: (column) => ColumnOrderings(column));
+    column: $table.plainText,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnOrderings(column));
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get summary => $composableBuilder(
-      column: $table.summary, builder: (column) => ColumnOrderings(column));
+    column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get tags => $composableBuilder(
-      column: $table.tags, builder: (column) => ColumnOrderings(column));
+    column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get uuid => $composableBuilder(
-      column: $table.uuid, builder: (column) => ColumnOrderings(column));
+    column: $table.uuid,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $JournalFtsAnnotationComposer extends Composer<_$Fts5Db, JournalFts> {
@@ -458,20 +527,24 @@ class $JournalFtsAnnotationComposer extends Composer<_$Fts5Db, JournalFts> {
       $composableBuilder(column: $table.uuid, builder: (column) => column);
 }
 
-class $JournalFtsTableManager extends RootTableManager<
-    _$Fts5Db,
-    JournalFts,
-    JournalFt,
-    $JournalFtsFilterComposer,
-    $JournalFtsOrderingComposer,
-    $JournalFtsAnnotationComposer,
-    $JournalFtsCreateCompanionBuilder,
-    $JournalFtsUpdateCompanionBuilder,
-    (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
-    JournalFt,
-    PrefetchHooks Function()> {
+class $JournalFtsTableManager
+    extends
+        RootTableManager<
+          _$Fts5Db,
+          JournalFts,
+          JournalFt,
+          $JournalFtsFilterComposer,
+          $JournalFtsOrderingComposer,
+          $JournalFtsAnnotationComposer,
+          $JournalFtsCreateCompanionBuilder,
+          $JournalFtsUpdateCompanionBuilder,
+          (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
+          JournalFt,
+          PrefetchHooks Function()
+        > {
   $JournalFtsTableManager(_$Fts5Db db, JournalFts table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -480,57 +553,60 @@ class $JournalFtsTableManager extends RootTableManager<
               $JournalFtsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $JournalFtsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> plainText = const Value.absent(),
-            Value<String> title = const Value.absent(),
-            Value<String> summary = const Value.absent(),
-            Value<String> tags = const Value.absent(),
-            Value<String> uuid = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalFtsCompanion(
-            plainText: plainText,
-            title: title,
-            summary: summary,
-            tags: tags,
-            uuid: uuid,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String plainText,
-            required String title,
-            required String summary,
-            required String tags,
-            required String uuid,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalFtsCompanion.insert(
-            plainText: plainText,
-            title: title,
-            summary: summary,
-            tags: tags,
-            uuid: uuid,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> plainText = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> summary = const Value.absent(),
+                Value<String> tags = const Value.absent(),
+                Value<String> uuid = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalFtsCompanion(
+                plainText: plainText,
+                title: title,
+                summary: summary,
+                tags: tags,
+                uuid: uuid,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String plainText,
+                required String title,
+                required String summary,
+                required String tags,
+                required String uuid,
+                Value<int> rowid = const Value.absent(),
+              }) => JournalFtsCompanion.insert(
+                plainText: plainText,
+                title: title,
+                summary: summary,
+                tags: tags,
+                uuid: uuid,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $JournalFtsProcessedTableManager = ProcessedTableManager<
-    _$Fts5Db,
-    JournalFts,
-    JournalFt,
-    $JournalFtsFilterComposer,
-    $JournalFtsOrderingComposer,
-    $JournalFtsAnnotationComposer,
-    $JournalFtsCreateCompanionBuilder,
-    $JournalFtsUpdateCompanionBuilder,
-    (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
-    JournalFt,
-    PrefetchHooks Function()>;
+typedef $JournalFtsProcessedTableManager =
+    ProcessedTableManager<
+      _$Fts5Db,
+      JournalFts,
+      JournalFt,
+      $JournalFtsFilterComposer,
+      $JournalFtsOrderingComposer,
+      $JournalFtsAnnotationComposer,
+      $JournalFtsCreateCompanionBuilder,
+      $JournalFtsUpdateCompanionBuilder,
+      (JournalFt, BaseReferences<_$Fts5Db, JournalFts, JournalFt>),
+      JournalFt,
+      PrefetchHooks Function()
+    >;
 
 class $Fts5DbManager {
   final _$Fts5Db _db;

@@ -70,21 +70,30 @@ void main() {
       conn = StreamController<List<ConnectivityResult>>.broadcast();
 
       // Default no-op logging
-      when(() => logging.captureEvent(any<Object>(),
+      when(
+        () => logging.captureEvent(
+          any<Object>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
-      when(() => logging.captureException(any<Object>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-              stackTrace: any<StackTrace?>(named: 'stackTrace')))
-          .thenAnswer((_) async {});
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Pipeline methods used by connectivity flow
       when(() => pipeline.recordConnectivitySignal()).thenAnswer((_) {});
       // Reset counter; track calls for precise assertions without relying solely on verify
-      when(() => pipeline.forceRescan(
-              includeCatchUp: any<bool>(named: 'includeCatchUp')))
-          .thenAnswer((_) async {
+      when(
+        () => pipeline.forceRescan(
+          includeCatchUp: any<bool>(named: 'includeCatchUp'),
+        ),
+      ).thenAnswer((_) async {
         rescanCount++;
       });
 
@@ -100,58 +109,61 @@ void main() {
       await conn.close();
     });
 
-    test('multiple connectivity regains coalesce into one rescan per window',
-        () async {
-      fakeAsync((async) {
-        final service = MatrixService(
-          gateway: gateway,
-          loggingService: logging,
-          activityGate:
-              UserActivityGate(activityService: UserActivityService()),
-          messageSender: sender,
-          journalDb: journalDb,
-          settingsDb: settingsDb,
-          readMarkerService: readMarkerService,
-          eventProcessor: eventProcessor,
-          secureStorage: storage,
-          sentEventRegistry: SentEventRegistry(),
-          attachmentIndex: AttachmentIndex(logging: logging),
-          roomManager: roomManager,
-          sessionManager: sessionManager,
-          pipelineOverride: pipeline,
-          connectivityStream: conn.stream,
-        );
+    test(
+      'multiple connectivity regains coalesce into one rescan per window',
+      () async {
+        fakeAsync((async) {
+          final service = MatrixService(
+            gateway: gateway,
+            loggingService: logging,
+            activityGate: UserActivityGate(
+              activityService: UserActivityService(),
+            ),
+            messageSender: sender,
+            journalDb: journalDb,
+            settingsDb: settingsDb,
+            readMarkerService: readMarkerService,
+            eventProcessor: eventProcessor,
+            secureStorage: storage,
+            sentEventRegistry: SentEventRegistry(),
+            attachmentIndex: AttachmentIndex(logging: logging),
+            roomManager: roomManager,
+            sessionManager: sessionManager,
+            pipelineOverride: pipeline,
+            connectivityStream: conn.stream,
+          );
 
-        // Fire a burst of connectivity events.
-        conn
-          ..add([ConnectivityResult.wifi])
-          ..add([ConnectivityResult.wifi])
-          ..add([ConnectivityResult.wifi]);
-        async.elapse(const Duration(milliseconds: 50));
+          // Fire a burst of connectivity events.
+          conn
+            ..add([ConnectivityResult.wifi])
+            ..add([ConnectivityResult.wifi])
+            ..add([ConnectivityResult.wifi]);
+          async.elapse(const Duration(milliseconds: 50));
 
-        // One rescan in-flight — others coalesced.
-        expect(rescanCount, 1);
+          // One rescan in-flight — others coalesced.
+          expect(rescanCount, 1);
 
-        // Another burst still within coalescing window.
-        conn
-          ..add([ConnectivityResult.mobile])
-          ..add([ConnectivityResult.ethernet]);
-        async.elapse(const Duration(milliseconds: 50));
+          // Another burst still within coalescing window.
+          conn
+            ..add([ConnectivityResult.mobile])
+            ..add([ConnectivityResult.ethernet]);
+          async.elapse(const Duration(milliseconds: 50));
 
-        // Still only one rescan so far.
-        expect(rescanCount, 1);
+          // Still only one rescan so far.
+          expect(rescanCount, 1);
 
-        // After the min gap (~2s), a new event should trigger another rescan.
-        async.elapse(const Duration(seconds: 2));
-        conn.add([ConnectivityResult.wifi]);
-        async.elapse(const Duration(milliseconds: 50));
+          // After the min gap (~2s), a new event should trigger another rescan.
+          async.elapse(const Duration(seconds: 2));
+          conn.add([ConnectivityResult.wifi]);
+          async.elapse(const Duration(milliseconds: 50));
 
-        // With coalescing, two connectivity-driven rescans are expected here
-        expect(rescanCount, 2);
+          // With coalescing, two connectivity-driven rescans are expected here
+          expect(rescanCount, 2);
 
-        unawaited(service.dispose());
-        async.flushMicrotasks();
-      });
-    });
+          unawaited(service.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
   });
 }

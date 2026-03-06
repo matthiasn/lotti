@@ -18,12 +18,13 @@ void main() {
     });
 
     test('pathPatterns are correct', () {
-      final location =
-          JournalLocation(RouteInformation(uri: Uri.parse('/journal')));
+      final location = JournalLocation(
+        RouteInformation(uri: Uri.parse('/journal')),
+      );
       expect(location.pathPatterns, [
         '/journal',
         '/journal/:entryId',
-        '/journal/fill_survey/:surveyType'
+        '/journal/fill_survey/:surveyType',
       ]);
     });
 
@@ -42,14 +43,16 @@ void main() {
 
     test('buildPages builds EntryDetailsPage', () {
       final entryId = const Uuid().v4();
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/journal/$entryId'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/journal/$entryId'),
+      );
       final location = JournalLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(
         routeInformation,
       );
-      final newPathParameters =
-          Map<String, String>.from(beamState.pathParameters);
+      final newPathParameters = Map<String, String>.from(
+        beamState.pathParameters,
+      );
       newPathParameters['entryId'] = entryId;
       final newBeamState = beamState.copyWith(
         pathParameters: newPathParameters,
@@ -69,14 +72,16 @@ void main() {
 
     test('buildPages builds FillSurveyWithTypePage', () {
       const surveyType = 'some-survey';
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/journal/fill_survey/$surveyType'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/journal/fill_survey/$surveyType'),
+      );
       final location = JournalLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(
         routeInformation,
       );
-      final newPathParameters =
-          Map<String, String>.from(beamState.pathParameters);
+      final newPathParameters = Map<String, String>.from(
+        beamState.pathParameters,
+      );
       newPathParameters['surveyType'] = surveyType;
       final newBeamState = beamState.copyWith(
         pathParameters: newPathParameters,

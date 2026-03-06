@@ -22,11 +22,11 @@ abstract class ChatMessage with _$ChatMessage {
       _$ChatMessageFromJson(json);
 
   factory ChatMessage.user(String content) => ChatMessage(
-        id: _uuid.v4(),
-        content: content,
-        role: ChatMessageRole.user,
-        timestamp: DateTime.now(),
-      );
+    id: _uuid.v4(),
+    content: content,
+    role: ChatMessageRole.user,
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.assistant(String content, {bool isStreaming = false}) =>
       ChatMessage(
@@ -38,11 +38,11 @@ abstract class ChatMessage with _$ChatMessage {
       );
 
   factory ChatMessage.system(String content) => ChatMessage(
-        id: _uuid.v4(),
-        content: content,
-        role: ChatMessageRole.system,
-        timestamp: DateTime.now(),
-      );
+    id: _uuid.v4(),
+    content: content,
+    role: ChatMessageRole.system,
+    timestamp: DateTime.now(),
+  );
 }
 
 enum ChatMessageRole {

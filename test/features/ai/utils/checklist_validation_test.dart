@@ -277,7 +277,7 @@ void main() {
           {'no_title': 'Missing'}, // Invalid: no title
           {
             'title': 'Valid 4',
-            'isChecked': 'wrong'
+            'isChecked': 'wrong',
           }, // Valid but isChecked will be false
         ];
 
@@ -307,8 +307,9 @@ void main() {
         final validated = ChecklistValidation.validateItems(raw);
         expect(validated.length, 20);
 
-        final isValidSize =
-            ChecklistValidation.isValidBatchSize(validated.length);
+        final isValidSize = ChecklistValidation.isValidBatchSize(
+          validated.length,
+        );
         expect(isValidSize, true);
       });
 
@@ -335,24 +336,26 @@ void main() {
         expect(result[6].title, '🚀🎯📝 Multiple emojis');
       });
 
-      test('should handle edge case with exactly 400 chars including Unicode',
-          () {
-        // Unicode characters can be multiple bytes but should count as single chars
-        const unicodeChar = '🎉';
-        const baseText = 'Task ';
-        const paddingLength = 400 - baseText.length - unicodeChar.length;
-        final title = baseText + ('x' * paddingLength) + unicodeChar;
+      test(
+        'should handle edge case with exactly 400 chars including Unicode',
+        () {
+          // Unicode characters can be multiple bytes but should count as single chars
+          const unicodeChar = '🎉';
+          const baseText = 'Task ';
+          const paddingLength = 400 - baseText.length - unicodeChar.length;
+          final title = baseText + ('x' * paddingLength) + unicodeChar;
 
-        expect(title.length, 400); // Verify our test setup
+          expect(title.length, 400); // Verify our test setup
 
-        final raw = [
-          {'title': title},
-        ];
+          final raw = [
+            {'title': title},
+          ];
 
-        final result = ChecklistValidation.validateItems(raw);
-        expect(result.length, 1);
-        expect(result[0].title, title);
-      });
+          final result = ChecklistValidation.validateItems(raw);
+          expect(result.length, 1);
+          expect(result[0].title, title);
+        },
+      );
     });
   });
 }

@@ -4,11 +4,12 @@ import 'package:lotti/get_it.dart';
 
 final labelAssignmentEventServiceProvider =
     Provider<LabelAssignmentEventService>((ref) {
-  return getIt<LabelAssignmentEventService>();
-});
+      return getIt<LabelAssignmentEventService>();
+    });
 
-final labelAssignmentEventsProvider =
-    StreamProvider<LabelAssignmentEvent>((ref) {
+final labelAssignmentEventsProvider = StreamProvider<LabelAssignmentEvent>((
+  ref,
+) {
   final svc = ref.watch(labelAssignmentEventServiceProvider);
   return svc.stream;
 });

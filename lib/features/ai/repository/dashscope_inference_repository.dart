@@ -33,7 +33,7 @@ const _allowedImageHostSuffixes = [
 /// endpoint used for text/audio/vision models.
 class DashScopeInferenceRepository {
   DashScopeInferenceRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -76,8 +76,9 @@ class DashScopeInferenceRepository {
       })
       ..body = jsonEncode(body);
 
-    final streamedResponse =
-        await _httpClient.send(request).timeout(_imageGenerationTimeout);
+    final streamedResponse = await _httpClient
+        .send(request)
+        .timeout(_imageGenerationTimeout);
 
     if (streamedResponse.statusCode != 200) {
       final responseBody = await streamedResponse.stream.bytesToString();
@@ -89,9 +90,9 @@ class DashScopeInferenceRepository {
 
     // Collect the full SSE response (with timeout to avoid hanging if the
     // server starts responding but then stalls mid-stream).
-    final responseBody = await streamedResponse.stream
-        .bytesToString()
-        .timeout(_imageGenerationTimeout);
+    final responseBody = await streamedResponse.stream.bytesToString().timeout(
+      _imageGenerationTimeout,
+    );
 
     // Extract image URL from SSE events
     final imageUrl = _extractImageUrlFromSse(responseBody);
@@ -211,8 +212,9 @@ class DashScopeInferenceRepository {
         final choices = output?['choices'] as List<dynamic>?;
         if (choices == null || choices.isEmpty) continue;
 
-        final message = (choices.first as Map<String, dynamic>)['message']
-            as Map<String, dynamic>?;
+        final message =
+            (choices.first as Map<String, dynamic>)['message']
+                as Map<String, dynamic>?;
         final content = message?['content'] as List<dynamic>?;
         if (content == null) continue;
 

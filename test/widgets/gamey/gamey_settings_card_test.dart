@@ -73,8 +73,9 @@ void main() {
       expect(find.byType(GameyIconBadge), findsOneWidget);
     });
 
-    testWidgets('does not render icon badge when icon not provided',
-        (tester) async {
+    testWidgets('does not render icon badge when icon not provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameySettingsCard(
@@ -99,8 +100,9 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
     });
 
-    testWidgets('renders chevron when onTap provided and no trailing',
-        (tester) async {
+    testWidgets('renders chevron when onTap provided and no trailing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: GameySettingsCard(
@@ -113,8 +115,9 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
-    testWidgets('does not render chevron when trailing provided',
-        (tester) async {
+    testWidgets('does not render chevron when trailing provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: GameySettingsCard(
@@ -157,8 +160,9 @@ void main() {
         ),
       );
 
-      final subtleCard =
-          tester.widget<GameySubtleCard>(find.byType(GameySubtleCard));
+      final subtleCard = tester.widget<GameySubtleCard>(
+        find.byType(GameySubtleCard),
+      );
       expect(subtleCard.accentColor, equals(Colors.orange));
     });
 
@@ -171,8 +175,9 @@ void main() {
         ),
       );
 
-      final subtleCard =
-          tester.widget<GameySubtleCard>(find.byType(GameySubtleCard));
+      final subtleCard = tester.widget<GameySubtleCard>(
+        find.byType(GameySubtleCard),
+      );
       expect(subtleCard.accentColor, equals(GameyColors.gameyAccent));
     });
 
@@ -396,8 +401,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.showGlow, isTrue);
     });
 
@@ -413,8 +419,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.showGlow, isFalse);
     });
 
@@ -429,8 +436,9 @@ void main() {
         ),
       );
 
-      final subtleCard =
-          tester.widget<GameySubtleCard>(find.byType(GameySubtleCard));
+      final subtleCard = tester.widget<GameySubtleCard>(
+        find.byType(GameySubtleCard),
+      );
       expect(subtleCard.accentColor, equals(Colors.grey));
     });
 
@@ -445,13 +453,15 @@ void main() {
         ),
       );
 
-      final subtleCard =
-          tester.widget<GameySubtleCard>(find.byType(GameySubtleCard));
+      final subtleCard = tester.widget<GameySubtleCard>(
+        find.byType(GameySubtleCard),
+      );
       expect(subtleCard.accentColor, equals(GameyColors.gameyAccent));
     });
 
-    testWidgets('uses custom accent color when provided and value is true',
-        (tester) async {
+    testWidgets('uses custom accent color when provided and value is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: GameyToggleCard(
@@ -463,8 +473,9 @@ void main() {
         ),
       );
 
-      final subtleCard =
-          tester.widget<GameySubtleCard>(find.byType(GameySubtleCard));
+      final subtleCard = tester.widget<GameySubtleCard>(
+        find.byType(GameySubtleCard),
+      );
       expect(subtleCard.accentColor, equals(Colors.purple));
     });
   });

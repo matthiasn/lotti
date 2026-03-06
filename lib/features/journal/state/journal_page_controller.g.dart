@@ -26,16 +26,16 @@ final class JournalPageControllerProvider
   ///
   /// Uses a family provider pattern with showTasks as the family key.
   /// keepAlive: true to preserve state when switching tabs.
-  JournalPageControllerProvider._(
-      {required JournalPageControllerFamily super.from,
-      required bool super.argument})
-      : super(
-          retry: null,
-          name: r'journalPageControllerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  JournalPageControllerProvider._({
+    required JournalPageControllerFamily super.from,
+    required bool super.argument,
+  }) : super(
+         retry: null,
+         name: r'journalPageControllerProvider',
+         isAutoDispose: false,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$journalPageControllerHash();
@@ -80,16 +80,21 @@ String _$journalPageControllerHash() =>
 
 final class JournalPageControllerFamily extends $Family
     with
-        $ClassFamilyOverride<JournalPageController, JournalPageState,
-            JournalPageState, JournalPageState, bool> {
+        $ClassFamilyOverride<
+          JournalPageController,
+          JournalPageState,
+          JournalPageState,
+          JournalPageState,
+          bool
+        > {
   JournalPageControllerFamily._()
-      : super(
-          retry: null,
-          name: r'journalPageControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: false,
-        );
+    : super(
+        retry: null,
+        name: r'journalPageControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
 
   /// Controller for managing journal/tasks page state.
   ///
@@ -98,8 +103,7 @@ final class JournalPageControllerFamily extends $Family
 
   JournalPageControllerProvider call(
     bool showTasks,
-  ) =>
-      JournalPageControllerProvider._(argument: showTasks, from: this);
+  ) => JournalPageControllerProvider._(argument: showTasks, from: this);
 
   @override
   String toString() => r'journalPageControllerProvider';
@@ -121,15 +125,19 @@ abstract class _$JournalPageController extends $Notifier<JournalPageState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<JournalPageState, JournalPageState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<JournalPageState, JournalPageState>,
-        JournalPageState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<JournalPageState, JournalPageState>,
+              JournalPageState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              _$args,
-            ));
+      ref,
+      () => build(
+        _$args,
+      ),
+    );
   }
 }

@@ -12,10 +12,9 @@ final Color nickel = colorFromCssHex('#B4B2B2');
 final Color successColor = colorFromCssHex('#34C191');
 final Color failColor = colorFromCssHex('#FF7373');
 
-final Color habitSkipColor = successColor
-    .lighten()
-    .desaturate()
-    .mix(failColor.lighten().desaturate().complement());
+final Color habitSkipColor = successColor.lighten().desaturate().mix(
+  failColor.lighten().desaturate().complement(),
+);
 
 const tagColor = Color.fromRGBO(155, 200, 246, 1);
 const tagTextColor = Color.fromRGBO(51, 51, 51, 1);
@@ -46,8 +45,9 @@ const Color syncPendingForegroundColor = Colors.white;
 const Color syncSuccessAccentColor = Colors.green;
 const Color syncSuccessForegroundColor = Colors.white;
 
-final Color syncPendingCountAccentColor =
-    TinyColor.fromColor(syncPendingAccentColor).lighten().color;
+final Color syncPendingCountAccentColor = TinyColor.fromColor(
+  syncPendingAccentColor,
+).lighten().color;
 
 Color syncErrorCountAccentColor(ColorScheme colorScheme) =>
     TinyColor.fromColor(colorScheme.error).lighten().color;
@@ -75,11 +75,11 @@ class ModernGradientThemes {
       colors: isDark
           ? [
               ModernGradientColors.darkPrimaryStart,
-              ModernGradientColors.darkPrimaryEnd
+              ModernGradientColors.darkPrimaryEnd,
             ]
           : [
               ModernGradientColors.primaryStart,
-              ModernGradientColors.primaryEnd
+              ModernGradientColors.primaryEnd,
             ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

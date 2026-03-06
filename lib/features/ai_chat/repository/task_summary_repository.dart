@@ -107,8 +107,9 @@ class TaskSummaryRepository {
     }
 
     // Step 4: Fetch all potential tasks in one batch
-    final linkedEntities =
-        await journalDb.getJournalEntitiesForIds(linkedTaskIds);
+    final linkedEntities = await journalDb.getJournalEntitiesForIds(
+      linkedTaskIds,
+    );
 
     // Filter to only include actual tasks
     final actualTasks = linkedEntities.whereType<Task>().toList();
@@ -154,30 +155,34 @@ class TaskSummaryRepository {
           // Get task status name
           final statusName = task.data.status.toDbString;
 
-          results.add(TaskSummaryResult(
-            taskId: task.meta.id,
-            taskTitle: task.data.title,
-            summary: aiData.response,
-            taskDate: task.meta.dateFrom,
-            status: statusName,
-            metadata: {
-              'model': aiData.model,
-              'promptId': aiData.promptId ?? '',
-              'generatedAt': latestSummary.meta.dateFrom.toIso8601String(),
-            },
-          ));
+          results.add(
+            TaskSummaryResult(
+              taskId: task.meta.id,
+              taskTitle: task.data.title,
+              summary: aiData.response,
+              taskDate: task.meta.dateFrom,
+              status: statusName,
+              metadata: {
+                'model': aiData.model,
+                'promptId': aiData.promptId ?? '',
+                'generatedAt': latestSummary.meta.dateFrom.toIso8601String(),
+              },
+            ),
+          );
         }
       } else {
         // No AI summary available, create a basic summary
         final statusName = task.data.status.toDbString;
 
-        results.add(TaskSummaryResult(
-          taskId: task.meta.id,
-          taskTitle: task.data.title,
-          summary: 'No AI summary available for this task.',
-          taskDate: task.meta.dateFrom,
-          status: statusName,
-        ));
+        results.add(
+          TaskSummaryResult(
+            taskId: task.meta.id,
+            taskTitle: task.data.title,
+            summary: 'No AI summary available for this task.',
+            taskDate: task.meta.dateFrom,
+            status: statusName,
+          ),
+        );
       }
     }
 

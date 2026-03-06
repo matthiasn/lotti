@@ -35,23 +35,25 @@ void main() {
     mockLimiter = MockLimiter();
 
     when(() => mockLimiter.isRateLimited(any())).thenReturn(false);
-    when(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    ).thenAnswer((_) async => true);
 
     // Define all labels as valid global labels
     Future<LabelDefinition> def(String id) async => LabelDefinition(
-          id: id,
-          name: id,
-          color: '#000',
-          description: null,
-          sortOrder: null,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-        );
+      id: id,
+      name: id,
+      color: '#000',
+      description: null,
+      sortOrder: null,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      vectorClock: null,
+      private: false,
+    );
     for (final id in const ['a', 'b', 'c', 'd']) {
       when(() => mockDb.getLabelDefinitionById(id)).thenAnswer((_) => def(id));
     }
@@ -73,42 +75,46 @@ void main() {
   tearDown(getIt.reset);
 
   test(
-      'processor telemetry includes dropped_low, legacy_capped and confidenceBreakdown',
-      () async {
-    // Act
-    await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const ['a', 'b', 'c'],
-      existingIds: const [],
-      // Phase 2 parser metrics
-      droppedLow: 1,
-      legacyUsed: true,
-      totalCandidates: 5,
-      confidenceBreakdown: const {
-        'very_high': 0,
-        'high': 2,
-        'medium': 1,
-        'low': 1,
-      },
-    );
+    'processor telemetry includes dropped_low, legacy_capped and confidenceBreakdown',
+    () async {
+      // Act
+      await processor.processAssignment(
+        taskId: 't1',
+        proposedIds: const ['a', 'b', 'c'],
+        existingIds: const [],
+        // Phase 2 parser metrics
+        droppedLow: 1,
+        legacyUsed: true,
+        totalCandidates: 5,
+        confidenceBreakdown: const {
+          'very_high': 0,
+          'high': 2,
+          'medium': 1,
+          'low': 1,
+        },
+      );
 
-    // Assert captureEvent was called with JSON containing the fields
-    final captured = verify(() => mockLogging.captureEvent(
+      // Assert captureEvent was called with JSON containing the fields
+      final captured = verify(
+        () => mockLogging.captureEvent(
           captureAny<dynamic>(),
           domain: captureAny(named: 'domain'),
           subDomain: captureAny(named: 'subDomain'),
           level: any(named: 'level'),
           type: any(named: 'type'),
-        )).captured;
-    expect(captured, isNotEmpty);
-    final message = captured.first as String;
-    final telemetry = jsonDecode(message) as Map<String, dynamic>;
-    expect(telemetry['dropped_low'], 1);
-    expect(telemetry['legacy_capped'], isTrue);
-    final breakdown =
-        Map<String, dynamic>.from(telemetry['confidenceBreakdown'] as Map);
-    expect(breakdown['high'], 2);
-    expect(breakdown['medium'], 1);
-    expect(breakdown['low'], 1);
-  });
+        ),
+      ).captured;
+      expect(captured, isNotEmpty);
+      final message = captured.first as String;
+      final telemetry = jsonDecode(message) as Map<String, dynamic>;
+      expect(telemetry['dropped_low'], 1);
+      expect(telemetry['legacy_capped'], isTrue);
+      final breakdown = Map<String, dynamic>.from(
+        telemetry['confidenceBreakdown'] as Map,
+      );
+      expect(breakdown['high'], 2);
+      expect(breakdown['medium'], 1);
+      expect(breakdown['low'], 1);
+    },
+  );
 }

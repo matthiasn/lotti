@@ -12,20 +12,24 @@ part of 'journal_repository.dart';
 @ProviderFor(journalRepository)
 final journalRepositoryProvider = JournalRepositoryProvider._();
 
-final class JournalRepositoryProvider extends $FunctionalProvider<
-    JournalRepository,
-    JournalRepository,
-    JournalRepository> with $Provider<JournalRepository> {
+final class JournalRepositoryProvider
+    extends
+        $FunctionalProvider<
+          JournalRepository,
+          JournalRepository,
+          JournalRepository
+        >
+    with $Provider<JournalRepository> {
   JournalRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'journalRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'journalRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$journalRepositoryHash();
@@ -33,8 +37,8 @@ final class JournalRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<JournalRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   JournalRepository create(Ref ref) {

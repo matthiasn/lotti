@@ -31,8 +31,9 @@ void main() {
       expect(find.byType(LineChart), findsOneWidget);
     });
 
-    testWidgets('renders LineChart with dot for single data point',
-        (tester) async {
+    testWidgets('renders LineChart with dot for single data point', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EvolutionSparklineChart(buckets: _makeBuckets(1)),
@@ -56,8 +57,9 @@ void main() {
       expect(find.byType(LineChart), findsNothing);
     });
 
-    testWidgets('maps bucket successRate values to chart spots',
-        (tester) async {
+    testWidgets('maps bucket successRate values to chart spots', (
+      tester,
+    ) async {
       final buckets = [
         DailyWakeBucket(
           date: _day1,

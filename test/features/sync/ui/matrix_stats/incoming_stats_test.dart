@@ -37,8 +37,9 @@ class _ThrowingMatrixStatsController extends MatrixStatsController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('IncomingStats renders stable shell while loading',
-      (tester) async {
+  testWidgets('IncomingStats renders stable shell while loading', (
+    tester,
+  ) async {
     final completer = Completer<MatrixStats>();
     final mockSvc = _MockMatrixService();
     when(() => mockSvc.getSyncMetrics()).thenAnswer((_) async => null);
@@ -48,7 +49,8 @@ void main() {
         overrides: [
           matrixServiceProvider.overrideWithValue(mockSvc),
           matrixStatsControllerProvider.overrideWith(
-              () => _LoadingMatrixStatsController(completer.future)),
+            () => _LoadingMatrixStatsController(completer.future),
+          ),
         ],
       ),
     );
@@ -57,8 +59,9 @@ void main() {
     expect(find.textContaining('Sync Metrics'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats builds even when controller throws',
-      (tester) async {
+  testWidgets('IncomingStats builds even when controller throws', (
+    tester,
+  ) async {
     final mockSvc = _MockMatrixService();
     when(() => mockSvc.getSyncMetrics()).thenAnswer((_) async => null);
     await tester.pumpWidget(
@@ -66,8 +69,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockSvc),
-          matrixStatsControllerProvider
-              .overrideWith(_ThrowingMatrixStatsController.new),
+          matrixStatsControllerProvider.overrideWith(
+            _ThrowingMatrixStatsController.new,
+          ),
         ],
       ),
     );
@@ -76,8 +80,9 @@ void main() {
     expect(find.textContaining('Sync Metrics'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats refresh triggers service when metrics empty',
-      (tester) async {
+  testWidgets('IncomingStats refresh triggers service when metrics empty', (
+    tester,
+  ) async {
     final mockSvc = _MockMatrixService();
     when(() => mockSvc.sentCount).thenReturn(0);
     when(() => mockSvc.messageCounts).thenReturn(const {});
@@ -104,34 +109,37 @@ void main() {
     verify(() => mockSvc.getSyncMetrics()).called(greaterThan(0));
   });
 
-  testWidgets('IncomingStats copy diagnostics invokes service and shows snack',
-      (tester) async {
-    final mockSvc = _MockMatrixService();
-    when(() => mockSvc.sentCount).thenReturn(1);
-    when(() => mockSvc.messageCounts).thenReturn(const {'m.text': 1});
-    when(() => mockSvc.getSyncMetrics()).thenAnswer(
-      (_) async => SyncMetrics.fromMap({'processed': 1}),
-    );
-    when(() => mockSvc.getSyncDiagnosticsText())
-        .thenAnswer((_) async => 'processed=1');
+  testWidgets(
+    'IncomingStats copy diagnostics invokes service and shows snack',
+    (tester) async {
+      final mockSvc = _MockMatrixService();
+      when(() => mockSvc.sentCount).thenReturn(1);
+      when(() => mockSvc.messageCounts).thenReturn(const {'m.text': 1});
+      when(() => mockSvc.getSyncMetrics()).thenAnswer(
+        (_) async => SyncMetrics.fromMap({'processed': 1}),
+      );
+      when(
+        () => mockSvc.getSyncDiagnosticsText(),
+      ).thenAnswer((_) async => 'processed=1');
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const IncomingStats(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockSvc),
-          matrixStatsControllerProvider.overrideWith(
-            () => _FakeMatrixStatsController(
-              const MatrixStats(sentCount: 1, messageCounts: {'m.text': 1}),
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const IncomingStats(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockSvc),
+            matrixStatsControllerProvider.overrideWith(
+              () => _FakeMatrixStatsController(
+                const MatrixStats(sentCount: 1, messageCounts: {'m.text': 1}),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
 
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
-    await tester.pump();
-    verify(() => mockSvc.getSyncDiagnosticsText()).called(greaterThan(0));
-  });
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
+      await tester.pump();
+      verify(() => mockSvc.getSyncDiagnosticsText()).called(greaterThan(0));
+    },
+  );
 }

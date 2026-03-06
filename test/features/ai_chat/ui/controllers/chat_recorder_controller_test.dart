@@ -160,13 +160,14 @@ void main() {
     // Fallback for provider matcher in mocktail
     registerFallbackValue(
       AiConfig.inferenceProvider(
-        id: 'fallback',
-        baseUrl: 'http://localhost',
-        apiKey: 'k',
-        name: 'Fallback',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ) as AiConfigInferenceProvider,
+            id: 'fallback',
+            baseUrl: 'http://localhost',
+            apiKey: 'k',
+            name: 'Fallback',
+            createdAt: DateTime.now(),
+            inferenceProviderType: InferenceProviderType.gemini,
+          )
+          as AiConfigInferenceProvider,
     );
   });
 
@@ -191,13 +192,17 @@ void main() {
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => false);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => Directory.systemTemp,
             config: const ChatRecorderConfig(maxSeconds: 2),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     // No need to keep provider alive for this quick path
     final sub1 = container.listen(chatRecorderControllerProvider, (_, __) {});
     addTearDown(sub1.close);
@@ -215,8 +220,12 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       final gate = Completer<void>();
-      when(() => mockRecorder.start(any<record.RecordConfig>(),
-          path: any(named: 'path'))).thenAnswer((_) => gate.future);
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((_) => gate.future);
       // Emit amplitude events so state changes to recording
       when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
         (_) => Stream<record.Amplitude>.fromIterable(
@@ -224,19 +233,23 @@ void main() {
         ),
       );
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => Directory.systemTemp,
-                  config: const ChatRecorderConfig(maxSeconds: 2),
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              config: const ChatRecorderConfig(maxSeconds: 2),
+            ),
+          ),
+        ],
+      );
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
       final sub2 = container.listen(chatRecorderControllerProvider, (_, __) {});
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       unawaited(controller.start());
       // Second start should trigger concurrent operation error
       controller.start();
@@ -284,8 +297,12 @@ void main() {
     final mockRecorder = _MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String?;
       if (path != null) {
         final f = await File(path).create(recursive: true);
@@ -301,27 +318,33 @@ void main() {
     );
 
     final mockCloud = _MockCloudInferenceRepository();
-    when(() => mockCloud.generateWithAudio(
-          any(),
-          model: any(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-        )).thenAnswer((_) => Stream.error(Exception('network down')));
+    when(
+      () => mockCloud.generateWithAudio(
+        any(),
+        model: any(named: 'model'),
+        audioBase64: any(named: 'audioBase64'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        provider: any(named: 'provider'),
+        maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        overrideClient: any(named: 'overrideClient'),
+        tools: any(named: 'tools'),
+      ),
+    ).thenAnswer((_) => Stream.error(Exception('network down')));
 
-    final container = ProviderContainer(overrides: [
-      aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-      cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => Directory.systemTemp,
             config: const ChatRecorderConfig(maxSeconds: 2),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
     final sub3 = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -343,28 +366,39 @@ void main() {
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
     // Allow recording to start without creating file
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((_) async {});
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((_) async {});
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer((_) {
       // Emit 5 amplitude samples synchronously to drive state without timers
-      return Stream<record.Amplitude>.fromIterable(List.generate(
-        5,
-        (_) => record.Amplitude(current: -40, max: -30),
-      ));
+      return Stream<record.Amplitude>.fromIterable(
+        List.generate(
+          5,
+          (_) => record.Amplitude(current: -40, max: -30),
+        ),
+      );
     });
 
     const now = 1234567890;
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             nowMillisProvider: () => now,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 1),
-          )),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+          ),
+        ),
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
@@ -377,8 +411,9 @@ void main() {
       amplitudeHistory: List<double>.filled(5, 0.5),
     );
     expect(
-        container.read(chatRecorderControllerProvider).amplitudeHistory.length,
-        5);
+      container.read(chatRecorderControllerProvider).amplitudeHistory.length,
+      5,
+    );
 
     // Check amplitude history before dispose
     final stateBeforeDispose = container.read(chatRecorderControllerProvider);
@@ -410,8 +445,12 @@ void main() {
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
     // Simulate file creation by the recorder
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       final f = await File(path).create(recursive: true);
       await f.writeAsBytes([1, 2, 3]);
@@ -426,16 +465,21 @@ void main() {
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
     const now = 4242424242;
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             nowMillisProvider: () => now,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+          ),
+        ),
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -452,10 +496,16 @@ void main() {
     // Give cleanup some time to complete
     await pumpEventQueue();
 
-    expect(await file.exists(), isFalse,
-        reason: 'Audio file should be deleted');
-    expect(await tempSubdir.exists(), isFalse,
-        reason: 'Temp directory should be deleted');
+    expect(
+      await file.exists(),
+      isFalse,
+      reason: 'Audio file should be deleted',
+    );
+    expect(
+      await tempSubdir.exists(),
+      isFalse,
+      reason: 'Temp directory should be deleted',
+    );
     sub.close();
     container.dispose();
   });
@@ -474,8 +524,12 @@ void main() {
     );
 
     // Recorder.start creates file
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
@@ -486,14 +540,18 @@ void main() {
     final mockSvc = _MockTranscriptionService();
     when(() => mockSvc.transcribe(any())).thenAnswer((_) async => 'ok');
 
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -503,10 +561,14 @@ void main() {
     await controller.stopAndTranscribe();
 
     // Final state should be idle with no temp dir left behind
-    expect(container.read(chatRecorderControllerProvider).status,
-        ChatRecorderStatus.idle);
     expect(
-        await Directory('${baseTemp.path}/lotti_chat_rec').exists(), isFalse);
+      container.read(chatRecorderControllerProvider).status,
+      ChatRecorderStatus.idle,
+    );
+    expect(
+      await Directory('${baseTemp.path}/lotti_chat_rec').exists(),
+      isFalse,
+    );
     sub.close();
     container.dispose();
   });
@@ -523,25 +585,34 @@ void main() {
         (_) => record.Amplitude(current: -40, max: -30),
       ).take(5),
     );
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
     final mockSvc = _MockTranscriptionService();
-    when(() => mockSvc.transcribe(any()))
-        .thenThrow(TimeoutException('timeout'));
+    when(
+      () => mockSvc.transcribe(any()),
+    ).thenThrow(TimeoutException('timeout'));
 
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -551,7 +622,9 @@ void main() {
     final state = container.read(chatRecorderControllerProvider);
     expect(state.errorType, ChatRecorderErrorType.transcriptionFailed);
     expect(
-        await Directory('${baseTemp.path}/lotti_chat_rec').exists(), isFalse);
+      await Directory('${baseTemp.path}/lotti_chat_rec').exists(),
+      isFalse,
+    );
     sub.close();
     container.dispose();
   });
@@ -561,14 +634,18 @@ void main() {
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async =>
                 throw const FileSystemException('No space left on device'),
             config: const ChatRecorderConfig(maxSeconds: 2),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -591,26 +668,34 @@ void main() {
     final mockRecorder = _MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => Stream<record.Amplitude>.empty());
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.onAmplitudeChanged(any()),
+    ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
     when(() => mockRecorder.stop()).thenThrow(Exception('stop fail'));
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() {
-        return ChatRecorderController(
-          recorderFactory: () => mockRecorder,
-          tempDirectoryProvider: () async => baseTemp,
-          config: const ChatRecorderConfig(maxSeconds: 2),
-        );
-      }),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(() {
+          return ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          );
+        }),
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     // Keep provider alive during async operations
@@ -621,12 +706,14 @@ void main() {
     await controller.start();
     await controller.stopAndTranscribe();
 
-    verify(() => mockLogger.captureException(
-          any<dynamic>(),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          domain: 'ChatRecorderController',
-          subDomain: 'stopAndTranscribe.stop',
-        )).called(1);
+    verify(
+      () => mockLogger.captureException(
+        any<dynamic>(),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+        domain: 'ChatRecorderController',
+        subDomain: 'stopAndTranscribe.stop',
+      ),
+    ).called(1);
   });
 
   test('cancel logs when ampSub.cancel and recorder.stop throw', () async {
@@ -640,26 +727,34 @@ void main() {
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Stream that returns a subscription whose cancel throws
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => _ThrowOnCancelStream());
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.onAmplitudeChanged(any()),
+    ).thenAnswer((_) => _ThrowOnCancelStream());
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
     when(() => mockRecorder.stop()).thenThrow(Exception('stop fail'));
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() {
-        return ChatRecorderController(
-          recorderFactory: () => mockRecorder,
-          tempDirectoryProvider: () async => baseTemp,
-          config: const ChatRecorderConfig(maxSeconds: 2),
-        );
-      }),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(() {
+          return ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          );
+        }),
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     // Keep provider alive during async operations
@@ -670,18 +765,22 @@ void main() {
     await controller.start();
     await controller.cancel();
 
-    verify(() => mockLogger.captureException(
-          any<dynamic>(),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          domain: 'ChatRecorderController',
-          subDomain: 'cancel.ampSub',
-        )).called(1);
-    verify(() => mockLogger.captureException(
-          any<dynamic>(),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          domain: 'ChatRecorderController',
-          subDomain: 'cancel.recorder',
-        )).called(1);
+    verify(
+      () => mockLogger.captureException(
+        any<dynamic>(),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+        domain: 'ChatRecorderController',
+        subDomain: 'cancel.ampSub',
+      ),
+    ).called(1);
+    verify(
+      () => mockLogger.captureException(
+        any<dynamic>(),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+        domain: 'ChatRecorderController',
+        subDomain: 'cancel.recorder',
+      ),
+    ).called(1);
   });
 
   test('cleanup logs when file/dir are missing (PathNotFound)', () async {
@@ -694,27 +793,35 @@ void main() {
     final mockRecorder = _MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => Stream<record.Amplitude>.empty());
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.onAmplitudeChanged(any()),
+    ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       final f = await File(path).create(recursive: true);
       await f.writeAsBytes([1, 2, 3]);
     });
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() {
-        return ChatRecorderController(
-          recorderFactory: () => mockRecorder,
-          tempDirectoryProvider: () async => baseTemp,
-          config: const ChatRecorderConfig(maxSeconds: 2),
-        );
-      }),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(() {
+          return ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+          );
+        }),
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     // Keep provider alive during async operations
@@ -734,25 +841,33 @@ void main() {
 
     // We accept either specific PathNotFound logs or the generic cleanup log,
     // depending on platform exception types.
-    verify(() => mockLogger.captureException(
-          any<dynamic>(),
-          domain: 'ChatRecorderController',
-          subDomain: any<String>(
-              named: 'subDomain',
-              that: predicate((s) =>
-                  s == 'cleanup.fileNotFound' ||
-                  s == 'cleanup.tempDirNotFound' ||
-                  s == 'cleanup' ||
-                  s == 'cleanup.tempDir')),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        )).called(greaterThanOrEqualTo(1));
+    verify(
+      () => mockLogger.captureException(
+        any<dynamic>(),
+        domain: 'ChatRecorderController',
+        subDomain: any<String>(
+          named: 'subDomain',
+          that: predicate(
+            (s) =>
+                s == 'cleanup.fileNotFound' ||
+                s == 'cleanup.tempDirNotFound' ||
+                s == 'cleanup' ||
+                s == 'cleanup.tempDir',
+          ),
+        ),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).called(greaterThanOrEqualTo(1));
   });
 
   test('getNormalizedAmplitudeHistory clamps and scales as expected', () async {
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -775,27 +890,34 @@ void main() {
     expect(normalized[4], closeTo(1.0, 1e-6));
   });
 
-  test('clearResult removes transcript and error but preserves history',
-      () async {
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
-    addTearDown(container.dispose);
+  test(
+    'clearResult removes transcript and error but preserves history',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(
+            _MockTranscriptionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    final controller = container.read(chatRecorderControllerProvider.notifier);
-    controller
-      ..state = controller.state.copyWith(
-        amplitudeHistory: const <double>[0.2, 0.5],
-        transcript: 'hello world',
-        error: 'some error',
-      )
-      ..clearResult();
-    final state = container.read(chatRecorderControllerProvider);
-    expect(state.transcript, isNull);
-    expect(state.error, isNull);
-    expect(state.amplitudeHistory, equals(const <double>[0.2, 0.5]));
-  });
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      controller
+        ..state = controller.state.copyWith(
+          amplitudeHistory: const <double>[0.2, 0.5],
+          transcript: 'hello world',
+          error: 'some error',
+        )
+        ..clearResult();
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.transcript, isNull);
+      expect(state.error, isNull);
+      expect(state.amplitudeHistory, equals(const <double>[0.2, 0.5]));
+    },
+  );
 
   test('ref.onDispose cleans up active recording resources', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
@@ -806,25 +928,35 @@ void main() {
 
     // Create a stream that keeps emitting (simulates active recording)
     final amplitudeController = StreamController<record.Amplitude>.broadcast();
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => amplitudeController.stream);
+    when(
+      () => mockRecorder.onAmplitudeChanged(any()),
+    ).thenAnswer((_) => amplitudeController.stream);
 
     // Create file on start
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 60),
-          )),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+          ),
+        ),
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -856,10 +988,13 @@ void main() {
   });
 
   test('clearResult does nothing when no transcript or error', () async {
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
@@ -875,102 +1010,126 @@ void main() {
     expect(state.error, isNull);
   });
 
-  test('partialTranscript updates progressively during streaming transcription',
-      () async {
-    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
-    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => Stream<record.Amplitude>.empty());
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
-      final path = invocation.namedArguments[#path] as String;
-      await File(path).create(recursive: true);
-    });
-    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+  test(
+    'partialTranscript updates progressively during streaming transcription',
+    () async {
+      final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(
+        () => mockRecorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((invocation) async {
+        final path = invocation.namedArguments[#path] as String;
+        await File(path).create(recursive: true);
+      });
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-    // Mock transcription service that streams chunks progressively
-    final mockSvc = _MockTranscriptionService();
-    final streamController = StreamController<String>();
+      // Mock transcription service that streams chunks progressively
+      final mockSvc = _MockTranscriptionService();
+      final streamController = StreamController<String>();
 
-    when(() => mockSvc.transcribeStream(any()))
-        .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockSvc.transcribeStream(any()),
+      ).thenAnswer((_) => streamController.stream);
 
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
-            recorderFactory: () => mockRecorder,
-            tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-    ]);
-    addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              config: const ChatRecorderConfig(maxSeconds: 10),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
-    addTearDown(sub.close);
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      addTearDown(sub.close);
 
-    final controller = container.read(chatRecorderControllerProvider.notifier);
-    await controller.start();
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
 
-    // Start transcription (non-blocking)
-    final transcribeFuture = controller.stopAndTranscribe();
+      // Start transcription (non-blocking)
+      final transcribeFuture = controller.stopAndTranscribe();
 
-    // Allow the stream to be set up
-    await pumpEventQueue();
+      // Allow the stream to be set up
+      await pumpEventQueue();
 
-    // Emit first chunk
-    streamController.add('Hello ');
-    await pumpEventQueue();
+      // Emit first chunk
+      streamController.add('Hello ');
+      await pumpEventQueue();
 
-    var state = container.read(chatRecorderControllerProvider);
-    expect(state.status, ChatRecorderStatus.processing);
-    expect(state.partialTranscript, 'Hello ');
+      var state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.processing);
+      expect(state.partialTranscript, 'Hello ');
 
-    // Emit second chunk
-    streamController.add('world');
-    await pumpEventQueue();
+      // Emit second chunk
+      streamController.add('world');
+      await pumpEventQueue();
 
-    state = container.read(chatRecorderControllerProvider);
-    expect(state.partialTranscript, 'Hello world');
+      state = container.read(chatRecorderControllerProvider);
+      expect(state.partialTranscript, 'Hello world');
 
-    // Complete the stream
-    await streamController.close();
-    await transcribeFuture;
+      // Complete the stream
+      await streamController.close();
+      await transcribeFuture;
 
-    // Final state should have transcript and clear partialTranscript
-    state = container.read(chatRecorderControllerProvider);
-    expect(state.status, ChatRecorderStatus.idle);
-    expect(state.transcript, 'Hello world');
-    expect(state.partialTranscript, isNull);
-  });
+      // Final state should have transcript and clear partialTranscript
+      state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.idle);
+      expect(state.transcript, 'Hello world');
+      expect(state.partialTranscript, isNull);
+    },
+  );
 
   test('partialTranscript is cleared when transcription completes', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => Stream<record.Amplitude>.empty());
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.onAmplitudeChanged(any()),
+    ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
     final mockSvc = _MockTranscriptionService();
-    when(() => mockSvc.transcribeStream(any()))
-        .thenAnswer((_) => Stream.fromIterable(['Complete transcript']));
+    when(
+      () => mockSvc.transcribeStream(any()),
+    ).thenAnswer((_) => Stream.fromIterable(['Complete transcript']));
 
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -990,10 +1149,15 @@ void main() {
     final mockRecorder = _MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => Stream<record.Amplitude>.empty());
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((invocation) async {
+    when(
+      () => mockRecorder.onAmplitudeChanged(any()),
+    ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
       final path = invocation.namedArguments[#path] as String;
       await File(path).create(recursive: true);
     });
@@ -1003,17 +1167,22 @@ void main() {
     final mockSvc = _MockTranscriptionService();
     final neverEndingController = StreamController<String>();
 
-    when(() => mockSvc.transcribeStream(any()))
-        .thenAnswer((_) => neverEndingController.stream);
+    when(
+      () => mockSvc.transcribeStream(any()),
+    ).thenAnswer((_) => neverEndingController.stream);
 
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
             config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(() async {
       await neverEndingController.close();
       container.dispose();
@@ -1055,12 +1224,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1068,20 +1239,24 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       final state = container.read(chatRecorderControllerProvider);
@@ -1095,20 +1270,24 @@ void main() {
 
       final mockRealtime = _MockRealtimeService();
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       final state = container.read(chatRecorderControllerProvider);
@@ -1123,20 +1302,24 @@ void main() {
 
       final mockRealtime = _MockRealtimeService();
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       unawaited(controller.startRealtime());
       await controller.startRealtime();
 
@@ -1150,13 +1333,15 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       void Function(String)? capturedOnDelta;
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1167,20 +1352,24 @@ void main() {
             invocation.namedArguments[#onDelta] as void Function(String);
       });
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       // Simulate deltas arriving
@@ -1200,12 +1389,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1224,21 +1415,25 @@ void main() {
         ),
       );
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => Directory.systemTemp,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
       await controller.stopRealtime();
 
@@ -1254,12 +1449,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1268,20 +1465,24 @@ void main() {
       ).thenAnswer((_) async {});
       when(() => mockRealtime.dispose()).thenAnswer((_) async {});
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       var state = container.read(chatRecorderControllerProvider);
@@ -1296,10 +1497,13 @@ void main() {
   });
 
   test('cancel from idle is a no-op', () async {
-    final container = ProviderContainer(overrides: [
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(
+          _MockTranscriptionService(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -1320,57 +1524,71 @@ void main() {
     expect(state.error, isNull);
   });
 
-  test('stopAndTranscribe completes successfully with empty transcription',
-      () async {
-    final mockRecorder = _MockAudioRecorder();
-    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    when(() => mockRecorder.onAmplitudeChanged(any()))
-        .thenAnswer((_) => Stream<record.Amplitude>.empty());
-    // Start recording but don't create the file at the path
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((_) async {});
-    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+  test(
+    'stopAndTranscribe completes successfully with empty transcription',
+    () async {
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(
+        () => mockRecorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+      // Start recording but don't create the file at the path
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
-            recorderFactory: () => mockRecorder,
-            tempDirectoryProvider: () async => Directory.systemTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
-          )),
-      audioTranscriptionServiceProvider
-          .overrideWithValue(_MockTranscriptionService()),
-    ]);
-    addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              config: const ChatRecorderConfig(maxSeconds: 10),
+            ),
+          ),
+          audioTranscriptionServiceProvider.overrideWithValue(
+            _MockTranscriptionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
-    addTearDown(sub.close);
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      addTearDown(sub.close);
 
-    final controller = container.read(chatRecorderControllerProvider.notifier);
-    await controller.start();
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
 
-    // Manually null out the file path to simulate edge case
-    // by forcing stopAndTranscribe on a controller that started
-    // but where the recorder created no file
-    // (the start succeeded so _recorder is non-null, triggering the path)
-    // We need a different approach: use a tempDir that doesn't allow file
-    // creation. Actually, the simplest way is to call stopAndTranscribe
-    // and check the _filePath path. The start() sets _filePath, so we need
-    // a recorder that starts but produces no file at the expected path.
-    // Actually _filePath IS set by start() regardless of whether the file
-    // exists; the "null filePath" branch is only hit when _filePath is null.
-    // That can happen if start() fails partway through and sets _recorder but
-    // not _filePath. That's hard to reproduce. Let me just verify the error
-    // type is set correctly after a normal stop with transcription.
-    await controller.stopAndTranscribe();
+      // Manually null out the file path to simulate edge case
+      // by forcing stopAndTranscribe on a controller that started
+      // but where the recorder created no file
+      // (the start succeeded so _recorder is non-null, triggering the path)
+      // We need a different approach: use a tempDir that doesn't allow file
+      // creation. Actually, the simplest way is to call stopAndTranscribe
+      // and check the _filePath path. The start() sets _filePath, so we need
+      // a recorder that starts but produces no file at the expected path.
+      // Actually _filePath IS set by start() regardless of whether the file
+      // exists; the "null filePath" branch is only hit when _filePath is null.
+      // That can happen if start() fails partway through and sets _recorder but
+      // not _filePath. That's hard to reproduce. Let me just verify the error
+      // type is set correctly after a normal stop with transcription.
+      await controller.stopAndTranscribe();
 
-    // The transcription service mock returns empty stream by default,
-    // which means the transcript will be empty string — that's a successful
-    // transcription, not a "no audio file" error. So this tests that the
-    // controller handles the stopAndTranscribe flow to completion.
-    final state = container.read(chatRecorderControllerProvider);
-    expect(state.status, ChatRecorderStatus.idle);
-  });
+      // The transcription service mock returns empty stream by default,
+      // which means the transcript will be empty string — that's a successful
+      // transcription, not a "no audio file" error. So this tests that the
+      // controller handles the stopAndTranscribe flow to completion.
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.idle);
+    },
+  );
 
   group('startRealtime error handling', () {
     test('sets error state when startRealtimeTranscription throws', () async {
@@ -1378,12 +1596,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1391,20 +1611,24 @@ void main() {
         ),
       ).thenThrow(StateError('No Mistral realtime model configured'));
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       final state = container.read(chatRecorderControllerProvider);
@@ -1419,12 +1643,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1438,21 +1664,25 @@ void main() {
         ),
       ).thenThrow(Exception('WebSocket closed unexpectedly'));
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => Directory.systemTemp,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       expect(
@@ -1473,43 +1703,54 @@ void main() {
     test('fires and calls stopAndTranscribe for batch recording', () async {
       final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
       // Pre-create subdirectory to minimize real I/O during fakeAsync
-      await Directory('${baseTemp.path}/lotti_chat_rec')
-          .create(recursive: true);
+      await Directory(
+        '${baseTemp.path}/lotti_chat_rec',
+      ).create(recursive: true);
 
       final mockRecorder = _MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-      when(() => mockRecorder.onAmplitudeChanged(any()))
-          .thenAnswer((_) => Stream<record.Amplitude>.empty());
+      when(
+        () => mockRecorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => Stream<record.Amplitude>.empty());
       // Avoid real file I/O in recorder mock — file existence is not needed
       // since transcription service is mocked
-      when(() => mockRecorder.start(any<record.RecordConfig>(),
-          path: any(named: 'path'))).thenAnswer((_) async {});
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
       final mockSvc = _MockTranscriptionService();
-      when(() => mockSvc.transcribeStream(any()))
-          .thenAnswer((_) => Stream.value('timer transcript'));
+      when(
+        () => mockSvc.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.value('timer transcript'));
 
       // Use maxSeconds: 0 so the safety timer fires immediately (zero-duration
       // Timer), which can be triggered by pumping the event queue instead of
       // waiting real wall-clock time.
-      final container = ProviderContainer(overrides: [
-        audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => baseTemp,
-                  config: const ChatRecorderConfig(maxSeconds: 0),
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              config: const ChatRecorderConfig(maxSeconds: 0),
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.start();
 
       expect(
@@ -1531,17 +1772,21 @@ void main() {
 
   group('stopRealtime when recorder is null', () {
     test('returns immediately when recorder is null', () async {
-      final container = ProviderContainer(overrides: [
-        audioTranscriptionServiceProvider
-            .overrideWithValue(_MockTranscriptionService()),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(
+            _MockTranscriptionService(),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
 
       // stopRealtime without ever starting — _recorder is null
       await controller.stopRealtime();
@@ -1557,12 +1802,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1570,20 +1817,24 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
 
       // Start realtime to change status
       await controller.startRealtime();
@@ -1609,12 +1860,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1636,22 +1889,26 @@ void main() {
       // Use maxSeconds: 0 so the safety timer fires immediately (zero-duration
       // Timer), allowing pumpEventQueue to trigger it without real wall-clock
       // waits.
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => Directory.systemTemp,
-                  realtimeTranscriptionService: mockRealtime,
-                  config: const ChatRecorderConfig(maxSeconds: 0),
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              realtimeTranscriptionService: mockRealtime,
+              config: const ChatRecorderConfig(maxSeconds: 0),
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       expect(
@@ -1677,12 +1934,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1701,21 +1960,25 @@ void main() {
         ),
       );
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => Directory.systemTemp,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       expect(
@@ -1741,10 +2004,13 @@ void main() {
     });
 
     test('does not stop when status is not realtimeRecording', () async {
-      final container = ProviderContainer(overrides: [
-        audioTranscriptionServiceProvider
-            .overrideWithValue(_MockTranscriptionService()),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(
+            _MockTranscriptionService(),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
@@ -1804,12 +2070,14 @@ void main() {
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
-          .thenAnswer((_) async => Stream<Uint8List>.empty());
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.amplitudeStream)
-          .thenAnswer((_) => _ThrowOnCancelDoubleStream());
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => _ThrowOnCancelDoubleStream());
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -1818,21 +2086,25 @@ void main() {
       ).thenAnswer((_) async {});
       when(() => mockRealtime.dispose()).thenAnswer((_) async {});
 
-      final container = ProviderContainer(overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(() => ChatRecorderController(
-                  recorderFactory: () => mockRecorder,
-                  tempDirectoryProvider: () async => Directory.systemTemp,
-                  realtimeTranscriptionService: mockRealtime,
-                )),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
       addTearDown(sub.close);
 
-      final controller =
-          container.read(chatRecorderControllerProvider.notifier);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
       await controller.startRealtime();
 
       // Cancel while subscriptions that throw on cancel exist
@@ -1863,30 +2135,36 @@ void main() {
       final mockRealtime = _MockRealtimeService();
       when(() => mockRealtime.resolveRealtimeConfig()).thenAnswer(
         (_) async => (
-          provider: AiConfig.inferenceProvider(
-            id: 'p',
-            baseUrl: 'https://api.mistral.ai/v1',
-            apiKey: 'k',
-            name: 'M',
-            createdAt: DateTime.now(),
-            inferenceProviderType: InferenceProviderType.mistral,
-          ) as AiConfigInferenceProvider,
-          model: AiConfig.model(
-            id: 'm',
-            name: 'RT',
-            providerModelId: 'voxtral-mini-transcribe-realtime-2602',
-            inferenceProviderId: 'p',
-            createdAt: DateTime.now(),
-            inputModalities: const [Modality.audio],
-            outputModalities: const [Modality.text],
-            isReasoningModel: false,
-          ) as AiConfigModel,
+          provider:
+              AiConfig.inferenceProvider(
+                    id: 'p',
+                    baseUrl: 'https://api.mistral.ai/v1',
+                    apiKey: 'k',
+                    name: 'M',
+                    createdAt: DateTime.now(),
+                    inferenceProviderType: InferenceProviderType.mistral,
+                  )
+                  as AiConfigInferenceProvider,
+          model:
+              AiConfig.model(
+                    id: 'm',
+                    name: 'RT',
+                    providerModelId: 'voxtral-mini-transcribe-realtime-2602',
+                    inferenceProviderId: 'p',
+                    createdAt: DateTime.now(),
+                    inputModalities: const [Modality.audio],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: false,
+                  )
+                  as AiConfigModel,
         ),
       );
 
-      final container = ProviderContainer(overrides: [
-        realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
+        ],
+      );
       addTearDown(container.dispose);
 
       final result = await container.read(realtimeAvailableProvider.future);
@@ -1895,12 +2173,15 @@ void main() {
 
     test('returns false when no realtime model configured', () async {
       final mockRealtime = _MockRealtimeService();
-      when(() => mockRealtime.resolveRealtimeConfig())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRealtime.resolveRealtimeConfig(),
+      ).thenAnswer((_) async => null);
 
-      final container = ProviderContainer(overrides: [
-        realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
+        ],
+      );
       addTearDown(container.dispose);
 
       final result = await container.read(realtimeAvailableProvider.future);

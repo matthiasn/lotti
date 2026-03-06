@@ -127,8 +127,9 @@ void main() {
           await tester.pumpAndSettle();
 
           // Should show page 0 (import page) content
-          final context =
-              tester.element(find.byType(ProvisionedSyncSettingsCard));
+          final context = tester.element(
+            find.byType(ProvisionedSyncSettingsCard),
+          );
           expect(
             find.text(context.messages.provisionedSyncImportTitle),
             findsWidgets,
@@ -140,8 +141,9 @@ void main() {
         'opens modal at status page when logged in with room',
         (tester) async {
           when(mockMatrixService.isLoggedIn).thenReturn(true);
-          when(() => mockMatrixService.syncRoomId)
-              .thenReturn('!room123:example.com');
+          when(
+            () => mockMatrixService.syncRoomId,
+          ).thenReturn('!room123:example.com');
           when(() => mockClient.userID).thenReturn('@alice:example.com');
 
           await tester.pumpWidget(
@@ -157,8 +159,9 @@ void main() {
           await tester.tap(find.byType(ProvisionedSyncSettingsCard));
           await tester.pumpAndSettle();
 
-          final context =
-              tester.element(find.byType(ProvisionedSyncSettingsCard));
+          final context = tester.element(
+            find.byType(ProvisionedSyncSettingsCard),
+          );
 
           // Should open directly to status page (no provisioning input page)
           expect(
@@ -200,8 +203,9 @@ void main() {
           await tester.pumpAndSettle();
 
           // Should show page 0 (import page)
-          final context =
-              tester.element(find.byType(ProvisionedSyncSettingsCard));
+          final context = tester.element(
+            find.byType(ProvisionedSyncSettingsCard),
+          );
           expect(
             find.text(context.messages.provisionedSyncImportTitle),
             findsWidgets,
@@ -213,8 +217,9 @@ void main() {
         'opens at import page when not logged in but has room',
         (tester) async {
           when(mockMatrixService.isLoggedIn).thenReturn(false);
-          when(() => mockMatrixService.syncRoomId)
-              .thenReturn('!room123:example.com');
+          when(
+            () => mockMatrixService.syncRoomId,
+          ).thenReturn('!room123:example.com');
 
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
@@ -230,8 +235,9 @@ void main() {
           await tester.pumpAndSettle();
 
           // Should show page 0 (import page) - needs both conditions
-          final context =
-              tester.element(find.byType(ProvisionedSyncSettingsCard));
+          final context = tester.element(
+            find.byType(ProvisionedSyncSettingsCard),
+          );
           expect(
             find.text(context.messages.provisionedSyncImportTitle),
             findsWidgets,

@@ -41,8 +41,9 @@ void main() {
     mockKeyVerification = MockKeyVerification();
     controller = StreamController<KeyVerificationRunner>.broadcast();
 
-    when(() => mockMatrixService.incomingKeyVerificationRunnerStream)
-        .thenAnswer((_) => controller.stream);
+    when(
+      () => mockMatrixService.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => controller.stream);
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
     when(() => mockKeyVerification.isDone).thenReturn(false);
@@ -198,7 +199,9 @@ void main() {
       await tester.pump();
 
       expect(
-          find.byKey(const Key('matrix_cancel_verification')), findsOneWidget);
+        find.byKey(const Key('matrix_cancel_verification')),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('matrix_cancel_verification')));
       await tester.pump();
 
@@ -206,15 +209,17 @@ void main() {
     },
   );
 
-  testWidgets('displays device display name from unverified list',
-      (tester) async {
+  testWidgets('displays device display name from unverified list', (
+    tester,
+  ) async {
     final runner = MockKeyVerificationRunner();
     final mockDeviceKeys = MockDeviceKeys();
 
     when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');
     when(() => mockDeviceKeys.deviceDisplayName).thenReturn('My Pixel');
-    when(() => mockMatrixService.getUnverifiedDevices())
-        .thenReturn([mockDeviceKeys]);
+    when(
+      () => mockMatrixService.getUnverifiedDevices(),
+    ).thenReturn([mockDeviceKeys]);
     when(() => runner.lastStep).thenReturn('');
     when(() => runner.emojis).thenReturn(null);
     when(() => runner.keyVerification).thenReturn(mockKeyVerification);

@@ -21,11 +21,11 @@ class SentEventRegistry {
     this.maxEntries = 5000,
     this.pruneInterval = const Duration(seconds: 30),
     Clock? clockSource,
-  })  : assert(!ttl.isNegative, 'ttl must not be negative'),
-        assert(maxEntries > 0, 'maxEntries must be positive'),
-        assert(!pruneInterval.isNegative, 'pruneInterval must not be negative'),
-        _clock = clockSource ?? clock,
-        _nextPruneAt = (clockSource ?? clock).now();
+  }) : assert(!ttl.isNegative, 'ttl must not be negative'),
+       assert(maxEntries > 0, 'maxEntries must be positive'),
+       assert(!pruneInterval.isNegative, 'pruneInterval must not be negative'),
+       _clock = clockSource ?? clock,
+       _nextPruneAt = (clockSource ?? clock).now();
 
   final Duration ttl;
   final int maxEntries;

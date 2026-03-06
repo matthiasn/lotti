@@ -62,8 +62,9 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
 
   void _importBundle(String input) {
     try {
-      final bundle =
-          ref.read(provisioningControllerProvider.notifier).decodeBundle(input);
+      final bundle = ref
+          .read(provisioningControllerProvider.notifier)
+          .decodeBundle(input);
       setState(() {
         _decodedBundle = bundle;
         _errorText = null;

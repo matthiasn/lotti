@@ -54,8 +54,8 @@ class CategoryLanguageDropdown extends StatelessWidget {
                 child: Text(
                   context.messages.noDefaultLanguage,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).hintColor,
-                      ),
+                    color: Theme.of(context).hintColor,
+                  ),
                 ),
               ),
             const Icon(Icons.arrow_drop_down),

@@ -13,8 +13,9 @@ void main() {
       final onUpdateHistory = <void Function()?>[];
 
       void previousOnUpdate() {}
-      when(() => verification.lastStep)
-          .thenReturn('m.key.verification.request');
+      when(
+        () => verification.lastStep,
+      ).thenReturn('m.key.verification.request');
       when(() => verification.isDone).thenReturn(false);
       when(() => verification.canceled).thenReturn(false);
       when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
@@ -56,8 +57,9 @@ void main() {
       when(() => verification.lastStep).thenAnswer((_) => step);
       when(() => verification.isDone).thenAnswer((_) => done);
       when(() => verification.canceled).thenReturn(false);
-      when(() => verification.sasEmojis)
-          .thenAnswer((_) => <KeyVerificationEmoji>[]);
+      when(
+        () => verification.sasEmojis,
+      ).thenAnswer((_) => <KeyVerificationEmoji>[]);
       when(() => verification.onUpdate).thenAnswer((_) => capturedOnUpdate);
       when(() => verification.onUpdate = any()).thenAnswer((invocation) {
         capturedOnUpdate =
@@ -97,8 +99,9 @@ void main() {
       );
       addTearDown(handler.dispose);
 
-      when(verification.acceptVerification)
-          .thenAnswer((_) async => Future<void>.value());
+      when(
+        verification.acceptVerification,
+      ).thenAnswer((_) async => Future<void>.value());
       when(() => verification.lastStep).thenReturn('m.key.verification.ready');
       when(() => verification.isDone).thenReturn(false);
       when(() => verification.canceled).thenReturn(false);
@@ -242,46 +245,49 @@ void main() {
     });
 
     test(
-        'outgoing completion clears outgoing state and invokes previous update',
-        () {
-      final events = <Map<String, Object?>>[];
-      final outgoing = MockKeyVerification();
+      'outgoing completion clears outgoing state and invokes previous update',
+      () {
+        final events = <Map<String, Object?>>[];
+        final outgoing = MockKeyVerification();
 
-      var done = false;
-      var previousCalled = false;
-      void Function()? capturedOnUpdate;
+        var done = false;
+        var previousCalled = false;
+        void Function()? capturedOnUpdate;
 
-      when(() => outgoing.lastStep).thenReturn('m.key.verification.key');
-      when(() => outgoing.isDone).thenAnswer((_) => done);
-      when(() => outgoing.canceled).thenReturn(false);
-      when(() => outgoing.sasEmojis).thenReturn(<KeyVerificationEmoji>[
-        KeyVerificationEmoji(1),
-      ]);
-      when(() => outgoing.onUpdate).thenAnswer((_) => () {
+        when(() => outgoing.lastStep).thenReturn('m.key.verification.key');
+        when(() => outgoing.isDone).thenAnswer((_) => done);
+        when(() => outgoing.canceled).thenReturn(false);
+        when(() => outgoing.sasEmojis).thenReturn(<KeyVerificationEmoji>[
+          KeyVerificationEmoji(1),
+        ]);
+        when(() => outgoing.onUpdate).thenAnswer(
+          (_) => () {
             previousCalled = true;
-          });
-      when(() => outgoing.onUpdate = any()).thenAnswer((invocation) {
-        capturedOnUpdate =
-            invocation.positionalArguments.first as void Function()?;
-        return null;
-      });
-      when(outgoing.cancel).thenAnswer((_) async => Future<void>.value());
+          },
+        );
+        when(() => outgoing.onUpdate = any()).thenAnswer((invocation) {
+          capturedOnUpdate =
+              invocation.positionalArguments.first as void Function()?;
+          return null;
+        });
+        when(outgoing.cancel).thenAnswer((_) async => Future<void>.value());
 
-      final handler = VerificationHandler(
-        onStateChanged: events.add,
-        pollInterval: Duration.zero,
-      );
-      addTearDown(handler.dispose);
+        final handler = VerificationHandler(
+          onStateChanged: events.add,
+          pollInterval: Duration.zero,
+        );
+        addTearDown(handler.dispose);
 
-      handler.trackOutgoing(outgoing);
-      expect(events.last['emojis'], isNotEmpty);
+        handler.trackOutgoing(outgoing);
+        expect(events.last['emojis'], isNotEmpty);
 
-      done = true;
-      capturedOnUpdate?.call();
+        done = true;
+        capturedOnUpdate?.call();
 
-      expect(previousCalled, isTrue);
-      expect(handler.snapshot()['hasOutgoing'], isFalse);
-    });
+        expect(previousCalled, isTrue);
+        expect(handler.snapshot()['hasOutgoing'], isFalse);
+      },
+    );
 
     test('emoji serialization is guarded when sasEmojis throws', () {
       final events = <Map<String, Object?>>[];

@@ -11,7 +11,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 
 final showPrivateEntriesProvider = StreamProvider<bool>(
-    (ref) => getIt<JournalDb>().watchConfigFlag('private'));
+  (ref) => getIt<JournalDb>().watchConfigFlag('private'),
+);
 
 final labelUsageStatsProvider = StreamProvider<Map<String, int>>(
   (ref) => notificationDrivenMapStream(
@@ -33,19 +34,21 @@ List<LabelDefinition> _visibleLabels(
 
 final labelsStreamProvider = StreamProvider<List<LabelDefinition>>((ref) {
   final repository = ref.watch(labelsRepositoryProvider);
-  final showPrivate = ref.watch(showPrivateEntriesProvider).maybeWhen(
+  final showPrivate = ref
+      .watch(showPrivateEntriesProvider)
+      .maybeWhen(
         data: (value) => value,
         orElse: () => false,
       );
   return repository.watchLabels().map(
-        (labels) => _visibleLabels(labels, showPrivate),
-      );
+    (labels) => _visibleLabels(labels, showPrivate),
+  );
 });
 
 final labelsListControllerProvider =
     NotifierProvider<LabelsListController, AsyncValue<List<LabelDefinition>>>(
-  LabelsListController.new,
-);
+      LabelsListController.new,
+    );
 
 class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
   late final LabelsRepository _repository;
@@ -54,7 +57,9 @@ class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
   @override
   AsyncValue<List<LabelDefinition>> build() {
     _repository = ref.watch(labelsRepositoryProvider);
-    final showPrivate = ref.watch(showPrivateEntriesProvider).maybeWhen(
+    final showPrivate = ref
+        .watch(showPrivateEntriesProvider)
+        .maybeWhen(
           data: (value) => value,
           orElse: () => false,
         );
@@ -89,14 +94,16 @@ class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
 /// Reactive provider that computes the category-scoped set of available labels
 /// (global ∪ scoped-to-category) while preserving Riverpod reactivity.
 final ProviderFamily<List<LabelDefinition>, String?>
-    availableLabelsForCategoryProvider =
+availableLabelsForCategoryProvider =
     Provider.family<List<LabelDefinition>, String?>((ref, categoryId) {
-  final cache = getIt<EntitiesCacheService>();
-  return cache.filterLabelsForCategory(
-    ref.watch(labelsStreamProvider).maybeWhen(
-          data: (value) => value,
-          orElse: () => const <LabelDefinition>[],
-        ),
-    categoryId,
-  );
-});
+      final cache = getIt<EntitiesCacheService>();
+      return cache.filterLabelsForCategory(
+        ref
+            .watch(labelsStreamProvider)
+            .maybeWhen(
+              data: (value) => value,
+              orElse: () => const <LabelDefinition>[],
+            ),
+        categoryId,
+      );
+    });

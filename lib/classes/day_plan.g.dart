@@ -23,31 +23,31 @@ DayPlanStatusAgreed _$DayPlanStatusAgreedFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$DayPlanStatusAgreedToJson(
-        DayPlanStatusAgreed instance) =>
-    <String, dynamic>{
-      'agreedAt': instance.agreedAt.toIso8601String(),
-      'runtimeType': instance.$type,
-    };
+  DayPlanStatusAgreed instance,
+) => <String, dynamic>{
+  'agreedAt': instance.agreedAt.toIso8601String(),
+  'runtimeType': instance.$type,
+};
 
 DayPlanStatusNeedsReview _$DayPlanStatusNeedsReviewFromJson(
-        Map<String, dynamic> json) =>
-    DayPlanStatusNeedsReview(
-      triggeredAt: DateTime.parse(json['triggeredAt'] as String),
-      reason: $enumDecode(_$DayPlanReviewReasonEnumMap, json['reason']),
-      previouslyAgreedAt: json['previouslyAgreedAt'] == null
-          ? null
-          : DateTime.parse(json['previouslyAgreedAt'] as String),
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => DayPlanStatusNeedsReview(
+  triggeredAt: DateTime.parse(json['triggeredAt'] as String),
+  reason: $enumDecode(_$DayPlanReviewReasonEnumMap, json['reason']),
+  previouslyAgreedAt: json['previouslyAgreedAt'] == null
+      ? null
+      : DateTime.parse(json['previouslyAgreedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$DayPlanStatusNeedsReviewToJson(
-        DayPlanStatusNeedsReview instance) =>
-    <String, dynamic>{
-      'triggeredAt': instance.triggeredAt.toIso8601String(),
-      'reason': _$DayPlanReviewReasonEnumMap[instance.reason]!,
-      'previouslyAgreedAt': instance.previouslyAgreedAt?.toIso8601String(),
-      'runtimeType': instance.$type,
-    };
+  DayPlanStatusNeedsReview instance,
+) => <String, dynamic>{
+  'triggeredAt': instance.triggeredAt.toIso8601String(),
+  'reason': _$DayPlanReviewReasonEnumMap[instance.reason]!,
+  'previouslyAgreedAt': instance.previouslyAgreedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
 
 const _$DayPlanReviewReasonEnumMap = {
   DayPlanReviewReason.newDueTask: 'newDueTask',
@@ -89,24 +89,26 @@ Map<String, dynamic> _$PinnedTaskRefToJson(_PinnedTaskRef instance) =>
     };
 
 _DayPlanData _$DayPlanDataFromJson(Map<String, dynamic> json) => _DayPlanData(
-      planDate: DateTime.parse(json['planDate'] as String),
-      status: DayPlanStatus.fromJson(json['status'] as Map<String, dynamic>),
-      dayLabel: json['dayLabel'] as String?,
-      agreedAt: json['agreedAt'] == null
-          ? null
-          : DateTime.parse(json['agreedAt'] as String),
-      completedAt: json['completedAt'] == null
-          ? null
-          : DateTime.parse(json['completedAt'] as String),
-      plannedBlocks: (json['plannedBlocks'] as List<dynamic>?)
-              ?.map((e) => PlannedBlock.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      pinnedTasks: (json['pinnedTasks'] as List<dynamic>?)
-              ?.map((e) => PinnedTaskRef.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-    );
+  planDate: DateTime.parse(json['planDate'] as String),
+  status: DayPlanStatus.fromJson(json['status'] as Map<String, dynamic>),
+  dayLabel: json['dayLabel'] as String?,
+  agreedAt: json['agreedAt'] == null
+      ? null
+      : DateTime.parse(json['agreedAt'] as String),
+  completedAt: json['completedAt'] == null
+      ? null
+      : DateTime.parse(json['completedAt'] as String),
+  plannedBlocks:
+      (json['plannedBlocks'] as List<dynamic>?)
+          ?.map((e) => PlannedBlock.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  pinnedTasks:
+      (json['pinnedTasks'] as List<dynamic>?)
+          ?.map((e) => PinnedTaskRef.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
 
 Map<String, dynamic> _$DayPlanDataToJson(_DayPlanData instance) =>
     <String, dynamic>{

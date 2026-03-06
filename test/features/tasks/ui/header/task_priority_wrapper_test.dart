@@ -55,8 +55,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -74,12 +75,14 @@ void main() {
       data: testTask.data.copyWith(priority: TaskPriority.p2Medium),
     );
 
-    when(() => mockPersistenceLogic.updateTask(
-          journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
-          categoryId: any(named: 'categoryId'),
-          entryText: any(named: 'entryText'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => mockPersistenceLogic.updateTask(
+        journalEntityId: any(named: 'journalEntityId'),
+        taskData: any(named: 'taskData'),
+        categoryId: any(named: 'categoryId'),
+        entryText: any(named: 'entryText'),
+      ),
+    ).thenAnswer((_) async => true);
 
     final overrides = <Override>[
       entryControllerProvider(id: task.meta.id).overrideWith(
@@ -106,12 +109,14 @@ void main() {
     await tester.tap(find.textContaining('P0'));
     await tester.pumpAndSettle();
 
-    final captured = verify(() => mockPersistenceLogic.updateTask(
-          journalEntityId: task.meta.id,
-          taskData: captureAny(named: 'taskData'),
-          categoryId: any(named: 'categoryId'),
-          entryText: any(named: 'entryText'),
-        )).captured;
+    final captured = verify(
+      () => mockPersistenceLogic.updateTask(
+        journalEntityId: task.meta.id,
+        taskData: captureAny(named: 'taskData'),
+        categoryId: any(named: 'categoryId'),
+        entryText: any(named: 'entryText'),
+      ),
+    ).captured;
 
     final updated = captured.single as TaskData;
     expect(updated.priority, TaskPriority.p0Urgent);
@@ -175,24 +180,28 @@ void main() {
 
     var currentPriority = TaskPriority.p2Medium;
 
-    when(() => mockPersistenceLogic.updateTask(
-          journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
-          categoryId: any(named: 'categoryId'),
-          entryText: any(named: 'entryText'),
-        )).thenAnswer((invocation) async {
+    when(
+      () => mockPersistenceLogic.updateTask(
+        journalEntityId: any(named: 'journalEntityId'),
+        taskData: any(named: 'taskData'),
+        categoryId: any(named: 'categoryId'),
+        entryText: any(named: 'entryText'),
+      ),
+    ).thenAnswer((invocation) async {
       final td = invocation.namedArguments[#taskData] as TaskData;
       currentPriority = td.priority;
       return true;
     });
 
     List<Override> buildOverrides() => <Override>[
-          entryControllerProvider(id: initial.meta.id).overrideWith(
-            () => _TestEntryController(initial.copyWith(
-              data: initial.data.copyWith(priority: currentPriority),
-            )),
+      entryControllerProvider(id: initial.meta.id).overrideWith(
+        () => _TestEntryController(
+          initial.copyWith(
+            data: initial.data.copyWith(priority: currentPriority),
           ),
-        ];
+        ),
+      ),
+    ];
 
     // Initial build
     await tester.pumpWidget(

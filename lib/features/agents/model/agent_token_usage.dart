@@ -43,13 +43,13 @@ class AgentTokenUsageSummary {
 
   @override
   int get hashCode => Object.hash(
-        modelId,
-        inputTokens,
-        outputTokens,
-        thoughtsTokens,
-        cachedInputTokens,
-        wakeCount,
-      );
+    modelId,
+    inputTokens,
+    outputTokens,
+    thoughtsTokens,
+    cachedInputTokens,
+    wakeCount,
+  );
 
   @override
   String toString() =>
@@ -94,11 +94,11 @@ class InstanceTokenBreakdown {
 
   @override
   int get hashCode => Object.hash(
-        agentId,
-        displayName,
-        lifecycle,
-        _listEquality.hash(summaries),
-      );
+    agentId,
+    displayName,
+    lifecycle,
+    _listEquality.hash(summaries),
+  );
 
   @override
   String toString() =>

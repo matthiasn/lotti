@@ -39,8 +39,10 @@ class SettingsPageHeader extends StatelessWidget {
     final wide = width >= 840;
     final showSubtitle = subtitle?.trim().isNotEmpty ?? false;
 
-    final baseTitleSize =
-        SettingsHeaderDimensions.titleFontSize(width: width, wide: wide);
+    final baseTitleSize = SettingsHeaderDimensions.titleFontSize(
+      width: width,
+      wide: wide,
+    );
     final collapsedTitleSize = math.max(20, baseTitleSize - (wide ? 4 : 3));
     final subtitleFontSize = settingsHeaderSubtitleTextStyle.fontSize ?? 16.0;
     final titleLineHeight = settingsHeaderTitleTextStyle.height ?? 1.05;
@@ -49,26 +51,30 @@ class SettingsPageHeader extends StatelessWidget {
     const topSpacing = SettingsHeaderDimensions.topSpacing;
     final bottomSpacing = bottom != null
         ? (showSubtitle
-            ? SettingsHeaderDimensions.subtitleBottomGapWithBottom
-            : 0.0)
+              ? SettingsHeaderDimensions.subtitleBottomGapWithBottom
+              : 0.0)
         : (showSubtitle
-            ? SettingsHeaderDimensions.footerWithSubtitle
-            : SettingsHeaderDimensions.footerNoSubtitle);
-    final subtitleGap =
-        showSubtitle ? SettingsHeaderDimensions.subtitleGap : 0.0;
+              ? SettingsHeaderDimensions.footerWithSubtitle
+              : SettingsHeaderDimensions.footerNoSubtitle);
+    final subtitleGap = showSubtitle
+        ? SettingsHeaderDimensions.subtitleGap
+        : 0.0;
     final footerSpacing = showSubtitle
         ? SettingsHeaderDimensions.footerWithSubtitle
         : SettingsHeaderDimensions.footerNoSubtitle;
 
     final titleBlockHeight = baseTitleSize * titleLineHeight * textScale;
-    final subtitleBlockHeight =
-        showSubtitle ? subtitleFontSize * subtitleLineHeight * textScale : 0;
+    final subtitleBlockHeight = showSubtitle
+        ? subtitleFontSize * subtitleLineHeight * textScale
+        : 0;
 
     // Simple, content-based heights with fixed paddings.
-    final scaleAllowance =
-        textScale > 1 ? (textScale - 1) * (showSubtitle ? 72.0 : 48.0) : 0.0;
+    final scaleAllowance = textScale > 1
+        ? (textScale - 1) * (showSubtitle ? 72.0 : 48.0)
+        : 0.0;
 
-    final expandedBodyHeight = topSpacing +
+    final expandedBodyHeight =
+        topSpacing +
         titleBlockHeight +
         subtitleGap +
         subtitleBlockHeight +
@@ -76,12 +82,14 @@ class SettingsPageHeader extends StatelessWidget {
         footerSpacing +
         scaleAllowance;
 
-    final collapsedBodyHeight = titleBlockHeight * 0.9 +
+    final collapsedBodyHeight =
+        titleBlockHeight * 0.9 +
         (showSubtitle ? subtitleBlockHeight * 0.35 : 0) +
         topSpacing;
 
     final expandedHeight = topInset + expandedBodyHeight;
-    final collapsedHeight = topInset +
+    final collapsedHeight =
+        topInset +
         math.max(
           showSubtitle
               ? SettingsHeaderDimensions.collapsedMinWithSubtitle
@@ -92,8 +100,9 @@ class SettingsPageHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final bottomHeight = bottom?.preferredSize.height ?? 0;
-    final accessorySpacing =
-        bottom != null ? SettingsHeaderDimensions.bottomShim : 0.0;
+    final accessorySpacing = bottom != null
+        ? SettingsHeaderDimensions.bottomShim
+        : 0.0;
     final effectiveExpandedHeight =
         expandedHeight + bottomHeight + accessorySpacing;
     final effectiveCollapsedHeight =
@@ -119,22 +128,27 @@ class SettingsPageHeader extends StatelessWidget {
           final easedProgress = Curves.easeOutCubic.transform(progress);
 
           final horizontalPadding =
-              (SettingsHeaderDimensions.horizontalPadding(width) - 8)
-                  .clamp(16.0, double.infinity);
-          final titleSize = lerpDouble(
+              (SettingsHeaderDimensions.horizontalPadding(width) - 8).clamp(
+                16.0,
+                double.infinity,
+              );
+          final titleSize =
+              lerpDouble(
                 baseTitleSize,
                 collapsedTitleSize,
                 easedProgress,
               ) ??
               baseTitleSize;
-          final bottomPadding = lerpDouble(
+          final bottomPadding =
+              lerpDouble(
                 bottomSpacing,
                 math.max(0.0, bottomSpacing - 4),
                 easedProgress,
               ) ??
               bottomSpacing;
 
-          final borderColor = Color.lerp(
+          final borderColor =
+              Color.lerp(
                 colorScheme.primary.withValues(alpha: 0.18),
                 colorScheme.outlineVariant.withValues(alpha: 0.24),
                 easedProgress,
@@ -156,8 +170,9 @@ class SettingsPageHeader extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.shadow
-                      .withValues(alpha: 0.16 * (1 - easedProgress)),
+                  color: colorScheme.shadow.withValues(
+                    alpha: 0.16 * (1 - easedProgress),
+                  ),
                   blurRadius: 28,
                   offset: const Offset(0, 16),
                 ),
@@ -196,10 +211,10 @@ class SettingsPageHeader extends StatelessWidget {
                               fontSize: titleSize,
                               color: colorScheme.primary,
                             ),
-                            subtitleStyle:
-                                settingsHeaderSubtitleTextStyle.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                            subtitleStyle: settingsHeaderSubtitleTextStyle
+                                .copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                             collapseProgress: progress,
                           ),
                         ),

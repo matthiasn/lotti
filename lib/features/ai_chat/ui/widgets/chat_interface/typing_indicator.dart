@@ -48,14 +48,17 @@ class TypingIndicatorState extends State<TypingIndicator>
                 margin: const EdgeInsets.symmetric(horizontal: 1),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: (widget.isUser
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurfaceVariant)
-                      .withValues(
-                    alpha: (_animationController.value + i * 0.3) % 1.0 > 0.5
-                        ? 1.0
-                        : 0.3,
-                  ),
+                  color:
+                      (widget.isUser
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onSurfaceVariant)
+                          .withValues(
+                            alpha:
+                                (_animationController.value + i * 0.3) % 1.0 >
+                                    0.5
+                                ? 1.0
+                                : 0.3,
+                          ),
                 ),
               ),
           ],

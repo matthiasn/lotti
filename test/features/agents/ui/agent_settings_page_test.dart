@@ -60,8 +60,9 @@ void main() {
   }
 
   group('AgentSettingsPage', () {
-    testWidgets('shows Templates tab by default with template cards',
-        (tester) async {
+    testWidgets('shows Templates tab by default with template cards', (
+      tester,
+    ) async {
       final laura = makeTestTemplate(
         id: 'tpl-laura',
         agentId: 'tpl-laura',
@@ -98,8 +99,9 @@ void main() {
       );
     });
 
-    testWidgets('switches to Instances tab and shows agent cards',
-        (tester) async {
+    testWidgets('switches to Instances tab and shows agent cards', (
+      tester,
+    ) async {
       final agent = makeTestIdentity(
         id: 'agent-a',
         agentId: 'agent-a',
@@ -188,8 +190,9 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('shows error state when templates fail to load',
-        (tester) async {
+    testWidgets('shows error state when templates fail to load', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AgentSettingsPage(),
@@ -280,8 +283,9 @@ void main() {
       expect(navigatedPath, '/settings/agents/templates/create');
     });
 
-    testWidgets('tapping template card navigates to template detail',
-        (tester) async {
+    testWidgets('tapping template card navigates to template detail', (
+      tester,
+    ) async {
       String? navigatedPath;
       beamToNamedOverride = (path) => navigatedPath = path;
 
@@ -349,8 +353,9 @@ void main() {
       });
     }
 
-    testWidgets('tapping back chevron calls NavService.beamBack',
-        (tester) async {
+    testWidgets('tapping back chevron calls NavService.beamBack', (
+      tester,
+    ) async {
       final mockNavService = MockNavService();
       when(() => mockNavService.currentPath).thenReturn('/settings/agents');
       when(mockNavService.beamBack).thenReturn(null);

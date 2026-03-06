@@ -30,7 +30,8 @@ class LottiFormSection extends StatelessWidget {
       children: [
         // Section Header
         Container(
-          padding: padding ??
+          padding:
+              padding ??
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -83,8 +84,9 @@ class LottiFormSection extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.7),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ],

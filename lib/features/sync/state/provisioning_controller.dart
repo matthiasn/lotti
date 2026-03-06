@@ -217,8 +217,10 @@ class ProvisioningController extends _$ProvisioningController {
     var normalized = input.replaceAll('-', '+').replaceAll('_', '/');
     final remainder = normalized.length % 4;
     if (remainder != 0) {
-      normalized =
-          normalized.padRight(normalized.length + (4 - remainder), '=');
+      normalized = normalized.padRight(
+        normalized.length + (4 - remainder),
+        '=',
+      );
     }
     return normalized;
   }

@@ -29,20 +29,23 @@ void main() {
     repository = AudioRecorderRepository(mockAudioRecorder);
 
     // Setup default mock behaviors
-    when(() => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(getIt.reset);
 
   group('AudioRecorderRepository', () {
     test('hasPermission returns true when permission granted', () async {
-      when(() => mockAudioRecorder.hasPermission())
-          .thenAnswer((_) async => true);
+      when(
+        () => mockAudioRecorder.hasPermission(),
+      ).thenAnswer((_) async => true);
 
       final result = await repository.hasPermission();
 
@@ -58,8 +61,9 @@ void main() {
     });
 
     test('hasPermission returns false and logs exception on error', () async {
-      when(() => mockAudioRecorder.hasPermission())
-          .thenThrow(Exception('Permission error'));
+      when(
+        () => mockAudioRecorder.hasPermission(),
+      ).thenThrow(Exception('Permission error'));
 
       final result = await repository.hasPermission();
 
@@ -94,8 +98,9 @@ void main() {
     });
 
     test('isPaused returns false and logs exception on error', () async {
-      when(() => mockAudioRecorder.isPaused())
-          .thenThrow(Exception('Pause check error'));
+      when(
+        () => mockAudioRecorder.isPaused(),
+      ).thenThrow(Exception('Pause check error'));
 
       final result = await repository.isPaused();
 
@@ -120,8 +125,9 @@ void main() {
     });
 
     test('isRecording returns false when not recording', () async {
-      when(() => mockAudioRecorder.isRecording())
-          .thenAnswer((_) async => false);
+      when(
+        () => mockAudioRecorder.isRecording(),
+      ).thenAnswer((_) async => false);
 
       final result = await repository.isRecording();
 
@@ -130,8 +136,9 @@ void main() {
     });
 
     test('isRecording returns false and logs exception on error', () async {
-      when(() => mockAudioRecorder.isRecording())
-          .thenThrow(Exception('Recording check error'));
+      when(
+        () => mockAudioRecorder.isRecording(),
+      ).thenThrow(Exception('Recording check error'));
 
       final result = await repository.isRecording();
 
@@ -147,30 +154,39 @@ void main() {
     });
 
     test(
-        'startRecording returns null due to directory creation in test environment',
-        () async {
-      // Stub the mock start method to complete successfully
-      when(() => mockAudioRecorder.start(any<RecordConfig>(),
-          path: any(named: 'path'))).thenAnswer((_) async {});
+      'startRecording returns null due to directory creation in test environment',
+      () async {
+        // Stub the mock start method to complete successfully
+        when(
+          () => mockAudioRecorder.start(
+            any<RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((_) async {});
 
-      // In test environment, directory creation will fail, so we expect null
-      final result = await repository.startRecording();
+        // In test environment, directory creation will fail, so we expect null
+        final result = await repository.startRecording();
 
-      expect(result, isNull);
-      // Verify that exception was logged due to directory creation failure
-      verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
-          subDomain: 'startRecording',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
+        expect(result, isNull);
+        // Verify that exception was logged due to directory creation failure
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'audio_recorder_repository',
+            subDomain: 'startRecording',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('startRecording returns null and logs exception on error', () async {
-      when(() => mockAudioRecorder.start(any<RecordConfig>(),
-          path: any(named: 'path'))).thenThrow(Exception('Recording error'));
+      when(
+        () => mockAudioRecorder.start(
+          any<RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenThrow(Exception('Recording error'));
 
       final result = await repository.startRecording();
 
@@ -186,8 +202,9 @@ void main() {
     });
 
     test('stopRecording completes successfully', () async {
-      when(() => mockAudioRecorder.stop())
-          .thenAnswer((_) async => '/test/path.m4a');
+      when(
+        () => mockAudioRecorder.stop(),
+      ).thenAnswer((_) async => '/test/path.m4a');
 
       await expectLater(repository.stopRecording(), completes);
       verify(() => mockAudioRecorder.stop()).called(1);
@@ -236,8 +253,9 @@ void main() {
     });
 
     test('resumeRecording completes without throwing on error', () async {
-      when(() => mockAudioRecorder.resume())
-          .thenThrow(Exception('Resume error'));
+      when(
+        () => mockAudioRecorder.resume(),
+      ).thenThrow(Exception('Resume error'));
 
       await expectLater(repository.resumeRecording(), completes);
       verify(
@@ -258,8 +276,9 @@ void main() {
     });
 
     test('dispose completes without throwing on error', () async {
-      when(() => mockAudioRecorder.dispose())
-          .thenThrow(Exception('Dispose error'));
+      when(
+        () => mockAudioRecorder.dispose(),
+      ).thenThrow(Exception('Dispose error'));
 
       await expectLater(repository.dispose(), completes);
       verify(
@@ -274,13 +293,15 @@ void main() {
 
     test('amplitudeStream returns a stream', () {
       const mockStream = Stream<Amplitude>.empty();
-      when(() => mockAudioRecorder.onAmplitudeChanged(any<Duration>()))
-          .thenAnswer((_) => mockStream);
+      when(
+        () => mockAudioRecorder.onAmplitudeChanged(any<Duration>()),
+      ).thenAnswer((_) => mockStream);
 
       final stream = repository.amplitudeStream;
       expect(stream, isA<Stream<Amplitude>>());
-      verify(() => mockAudioRecorder.onAmplitudeChanged(any<Duration>()))
-          .called(1);
+      verify(
+        () => mockAudioRecorder.onAmplitudeChanged(any<Duration>()),
+      ).called(1);
     });
   });
 }

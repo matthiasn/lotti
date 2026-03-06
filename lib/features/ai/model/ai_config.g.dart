@@ -7,36 +7,38 @@ part of 'ai_config.dart';
 // **************************************************************************
 
 AiConfigInferenceProvider _$AiConfigInferenceProviderFromJson(
-        Map<String, dynamic> json) =>
-    AiConfigInferenceProvider(
-      id: json['id'] as String,
-      baseUrl: json['baseUrl'] as String,
-      apiKey: json['apiKey'] as String,
-      name: json['name'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      inferenceProviderType: $enumDecode(
-          _$InferenceProviderTypeEnumMap, json['inferenceProviderType']),
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
-      description: json['description'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AiConfigInferenceProvider(
+  id: json['id'] as String,
+  baseUrl: json['baseUrl'] as String,
+  apiKey: json['apiKey'] as String,
+  name: json['name'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  inferenceProviderType: $enumDecode(
+    _$InferenceProviderTypeEnumMap,
+    json['inferenceProviderType'],
+  ),
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
+  description: json['description'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AiConfigInferenceProviderToJson(
-        AiConfigInferenceProvider instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'baseUrl': instance.baseUrl,
-      'apiKey': instance.apiKey,
-      'name': instance.name,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'inferenceProviderType':
-          _$InferenceProviderTypeEnumMap[instance.inferenceProviderType]!,
-      'updatedAt': instance.updatedAt?.toIso8601String(),
-      'description': instance.description,
-      'runtimeType': instance.$type,
-    };
+  AiConfigInferenceProvider instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'baseUrl': instance.baseUrl,
+  'apiKey': instance.apiKey,
+  'name': instance.name,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'inferenceProviderType':
+      _$InferenceProviderTypeEnumMap[instance.inferenceProviderType]!,
+  'updatedAt': instance.updatedAt?.toIso8601String(),
+  'description': instance.description,
+  'runtimeType': instance.$type,
+};
 
 const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.alibaba: 'alibaba',
@@ -83,10 +85,12 @@ Map<String, dynamic> _$AiConfigModelToJson(AiConfigModel instance) =>
       'providerModelId': instance.providerModelId,
       'inferenceProviderId': instance.inferenceProviderId,
       'createdAt': instance.createdAt.toIso8601String(),
-      'inputModalities':
-          instance.inputModalities.map((e) => _$ModalityEnumMap[e]!).toList(),
-      'outputModalities':
-          instance.outputModalities.map((e) => _$ModalityEnumMap[e]!).toList(),
+      'inputModalities': instance.inputModalities
+          .map((e) => _$ModalityEnumMap[e]!)
+          .toList(),
+      'outputModalities': instance.outputModalities
+          .map((e) => _$ModalityEnumMap[e]!)
+          .toList(),
       'isReasoningModel': instance.isReasoningModel,
       'supportsFunctionCalling': instance.supportsFunctionCalling,
       'updatedAt': instance.updatedAt?.toIso8601String(),
@@ -101,37 +105,37 @@ const _$ModalityEnumMap = {
   Modality.image: 'image',
 };
 
-AiConfigPrompt _$AiConfigPromptFromJson(Map<String, dynamic> json) =>
-    AiConfigPrompt(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      systemMessage: json['systemMessage'] as String,
-      userMessage: json['userMessage'] as String,
-      defaultModelId: json['defaultModelId'] as String,
-      modelIds:
-          (json['modelIds'] as List<dynamic>).map((e) => e as String).toList(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      useReasoning: json['useReasoning'] as bool,
-      requiredInputData: (json['requiredInputData'] as List<dynamic>)
-          .map((e) => $enumDecode(_$InputDataTypeEnumMap, e))
-          .toList(),
-      aiResponseType:
-          $enumDecode(_$AiResponseTypeEnumMap, json['aiResponseType']),
-      comment: json['comment'] as String?,
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
-      description: json['description'] as String?,
-      defaultVariables:
-          (json['defaultVariables'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, e as String),
-      ),
-      category: json['category'] as String?,
-      archived: json['archived'] as bool? ?? false,
-      trackPreconfigured: json['trackPreconfigured'] as bool? ?? false,
-      preconfiguredPromptId: json['preconfiguredPromptId'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+AiConfigPrompt _$AiConfigPromptFromJson(
+  Map<String, dynamic> json,
+) => AiConfigPrompt(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  systemMessage: json['systemMessage'] as String,
+  userMessage: json['userMessage'] as String,
+  defaultModelId: json['defaultModelId'] as String,
+  modelIds: (json['modelIds'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  useReasoning: json['useReasoning'] as bool,
+  requiredInputData: (json['requiredInputData'] as List<dynamic>)
+      .map((e) => $enumDecode(_$InputDataTypeEnumMap, e))
+      .toList(),
+  aiResponseType: $enumDecode(_$AiResponseTypeEnumMap, json['aiResponseType']),
+  comment: json['comment'] as String?,
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
+  description: json['description'] as String?,
+  defaultVariables: (json['defaultVariables'] as Map<String, dynamic>?)?.map(
+    (k, e) => MapEntry(k, e as String),
+  ),
+  category: json['category'] as String?,
+  archived: json['archived'] as bool? ?? false,
+  trackPreconfigured: json['trackPreconfigured'] as bool? ?? false,
+  preconfiguredPromptId: json['preconfiguredPromptId'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AiConfigPromptToJson(AiConfigPrompt instance) =>
     <String, dynamic>{
@@ -176,37 +180,37 @@ const _$AiResponseTypeEnumMap = {
 };
 
 AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
-        Map<String, dynamic> json) =>
-    AiConfigInferenceProfile(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      thinkingModelId: json['thinkingModelId'] as String,
-      imageRecognitionModelId: json['imageRecognitionModelId'] as String?,
-      transcriptionModelId: json['transcriptionModelId'] as String?,
-      imageGenerationModelId: json['imageGenerationModelId'] as String?,
-      isDefault: json['isDefault'] as bool? ?? false,
-      desktopOnly: json['desktopOnly'] as bool? ?? false,
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
-      description: json['description'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AiConfigInferenceProfile(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  thinkingModelId: json['thinkingModelId'] as String,
+  imageRecognitionModelId: json['imageRecognitionModelId'] as String?,
+  transcriptionModelId: json['transcriptionModelId'] as String?,
+  imageGenerationModelId: json['imageGenerationModelId'] as String?,
+  isDefault: json['isDefault'] as bool? ?? false,
+  desktopOnly: json['desktopOnly'] as bool? ?? false,
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
+  description: json['description'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AiConfigInferenceProfileToJson(
-        AiConfigInferenceProfile instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'thinkingModelId': instance.thinkingModelId,
-      'imageRecognitionModelId': instance.imageRecognitionModelId,
-      'transcriptionModelId': instance.transcriptionModelId,
-      'imageGenerationModelId': instance.imageGenerationModelId,
-      'isDefault': instance.isDefault,
-      'desktopOnly': instance.desktopOnly,
-      'updatedAt': instance.updatedAt?.toIso8601String(),
-      'description': instance.description,
-      'runtimeType': instance.$type,
-    };
+  AiConfigInferenceProfile instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'thinkingModelId': instance.thinkingModelId,
+  'imageRecognitionModelId': instance.imageRecognitionModelId,
+  'transcriptionModelId': instance.transcriptionModelId,
+  'imageGenerationModelId': instance.imageGenerationModelId,
+  'isDefault': instance.isDefault,
+  'desktopOnly': instance.desktopOnly,
+  'updatedAt': instance.updatedAt?.toIso8601String(),
+  'description': instance.description,
+  'runtimeType': instance.$type,
+};

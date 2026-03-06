@@ -90,16 +90,15 @@ class MetadataService {
     DateTime? deletedAt,
     List<String>? labelIds,
     bool clearLabelIds = false,
-  }) async =>
-      metadata.copyWith(
-        updatedAt: DateTime.now(),
-        vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: metadata.vectorClock,
-        ),
-        dateFrom: dateFrom ?? metadata.dateFrom,
-        dateTo: dateTo ?? metadata.dateTo,
-        categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
-        deletedAt: deletedAt ?? metadata.deletedAt,
-        labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
-      );
+  }) async => metadata.copyWith(
+    updatedAt: DateTime.now(),
+    vectorClock: await _vectorClockService.getNextVectorClock(
+      previous: metadata.vectorClock,
+    ),
+    dateFrom: dateFrom ?? metadata.dateFrom,
+    dateTo: dateTo ?? metadata.dateTo,
+    categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
+    deletedAt: deletedAt ?? metadata.deletedAt,
+    labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
+  );
 }

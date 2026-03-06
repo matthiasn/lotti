@@ -228,8 +228,7 @@ class _TaskAgentItem implements _InstanceItem {
   T map<T>({
     required T Function(AgentIdentityEntity agent) taskAgent,
     required T Function(EvolutionSessionEntity session) evolution,
-  }) =>
-      taskAgent(agent);
+  }) => taskAgent(agent);
 }
 
 class _EvolutionItem implements _InstanceItem {
@@ -243,8 +242,7 @@ class _EvolutionItem implements _InstanceItem {
   T map<T>({
     required T Function(AgentIdentityEntity agent) taskAgent,
     required T Function(EvolutionSessionEntity session) evolution,
-  }) =>
-      evolution(session);
+  }) => evolution(session);
 }
 
 class _TaskAgentCard extends ConsumerWidget {
@@ -257,8 +255,9 @@ class _TaskAgentCard extends ConsumerWidget {
     final isRunningAsync = ref.watch(agentIsRunningProvider(agent.agentId));
     final isRunning = isRunningAsync.value ?? false;
     final templateAsync = ref.watch(templateForAgentProvider(agent.agentId));
-    final templateName =
-        templateAsync.value?.mapOrNull(agentTemplate: (t) => t.displayName);
+    final templateName = templateAsync.value?.mapOrNull(
+      agentTemplate: (t) => t.displayName,
+    );
 
     return ModernBaseCard(
       onTap: () => beamToNamed('/settings/agents/instances/${agent.agentId}'),

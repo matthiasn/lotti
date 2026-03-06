@@ -196,10 +196,12 @@ void main() {
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 2);
 
-        final funcA =
-            toolCalls.firstWhere((tc) => tc.function.name == 'func_a');
-        final funcB =
-            toolCalls.firstWhere((tc) => tc.function.name == 'func_b');
+        final funcA = toolCalls.firstWhere(
+          (tc) => tc.function.name == 'func_a',
+        );
+        final funcB = toolCalls.firstWhere(
+          (tc) => tc.function.name == 'func_b',
+        );
 
         expect(funcA.function.arguments, '{"x": 1}');
         expect(funcB.function.arguments, '{"y": 2}');
@@ -249,8 +251,10 @@ void main() {
 
         expect(accumulator.count, 1);
         final toolCalls = accumulator.toToolCalls();
-        expect(toolCalls.first.function.arguments,
-            '{"start": "middle", "end": true}');
+        expect(
+          toolCalls.first.function.arguments,
+          '{"start": "middle", "end": true}',
+        );
       });
 
       test('handles chunk with empty ID string', () {
@@ -449,7 +453,9 @@ void main() {
         final toolCalls = accumulator.toToolCalls();
 
         expect(
-            toolCalls.first.type, ChatCompletionMessageToolCallType.function);
+          toolCalls.first.type,
+          ChatCompletionMessageToolCallType.function,
+        );
       });
     });
 

@@ -65,8 +65,9 @@ void main() {
       expect(find.byIcon(Icons.warning), findsOneWidget);
     });
 
-    testWidgets('shows None when no models created or verified',
-        (tester) async {
+    testWidgets('shows None when no models created or verified', (
+      tester,
+    ) async {
       const result = FtueResultData(
         modelsCreated: 0,
         modelsVerified: 0,
@@ -89,8 +90,9 @@ void main() {
       expect(find.text('None'), findsOneWidget);
     });
 
-    testWidgets('shows category as updated when categoryUpdated is true',
-        (tester) async {
+    testWidgets('shows category as updated when categoryUpdated is true', (
+      tester,
+    ) async {
       const result = FtueResultData(
         modelsCreated: 0,
         modelsVerified: 3,
@@ -113,8 +115,9 @@ void main() {
       expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
     });
 
-    testWidgets('does not show category section when not created',
-        (tester) async {
+    testWidgets('does not show category section when not created', (
+      tester,
+    ) async {
       const result = FtueResultData(
         modelsCreated: 3,
         modelsVerified: 0,
@@ -169,8 +172,9 @@ void main() {
       expect(find.text('Setup Complete'), findsNothing);
     });
 
-    testWidgets('showMistral displays Mistral results correctly',
-        (tester) async {
+    testWidgets('showMistral displays Mistral results correctly', (
+      tester,
+    ) async {
       const result = MistralFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
@@ -230,8 +234,9 @@ void main() {
       expect(data.errors, contains('Test error'));
     });
 
-    testWidgets('showAlibaba displays Alibaba results correctly',
-        (tester) async {
+    testWidgets('showAlibaba displays Alibaba results correctly', (
+      tester,
+    ) async {
       const result = AlibabaFtueResult(
         modelsCreated: 5,
         modelsVerified: 0,

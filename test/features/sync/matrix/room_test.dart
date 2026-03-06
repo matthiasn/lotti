@@ -36,8 +36,9 @@ void main() {
 
     when(() => mockGateway.invites).thenAnswer((_) => inviteController.stream);
     when(() => mockGateway.getRoomById(any<String>())).thenReturn(null);
-    when(() => mockSettingsDb.itemByKey(any<String>()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockSettingsDb.itemByKey(any<String>()),
+    ).thenAnswer((_) async => null);
     when(
       () => mockLoggingService.captureEvent(
         any<String>(),
@@ -68,8 +69,9 @@ void main() {
 
   group('SyncRoomManager', () {
     test('initialize loads persisted room and resolves snapshot', () async {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => '!room:server');
+      when(
+        () => mockSettingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => '!room:server');
       when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
 
       await manager.initialize();
@@ -116,8 +118,9 @@ void main() {
     });
 
     test('marks invite as matching when ids align', () async {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => '!room:server');
+      when(
+        () => mockSettingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => '!room:server');
       when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
 
       await manager.initialize();
@@ -164,24 +167,33 @@ void main() {
       expect(manager.currentRoom, mockRoom);
     });
 
-    test('leaveCurrentRoom clears persisted id and leaves gateway room',
-        () async {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => '!room:server');
-      when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
-      when(() => mockSettingsDb.removeSettingsItem(matrixRoomKey))
-          .thenAnswer((_) async {});
-      when(() => mockGateway.leaveRoom('!room:server'))
-          .thenAnswer((_) async {});
+    test(
+      'leaveCurrentRoom clears persisted id and leaves gateway room',
+      () async {
+        when(
+          () => mockSettingsDb.itemByKey(matrixRoomKey),
+        ).thenAnswer((_) async => '!room:server');
+        when(
+          () => mockGateway.getRoomById('!room:server'),
+        ).thenReturn(mockRoom);
+        when(
+          () => mockSettingsDb.removeSettingsItem(matrixRoomKey),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockGateway.leaveRoom('!room:server'),
+        ).thenAnswer((_) async {});
 
-      await manager.initialize();
-      await manager.leaveCurrentRoom();
+        await manager.initialize();
+        await manager.leaveCurrentRoom();
 
-      verify(() => mockGateway.leaveRoom('!room:server')).called(1);
-      verify(() => mockSettingsDb.removeSettingsItem(matrixRoomKey)).called(1);
-      expect(manager.currentRoomId, isNull);
-      expect(manager.currentRoom, isNull);
-    });
+        verify(() => mockGateway.leaveRoom('!room:server')).called(1);
+        verify(
+          () => mockSettingsDb.removeSettingsItem(matrixRoomKey),
+        ).called(1);
+        expect(manager.currentRoomId, isNull);
+        expect(manager.currentRoom, isNull);
+      },
+    );
 
     test('inviteUser throws when no room is configured', () async {
       await manager.initialize();
@@ -193,8 +205,9 @@ void main() {
 
     test('inviteUser delegates to current room when available', () async {
       when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
-      when(() => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
+      ).thenAnswer((_) async => 1);
       when(() => mockRoom.invite('@user:server')).thenAnswer((_) async {});
 
       await manager.saveRoomId('!room:server');
@@ -204,13 +217,15 @@ void main() {
     });
 
     test('createRoom persists room id and resolves snapshot', () async {
-      when(() => mockGateway.createRoom(
-            name: any<String>(named: 'name'),
-            inviteUserIds: ['@user:server'],
-          )).thenAnswer((_) async => '!created:room');
-      when(() =>
-              mockSettingsDb.saveSettingsItem(matrixRoomKey, '!created:room'))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockGateway.createRoom(
+          name: any<String>(named: 'name'),
+          inviteUserIds: ['@user:server'],
+        ),
+      ).thenAnswer((_) async => '!created:room');
+      when(
+        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!created:room'),
+      ).thenAnswer((_) async => 1);
       when(() => mockGateway.getRoomById('!created:room')).thenReturn(mockRoom);
 
       final roomId = await manager.createRoom(inviteUserIds: ['@user:server']);
@@ -224,14 +239,15 @@ void main() {
           inviteUserIds: ['@user:server'],
         ),
       ).called(1);
-      verify(() =>
-              mockSettingsDb.saveSettingsItem(matrixRoomKey, '!created:room'))
-          .called(1);
+      verify(
+        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!created:room'),
+      ).called(1);
     });
 
     test('loadPersistedRoomId caches value after first lookup', () async {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => '!cached:room');
+      when(
+        () => mockSettingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => '!cached:room');
 
       final first = await manager.loadPersistedRoomId();
       final second = await manager.loadPersistedRoomId();
@@ -242,8 +258,9 @@ void main() {
     });
 
     test('hydrateRoomSnapshot resolves room after retry', () {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => '!retry:room');
+      when(
+        () => mockSettingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => '!retry:room');
       var attempt = 0;
       when(() => mockGateway.getRoomById('!retry:room')).thenAnswer((_) {
         attempt++;
@@ -294,8 +311,9 @@ void main() {
     });
 
     test('hydrateRoomSnapshot logs failure after max attempts', () {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => '!missing:room');
+      when(
+        () => mockSettingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => '!missing:room');
       when(() => mockGateway.getRoomById('!missing:room')).thenReturn(null);
       var syncCalls = 0;
       when(() => mockClient.sync()).thenAnswer((_) async {
@@ -337,8 +355,9 @@ void main() {
     });
 
     test('leaveCurrentRoom skips gateway call when no room stored', () async {
-      when(() => mockSettingsDb.itemByKey(matrixRoomKey))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockSettingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => null);
 
       await manager.initialize();
       await manager.leaveCurrentRoom();
@@ -347,11 +366,13 @@ void main() {
     });
 
     test('leaveCurrentRoom preserves state when leave fails', () async {
-      when(() => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
+      ).thenAnswer((_) async => 1);
       await manager.saveRoomId('!room:server');
-      when(() => mockGateway.leaveRoom('!room:server'))
-          .thenThrow(Exception('network error'));
+      when(
+        () => mockGateway.leaveRoom('!room:server'),
+      ).thenThrow(Exception('network error'));
 
       expect(
         () => manager.leaveCurrentRoom(),

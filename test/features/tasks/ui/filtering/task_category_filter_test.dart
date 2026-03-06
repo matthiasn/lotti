@@ -95,10 +95,11 @@ void main() {
 
     // Register a mock for the HapticFeedback service
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform,
-            (MethodCall methodCall) async {
-      return null;
-    });
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
 
     mockPagingController = MockPagingController();
     mockEntitiesCacheService = MockEntitiesCacheService();
@@ -120,8 +121,9 @@ void main() {
     );
 
     // Set up EntitiesCacheService mock
-    when(() => mockEntitiesCacheService.sortedCategories)
-        .thenReturn(mockCategories);
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn(mockCategories);
 
     // Mock the getIt instance
     getIt.allowReassignment = true;
@@ -137,8 +139,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: const TaskCategoryFilter(),
       ),
@@ -171,8 +174,9 @@ void main() {
       );
     });
 
-    testWidgets('toggles between showing favorites and all categories',
-        (tester) async {
+    testWidgets('toggles between showing favorites and all categories', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
@@ -193,59 +197,64 @@ void main() {
       expect(ellipsisChip, findsNothing);
     });
 
-    testWidgets('calls toggleSelectedCategoryIds when category chip is tapped',
-        (tester) async {
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'calls toggleSelectedCategoryIds when category chip is tapped',
+      (tester) async {
+        await tester.pumpWidget(buildWithState(mockState));
+        await tester.pumpAndSettle();
 
-      // Find a category chip and tap it
-      final workChip = find.byWidgetPredicate(
-        (widget) => widget is FilterChoiceChip && widget.label == 'Work',
-      );
-      expect(workChip, findsOneWidget);
+        // Find a category chip and tap it
+        final workChip = find.byWidgetPredicate(
+          (widget) => widget is FilterChoiceChip && widget.label == 'Work',
+        );
+        expect(workChip, findsOneWidget);
 
-      await tester.tap(workChip);
-      await tester.pump();
+        await tester.tap(workChip);
+        await tester.pump();
 
-      // Verify that toggleSelectedCategoryIds was called
-      expect(fakeController.toggledCategoryIds, contains('cat1'));
-    });
+        // Verify that toggleSelectedCategoryIds was called
+        expect(fakeController.toggledCategoryIds, contains('cat1'));
+      },
+    );
 
     testWidgets(
-        'calls toggleSelectedCategoryIds when unassigned chip is tapped',
-        (tester) async {
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      'calls toggleSelectedCategoryIds when unassigned chip is tapped',
+      (tester) async {
+        await tester.pumpWidget(buildWithState(mockState));
+        await tester.pumpAndSettle();
 
-      // Find the unassigned chip by looking for an empty string ID
-      // Find the unassigned chip - it will be labeled "Unassigned" or similar
-      // Since we don't know the exact translation, we'll find it by checking all chips
-      final chips =
-          tester.widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip));
+        // Find the unassigned chip by looking for an empty string ID
+        // Find the unassigned chip - it will be labeled "Unassigned" or similar
+        // Since we don't know the exact translation, we'll find it by checking all chips
+        final chips = tester.widgetList<FilterChoiceChip>(
+          find.byType(FilterChoiceChip),
+        );
 
-      // Find the unassigned chip (not "all" or "...")
-      FilterChoiceChip? unassignedChip;
-      for (final chip in chips) {
-        if (chip.label != '...' &&
-            !chip.label.toLowerCase().contains('all') &&
-            !mockCategories.any((c) => c.name == chip.label)) {
-          unassignedChip = chip;
-          break;
+        // Find the unassigned chip (not "all" or "...")
+        FilterChoiceChip? unassignedChip;
+        for (final chip in chips) {
+          if (chip.label != '...' &&
+              !chip.label.toLowerCase().contains('all') &&
+              !mockCategories.any((c) => c.name == chip.label)) {
+            unassignedChip = chip;
+            break;
+          }
         }
-      }
 
-      expect(unassignedChip, isNotNull);
+        expect(unassignedChip, isNotNull);
 
-      // Tap the unassigned chip
-      await tester.tap(find.byWidget(unassignedChip!));
-      await tester.pump();
+        // Tap the unassigned chip
+        await tester.tap(find.byWidget(unassignedChip!));
+        await tester.pump();
 
-      // Verify that toggleSelectedCategoryIds was called with empty string
-      expect(fakeController.toggledCategoryIds, contains(''));
-    });
+        // Verify that toggleSelectedCategoryIds was called with empty string
+        expect(fakeController.toggledCategoryIds, contains(''));
+      },
+    );
 
-    testWidgets('calls selectedAllCategories when all chip is tapped',
-        (tester) async {
+    testWidgets('calls selectedAllCategories when all chip is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
@@ -264,8 +273,9 @@ void main() {
       expect(fakeController.selectAllCategoriesCalled, 1);
     });
 
-    testWidgets('renders unassigned and all chips when no categories',
-        (tester) async {
+    testWidgets('renders unassigned and all chips when no categories', (
+      tester,
+    ) async {
       // Set up EntitiesCacheService mock to return empty categories
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
@@ -289,8 +299,9 @@ void main() {
       );
     });
 
-    testWidgets('selects unassigned by default when no categories exist',
-        (tester) async {
+    testWidgets('selects unassigned by default when no categories exist', (
+      tester,
+    ) async {
       // Set up EntitiesCacheService mock to return empty categories
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
@@ -314,8 +325,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the unassigned chip
-      final chips =
-          tester.widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip));
+      final chips = tester.widgetList<FilterChoiceChip>(
+        find.byType(FilterChoiceChip),
+      );
 
       FilterChoiceChip? unassignedChip;
       for (final chip in chips) {
@@ -375,8 +387,9 @@ void main() {
       expect(chip.selectedColor, equals(const Color(0xFFFF0000)));
     });
 
-    testWidgets('shows only favorite and selected categories by default',
-        (tester) async {
+    testWidgets('shows only favorite and selected categories by default', (
+      tester,
+    ) async {
       // Create a non-favorite, non-selected category
       final allCategories = [
         ...mockCategories,
@@ -393,8 +406,9 @@ void main() {
         ),
       ];
 
-      when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(allCategories);
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(allCategories);
 
       await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
@@ -421,7 +435,9 @@ void main() {
 
       // All chip should not be selected when categories are selected
       expect(
-          tester.widget<FilterChoiceChip>(allChip).isSelected, equals(false));
+        tester.widget<FilterChoiceChip>(allChip).isSelected,
+        equals(false),
+      );
 
       // Update state to no categories selected using the controller
       final stateNoneSelected = JournalPageState(
@@ -453,11 +469,13 @@ void main() {
       expect(tester.widget<FilterChoiceChip>(allChip).isSelected, equals(true));
     });
 
-    testWidgets('tapping ellipsis chip shows all categories and hides itself',
-        (tester) async {
+    testWidgets('tapping ellipsis chip shows all categories and hides itself', (
+      tester,
+    ) async {
       // Use all categories - 2 favorites and 1 non-favorite
-      when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(mockCategories);
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(mockCategories);
 
       await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
@@ -504,14 +522,17 @@ void main() {
       );
     });
 
-    testWidgets('ellipsis chip behavior with only favorite categories',
-        (tester) async {
+    testWidgets('ellipsis chip behavior with only favorite categories', (
+      tester,
+    ) async {
       // Use only favorite categories (which are shown by default)
-      final favoriteCategories =
-          mockCategories.where((c) => c.favorite ?? false).toList();
+      final favoriteCategories = mockCategories
+          .where((c) => c.favorite ?? false)
+          .toList();
 
-      when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(favoriteCategories);
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(favoriteCategories);
 
       await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();

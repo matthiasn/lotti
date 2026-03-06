@@ -22,8 +22,8 @@ class DueDateStatus {
 
   /// Creates a status for when there's no due date.
   const DueDateStatus.none()
-      : urgency = DueDateUrgency.normal,
-        daysUntilDue = null;
+    : urgency = DueDateUrgency.normal,
+      daysUntilDue = null;
 
   final DueDateUrgency urgency;
 

@@ -75,8 +75,9 @@ class ImproverAgentService {
 
     return syncService.runInTransaction(() async {
       // Validate target template exists.
-      final targetTemplate =
-          await agentTemplateService.getTemplate(targetTemplateId);
+      final targetTemplate = await agentTemplateService.getTemplate(
+        targetTemplateId,
+      );
       if (targetTemplate == null) {
         throw StateError('Target template $targetTemplateId not found');
       }
@@ -91,8 +92,9 @@ class ImproverAgentService {
       }
 
       // Resolve the improver template.
-      final improverTemplate =
-          await agentTemplateService.getTemplate(resolvedImproverTemplateId);
+      final improverTemplate = await agentTemplateService.getTemplate(
+        resolvedImproverTemplateId,
+      );
       if (improverTemplate == null) {
         throw StateError(
           'Improver template $resolvedImproverTemplateId not found. '
@@ -211,8 +213,8 @@ class ImproverAgentService {
     final configuredWindowDays = state.slots.feedbackWindowDays;
     final feedbackWindowDays =
         configuredWindowDays != null && configuredWindowDays > 0
-            ? configuredWindowDays
-            : ImproverSlotDefaults.defaultFeedbackWindowDays;
+        ? configuredWindowDays
+        : ImproverSlotDefaults.defaultFeedbackWindowDays;
     final now = clock.now();
     final nextWake = now.add(Duration(days: feedbackWindowDays));
 

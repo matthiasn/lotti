@@ -29,8 +29,9 @@ class InferenceProfilePage extends ConsumerWidget {
           ),
           profilesAsync.when(
             data: (configs) {
-              final profiles =
-                  configs.whereType<AiConfigInferenceProfile>().toList();
+              final profiles = configs
+                  .whereType<AiConfigInferenceProfile>()
+                  .toList();
               if (profiles.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: false,

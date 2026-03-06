@@ -26,7 +26,7 @@ class InferenceProviderFormController
   }) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
-            as AiConfigInferenceProvider?)
+              as AiConfigInferenceProvider?)
         : null;
 
     nameController.text = _config?.name ?? '';
@@ -45,8 +45,10 @@ class InferenceProviderFormController
       return InferenceProviderFormState(
         id: _config!.id,
         name: ApiKeyName.pure(_config!.name),
-        apiKey:
-            ApiKeyValue.pure(_config!.apiKey, _config!.inferenceProviderType),
+        apiKey: ApiKeyValue.pure(
+          _config!.apiKey,
+          _config!.inferenceProviderType,
+        ),
         baseUrl: BaseUrl.pure(_config!.baseUrl),
         description: DescriptionValue.pure(_config!.description ?? ''),
         inferenceProviderType: _config!.inferenceProviderType,
@@ -96,7 +98,8 @@ class InferenceProviderFormController
     if (prev == null) return;
 
     // Check if any non-FormzInput field is being changed
-    final isNonFormzFieldChanging = inferenceProviderType != null &&
+    final isNonFormzFieldChanging =
+        inferenceProviderType != null &&
         inferenceProviderType != prev.inferenceProviderType;
 
     // Create a completely new state object to force Riverpod to detect the change
@@ -105,17 +108,19 @@ class InferenceProviderFormController
       name: name != null ? ApiKeyName.dirty(name) : prev.name,
       apiKey: apiKey != null
           ? ApiKeyValue.dirty(
-              apiKey, inferenceProviderType ?? prev.inferenceProviderType)
+              apiKey,
+              inferenceProviderType ?? prev.inferenceProviderType,
+            )
           : (inferenceProviderType != null &&
-                  inferenceProviderType != prev.inferenceProviderType
-              ? ApiKeyValue.dirty(prev.apiKey.value, inferenceProviderType)
-              : prev.apiKey),
+                    inferenceProviderType != prev.inferenceProviderType
+                ? ApiKeyValue.dirty(prev.apiKey.value, inferenceProviderType)
+                : prev.apiKey),
       baseUrl: baseUrl != null ? BaseUrl.dirty(baseUrl) : prev.baseUrl,
       description: description != null
           ? DescriptionValue.dirty(description)
           : (isNonFormzFieldChanging && prev.description.isPure
-              ? DescriptionValue.dirty(prev.description.value)
-              : prev.description),
+                ? DescriptionValue.dirty(prev.description.value)
+                : prev.description),
       isSubmitting: prev.isSubmitting,
       submitFailed: prev.submitFailed,
       inferenceProviderType:
@@ -193,13 +198,15 @@ class InferenceProviderFormController
 
     // If we don't have a previous state yet, create initial state with the new provider type
     if (prev == null) {
-      state = AsyncData(InferenceProviderFormState(
-        apiKey: ApiKeyValue.pure(newApiKey ?? '', value),
-        baseUrl: BaseUrl.pure(newBaseUrl ?? ''),
-        name: ApiKeyName.pure(newName ?? ''),
-        inferenceProviderType: value,
-        lastUpdated: DateTime.now(),
-      ));
+      state = AsyncData(
+        InferenceProviderFormState(
+          apiKey: ApiKeyValue.pure(newApiKey ?? '', value),
+          baseUrl: BaseUrl.pure(newBaseUrl ?? ''),
+          name: ApiKeyName.pure(newName ?? ''),
+          inferenceProviderType: value,
+          lastUpdated: DateTime.now(),
+        ),
+      );
     } else {
       _setAllFields(
         inferenceProviderType: value,
@@ -220,8 +227,8 @@ class InferenceProviderFormController
       final prepopulationService = ModelPrepopulationService(
         repository: repository,
       );
-      final modelsCreated =
-          await prepopulationService.prepopulateModelsForProvider(config);
+      final modelsCreated = await prepopulationService
+          .prepopulateModelsForProvider(config);
 
       // Log the number of models created for debugging
       if (modelsCreated > 0) {

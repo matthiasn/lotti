@@ -31,8 +31,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<EditorStateService>(mockEditorStateService)
@@ -133,8 +134,9 @@ void main() {
       expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('shows SizedBox.shrink when linkedFromId is null',
-        (tester) async {
+    testWidgets('shows SizedBox.shrink when linkedFromId is null', (
+      tester,
+    ) async {
       final audioEntry = buildAudioEntry();
 
       await tester.pumpWidget(
@@ -156,8 +158,9 @@ void main() {
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
-    testWidgets('shows SizedBox.shrink when linked entry is not a Task',
-        (tester) async {
+    testWidgets('shows SizedBox.shrink when linked entry is not a Task', (
+      tester,
+    ) async {
       final audioEntry = buildAudioEntry();
       final linkedImage = buildImageEntry(id: 'linked-image');
 
@@ -181,8 +184,9 @@ void main() {
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
-    testWidgets('renders action item when audio linked to task',
-        (tester) async {
+    testWidgets('renders action item when audio linked to task', (
+      tester,
+    ) async {
       final audioEntry = buildAudioEntry();
       final task = buildTask();
 

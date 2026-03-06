@@ -76,11 +76,13 @@ void main() {
         (_) => Stream<Set<String>>.fromIterable([]),
       );
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       when(
         () => mockEditorStateService.getUnsavedStream(
@@ -96,8 +98,9 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('map is invisible when not set in cubit',
-        (WidgetTester tester) async {
+    testWidgets('map is invisible when not set in cubit', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailFooter(
@@ -111,10 +114,12 @@ void main() {
       expect(mapFinder, findsNothing);
     });
 
-    testWidgets('time record button is not shown for older entry',
-        (WidgetTester tester) async {
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    testWidgets('time record button is not shown for older entry', (
+      WidgetTester tester,
+    ) async {
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -131,8 +136,9 @@ void main() {
     });
 
     testWidgets('time record button is tappable', (WidgetTester tester) async {
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       final now = DateTime.now();
 
@@ -143,8 +149,9 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testEntry);
 
       Future<void> mockStartTimer() => mockTimeService.start(testEntry, null);
       when(mockStartTimer).thenAnswer((_) async {});
@@ -173,8 +180,9 @@ void main() {
       verify(mockStartTimer).called(1);
     });
 
-    testWidgets('time record stop button is tappable',
-        (WidgetTester tester) async {
+    testWidgets('time record stop button is tappable', (
+      WidgetTester tester,
+    ) async {
       final now = DateTime.now();
 
       final testEntry = testTextEntry.copyWith(
@@ -184,11 +192,13 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testEntry);
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([testEntry]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([testEntry]));
 
       Future<void> mockStopTimer() => mockTimeService.stop();
       when(mockStopTimer).thenAnswer((_) async {});

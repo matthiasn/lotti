@@ -66,8 +66,9 @@ void main() {
 
     reset(mockJournalDb);
 
-    when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+    ).thenAnswer((_) async => false);
 
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
@@ -77,8 +78,9 @@ void main() {
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
-        cloudInferenceRepositoryProvider
-            .overrideWithValue(mockCloudInferenceRepo),
+        cloudInferenceRepositoryProvider.overrideWithValue(
+          mockCloudInferenceRepo,
+        ),
         journalRepositoryProvider.overrideWithValue(mockJournalRepo),
         checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
@@ -204,37 +206,46 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       // Setup mock to capture the tools argument
       final capturedTools = <List<ChatCompletionTool>?>[];
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-            provider: any(named: 'provider'),
-            tools: captureAny(named: 'tools'),
-          )).thenAnswer((invocation) {
-        capturedTools.add(invocation.namedArguments[const Symbol('tools')]
-            as List<ChatCompletionTool>?);
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          provider: any(named: 'provider'),
+          tools: captureAny(named: 'tools'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedTools.add(
+          invocation.namedArguments[const Symbol('tools')]
+              as List<ChatCompletionTool>?,
+        );
         return Stream.fromIterable([
           const CreateChatCompletionStreamResponse(
             id: 'response-1',
             choices: [
               ChatCompletionStreamResponseChoice(
-                delta:
-                    ChatCompletionStreamResponseDelta(content: 'Test response'),
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
                 finishReason: ChatCompletionFinishReason.stop,
                 index: 0,
               ),
@@ -257,53 +268,59 @@ void main() {
       expect(capturedTools.first, isNull);
     });
 
-    test('checklist updates include task language and checklist tools',
-        () async {
-      final taskEntity = Task(
-        meta: createMetadata(),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+    test(
+      'checklist updates include task language and checklist tools',
+      () async {
+        final taskEntity = Task(
+          meta: createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
           ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
+        );
 
-      final promptConfig = createPrompt(
-        id: 'prompt-1',
-        name: 'Checklist Updates',
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-      );
+        final promptConfig = createPrompt(
+          id: 'prompt-1',
+          name: 'Checklist Updates',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
 
-      final model = createModel(
-        id: 'model-1',
-        inferenceProviderId: 'provider-1',
-        providerModelId: 'gpt-4',
-      );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
 
-      final provider = createProvider(
-        id: 'provider-1',
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      // Setup mock to capture the tools argument
-      final capturedTools = <List<ChatCompletionTool>>[];
-      when(() => mockCloudInferenceRepo.generate(
+        // Setup mock to capture the tools argument
+        final capturedTools = <List<ChatCompletionTool>>[];
+        when(
+          () => mockCloudInferenceRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -313,92 +330,104 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: captureAny(named: 'tools'),
-          )).thenAnswer((invocation) {
-        capturedTools.add(invocation.namedArguments[const Symbol('tools')]
-            as List<ChatCompletionTool>);
-        return Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: ''),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            created: 0,
-            model: 'test-model',
           ),
-        ]);
-      });
+        ).thenAnswer((invocation) {
+          capturedTools.add(
+            invocation.namedArguments[const Symbol('tools')]
+                as List<ChatCompletionTool>,
+          );
+          return Stream.fromIterable([
+            const CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(content: ''),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              created: 0,
+              model: 'test-model',
+            ),
+          ]);
+        });
 
-      await repository.runInference(
-        entityId: 'test-id',
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Verify tools include both checklist and task functions
-      expect(capturedTools, hasLength(1));
-      final tools = capturedTools.first;
-      final toolNames = tools.map((t) => t.function.name).toList();
+        // Verify tools include both checklist and task functions
+        expect(capturedTools, hasLength(1));
+        final tools = capturedTools.first;
+        final toolNames = tools.map((t) => t.function.name).toList();
 
-      expect(toolNames, contains(TaskFunctions.setTaskLanguage));
-      expect(toolNames, contains('suggest_checklist_completion'));
-      expect(toolNames, contains('add_multiple_checklist_items'));
-    });
+        expect(toolNames, contains(TaskFunctions.setTaskLanguage));
+        expect(toolNames, contains('suggest_checklist_completion'));
+        expect(toolNames, contains('add_multiple_checklist_items'));
+      },
+    );
 
-    test('handles set_task_language function call in checklist updates',
-        () async {
-      final taskEntity = Task(
-        meta: createMetadata(),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+    test(
+      'handles set_task_language function call in checklist updates',
+      () async {
+        final taskEntity = Task(
+          meta: createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
           ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
+        );
 
-      final promptConfig = createPrompt(
-        id: 'prompt-1',
-        name: 'Checklist Updates',
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-      );
+        final promptConfig = createPrompt(
+          id: 'prompt-1',
+          name: 'Checklist Updates',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
 
-      final model = createModel(
-        id: 'model-1',
-        inferenceProviderId: 'provider-1',
-        providerModelId: 'gpt-4',
-      );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
 
-      final provider = createProvider(
-        id: 'provider-1',
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockJournalRepo.getJournalEntityById('test-id'))
-          .thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"title": "Test Task"}');
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.getJournalEntityById('test-id'),
+        ).thenAnswer((_) async => taskEntity);
 
-      // Mock response with function call
-      when(() => mockCloudInferenceRepo.generate(
+        // Mock response with function call
+        when(
+          () => mockCloudInferenceRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -408,7 +437,9 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
-          )).thenAnswer((_) => Stream.fromIterable([
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
             const CreateChatCompletionStreamResponse(
               id: 'response-1',
               choices: [
@@ -439,7 +470,8 @@ void main() {
               choices: [
                 ChatCompletionStreamResponseChoice(
                   delta: ChatCompletionStreamResponseDelta(
-                      content: ''), // No text content for checklist updates
+                    content: '',
+                  ), // No text content for checklist updates
                   finishReason: ChatCompletionFinishReason.stop,
                   index: 0,
                 ),
@@ -447,31 +479,35 @@ void main() {
               created: 0,
               model: 'test-model',
             ),
-          ]));
+          ]),
+        );
 
-      await repository.runInference(
-        entityId: 'test-id',
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Verify task was updated with language
-      final captured = verify(() => mockJournalRepo.updateJournalEntity(
+        // Verify task was updated with language
+        final captured = verify(
+          () => mockJournalRepo.updateJournalEntity(
             captureAny(),
-          )).captured;
+          ),
+        ).captured;
 
-      // Find the Task entity with language update
-      final taskUpdates = captured.whereType<Task>();
-      expect(taskUpdates, isNotEmpty);
+        // Find the Task entity with language update
+        final taskUpdates = captured.whereType<Task>();
+        expect(taskUpdates, isNotEmpty);
 
-      final updatedTask = taskUpdates.firstWhere(
-        (task) => task.data.languageCode == 'de',
-        orElse: () => throw Exception('No task with German language found'),
-      );
+        final updatedTask = taskUpdates.firstWhere(
+          (task) => task.data.languageCode == 'de',
+          orElse: () => throw Exception('No task with German language found'),
+        );
 
-      expect(updatedTask.data.languageCode, equals('de'));
-    });
+        expect(updatedTask.data.languageCode, equals('de'));
+      },
+    );
 
     test('does not override existing language preference', () async {
       final taskEntity = Task(
@@ -508,56 +544,64 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer(
-              (_) async => '{"title": "Test Task", "languageCode": "fr"}');
-      when(() => mockJournalRepo.getJournalEntityById('test-id'))
-          .thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+      ).thenAnswer((_) async => '{"title": "Test Task", "languageCode": "fr"}');
+      when(
+        () => mockJournalRepo.getJournalEntityById('test-id'),
+      ).thenAnswer((_) async => taskEntity);
 
       // Mock response with function call trying to change language
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-            provider: any(named: 'provider'),
-            tools: any(named: 'tools'),
-          )).thenAnswer((_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
-              id: 'response-1',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'call_1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: TaskFunctions.setTaskLanguage,
-                          arguments:
-                              '''{"languageCode": "de", "confidence": "high", "reason": "Detected German"}''',
-                        ),
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          provider: any(named: 'provider'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'response-1',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'call_1',
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: TaskFunctions.setTaskLanguage,
+                        arguments:
+                            '''{"languageCode": "de", "confidence": "high", "reason": "Detected German"}''',
                       ),
-                    ],
-                  ),
-                  index: 0,
+                    ),
+                  ],
                 ),
-              ],
-              created: 0,
-              model: 'test-model',
-            ),
-          ]));
+                index: 0,
+              ),
+            ],
+            created: 0,
+            model: 'test-model',
+          ),
+        ]),
+      );
 
       await repository.runInference(
         entityId: 'test-id',
@@ -570,53 +614,59 @@ void main() {
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
     });
 
-    test('includes language preference in system message for task summaries',
-        () async {
-      final taskEntity = Task(
-        meta: createMetadata(),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+    test(
+      'includes language preference in system message for task summaries',
+      () async {
+        final taskEntity = Task(
+          meta: createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            languageCode: 'es', // Spanish preference
           ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          languageCode: 'es', // Spanish preference
-        ),
-      );
+        );
 
-      final promptConfig = createPrompt(
-        id: 'prompt-1',
-        name: 'Task Summary',
-        requiredInputData: [InputDataType.task],
-      );
+        final promptConfig = createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
 
-      final model = createModel(
-        id: 'model-1',
-        inferenceProviderId: 'provider-1',
-        providerModelId: 'gpt-4',
-      );
+        final model = createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
 
-      final provider = createProvider(
-        id: 'provider-1',
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
+        final provider = createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      // Capture system message
-      String? capturedSystemMessage;
-      when(() => mockCloudInferenceRepo.generate(
+        // Capture system message
+        String? capturedSystemMessage;
+        when(
+          () => mockCloudInferenceRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -626,36 +676,41 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
-          )).thenAnswer((invocation) {
-        capturedSystemMessage =
-            invocation.namedArguments[const Symbol('systemMessage')] as String;
-        return Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'Test'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            created: 0,
-            model: 'test-model',
           ),
-        ]);
-      });
+        ).thenAnswer((invocation) {
+          capturedSystemMessage =
+              invocation.namedArguments[const Symbol('systemMessage')]
+                  as String;
+          return Stream.fromIterable([
+            const CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(content: 'Test'),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              created: 0,
+              model: 'test-model',
+            ),
+          ]);
+        });
 
-      await repository.runInference(
-        entityId: 'test-id',
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        await repository.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Verify system message includes language preference
-      expect(capturedSystemMessage, contains('Spanish (es)'));
-      expect(capturedSystemMessage,
-          contains('Generate the entire summary in this language'));
-    });
+        // Verify system message includes language preference
+        expect(capturedSystemMessage, contains('Spanish (es)'));
+        expect(
+          capturedSystemMessage,
+          contains('Generate the entire summary in this language'),
+        );
+      },
+    );
   });
 }

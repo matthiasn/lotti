@@ -30,14 +30,16 @@ class HabitDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(habitSettingsControllerProvider(habitId));
-    final controller =
-        ref.read(habitSettingsControllerProvider(habitId).notifier);
+    final controller = ref.read(
+      habitSettingsControllerProvider(habitId).notifier,
+    );
 
     final item = state.habitDefinition;
     final isDaily = item.habitSchedule is DailyHabitSchedule;
     final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
-    final alertAtTime =
-        item.habitSchedule.mapOrNull(daily: (d) => d.alertAtTime);
+    final alertAtTime = item.habitSchedule.mapOrNull(
+      daily: (d) => d.alertAtTime,
+    );
 
     return Scaffold(
       body: CustomScrollView(

@@ -24,8 +24,9 @@ void main() {
     repository = _MockLabelsRepository();
     streamController = StreamController<List<LabelDefinition>>.broadcast();
 
-    when(() => repository.watchLabels())
-        .thenAnswer((_) => streamController.stream);
+    when(
+      () => repository.watchLabels(),
+    ).thenAnswer((_) => streamController.stream);
 
     container = ProviderContainer(
       overrides: [

@@ -73,32 +73,34 @@ class MatrixService {
     @visibleForTesting MatrixStreamConsumer? pipelineOverride,
     // Optional seam to inject connectivity changes (for tests)
     this.connectivityStream,
-  })  : _gateway = gateway,
-        _loggingService = loggingService,
-        _activityGate = activityGate,
-        _messageSender = messageSender,
-        _sentEventRegistry =
-            sentEventRegistry ?? messageSender.sentEventRegistry,
-        _journalDb = journalDb,
-        _settingsDb = settingsDb,
-        _readMarkerService = readMarkerService,
-        _eventProcessor = eventProcessor,
-        _secureStorage = secureStorage,
-        _ownsActivityGate = ownsActivityGate,
-        _collectSyncMetrics = collectSyncMetrics,
-        keyVerificationController =
-            StreamController<KeyVerificationRunner>.broadcast(),
-        messageCountsController = StreamController<MatrixStats>.broadcast(),
-        incomingKeyVerificationController =
-            StreamController<KeyVerification>.broadcast() {
-    _roomManager = roomManager ??
+  }) : _gateway = gateway,
+       _loggingService = loggingService,
+       _activityGate = activityGate,
+       _messageSender = messageSender,
+       _sentEventRegistry =
+           sentEventRegistry ?? messageSender.sentEventRegistry,
+       _journalDb = journalDb,
+       _settingsDb = settingsDb,
+       _readMarkerService = readMarkerService,
+       _eventProcessor = eventProcessor,
+       _secureStorage = secureStorage,
+       _ownsActivityGate = ownsActivityGate,
+       _collectSyncMetrics = collectSyncMetrics,
+       keyVerificationController =
+           StreamController<KeyVerificationRunner>.broadcast(),
+       messageCountsController = StreamController<MatrixStats>.broadcast(),
+       incomingKeyVerificationController =
+           StreamController<KeyVerification>.broadcast() {
+    _roomManager =
+        roomManager ??
         sessionManager?.roomManager ??
         SyncRoomManager(
           gateway: _gateway,
           settingsDb: _settingsDb,
           loggingService: _loggingService,
         );
-    _sessionManager = sessionManager ??
+    _sessionManager =
+        sessionManager ??
         MatrixSessionManager(
           gateway: _gateway,
           roomManager: _roomManager,
@@ -124,7 +126,8 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
-      final pipeline = pipelineOverride ??
+      final pipeline =
+          pipelineOverride ??
           MatrixStreamConsumer(
             sessionManager: _sessionManager,
             roomManager: _roomManager,
@@ -184,7 +187,8 @@ class MatrixService {
         }
         _syncEngine = syncEngine;
       } else {
-        final coordinator = lifecycleCoordinator ??
+        final coordinator =
+            lifecycleCoordinator ??
             SyncLifecycleCoordinator(
               gateway: _gateway,
               sessionManager: _sessionManager,
@@ -203,8 +207,8 @@ class MatrixService {
 
     incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
-      onListen: publishIncomingRunnerState,
-    );
+          onListen: publishIncomingRunnerState,
+        );
 
     keyVerificationStream = keyVerificationController.stream;
     incomingKeyVerificationRunnerStream =
@@ -213,70 +217,72 @@ class MatrixService {
     // On connectivity regain, nudge the pipeline with a catch-up + scan and
     // record this as a signal for observability.
     _connectivitySubscription =
-        (connectivityStream ?? Connectivity().onConnectivityChanged)
-            .listen((List<ConnectivityResult> result) {
-      if ({
-        ConnectivityResult.wifi,
-        ConnectivityResult.mobile,
-        ConnectivityResult.ethernet,
-      }.intersection(result.toSet()).isNotEmpty) {
-        // Record connectivity as a signal for metrics/observability.
-        _pipeline?.recordConnectivitySignal();
+        (connectivityStream ?? Connectivity().onConnectivityChanged).listen((
+          List<ConnectivityResult> result,
+        ) {
+          if ({
+            ConnectivityResult.wifi,
+            ConnectivityResult.mobile,
+            ConnectivityResult.ethernet,
+          }.intersection(result.toSet()).isNotEmpty) {
+            // Record connectivity as a signal for metrics/observability.
+            _pipeline?.recordConnectivitySignal();
 
-        // Coalesce repeated connectivity events: only trigger a rescan when
-        // there isn't one in-flight and we haven't just run one.
-        if (_rescanInFlight) {
-          _loggingService.captureEvent(
-            'service.forceRescan.connectivity.coalesce inFlight=true',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan',
-          );
-          return;
-        }
-        final now = DateTime.now();
-        if (_lastRescanAt != null &&
-            now.difference(_lastRescanAt!) < _minConnectivityRescanGap) {
-          _loggingService.captureEvent(
-            'service.forceRescan.connectivity.coalesce recent',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan',
-          );
-          return;
-        }
+            // Coalesce repeated connectivity events: only trigger a rescan when
+            // there isn't one in-flight and we haven't just run one.
+            if (_rescanInFlight) {
+              _loggingService.captureEvent(
+                'service.forceRescan.connectivity.coalesce inFlight=true',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'forceRescan',
+              );
+              return;
+            }
+            final now = DateTime.now();
+            if (_lastRescanAt != null &&
+                now.difference(_lastRescanAt!) < _minConnectivityRescanGap) {
+              _loggingService.captureEvent(
+                'service.forceRescan.connectivity.coalesce recent',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'forceRescan',
+              );
+              return;
+            }
 
-        _rescanInFlight = true;
-        unawaited(() async {
-          try {
-            _loggingService.captureEvent(
-              'service.forceRescan.connectivity includeCatchUp=true',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'forceRescan',
-            );
-            await _pipeline?.forceRescan();
-            _loggingService.captureEvent(
-              'service.forceRescan.connectivity.done',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'forceRescan',
-            );
-          } catch (e, st) {
-            // Log exceptions to aid debugging, but do not crash.
-            _loggingService.captureException(
-              e,
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'connectivity',
-              stackTrace: st,
-            );
-          } finally {
-            _lastRescanAt = DateTime.now();
-            _rescanInFlight = false;
+            _rescanInFlight = true;
+            unawaited(() async {
+              try {
+                _loggingService.captureEvent(
+                  'service.forceRescan.connectivity includeCatchUp=true',
+                  domain: 'MATRIX_SERVICE',
+                  subDomain: 'forceRescan',
+                );
+                await _pipeline?.forceRescan();
+                _loggingService.captureEvent(
+                  'service.forceRescan.connectivity.done',
+                  domain: 'MATRIX_SERVICE',
+                  subDomain: 'forceRescan',
+                );
+              } catch (e, st) {
+                // Log exceptions to aid debugging, but do not crash.
+                _loggingService.captureException(
+                  e,
+                  domain: 'MATRIX_SERVICE',
+                  subDomain: 'connectivity',
+                  stackTrace: st,
+                );
+              } finally {
+                _lastRescanAt = DateTime.now();
+                _rescanInFlight = false;
+              }
+            }());
           }
-        }());
-      }
-    });
+        });
   }
 
   static const Duration _statsDebounceDuration = Duration(
-      milliseconds: 500); // Balance UI responsiveness vs emission rate.
+    milliseconds: 500,
+  ); // Balance UI responsiveness vs emission rate.
 
   final MatrixSyncGateway _gateway;
   final LoggingService _loggingService;
@@ -373,7 +379,7 @@ class MatrixService {
   KeyVerificationRunner? incomingKeyVerificationRunner;
   final StreamController<KeyVerificationRunner> keyVerificationController;
   late final StreamController<KeyVerificationRunner>
-      incomingKeyVerificationRunnerController;
+  incomingKeyVerificationRunnerController;
   late final Stream<KeyVerificationRunner> keyVerificationStream;
   late final Stream<KeyVerificationRunner> incomingKeyVerificationRunnerStream;
 
@@ -548,9 +554,9 @@ class MatrixService {
   }
 
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
-        deviceKeys: deviceKeys,
-        service: this,
-      );
+    deviceKeys: deviceKeys,
+    service: this,
+  );
 
   /// Runs post-verification recovery so sync resumes without app restart.
   ///
@@ -645,9 +651,9 @@ class MatrixService {
     }
     _keyVerificationRequestSubscription =
         await listenForKeyVerificationRequestsWithSubscription(
-      service: this,
-      loggingService: _loggingService,
-    );
+          service: this,
+          loggingService: _loggingService,
+        );
   }
 
   Future<void> logout() async {
@@ -745,13 +751,13 @@ class MatrixService {
   MatrixStreamConsumer? get debugPipeline => _pipeline;
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
-        session: _sessionManager,
-        storage: _secureStorage,
-      );
+    session: _sessionManager,
+    storage: _secureStorage,
+  );
   Future<void> deleteConfig() => deleteMatrixConfig(
-        session: _sessionManager,
-        storage: _secureStorage,
-      );
+    session: _sessionManager,
+    storage: _secureStorage,
+  );
 
   /// Changes the password for the currently logged-in user and updates
   /// the stored configuration.
@@ -799,8 +805,8 @@ class MatrixService {
   }
 
   Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
-        config,
-        session: _sessionManager,
-        storage: _secureStorage,
-      );
+    config,
+    session: _sessionManager,
+    storage: _secureStorage,
+  );
 }

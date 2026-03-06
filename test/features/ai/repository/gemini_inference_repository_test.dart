@@ -21,9 +21,13 @@ class _FakeStreamClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final data = _lines.map((l) => utf8.encode('$l\n') as List<int>);
     final stream = Stream<List<int>>.fromIterable(data);
-    return http.StreamedResponse(stream, _statusCode, headers: {
-      'content-type': 'application/json',
-    });
+    return http.StreamedResponse(
+      stream,
+      _statusCode,
+      headers: {
+        'content-type': 'application/json',
+      },
+    );
   }
 }
 
@@ -42,15 +46,23 @@ class _RoutingFakeClient extends http.BaseClient {
     if (path.endsWith(':streamGenerateContent')) {
       final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);
       final stream = Stream<List<int>>.fromIterable(data);
-      return http.StreamedResponse(stream, 200, headers: {
-        'content-type': 'application/json',
-      });
+      return http.StreamedResponse(
+        stream,
+        200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
     } else if (path.endsWith(':generateContent')) {
       final bytes = utf8.encode(fallbackBody);
       final stream = Stream<List<int>>.fromIterable([bytes]);
-      return http.StreamedResponse(stream, 200, headers: {
-        'content-type': 'application/json',
-      });
+      return http.StreamedResponse(
+        stream,
+        200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
     }
     // Default empty 404
     return http.StreamedResponse(const Stream.empty(), 404);
@@ -70,15 +82,23 @@ class _RoutingErrorClient extends http.BaseClient {
     if (path.endsWith(':streamGenerateContent')) {
       final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);
       final stream = Stream<List<int>>.fromIterable(data);
-      return http.StreamedResponse(stream, 200, headers: {
-        'content-type': 'application/json',
-      });
+      return http.StreamedResponse(
+        stream,
+        200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
     } else if (path.endsWith(':generateContent')) {
       final bytes = utf8.encode('{"error":"boom"}');
       final stream = Stream<List<int>>.fromIterable([bytes]);
-      return http.StreamedResponse(stream, 500, headers: {
-        'content-type': 'application/json',
-      });
+      return http.StreamedResponse(
+        stream,
+        500,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
     }
     return http.StreamedResponse(const Stream.empty(), 404);
   }
@@ -103,16 +123,24 @@ class _RoutingCountingClient extends http.BaseClient {
       streamCalls++;
       final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);
       final stream = Stream<List<int>>.fromIterable(data);
-      return http.StreamedResponse(stream, 200, headers: {
-        'content-type': 'application/json',
-      });
+      return http.StreamedResponse(
+        stream,
+        200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
     } else if (path.endsWith(':generateContent')) {
       fallbackCalls++;
       final bytes = utf8.encode(fallbackBody);
       final stream = Stream<List<int>>.fromIterable([bytes]);
-      return http.StreamedResponse(stream, 200, headers: {
-        'content-type': 'application/json',
-      });
+      return http.StreamedResponse(
+        stream,
+        200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
     }
     return http.StreamedResponse(const Stream.empty(), 404);
   }
@@ -132,9 +160,9 @@ void main() {
                 {'text': 'Check dates.', 'thought': true},
                 {'text': 'Here are your tasks.'},
               ],
-            }
-          }
-        ]
+            },
+          },
+        ],
       });
 
       final client = _FakeStreamClient(200, [line]);
@@ -172,56 +200,58 @@ void main() {
       expect(secondContent, 'Here are your tasks.');
     });
 
-    test('skips malformed JSON object and continues with next valid one',
-        () async {
-      // Malformed object with unquoted keys should be dropped; subsequent valid
-      // object should still be parsed and emitted.
-      const malformed = '{a:b}';
-      final valid = jsonEncode({
-        'candidates': [
-          {
-            'content': {
-              'parts': [
-                {'text': 'OK'},
-              ]
-            }
-          }
-        ]
-      });
+    test(
+      'skips malformed JSON object and continues with next valid one',
+      () async {
+        // Malformed object with unquoted keys should be dropped; subsequent valid
+        // object should still be parsed and emitted.
+        const malformed = '{a:b}';
+        final valid = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'OK'},
+                ],
+              },
+            },
+          ],
+        });
 
-      final client = _FakeStreamClient(200, [malformed, valid]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+        final client = _FakeStreamClient(200, [malformed, valid]);
+        final repo = GeminiInferenceRepository(httpClient: client);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      final events = await repo
-          .generateText(
-            prompt: 'p',
-            model: 'gemini-2.5-pro',
-            temperature: 0.5,
-            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
-            provider: provider,
-          )
-          .toList();
-      expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'OK');
-    });
+        final events = await repo
+            .generateText(
+              prompt: 'p',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+              provider: provider,
+            )
+            .toList();
+        expect(events.length, 1);
+        expect(events.first.choices!.first.delta!.content, 'OK');
+      },
+    );
 
     test('fallback emits thinking, then text, then aggregated tools', () async {
       // Streaming yields empty parts to trigger fallback
       final streamLine = jsonEncode({
         'candidates': [
           {
-            'content': {'role': 'model', 'parts': <Object?>[]}
-          }
-        ]
+            'content': {'role': 'model', 'parts': <Object?>[]},
+          },
+        ],
       });
 
       // Fallback contains thinking + visible text + two tool calls
@@ -235,19 +265,19 @@ void main() {
                 {
                   'functionCall': {
                     'name': 'a',
-                    'args': {'x': 1}
-                  }
+                    'args': {'x': 1},
+                  },
                 },
                 {
                   'functionCall': {
                     'name': 'b',
-                    'args': {'y': 2}
-                  }
-                }
-              ]
-            }
-          }
-        ]
+                    'args': {'y': 2},
+                  },
+                },
+              ],
+            },
+          },
+        ],
       });
 
       final client = _RoutingFakeClient(
@@ -307,14 +337,14 @@ void main() {
                     'name': 'get_task_summaries',
                     'args': {
                       'start_date': '2024-01-01',
-                      'end_date': '2024-01-02'
-                    }
-                  }
-                }
+                      'end_date': '2024-01-02',
+                    },
+                  },
+                },
               ],
-            }
-          }
-        ]
+            },
+          },
+        ],
       });
 
       final client = _FakeStreamClient(200, [line]);
@@ -349,134 +379,138 @@ void main() {
       expect(call.function!.arguments, contains('start_date'));
     });
 
-    test('emits unique tool IDs and indices for multiple function calls',
-        () async {
-      final line = jsonEncode({
-        'candidates': [
-          {
-            'content': {
-              'role': 'model',
-              'parts': [
-                {
-                  'functionCall': {
-                    'name': 'a',
-                    'args': {'x': 1}
-                  }
-                },
-                {
-                  'functionCall': {
-                    'name': 'b',
-                    'args': {'y': 2}
-                  }
-                }
-              ],
-            }
-          }
-        ]
-      });
+    test(
+      'emits unique tool IDs and indices for multiple function calls',
+      () async {
+        final line = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {
+                    'functionCall': {
+                      'name': 'a',
+                      'args': {'x': 1},
+                    },
+                  },
+                  {
+                    'functionCall': {
+                      'name': 'b',
+                      'args': {'y': 2},
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        });
 
-      final client = _FakeStreamClient(200, [line]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+        final client = _FakeStreamClient(200, [line]);
+        final repo = GeminiInferenceRepository(httpClient: client);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'test',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'test',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      final events = await repo
-          .generateText(
-            prompt: 'p',
-            model: 'gemini-2.5-flash',
-            temperature: 0.5,
-            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
-            provider: provider,
-          )
-          .toList();
+        final events = await repo
+            .generateText(
+              prompt: 'p',
+              model: 'gemini-2.5-flash',
+              temperature: 0.5,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+              provider: provider,
+            )
+            .toList();
 
-      // We expect two tool-call events
-      expect(events.length, 2);
-      final call0 = events[0].choices!.first.delta!.toolCalls!.first;
-      final call1 = events[1].choices!.first.delta!.toolCalls!.first;
-      expect(call0.id, 'tool_turn0_0');
-      expect(call0.index, 0);
-      expect(call1.id, 'tool_turn0_1');
-      expect(call1.index, 1);
-    });
+        // We expect two tool-call events
+        expect(events.length, 2);
+        final call0 = events[0].choices!.first.delta!.toolCalls!.first;
+        final call1 = events[1].choices!.first.delta!.toolCalls!.first;
+        expect(call0.id, 'tool_turn0_0');
+        expect(call0.index, 0);
+        expect(call1.id, 'tool_turn0_1');
+        expect(call1.index, 1);
+      },
+    );
 
-    test('fallback aggregates multiple tool calls into single response',
-        () async {
-      // Streaming yields nothing useful -> triggers fallback
-      final streamLine = jsonEncode({
-        'candidates': [
-          {
-            'content': {'role': 'model', 'parts': <Object?>[]}
-          }
-        ]
-      });
+    test(
+      'fallback aggregates multiple tool calls into single response',
+      () async {
+        // Streaming yields nothing useful -> triggers fallback
+        final streamLine = jsonEncode({
+          'candidates': [
+            {
+              'content': {'role': 'model', 'parts': <Object?>[]},
+            },
+          ],
+        });
 
-      final fallback = jsonEncode({
-        'candidates': [
-          {
-            'content': {
-              'parts': [
-                {'text': 'hello'},
-                {
-                  'functionCall': {
-                    'name': 'a',
-                    'args': {'x': 1}
-                  }
-                },
-                {
-                  'functionCall': {
-                    'name': 'b',
-                    'args': {'y': 2}
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      });
+        final fallback = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'hello'},
+                  {
+                    'functionCall': {
+                      'name': 'a',
+                      'args': {'x': 1},
+                    },
+                  },
+                  {
+                    'functionCall': {
+                      'name': 'b',
+                      'args': {'y': 2},
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        });
 
-      final client = _RoutingFakeClient(
-        streamLines: [streamLine],
-        fallbackBody: fallback,
-      );
-      final repo = GeminiInferenceRepository(httpClient: client);
+        final client = _RoutingFakeClient(
+          streamLines: [streamLine],
+          fallbackBody: fallback,
+        );
+        final repo = GeminiInferenceRepository(httpClient: client);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'key',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'key',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      final events = await repo
-          .generateText(
-            prompt: 'p',
-            model: 'gemini-2.0-pro',
-            temperature: 0.5,
-            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
-            provider: provider,
-          )
-          .toList();
+        final events = await repo
+            .generateText(
+              prompt: 'p',
+              model: 'gemini-2.0-pro',
+              temperature: 0.5,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+              provider: provider,
+            )
+            .toList();
 
-      // Expect two events: one for content text, one for aggregated tools
-      expect(events.length, 2);
-      final textDelta = events[0].choices!.first.delta!;
-      expect(textDelta.content, 'hello');
-      final toolsDelta = events[1].choices!.first.delta!;
-      expect(toolsDelta.toolCalls, isNotNull);
-      expect(toolsDelta.toolCalls!.length, 2);
-      expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
-      expect(toolsDelta.toolCalls![1].id, 'tool_turn0_1');
-    });
+        // Expect two events: one for content text, one for aggregated tools
+        expect(events.length, 2);
+        final textDelta = events[0].choices!.first.delta!;
+        expect(textDelta.content, 'hello');
+        final toolsDelta = events[1].choices!.first.delta!;
+        expect(toolsDelta.toolCalls, isNotNull);
+        expect(toolsDelta.toolCalls!.length, 2);
+        expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
+        expect(toolsDelta.toolCalls![1].id, 'tool_turn0_1');
+      },
+    );
 
     test('throws for non-2xx streaming status codes', () async {
       final client = _FakeStreamClient(500, ['{"error":"x"}']);
@@ -503,56 +537,58 @@ void main() {
       );
     });
 
-    test('emits thinking for flash models when includeThoughts is true',
-        () async {
-      final line = jsonEncode({
-        'candidates': [
-          {
-            'content': {
-              'role': 'model',
-              'parts': [
-                {'text': 'internal chain', 'thought': true},
-                {'text': 'Visible answer.'},
-              ],
-            }
-          }
-        ]
-      });
+    test(
+      'emits thinking for flash models when includeThoughts is true',
+      () async {
+        final line = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'internal chain', 'thought': true},
+                  {'text': 'Visible answer.'},
+                ],
+              },
+            },
+          ],
+        });
 
-      final client = _FakeStreamClient(200, [line]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+        final client = _FakeStreamClient(200, [line]);
+        final repo = GeminiInferenceRepository(httpClient: client);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      final events = await repo
-          .generateText(
-            prompt: 'p',
-            // Gemini 2.5+ Flash supports thinking
-            model: 'gemini-2.5-flash',
-            temperature: 0.5,
-            thinkingConfig: const GeminiThinkingConfig(
-              thinkingBudget: 64,
-              includeThoughts: true,
-            ),
-            provider: provider,
-          )
-          .toList();
+        final events = await repo
+            .generateText(
+              prompt: 'p',
+              // Gemini 2.5+ Flash supports thinking
+              model: 'gemini-2.5-flash',
+              temperature: 0.5,
+              thinkingConfig: const GeminiThinkingConfig(
+                thinkingBudget: 64,
+                includeThoughts: true,
+              ),
+              provider: provider,
+            )
+            .toList();
 
-      // Expect thinking block + visible answer
-      expect(events.length, 2);
-      expect(
-        events[0].choices!.first.delta!.content,
-        '<think>\ninternal chain\n</think>\n',
-      );
-      expect(events[1].choices!.first.delta!.content, 'Visible answer.');
-    });
+        // Expect thinking block + visible answer
+        expect(events.length, 2);
+        expect(
+          events[0].choices!.first.delta!.content,
+          '<think>\ninternal chain\n</think>\n',
+        );
+        expect(events[1].choices!.first.delta!.content, 'Visible answer.');
+      },
+    );
 
     test('flushes trailing thinking block at end of stream', () async {
       final line = jsonEncode({
@@ -564,9 +600,9 @@ void main() {
                 {'text': 'reason...', 'thought': true},
                 {'text': 'more...', 'thought': true},
               ],
-            }
-          }
-        ]
+            },
+          },
+        ],
       });
 
       final client = _FakeStreamClient(200, [line]);
@@ -601,16 +637,17 @@ void main() {
     });
 
     test('handles SSE data: lines and array framing in stream', () async {
-      final sse = 'data: ${jsonEncode({
+      final sse =
+          'data: ${jsonEncode({
             'candidates': [
               {
                 'content': {
                   'parts': [
                     {'text': 'A'},
-                  ]
-                }
-              }
-            ]
+                  ],
+                },
+              },
+            ],
           })}';
 
       // Prepend an opening bracket to test array framing removal
@@ -673,9 +710,9 @@ void main() {
       final emptyParts = jsonEncode({
         'candidates': [
           {
-            'content': {'parts': <Object?>[]}
-          }
-        ]
+            'content': {'parts': <Object?>[]},
+          },
+        ],
       });
       final client = _RoutingErrorClient(streamLines: [emptyParts]);
       final repo = GeminiInferenceRepository(httpClient: client);
@@ -699,66 +736,68 @@ void main() {
       expect(events, isEmpty);
     });
 
-    test('does not perform fallback when streaming emitted any content',
-        () async {
-      final streamLine = jsonEncode({
-        'candidates': [
-          {
-            'content': {
-              'parts': [
-                {'text': 'from stream'},
-              ]
-            }
-          }
-        ]
-      });
-      final fallback = jsonEncode({
-        'candidates': [
-          {
-            'content': {
-              'parts': [
-                {'text': 'from fallback'},
-              ]
-            }
-          }
-        ]
-      });
-      final client = _RoutingCountingClient(
-        streamLines: [streamLine],
-        fallbackBody: fallback,
-      );
-      final repo = GeminiInferenceRepository(httpClient: client);
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
-      final events = await repo
-          .generateText(
-            prompt: 'p',
-            model: 'gemini-2.5-pro',
-            temperature: 0.2,
-            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
-            provider: provider,
-          )
-          .toList();
-      expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'from stream');
-      expect(client.streamCalls, 1);
-      expect(client.fallbackCalls, 0);
-    });
+    test(
+      'does not perform fallback when streaming emitted any content',
+      () async {
+        final streamLine = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'from stream'},
+                ],
+              },
+            },
+          ],
+        });
+        final fallback = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'from fallback'},
+                ],
+              },
+            },
+          ],
+        });
+        final client = _RoutingCountingClient(
+          streamLines: [streamLine],
+          fallbackBody: fallback,
+        );
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        final events = await repo
+            .generateText(
+              prompt: 'p',
+              model: 'gemini-2.5-pro',
+              temperature: 0.2,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+              provider: provider,
+            )
+            .toList();
+        expect(events.length, 1);
+        expect(events.first.choices!.first.delta!.content, 'from stream');
+        expect(client.streamCalls, 1);
+        expect(client.fallbackCalls, 0);
+      },
+    );
 
     test('fallback emits usage from non-streaming response', () async {
       // Streaming yields empty parts to trigger fallback
       final streamLine = jsonEncode({
         'candidates': [
           {
-            'content': {'parts': <Object?>[]}
-          }
-        ]
+            'content': {'parts': <Object?>[]},
+          },
+        ],
       });
 
       // Fallback response includes usageMetadata
@@ -768,15 +807,15 @@ void main() {
             'content': {
               'parts': [
                 {'text': 'Fallback response'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
         'usageMetadata': {
           'promptTokenCount': 50,
           'candidatesTokenCount': 20,
           'thoughtsTokenCount': 10,
-        }
+        },
       });
 
       final client = _RoutingFakeClient(
@@ -821,16 +860,16 @@ void main() {
             'content': {
               'parts': [
                 {'text': 'Hello world'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
         'usageMetadata': {
           'promptTokenCount': 100,
           'candidatesTokenCount': 50,
           'thoughtsTokenCount': 25,
           'cachedContentTokenCount': 10,
-        }
+        },
       });
 
       final client = _FakeStreamClient(200, [responseWithUsage]);
@@ -877,13 +916,13 @@ void main() {
             'content': {
               'parts': [
                 {'text': 'Hello'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
         'usageMetadata': {
           'promptTokenCount': 100,
-        }
+        },
       });
 
       // Second chunk has more usage data
@@ -893,15 +932,15 @@ void main() {
             'content': {
               'parts': [
                 {'text': ' world'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
         'usageMetadata': {
           'promptTokenCount': 100,
           'candidatesTokenCount': 50,
           'thoughtsTokenCount': 25,
-        }
+        },
       });
 
       final client = _FakeStreamClient(200, [chunk1, chunk2]);
@@ -944,9 +983,9 @@ void main() {
             'content': {
               'parts': [
                 {'text': 'No usage data'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
       });
 
@@ -989,11 +1028,11 @@ void main() {
                     'name': 'test_function',
                     'args': {'arg1': 'value1'},
                     'thoughtSignature': 'sig-abc123-encrypted',
-                  }
-                }
-              ]
-            }
-          }
+                  },
+                },
+              ],
+            },
+          },
         ],
       });
 
@@ -1038,22 +1077,23 @@ void main() {
                   'functionCall': {
                     'name': 'function_one',
                     'args': {'a': 1},
-                  }
+                  },
                 },
                 {
                   'functionCall': {
                     'name': 'function_two',
                     'args': {'b': 2},
-                  }
+                  },
                 },
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
       });
 
-      final client =
-          _FakeStreamClient(200, [responseWithMultipleFunctionCalls]);
+      final client = _FakeStreamClient(200, [
+        responseWithMultipleFunctionCalls,
+      ]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -1105,9 +1145,9 @@ void main() {
                     'parts': [
                       {'text': 'Success after retry'},
                     ],
-                  }
-                }
-              ]
+                  },
+                },
+              ],
             }),
           ],
           onRequest: () => attemptCount++,
@@ -1166,9 +1206,9 @@ void main() {
                     'parts': [
                       {'text': 'Back online'},
                     ],
-                  }
-                }
-              ]
+                  },
+                },
+              ],
             }),
           ],
           onRequest: () => attemptCount++,
@@ -1237,9 +1277,9 @@ void main() {
             )
             .toList()
             .catchError((Object e) {
-          caughtError = e;
-          return <CreateChatCompletionStreamResponse>[];
-        });
+              caughtError = e;
+              return <CreateChatCompletionStreamResponse>[];
+            });
 
         // Attempt 1: gets 429, schedules 500ms backoff
         async.flushMicrotasks();
@@ -1277,9 +1317,9 @@ void main() {
                 'parts': [
                   {'text': 'Hello'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1327,9 +1367,9 @@ void main() {
                 'parts': [
                   {'text': 'Response'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1403,9 +1443,9 @@ void main() {
                 'parts': [
                   {'text': 'Hi'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1448,9 +1488,9 @@ void main() {
                 'parts': [
                   {'text': 'OK'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1497,9 +1537,9 @@ void main() {
                 'parts': [
                   {'text': 'Using tool'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1513,29 +1553,31 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      await repo.generateText(
-        prompt: 'Call a function',
-        model: 'gemini-2.5-pro',
-        temperature: 0.5,
-        thinkingConfig: GeminiThinkingConfig.disabled,
-        provider: provider,
-        tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'get_weather',
-              description: 'Get weather for a location',
-              parameters: {
-                'type': 'object',
-                'properties': {
-                  'location': {'type': 'string'},
-                },
-                'required': ['location'],
-              },
-            ),
-          ),
-        ],
-      ).toList();
+      await repo
+          .generateText(
+            prompt: 'Call a function',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+            tools: [
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'get_weather',
+                  description: 'Get weather for a location',
+                  parameters: {
+                    'type': 'object',
+                    'properties': {
+                      'location': {'type': 'string'},
+                    },
+                    'required': ['location'],
+                  },
+                ),
+              ),
+            ],
+          )
+          .toList();
 
       expect(capturedBody, isNotNull);
       final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
@@ -1567,9 +1609,9 @@ void main() {
                 {'text': longThinking, 'thought': true},
                 {'text': 'Short answer'},
               ],
-            }
-          }
-        ]
+            },
+          },
+        ],
       });
 
       final client = _FakeStreamClient(200, [line]);
@@ -1664,18 +1706,20 @@ void main() {
       expect(extractThoughtSignature(part), isNull);
     });
 
-    test('returns null when signature is inside functionCall (wrong location)',
-        () {
-      // This tests that we correctly look at part level, not inside functionCall
-      final part = <String, dynamic>{
-        'functionCall': {
-          'name': 'test_func',
-          'args': <String, dynamic>{},
-          'thoughtSignature': 'wrong-location-sig',
-        },
-      };
-      expect(extractThoughtSignature(part), isNull);
-    });
+    test(
+      'returns null when signature is inside functionCall (wrong location)',
+      () {
+        // This tests that we correctly look at part level, not inside functionCall
+        final part = <String, dynamic>{
+          'functionCall': {
+            'name': 'test_func',
+            'args': <String, dynamic>{},
+            'thoughtSignature': 'wrong-location-sig',
+          },
+        };
+        expect(extractThoughtSignature(part), isNull);
+      },
+    );
 
     test('handles non-string signature values by converting to string', () {
       final part = <String, dynamic>{
@@ -1712,10 +1756,10 @@ void main() {
                   // Second parallel call also gets signature in test
                   // (in practice, only first may have it)
                   'thoughtSignature': 'encrypted-sig-67890',
-                }
-              ]
-            }
-          }
+                },
+              ],
+            },
+          },
         ],
       });
 
@@ -1764,11 +1808,11 @@ void main() {
                     'name': 'add_checklist_item',
                     'args': {'title': 'Buy milk'},
                     // No thoughtSignature field
-                  }
-                }
-              ]
-            }
-          }
+                  },
+                },
+              ],
+            },
+          },
         ],
       });
 
@@ -1805,9 +1849,9 @@ void main() {
       final streamLine = jsonEncode({
         'candidates': [
           {
-            'content': {'parts': <Object?>[]}
-          }
-        ]
+            'content': {'parts': <Object?>[]},
+          },
+        ],
       });
 
       // Fallback has function calls with signatures at part level
@@ -1823,10 +1867,10 @@ void main() {
                   },
                   // thoughtSignature is at part level, sibling of functionCall
                   'thoughtSignature': 'fallback-sig-abc',
-                }
-              ]
-            }
-          }
+                },
+              ],
+            },
+          },
         ],
       });
 
@@ -1880,9 +1924,9 @@ void main() {
                 'parts': [
                   {'text': 'Multi-turn response'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1943,9 +1987,9 @@ void main() {
                 'parts': [
                   {'text': 'Continuing conversation'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -1981,24 +2025,28 @@ void main() {
         ),
       ];
 
-      await repo.generateTextWithMessages(
-        messages: messages,
-        model: 'gemini-3-pro',
-        temperature: 0.5,
-        thinkingConfig: GeminiThinkingConfig.disabled,
-        provider: provider,
-        thoughtSignatures: {'call-123': 'sig-encrypted-abc'},
-      ).toList();
+      await repo
+          .generateTextWithMessages(
+            messages: messages,
+            model: 'gemini-3-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+            thoughtSignatures: {'call-123': 'sig-encrypted-abc'},
+          )
+          .toList();
 
       expect(capturedBody, isNotNull);
       final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
       final contents = body['contents'] as List<dynamic>;
 
       // Find the model message with function call and verify signature
-      final modelMessage = contents.firstWhere(
-        (dynamic c) => (c as Map<String, dynamic>)['role'] == 'model',
-        orElse: () => <String, dynamic>{},
-      ) as Map<String, dynamic>;
+      final modelMessage =
+          contents.firstWhere(
+                (dynamic c) => (c as Map<String, dynamic>)['role'] == 'model',
+                orElse: () => <String, dynamic>{},
+              )
+              as Map<String, dynamic>;
 
       expect(modelMessage, isNotEmpty);
       final parts = modelMessage['parts'] as List<dynamic>;
@@ -2022,10 +2070,10 @@ void main() {
                     'args': {'title': 'New item'},
                   },
                   'thoughtSignature': 'new-sig-xyz',
-                }
-              ]
-            }
-          }
+                },
+              ],
+            },
+          },
         ],
       });
 
@@ -2042,18 +2090,20 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      await repo.generateTextWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Add item'),
-          ),
-        ],
-        model: 'gemini-3-flash',
-        temperature: 0.5,
-        thinkingConfig: GeminiThinkingConfig.disabled,
-        provider: provider,
-        signatureCollector: collector,
-      ).toList();
+      await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Add item'),
+              ),
+            ],
+            model: 'gemini-3-flash',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+            signatureCollector: collector,
+          )
+          .toList();
 
       expect(collector.hasSignatures, isTrue);
       expect(collector.getSignature('tool_turn0_0'), 'new-sig-xyz');
@@ -2067,9 +2117,9 @@ void main() {
               'parts': [
                 {'text': 'Let me think about this...', 'thought': true},
                 {'text': 'Here is my response'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
       });
 
@@ -2085,20 +2135,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      final events = await repo.generateTextWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Think hard'),
-          ),
-        ],
-        model: 'gemini-2.5-pro',
-        temperature: 0.5,
-        thinkingConfig: const GeminiThinkingConfig(
-          thinkingBudget: 1024,
-          includeThoughts: true,
-        ),
-        provider: provider,
-      ).toList();
+      final events = await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Think hard'),
+              ),
+            ],
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(
+              thinkingBudget: 1024,
+              includeThoughts: true,
+            ),
+            provider: provider,
+          )
+          .toList();
 
       expect(events.length, 2);
       expect(events[0].choices!.first.delta!.content, contains('<think>'));
@@ -2116,15 +2168,15 @@ void main() {
             'content': {
               'parts': [
                 {'text': 'Response with usage'},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
         'usageMetadata': {
           'promptTokenCount': 200,
           'candidatesTokenCount': 100,
           'thoughtsTokenCount': 50,
-        }
+        },
       });
 
       final client = _FakeStreamClient(200, [response]);
@@ -2139,17 +2191,19 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      final events = await repo.generateTextWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-        ],
-        model: 'gemini-2.5-pro',
-        temperature: 0.5,
-        thinkingConfig: GeminiThinkingConfig.disabled,
-        provider: provider,
-      ).toList();
+      final events = await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Hello'),
+              ),
+            ],
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
 
       // Content + usage events
       expect(events.length, 2);
@@ -2173,17 +2227,19 @@ void main() {
       );
 
       expect(
-        () => repo.generateTextWithMessages(
-          messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hello'),
-            ),
-          ],
-          model: 'gemini-2.5-pro',
-          temperature: 0.5,
-          thinkingConfig: GeminiThinkingConfig.disabled,
-          provider: provider,
-        ).toList(),
+        () => repo
+            .generateTextWithMessages(
+              messages: const [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Hello'),
+                ),
+              ],
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: GeminiThinkingConfig.disabled,
+              provider: provider,
+            )
+            .toList(),
         throwsA(isA<Exception>()),
       );
     });
@@ -2195,9 +2251,9 @@ void main() {
             'content': {
               'parts': [
                 {'text': 'Still thinking...', 'thought': true},
-              ]
-            }
-          }
+              ],
+            },
+          },
         ],
       });
 
@@ -2213,20 +2269,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      final events = await repo.generateTextWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Think'),
-          ),
-        ],
-        model: 'gemini-2.5-pro',
-        temperature: 0.5,
-        thinkingConfig: const GeminiThinkingConfig(
-          thinkingBudget: 1024,
-          includeThoughts: true,
-        ),
-        provider: provider,
-      ).toList();
+      final events = await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Think'),
+              ),
+            ],
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(
+              thinkingBudget: 1024,
+              includeThoughts: true,
+            ),
+            provider: provider,
+          )
+          .toList();
 
       expect(events.length, 1);
       expect(events.first.choices!.first.delta!.content, contains('<think>'));
@@ -2240,8 +2298,8 @@ void main() {
       final response = jsonEncode({
         'candidates': [
           {
-            'content': {'parts': <Object?>[]}
-          }
+            'content': {'parts': <Object?>[]},
+          },
         ],
       });
 
@@ -2257,17 +2315,19 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      final events = await repo.generateTextWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hi'),
-          ),
-        ],
-        model: 'gemini-2.5-pro',
-        temperature: 0.5,
-        thinkingConfig: GeminiThinkingConfig.disabled,
-        provider: provider,
-      ).toList();
+      final events = await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Hi'),
+              ),
+            ],
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
 
       // Multi-turn has no fallback, should just emit nothing
       expect(events, isEmpty);
@@ -2289,9 +2349,9 @@ void main() {
                 'parts': [
                   {'text': 'Following system instructions'},
                 ],
-              }
-            }
-          ]
+              },
+            },
+          ],
         }),
       );
 
@@ -2305,26 +2365,32 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      await repo.generateTextWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Do something'),
-          ),
-        ],
-        model: 'gemini-2.5-pro',
-        temperature: 0.5,
-        thinkingConfig: GeminiThinkingConfig.disabled,
-        provider: provider,
-        systemMessage: 'You are a helpful assistant.',
-      ).toList();
+      await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string(
+                  'Do something',
+                ),
+              ),
+            ],
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+            systemMessage: 'You are a helpful assistant.',
+          )
+          .toList();
 
       expect(capturedBody, isNotNull);
       final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
       expect(body['systemInstruction'], isNotNull);
       final sysInstruction = body['systemInstruction'] as Map<String, dynamic>;
       final parts = sysInstruction['parts'] as List<dynamic>;
-      expect((parts.first as Map<String, dynamic>)['text'],
-          'You are a helpful assistant.');
+      expect(
+        (parts.first as Map<String, dynamic>)['text'],
+        'You are a helpful assistant.',
+      );
     });
   });
 
@@ -2344,9 +2410,9 @@ void main() {
                     'parts': [
                       {'text': 'Success'},
                     ],
-                  }
-                }
-              ]
+                  },
+                },
+              ],
             }),
           ],
           retryAfterSeconds: 1,
@@ -2549,8 +2615,10 @@ void main() {
     });
 
     test('throws exception on HTTP error', () async {
-      final client =
-          _ErrorClient(statusCode: 400, body: '{"error": "Bad request"}');
+      final client = _ErrorClient(
+        statusCode: 400,
+        body: '{"error": "Bad request"}',
+      );
 
       final repo = GeminiInferenceRepository(httpClient: client);
       final provider = AiConfigInferenceProvider(
@@ -2705,9 +2773,13 @@ class _SimpleResponseClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final bytes = utf8.encode(response);
     final stream = Stream<List<int>>.fromIterable([bytes]);
-    return http.StreamedResponse(stream, 200, headers: {
-      'content-type': 'application/json',
-    });
+    return http.StreamedResponse(
+      stream,
+      200,
+      headers: {
+        'content-type': 'application/json',
+      },
+    );
   }
 }
 
@@ -2722,9 +2794,13 @@ class _ErrorClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final bytes = utf8.encode(body);
     final stream = Stream<List<int>>.fromIterable([bytes]);
-    return http.StreamedResponse(stream, statusCode, headers: {
-      'content-type': 'application/json',
-    });
+    return http.StreamedResponse(
+      stream,
+      statusCode,
+      headers: {
+        'content-type': 'application/json',
+      },
+    );
   }
 }
 
@@ -2746,8 +2822,9 @@ class _RetryWithHeaderClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     onRequest?.call();
-    final idx =
-        _callCount < statusCodes.length ? _callCount : statusCodes.length - 1;
+    final idx = _callCount < statusCodes.length
+        ? _callCount
+        : statusCodes.length - 1;
     _callCount++;
 
     final body = responses[idx < responses.length ? idx : responses.length - 1];
@@ -2783,8 +2860,9 @@ class _RetryTestClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     onRequest?.call();
-    final idx =
-        _callCount < statusCodes.length ? _callCount : statusCodes.length - 1;
+    final idx = _callCount < statusCodes.length
+        ? _callCount
+        : statusCodes.length - 1;
     _callCount++;
 
     final body = responses[idx < responses.length ? idx : responses.length - 1];
@@ -2814,8 +2892,12 @@ class _RequestCapturingClient extends http.BaseClient {
     onRequest(request);
     final bytes = utf8.encode(response);
     final stream = Stream<List<int>>.fromIterable([bytes]);
-    return http.StreamedResponse(stream, 200, headers: {
-      'content-type': 'application/json',
-    });
+    return http.StreamedResponse(
+      stream,
+      200,
+      headers: {
+        'content-type': 'application/json',
+      },
+    );
   }
 }

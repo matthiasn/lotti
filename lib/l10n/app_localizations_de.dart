@@ -142,7 +142,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentConversationThreadSummary(
-      int messageCount, int toolCallCount, String shortId) {
+    int messageCount,
+    int toolCallCount,
+    String shortId,
+  ) {
     return '$messageCount Nachrichten, $toolCallCount Tool-Aufrufe · $shortId';
   }
 
@@ -2906,7 +2909,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String maintenanceGenerateEmbeddingsProgress(
-      int processed, int total, int embedded) {
+    int processed,
+    int total,
+    int embedded,
+  ) {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
@@ -2915,6 +2921,22 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Agenten-Entitäten werden verarbeitet...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Agenten-Verknüpfungen werden verarbeitet...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Journaleinträge werden verarbeitet...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Eintragsverknüpfungen werden verarbeitet...';
 
   @override
   String get maintenancePopulateSequenceLog => 'Sync-Sequenzprotokoll befüllen';
@@ -2934,22 +2956,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'Dies scannt alle Journaleinträge und fügt sie dem Sync-Sequenzprotokoll hinzu. Dies ermöglicht Nachfüllantworten für Einträge, die vor dieser Funktion erstellt wurden.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Agenten-Entitäten werden verarbeitet...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks =>
-      'Agenten-Verknüpfungen werden verarbeitet...';
-
-  @override
-  String get maintenancePopulatePhaseJournal =>
-      'Journaleinträge werden verarbeitet...';
-
-  @override
-  String get maintenancePopulatePhaseLinks =>
-      'Eintragsverknüpfungen werden verarbeitet...';
 
   @override
   String get maintenancePurgeDeleted => 'Gelöschte Elemente löschen';
@@ -3994,7 +4000,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'Du hast $deviceName ($deviceID) erfolgreich verifiziert';
   }
 

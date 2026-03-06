@@ -216,8 +216,9 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getDueScheduledAgentStates(any()))
-              .thenThrow(Exception('DB error'));
+          when(
+            () => repository.getDueScheduledAgentStates(any()),
+          ).thenThrow(Exception('DB error'));
 
           // Should not throw.
           final manager = createAndStart();

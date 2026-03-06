@@ -61,12 +61,14 @@ void main() {
     );
 
     // Default: flag enabled
-    when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
-        .thenAnswer((_) async => true);
+    when(
+      () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+    ).thenAnswer((_) async => true);
 
     // Default: Ollama provider configured
-    when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-        .thenAnswer((_) async => 'http://localhost:11434');
+    when(
+      () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+    ).thenAnswer((_) async => 'http://localhost:11434');
 
     // Default: no existing content hash
     when(() => mockEmbeddingsDb.getContentHash(any())).thenReturn(null);
@@ -86,8 +88,9 @@ void main() {
     ).thenReturn(null);
 
     // Default: no labels (needed for label resolver)
-    when(() => mockJournalDb.getAllLabelDefinitions())
-        .thenAnswer((_) async => []);
+    when(
+      () => mockJournalDb.getAllLabelDefinitions(),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(() async {
@@ -97,8 +100,9 @@ void main() {
 
   /// Helper: stubs journalEntityById to return [entity].
   void stubEntity(JournalEntity entity) {
-    when(() => mockJournalDb.journalEntityById(entity.id))
-        .thenAnswer((_) async => entity);
+    when(
+      () => mockJournalDb.journalEntityById(entity.id),
+    ).thenAnswer((_) async => entity);
   }
 
   /// Helper: stubs the embedding repo to return a fake vector.
@@ -172,8 +176,9 @@ void main() {
         stubEntity(entry);
 
         // Simulate existing hash that matches current content.
-        when(() => mockEmbeddingsDb.getContentHash(_entityId))
-            .thenReturn(EmbeddingContentExtractor.contentHash(_longText));
+        when(
+          () => mockEmbeddingsDb.getContentHash(_entityId),
+        ).thenReturn(EmbeddingContentExtractor.contentHash(_longText));
 
         service.start();
         sendAndProcess(async, {_entityId, textEntryNotification});
@@ -192,8 +197,9 @@ void main() {
 
     test('skips when entity not found in DB', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.journalEntityById(_entityId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(_entityId),
+        ).thenAnswer((_) async => null);
 
         service.start();
         sendAndProcess(async, {_entityId, textEntryNotification});
@@ -236,8 +242,9 @@ void main() {
 
     test('skips when config flag is disabled', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
-            .thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async => false);
 
         final entry = JournalEntry(
           meta: _meta(),
@@ -263,8 +270,9 @@ void main() {
 
     test('skips when no Ollama provider is configured', () {
       fakeAsync((async) {
-        when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+        ).thenAnswer((_) async => null);
 
         final entry = JournalEntry(
           meta: _meta(),
@@ -328,8 +336,9 @@ void main() {
         );
 
         stubEntity(entry1);
-        when(() => mockJournalDb.journalEntityById(entityId2))
-            .thenAnswer((_) async => entry2);
+        when(
+          () => mockJournalDb.journalEntityById(entityId2),
+        ).thenAnswer((_) async => entry2);
 
         // First call throws, second succeeds
         var callCount = 0;
@@ -414,34 +423,36 @@ void main() {
       });
     });
 
-    test('start is idempotent — second call does not create duplicate listener',
-        () {
-      fakeAsync((async) {
-        final entry = JournalEntry(
-          meta: _meta(),
-          entryText: const EntryText(plainText: _longText),
-        );
-        stubEntity(entry);
-        stubEmbedding();
+    test(
+      'start is idempotent — second call does not create duplicate listener',
+      () {
+        fakeAsync((async) {
+          final entry = JournalEntry(
+            meta: _meta(),
+            entryText: const EntryText(plainText: _longText),
+          );
+          stubEntity(entry);
+          stubEmbedding();
 
-        // Call start twice
-        service
-          ..start()
-          ..start();
+          // Call start twice
+          service
+            ..start()
+            ..start();
 
-        sendAndProcess(async, {_entityId, textEntryNotification});
+          sendAndProcess(async, {_entityId, textEntryNotification});
 
-        // Should be called exactly once, not twice (no duplicate listener).
-        verify(
-          () => mockEmbeddingRepo.embed(
-            input: _longText,
-            baseUrl: 'http://localhost:11434',
-          ),
-        ).called(1);
+          // Should be called exactly once, not twice (no duplicate listener).
+          verify(
+            () => mockEmbeddingRepo.embed(
+              input: _longText,
+              baseUrl: 'http://localhost:11434',
+            ),
+          ).called(1);
 
-        stopInZone(async);
-      });
-    });
+          stopInZone(async);
+        });
+      },
+    );
 
     test('stop cancels subscription and clears pending', () {
       fakeAsync((async) {
@@ -499,25 +510,26 @@ void main() {
     test('builds label resolver from getAllLabelDefinitions', () {
       fakeAsync((async) {
         // Stub labels
-        when(() => mockJournalDb.getAllLabelDefinitions())
-            .thenAnswer((_) async => [
-                  LabelDefinition(
-                    id: 'label-1',
-                    name: 'security',
-                    color: '#FF0000',
-                    createdAt: fixedDate,
-                    updatedAt: fixedDate,
-                    vectorClock: null,
-                  ),
-                  LabelDefinition(
-                    id: 'label-2',
-                    name: 'backend',
-                    color: '#00FF00',
-                    createdAt: fixedDate,
-                    updatedAt: fixedDate,
-                    vectorClock: null,
-                  ),
-                ]);
+        when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+          (_) async => [
+            LabelDefinition(
+              id: 'label-1',
+              name: 'security',
+              color: '#FF0000',
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+              vectorClock: null,
+            ),
+            LabelDefinition(
+              id: 'label-2',
+              name: 'backend',
+              color: '#00FF00',
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+              vectorClock: null,
+            ),
+          ],
+        );
 
         final task = Task(
           meta: Metadata(
@@ -565,26 +577,27 @@ void main() {
 
     test('excludes deleted labels from resolver', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllLabelDefinitions())
-            .thenAnswer((_) async => [
-                  LabelDefinition(
-                    id: 'label-1',
-                    name: 'active-label',
-                    color: '#FF0000',
-                    createdAt: fixedDate,
-                    updatedAt: fixedDate,
-                    vectorClock: null,
-                  ),
-                  LabelDefinition(
-                    id: 'label-deleted',
-                    name: 'deleted-label',
-                    color: '#999999',
-                    createdAt: fixedDate,
-                    updatedAt: fixedDate,
-                    vectorClock: null,
-                    deletedAt: fixedDate,
-                  ),
-                ]);
+        when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+          (_) async => [
+            LabelDefinition(
+              id: 'label-1',
+              name: 'active-label',
+              color: '#FF0000',
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+              vectorClock: null,
+            ),
+            LabelDefinition(
+              id: 'label-deleted',
+              name: 'deleted-label',
+              color: '#999999',
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+              vectorClock: null,
+              deletedAt: fixedDate,
+            ),
+          ],
+        );
 
         final task = Task(
           meta: Metadata(

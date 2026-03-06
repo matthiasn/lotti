@@ -22,11 +22,13 @@ void main() {
       settingsDb = SettingsDb(inMemoryDatabase: true);
       mockJournalDb = mockJournalDbWithMeasurableTypes([]);
 
-      when(() => secureStorageMock.readValue(lastRouteKey))
-          .thenAnswer((_) async => '/settings');
+      when(
+        () => secureStorageMock.readValue(lastRouteKey),
+      ).thenAnswer((_) async => '/settings');
 
-      when(() => secureStorageMock.writeValue(lastRouteKey, any()))
-          .thenAnswer((_) async {});
+      when(
+        () => secureStorageMock.writeValue(lastRouteKey, any()),
+      ).thenAnswer((_) async {});
 
       when(() => mockJournalDb.watchActiveConfigFlagNames()).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([
@@ -34,7 +36,7 @@ void main() {
             enableDailyOsPageFlag,
             enableHabitsPageFlag,
             enableDashboardsPageFlag,
-          }
+          },
         ]),
       );
 
@@ -43,7 +45,8 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<NavService>(
-            NavService(journalDb: mockJournalDb, settingsDb: settingsDb));
+          NavService(journalDb: mockJournalDb, settingsDb: settingsDb),
+        );
     });
 
     tearDownAll(() async {
@@ -129,7 +132,9 @@ void main() {
 
     test('getIdFromSavedRoute', () async {
       await settingsDb.saveSettingsItem(
-          lastRouteKey, '/journal/123e4567-e89b-12d3-a456-426614174000');
+        lastRouteKey,
+        '/journal/123e4567-e89b-12d3-a456-426614174000',
+      );
       final id = await getIdFromSavedRoute();
       expect(id, '123e4567-e89b-12d3-a456-426614174000');
     });

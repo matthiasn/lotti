@@ -50,33 +50,36 @@ class CategoryField extends StatelessWidget {
       readOnly: true,
       focusNode: FocusNode(),
       controller: controller,
-      decoration: inputDecoration(
-        labelText: categoryUndefined ? '' : context.messages.habitCategoryLabel,
-        semanticsLabel: 'Select category',
-        themeData: Theme.of(context),
-      ).copyWith(
-        icon: CategoryIconCompact(
-          categoryId,
-          size: CategoryIconConstants.iconSizeMedium,
-        ),
-        suffixIcon: categoryUndefined
-            ? null
-            : GestureDetector(
-                child: Icon(
-                  Icons.close_rounded,
-                  color: style?.color,
-                ),
-                onTap: () {
-                  controller.clear();
-                  onSave(null);
-                },
-              ),
-        hintText: context.messages.habitCategoryHint,
-        hintStyle: style?.copyWith(
-          color: context.colorScheme.outline.withAlpha(127),
-        ),
-        border: InputBorder.none,
-      ),
+      decoration:
+          inputDecoration(
+            labelText: categoryUndefined
+                ? ''
+                : context.messages.habitCategoryLabel,
+            semanticsLabel: 'Select category',
+            themeData: Theme.of(context),
+          ).copyWith(
+            icon: CategoryIconCompact(
+              categoryId,
+              size: CategoryIconConstants.iconSizeMedium,
+            ),
+            suffixIcon: categoryUndefined
+                ? null
+                : GestureDetector(
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: style?.color,
+                    ),
+                    onTap: () {
+                      controller.clear();
+                      onSave(null);
+                    },
+                  ),
+            hintText: context.messages.habitCategoryHint,
+            hintStyle: style?.copyWith(
+              color: context.colorScheme.outline.withAlpha(127),
+            ),
+            border: InputBorder.none,
+          ),
       style: style,
     );
   }

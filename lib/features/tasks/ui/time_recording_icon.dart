@@ -21,22 +21,23 @@ class TimeRecordingIcon extends StatelessWidget {
 
     return StreamBuilder(
       stream: timeService.getStream(),
-      builder: (
-        _,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        if (timeService.linkedFrom?.id != taskId) {
-          return const SizedBox.shrink();
-        }
+      builder:
+          (
+            _,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            if (timeService.linkedFrom?.id != taskId) {
+              return const SizedBox.shrink();
+            }
 
-        return Padding(
-          padding: padding,
-          child: ColorIcon(
-            context.colorScheme.error,
-            size: 12,
-          ),
-        );
-      },
+            return Padding(
+              padding: padding,
+              child: ColorIcon(
+                context.colorScheme.error,
+                size: 12,
+              ),
+            );
+          },
     );
   }
 }

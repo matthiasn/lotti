@@ -58,8 +58,9 @@ void main() {
     getIt.registerSingleton<OutboxService>(mockOutboxService);
 
     // Set up default behavior
-    when(() => mockOutboxService.enqueueMessage(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockOutboxService.enqueueMessage(any()),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() {
@@ -81,25 +82,27 @@ void main() {
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
     });
 
-    test('saveConfig calls db.saveConfig and outboxService.enqueueMessage',
-        () async {
-      // Arrange
-      final config = AiConfig.inferenceProvider(
-        id: 'test-id',
-        baseUrl: 'https://api.example.com',
-        apiKey: 'test-api-key',
-        name: 'Test API',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
+    test(
+      'saveConfig calls db.saveConfig and outboxService.enqueueMessage',
+      () async {
+        // Arrange
+        final config = AiConfig.inferenceProvider(
+          id: 'test-id',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-api-key',
+          name: 'Test API',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
 
-      // Act
-      await repository.saveConfig(config);
+        // Act
+        await repository.saveConfig(config);
 
-      // Assert
-      verify(() => mockDb.saveConfig(any())).called(1);
-      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
-    });
+        // Assert
+        verify(() => mockDb.saveConfig(any())).called(1);
+        verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      },
+    );
 
     test('deleteConfig calls db.deleteConfig', () async {
       // Arrange
@@ -164,8 +167,9 @@ void main() {
       getIt.registerSingleton<OutboxService>(mockOutboxService);
 
       // Set up default behavior
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       db = AiConfigDb(inMemoryDatabase: true);
       repository = AiConfigRepository(db);
@@ -318,22 +322,24 @@ void main() {
       expect(url, 'http://localhost:11434');
     });
 
-    test('resolveOllamaBaseUrl returns null when no Ollama provider exists',
-        () async {
-      final openAiProvider = AiConfig.inferenceProvider(
-        id: 'openai-1',
-        baseUrl: 'https://api.openai.com',
-        apiKey: 'key',
-        name: 'OpenAI',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
+    test(
+      'resolveOllamaBaseUrl returns null when no Ollama provider exists',
+      () async {
+        final openAiProvider = AiConfig.inferenceProvider(
+          id: 'openai-1',
+          baseUrl: 'https://api.openai.com',
+          apiKey: 'key',
+          name: 'OpenAI',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
 
-      await repository.saveConfig(openAiProvider);
+        await repository.saveConfig(openAiProvider);
 
-      final url = await repository.resolveOllamaBaseUrl();
-      expect(url, isNull);
-    });
+        final url = await repository.resolveOllamaBaseUrl();
+        expect(url, isNull);
+      },
+    );
 
     test('resolveOllamaBaseUrl returns null on empty database', () async {
       final url = await repository.resolveOllamaBaseUrl();

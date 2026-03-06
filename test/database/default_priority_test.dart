@@ -28,16 +28,16 @@ void main() {
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getApplicationDocumentsDirectory' ||
-            methodCall.method == 'getApplicationSupportDirectory' ||
-            methodCall.method == 'getTemporaryDirectory') {
-          return testDirectory!.path;
-        }
-        return null;
-      },
-    );
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getApplicationDocumentsDirectory' ||
+                methodCall.method == 'getApplicationSupportDirectory' ||
+                methodCall.method == 'getTemporaryDirectory') {
+              return testDirectory!.path;
+            }
+            return null;
+          },
+        );
 
     getIt.registerSingleton<Directory>(testDirectory!);
   });

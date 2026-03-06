@@ -34,26 +34,27 @@ void main() {
       );
     });
 
-    test('image analysis in task context includes language in user message',
-        () {
-      // Should include language reminder in user message
-      expect(
-        imageAnalysisInTaskContextPrompt.userMessage,
-        contains('REMINDER: Generate your ENTIRE response in the language'),
-      );
-      expect(
-        imageAnalysisInTaskContextPrompt.userMessage,
-        contains('languageCode'),
-      );
-      // Should include guidelines about not mentioning missing items
-      expect(
-        imageAnalysisInTaskContextPrompt.userMessage,
-        contains('Do NOT mention what is absent or missing'),
-      );
-    });
+    test(
+      'image analysis in task context includes language in user message',
+      () {
+        // Should include language reminder in user message
+        expect(
+          imageAnalysisInTaskContextPrompt.userMessage,
+          contains('REMINDER: Generate your ENTIRE response in the language'),
+        );
+        expect(
+          imageAnalysisInTaskContextPrompt.userMessage,
+          contains('languageCode'),
+        );
+        // Should include guidelines about not mentioning missing items
+        expect(
+          imageAnalysisInTaskContextPrompt.userMessage,
+          contains('Do NOT mention what is absent or missing'),
+        );
+      },
+    );
 
-    test('regular image analysis includes language support via placeholder',
-        () {
+    test('regular image analysis includes language support via placeholder', () {
       // Regular image analysis now supports language via {{languageCode}} placeholder
       // This allows it to respect the task's language when called from a task context
       expect(

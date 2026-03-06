@@ -67,8 +67,9 @@ void main() {
 
     test('loads stats on build', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
 
         createAndLoad(async);
 
@@ -80,8 +81,9 @@ void main() {
 
     test('refresh reloads stats', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
 
         createAndLoad(async);
         clearInteractions(mockSequenceService);
@@ -96,8 +98,9 @@ void main() {
     test('handles error during refresh', () {
       fakeAsync((async) {
         var callCount = 0;
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async {
+        when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+          _,
+        ) async {
           callCount++;
           if (callCount == 1) return testStats;
           throw Exception('Test error');
@@ -115,10 +118,12 @@ void main() {
 
     test('triggerFullBackfill calls service and refreshes stats', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
-        when(() => mockBackfillService.processFullBackfill())
-            .thenAnswer((_) async => 10);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockBackfillService.processFullBackfill(),
+        ).thenAnswer((_) async => 10);
 
         createAndLoad(async);
         clearInteractions(mockSequenceService);
@@ -139,8 +144,9 @@ void main() {
 
     test('triggerFullBackfill sets isProcessing during operation', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
           (_) async {
             await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -169,10 +175,12 @@ void main() {
 
     test('triggerFullBackfill handles errors', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
-        when(() => mockBackfillService.processFullBackfill())
-            .thenAnswer((_) async => throw Exception('Backfill failed'));
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockBackfillService.processFullBackfill(),
+        ).thenAnswer((_) async => throw Exception('Backfill failed'));
 
         createAndLoad(async);
 
@@ -189,8 +197,9 @@ void main() {
 
     test('triggerFullBackfill does nothing if already processing', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
           (_) async {
             await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -215,10 +224,12 @@ void main() {
 
     test('triggerReRequest calls service and refreshes stats', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
-        when(() => mockBackfillService.processReRequest())
-            .thenAnswer((_) async => 15);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockBackfillService.processReRequest(),
+        ).thenAnswer((_) async => 15);
 
         createAndLoad(async);
         clearInteractions(mockSequenceService);
@@ -239,8 +250,9 @@ void main() {
 
     test('triggerReRequest sets isReRequesting during operation', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
         when(() => mockBackfillService.processReRequest()).thenAnswer(
           (_) async {
             await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -269,10 +281,12 @@ void main() {
 
     test('triggerReRequest handles errors', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
-        when(() => mockBackfillService.processReRequest())
-            .thenAnswer((_) async => throw Exception('Re-request failed'));
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockBackfillService.processReRequest(),
+        ).thenAnswer((_) async => throw Exception('Re-request failed'));
 
         createAndLoad(async);
 
@@ -289,8 +303,9 @@ void main() {
 
     test('triggerReRequest does nothing if already re-requesting', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
         when(() => mockBackfillService.processReRequest()).thenAnswer(
           (_) async {
             await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -313,8 +328,9 @@ void main() {
 
     test('triggerReRequest does nothing if already processing backfill', () {
       fakeAsync((async) {
-        when(() => mockSequenceService.getBackfillStats())
-            .thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
           (_) async {
             await Future<void>.delayed(const Duration(milliseconds: 100));

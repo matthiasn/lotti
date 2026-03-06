@@ -7,21 +7,21 @@ class AppPrefs {
 
   final Future<bool?> Function(String key) getBool;
   final Future<bool> Function({required String key, required bool value})
-      setBool;
+  setBool;
 }
 
 AppPrefs makeSharedPrefsService() => AppPrefs(
-      getBool: (String key) async {
-        if (isTestEnv) return true; // avoid UI hints in tests by default
-        final prefs = await SharedPreferences.getInstance();
-        return prefs.getBool(key);
-      },
-      setBool: ({required String key, required bool value}) async {
-        if (isTestEnv) return true;
-        final prefs = await SharedPreferences.getInstance();
-        return prefs.setBool(key, value);
-      },
-    );
+  getBool: (String key) async {
+    if (isTestEnv) return true; // avoid UI hints in tests by default
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key);
+  },
+  setBool: ({required String key, required bool value}) async {
+    if (isTestEnv) return true;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.setBool(key, value);
+  },
+);
 
 /// Clears preferences whose keys start with [prefix]. Returns the number of
 /// removed keys. Intended for ephemeral UI hints (e.g., keys prefixed with

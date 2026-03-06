@@ -37,8 +37,9 @@ class LinkedTasksWidget extends ConsumerWidget {
         .toList();
 
     // Watch incoming links (other entries -> this task)
-    final incomingEntitiesAsync =
-        ref.watch(linkedFromEntriesControllerProvider(id: taskId));
+    final incomingEntitiesAsync = ref.watch(
+      linkedFromEntriesControllerProvider(id: taskId),
+    );
 
     // Handle loading/error states
     final incomingEntities = incomingEntitiesAsync.value ?? [];

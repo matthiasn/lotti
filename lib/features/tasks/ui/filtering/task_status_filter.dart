@@ -58,8 +58,9 @@ class TaskStatusChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     void onTap() {
       controller.toggleSelectedTaskStatus(status);
@@ -96,8 +97,9 @@ class TaskStatusAllChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     final isSelected = setsEqual(
       state.selectedTaskStatuses,

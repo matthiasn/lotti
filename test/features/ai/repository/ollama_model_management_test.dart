@@ -56,15 +56,17 @@ void main() {
 
       final ref = container.read(testRefProvider);
       repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
-      ollamaProvider = AiConfig.inferenceProvider(
-        id: 'ollama-provider',
-        name: 'Ollama Provider',
-        baseUrl: baseUrl,
-        apiKey: '',
-        // Ollama doesn't use API keys
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.ollama,
-      ) as AiConfigInferenceProvider;
+      ollamaProvider =
+          AiConfig.inferenceProvider(
+                id: 'ollama-provider',
+                name: 'Ollama Provider',
+                baseUrl: baseUrl,
+                apiKey: '',
+                // Ollama doesn't use API keys
+                createdAt: DateTime.now(),
+                inferenceProviderType: InferenceProviderType.ollama,
+              )
+              as AiConfigInferenceProvider;
     });
 
     tearDown(() async {
@@ -93,8 +95,9 @@ void main() {
         expect(progressList[2].progress, 1.0);
 
         // Verify request was made correctly
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         expect(request.url.toString(), '$baseUrl/api/pull');
         expect(request.method, 'POST');
@@ -106,9 +109,11 @@ void main() {
         // Arrange
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(500);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(utf8.encode('{"error": "installation failed"}\n')),
-            ));
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(utf8.encode('{"error": "installation failed"}\n')),
+          ),
+        );
 
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => mockResponse,
@@ -160,10 +165,12 @@ void main() {
         const temperature = 0.7;
 
         // Set up repository with mock HTTP client
-        final testOllamaRepo =
-            OllamaInferenceRepository(httpClient: mockHttpClient);
-        final testGeminiRepo =
-            GeminiInferenceRepository(httpClient: mockHttpClient);
+        final testOllamaRepo = OllamaInferenceRepository(
+          httpClient: mockHttpClient,
+        );
+        final testGeminiRepo = GeminiInferenceRepository(
+          httpClient: mockHttpClient,
+        );
 
         final testContainer = ProviderContainer(
           overrides: [
@@ -174,22 +181,26 @@ void main() {
 
         final ref = testContainer.read(testRefProvider);
         repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
-        ollamaProvider = AiConfig.inferenceProvider(
-          id: 'ollama-provider',
-          name: 'Ollama Provider',
-          baseUrl: baseUrl,
-          apiKey: '',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ) as AiConfigInferenceProvider;
+        ollamaProvider =
+            AiConfig.inferenceProvider(
+                  id: 'ollama-provider',
+                  name: 'Ollama Provider',
+                  baseUrl: baseUrl,
+                  apiKey: '',
+                  createdAt: DateTime.now(),
+                  inferenceProviderType: InferenceProviderType.ollama,
+                )
+                as AiConfigInferenceProvider;
 
         // Mock both warmUpModel call and generate call
         // The OllamaInferenceRepository will make both calls
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((invocation) async {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((invocation) async {
           // This is warmUpModel (still uses post for now)
           return http.Response(
             '{"response": "Hello", "created_at": "2024-01-01T00:00:00Z"}',
@@ -200,15 +211,19 @@ void main() {
         // Mock streaming response for generateWithImages
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode(
-                    '{"message":{"content":"Analyze this image"},"done":true}\n'),
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"Analyze this image"},"done":true}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateWithImages(
@@ -227,15 +242,18 @@ void main() {
         expect(response.choices?.first.delta?.content, 'Analyze this image');
 
         // Verify warmUpModel was called
-        verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).called(1);
+        verify(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).called(1);
 
         // Verify streaming request was made for generateWithImages
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         expect(captured.length, 1);
 
         final request = captured[0] as http.Request;
@@ -251,8 +269,10 @@ void main() {
         expect(message['content'], prompt);
         expect(message['images'], images);
         expect(body['stream'], true);
-        expect((body['options'] as Map<String, dynamic>)['temperature'],
-            temperature);
+        expect(
+          (body['options'] as Map<String, dynamic>)['temperature'],
+          temperature,
+        );
       });
 
       test('throws ModelNotInstalledException when model not found', () async {
@@ -261,23 +281,30 @@ void main() {
         const images = [testImage];
 
         // Mock warm-up call
-        when(() => mockHttpClient.post(any(),
+        when(
+          () => mockHttpClient.post(
+            any(),
             headers: any(named: 'headers'),
-            body: any(named: 'body'))).thenAnswer(
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
           (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
         );
 
         // Mock generate call with model not found error
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(404);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode('{"error": "model not found"}\n'),
-              ),
-            ));
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode('{"error": "model not found"}\n'),
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act & Assert
         final stream = repository.generateWithImages(
@@ -382,9 +409,13 @@ void main() {
           const temperature = 0.7;
 
           // Mock warm-up call (returns quickly)
-          when(() => mockHttpClient.post(any(),
+          when(
+            () => mockHttpClient.post(
+              any(),
               headers: any(named: 'headers'),
-              body: any(named: 'body'))).thenAnswer(
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
             (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
           );
 
@@ -405,24 +436,24 @@ void main() {
 
           repository
               .generateWithImages(
-            prompt,
-            model: modelName,
-            temperature: temperature,
-            baseUrl: baseUrl,
-            apiKey: '',
-            images: images,
-            provider: ollamaProvider,
-          )
+                prompt,
+                model: modelName,
+                temperature: temperature,
+                baseUrl: baseUrl,
+                apiKey: '',
+                images: images,
+                provider: ollamaProvider,
+              )
               .listen(
-            received.add,
-            onError: (Object e, StackTrace st) {
-              errors.add(e);
-              if (!done.isCompleted) done.complete();
-            },
-            onDone: () {
-              if (!done.isCompleted) done.complete();
-            },
-          );
+                received.add,
+                onError: (Object e, StackTrace st) {
+                  errors.add(e);
+                  if (!done.isCompleted) done.complete();
+                },
+                onDone: () {
+                  if (!done.isCompleted) done.complete();
+                },
+              );
 
           // Advance fake time following the retry/backoff plan deterministically
           final plan = buildRetryBackoffPlan(
@@ -450,15 +481,19 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode(
-                    '{"message":{"content":"$expectedResponse"},"done":true}\n'),
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"$expectedResponse"},"done":true}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generate(
@@ -482,14 +517,17 @@ void main() {
         // Mock generate call with model not found error
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(404);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode('{"error": "model not found"}\n'),
-              ),
-            ));
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode('{"error": "model not found"}\n'),
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act & Assert
         final stream = repository.generate(
@@ -515,15 +553,19 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode(
-                    '{"message":{"content":"Test response"},"done":true}\n'),
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"Test response"},"done":true}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generate(
@@ -540,8 +582,9 @@ void main() {
         await stream.first;
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured[0] as http.Request;
 
         expect(request.url.toString(), contains('/api/chat'));
@@ -555,10 +598,14 @@ void main() {
         expect(message['role'], 'user');
         expect(message['content'], prompt);
         expect(body['stream'], true);
-        expect((body['options'] as Map<String, dynamic>)['temperature'],
-            temperature);
-        expect((body['options'] as Map<String, dynamic>)['num_predict'],
-            maxCompletionTokens);
+        expect(
+          (body['options'] as Map<String, dynamic>)['temperature'],
+          temperature,
+        );
+        expect(
+          (body['options'] as Map<String, dynamic>)['num_predict'],
+          maxCompletionTokens,
+        );
       });
 
       test('includes system message in messages when provided', () async {
@@ -568,15 +615,19 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode(
-                    '{"message":{"content":"Test response"},"done":true}\n'),
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"Test response"},"done":true}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generate(
@@ -593,8 +644,9 @@ void main() {
         await stream.first;
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured[0] as http.Request;
 
         final body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -625,8 +677,10 @@ void main() {
     group('ModelNotInstalledException', () {
       test('toString returns correct message', () {
         const exception = ModelNotInstalledException('test-model');
-        expect(exception.toString(),
-            'Model "test-model" is not installed. Please install it first.');
+        expect(
+          exception.toString(),
+          'Model "test-model" is not installed. Please install it first.',
+        );
       });
     });
   });
@@ -644,14 +698,19 @@ class MockInstallProgressResponse extends Mock
   final int statusCode;
 
   @override
-  http.ByteStream get stream => http.ByteStream(Stream.fromIterable([
-        utf8.encode(
-            '{"status": "pulling manifest", "total": 1000000, "completed": 0}\n'),
-        utf8.encode(
-            '{"status": "downloading", "total": 1000000, "completed": 500000}\n'),
-        utf8.encode(
-            '{"status": "success", "total": 1000000, "completed": 1000000}\n'),
-      ]));
+  http.ByteStream get stream => http.ByteStream(
+    Stream.fromIterable([
+      utf8.encode(
+        '{"status": "pulling manifest", "total": 1000000, "completed": 0}\n',
+      ),
+      utf8.encode(
+        '{"status": "downloading", "total": 1000000, "completed": 500000}\n',
+      ),
+      utf8.encode(
+        '{"status": "success", "total": 1000000, "completed": 1000000}\n',
+      ),
+    ]),
+  );
 }
 
 class MockStreamedResponseWithError extends Mock
@@ -660,7 +719,9 @@ class MockStreamedResponseWithError extends Mock
   final int statusCode = httpStatusOk;
 
   @override
-  http.ByteStream get stream => http.ByteStream(Stream.fromIterable([
-        utf8.encode('{"error": "Model not found"}\n'),
-      ]));
+  http.ByteStream get stream => http.ByteStream(
+    Stream.fromIterable([
+      utf8.encode('{"error": "Model not found"}\n'),
+    ]),
+  );
 }

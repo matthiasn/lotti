@@ -74,5 +74,5 @@ class ChecklistsSortingController extends Notifier<ChecklistsSortingState> {
 /// The [String] parameter is the task ID.
 final checklistsSortingControllerProvider = NotifierProvider.autoDispose
     .family<ChecklistsSortingController, ChecklistsSortingState, String>(
-  ChecklistsSortingController.new,
-);
+      ChecklistsSortingController.new,
+    );

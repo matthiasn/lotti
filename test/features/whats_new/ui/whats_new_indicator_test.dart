@@ -25,8 +25,9 @@ void main() {
   );
 
   group('WhatsNewIndicator', () {
-    testWidgets('shows indicator when hasUnseenRelease is true',
-        (tester) async {
+    testWidgets('shows indicator when hasUnseenRelease is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -56,8 +57,9 @@ void main() {
       );
     });
 
-    testWidgets('hides indicator when hasUnseenRelease is false',
-        (tester) async {
+    testWidgets('hides indicator when hasUnseenRelease is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

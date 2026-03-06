@@ -15,7 +15,7 @@ class ActiveInferenceData {
     this.progressText = '',
     StreamController<String>? progressStreamController,
   }) : progressStreamController =
-            progressStreamController ?? StreamController<String>.broadcast();
+           progressStreamController ?? StreamController<String>.broadcast();
 
   final String entityId;
   final String promptId;
@@ -60,7 +60,6 @@ class ActiveInferenceController extends _$ActiveInferenceController {
   }) {
     ref
       ..cacheFor(inferenceStateCacheDuration)
-
       // Clean up when provider is disposed
       ..onDispose(() {
         _currentData?.dispose();

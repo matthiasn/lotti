@@ -71,7 +71,8 @@ class LottiSwitchField extends StatelessWidget {
           value: value,
           onChanged: enabled ? onChanged : null,
           dense: dense,
-          contentPadding: contentPadding ??
+          contentPadding:
+              contentPadding ??
               const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 8,

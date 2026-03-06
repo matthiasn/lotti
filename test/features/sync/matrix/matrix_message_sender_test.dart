@@ -75,8 +75,9 @@ void main() {
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) {});
-    when(() => journalDb.getConfigFlag(any<String>()))
-        .thenAnswer((_) async => false);
+    when(
+      () => journalDb.getConfigFlag(any<String>()),
+    ).thenAnswer((_) async => false);
     when(() => room.id).thenReturn('!room:test');
     when(
       () => room.sendFileEvent(
@@ -266,9 +267,11 @@ void main() {
     );
 
     expect(result, isTrue);
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
+    final decoded =
+        json.decode(
+              utf8.decode(base64.decode(capturedPayload)),
+            )
+            as Map<String, dynamic>;
     expect(decoded['originatingHostId'], 'host-A');
   });
 
@@ -403,9 +406,11 @@ void main() {
         subDomain: 'sendMatrixMsg.vclockAdjusted',
       ),
     ).called(1);
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
+    final decoded =
+        json.decode(
+              utf8.decode(base64.decode(capturedPayload)),
+            )
+            as Map<String, dynamic>;
     expect(
       decoded['vectorClock'],
       equals({'hostA': 402}),
@@ -481,150 +486,162 @@ void main() {
 
     expect(result, isTrue);
     expect(capturedFile, isNotNull);
-    final decodedPayload = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
+    final decodedPayload =
+        json.decode(
+              utf8.decode(base64.decode(capturedPayload)),
+            )
+            as Map<String, dynamic>;
     expect(decodedPayload['vectorClock'], equals({'hostA': 1}));
 
-    final uploadedJson = json.decode(
-      utf8.decode(capturedFile!.bytes),
-    ) as Map<String, dynamic>;
+    final uploadedJson =
+        json.decode(
+              utf8.decode(capturedFile!.bytes),
+            )
+            as Map<String, dynamic>;
     expect(
       (uploadedJson['meta'] as Map<String, dynamic>)['vectorClock'],
       equals({'hostA': 1}),
     );
   });
 
-  test('keeps message vector clock when descriptor lacks vector clock',
-      () async {
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-    var capturedPayload = '';
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedPayload = invocation.positionalArguments.first as String;
-      return 'text-id';
-    });
+  test(
+    'keeps message vector clock when descriptor lacks vector clock',
+    () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+      var capturedPayload = '';
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
 
-    final meta = Metadata(
-      id: 'no-json-vc',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
-      vectorClock: null,
-    );
-    final entity = JournalEntity.journalEntry(
-      meta: meta,
-      entryText: const EntryText(plainText: 'draft'),
-    );
-    final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
+      final meta = Metadata(
+        id: 'no-json-vc',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        vectorClock: null,
+      );
+      final entity = JournalEntity.journalEntry(
+        meta: meta,
+        entryText: const EntryText(plainText: 'draft'),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
 
-    const messageClock = VectorClock({'hostA': 5});
-    final message = SyncMessage.journalEntity(
-      id: entity.meta.id,
-      jsonPath: jsonPath,
-      vectorClock: messageClock,
-      status: SyncEntryStatus.update,
-    );
+      const messageClock = VectorClock({'hostA': 5});
+      final message = SyncMessage.journalEntity(
+        id: entity.meta.id,
+        jsonPath: jsonPath,
+        vectorClock: messageClock,
+        status: SyncEntryStatus.update,
+      );
 
-    final result = await sender.sendMatrixMessage(
-      message: message,
-      context: buildContext(),
-      onSent: (_, __) {},
-    );
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
 
-    expect(result, isTrue);
-    verifyNever(
-      () => loggingService.captureEvent(
-        any<String>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockAdjusted',
-      ),
-    );
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
-    expect(decoded['vectorClock'], messageClock.vclock);
-  });
+      expect(result, isTrue);
+      verifyNever(
+        () => loggingService.captureEvent(
+          any<String>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.vclockAdjusted',
+        ),
+      );
+      final decoded =
+          json.decode(
+                utf8.decode(base64.decode(capturedPayload)),
+              )
+              as Map<String, dynamic>;
+      expect(decoded['vectorClock'], messageClock.vclock);
+    },
+  );
 
-  test('adopts descriptor vector clock when message lacks vector clock',
-      () async {
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-    var capturedPayload = '';
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedPayload = invocation.positionalArguments.first as String;
-      return 'text-id';
-    });
+  test(
+    'adopts descriptor vector clock when message lacks vector clock',
+    () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+      var capturedPayload = '';
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
 
-    final meta = Metadata(
-      id: 'json-vc',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
-      vectorClock: const VectorClock({'hostA': 7}),
-    );
-    final entity = JournalEntity.journalEntry(
-      meta: meta,
-      entryText: const EntryText(plainText: 'descriptor'),
-    );
-    final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
+      final meta = Metadata(
+        id: 'json-vc',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        vectorClock: const VectorClock({'hostA': 7}),
+      );
+      final entity = JournalEntity.journalEntry(
+        meta: meta,
+        entryText: const EntryText(plainText: 'descriptor'),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
 
-    final message = SyncMessage.journalEntity(
-      id: entity.meta.id,
-      jsonPath: jsonPath,
-      vectorClock: null,
-      status: SyncEntryStatus.update,
-    );
+      final message = SyncMessage.journalEntity(
+        id: entity.meta.id,
+        jsonPath: jsonPath,
+        vectorClock: null,
+        status: SyncEntryStatus.update,
+      );
 
-    final result = await sender.sendMatrixMessage(
-      message: message,
-      context: buildContext(),
-      onSent: (_, __) {},
-    );
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
 
-    expect(result, isTrue);
-    verify(
-      () => loggingService.captureEvent(
-        contains('vectorClock absent on message but present in json'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockAdjusted',
-      ),
-    ).called(1);
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
-    expect(decoded['vectorClock'], meta.vectorClock?.vclock);
-  });
+      expect(result, isTrue);
+      verify(
+        () => loggingService.captureEvent(
+          contains('vectorClock absent on message but present in json'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.vclockAdjusted',
+        ),
+      ).called(1);
+      final decoded =
+          json.decode(
+                utf8.decode(base64.decode(capturedPayload)),
+              )
+              as Map<String, dynamic>;
+      expect(decoded['vectorClock'], meta.vectorClock?.vclock);
+    },
+  );
 
   test('does not adjust when vector clocks are equal', () async {
     when(
@@ -685,143 +702,153 @@ void main() {
         subDomain: 'sendMatrixMsg.vclockAdjusted',
       ),
     );
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
+    final decoded =
+        json.decode(
+              utf8.decode(base64.decode(capturedPayload)),
+            )
+            as Map<String, dynamic>;
     expect(decoded['vectorClock'], clock.vclock);
   });
 
-  test('adopts descriptor vector clock when json is newer than message',
-      () async {
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-    var capturedPayload = '';
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedPayload = invocation.positionalArguments.first as String;
-      return 'text-id';
-    });
+  test(
+    'adopts descriptor vector clock when json is newer than message',
+    () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+      var capturedPayload = '';
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
 
-    const jsonClock = VectorClock({'hostA': 10});
-    const messageClock = VectorClock({'hostA': 8});
-    final meta = Metadata(
-      id: 'json-newer',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
-      vectorClock: jsonClock,
-    );
-    final entity = JournalEntity.journalEntry(
-      meta: meta,
-      entryText: const EntryText(plainText: 'json-newer'),
-    );
-    final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
+      const jsonClock = VectorClock({'hostA': 10});
+      const messageClock = VectorClock({'hostA': 8});
+      final meta = Metadata(
+        id: 'json-newer',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        vectorClock: jsonClock,
+      );
+      final entity = JournalEntity.journalEntry(
+        meta: meta,
+        entryText: const EntryText(plainText: 'json-newer'),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
 
-    final message = SyncMessage.journalEntity(
-      id: entity.meta.id,
-      jsonPath: jsonPath,
-      vectorClock: messageClock,
-      status: SyncEntryStatus.update,
-    );
+      final message = SyncMessage.journalEntity(
+        id: entity.meta.id,
+        jsonPath: jsonPath,
+        vectorClock: messageClock,
+        status: SyncEntryStatus.update,
+      );
 
-    final result = await sender.sendMatrixMessage(
-      message: message,
-      context: buildContext(),
-      onSent: (_, __) {},
-    );
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
 
-    expect(result, isTrue);
-    verify(
-      () => loggingService.captureEvent(
-        contains('vectorClock mismatch; adopting json clock'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockAdjusted',
-      ),
-    ).called(1);
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
-    expect(decoded['vectorClock'], jsonClock.vclock);
-  });
+      expect(result, isTrue);
+      verify(
+        () => loggingService.captureEvent(
+          contains('vectorClock mismatch; adopting json clock'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.vclockAdjusted',
+        ),
+      ).called(1);
+      final decoded =
+          json.decode(
+                utf8.decode(base64.decode(capturedPayload)),
+              )
+              as Map<String, dynamic>;
+      expect(decoded['vectorClock'], jsonClock.vclock);
+    },
+  );
 
-  test('keeps vector clock null when both descriptor and message lack clocks',
-      () async {
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-    var capturedPayload = '';
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedPayload = invocation.positionalArguments.first as String;
-      return 'text-id';
-    });
+  test(
+    'keeps vector clock null when both descriptor and message lack clocks',
+    () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+      var capturedPayload = '';
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
 
-    final meta = Metadata(
-      id: 'null-both',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
-      vectorClock: null,
-    );
-    final entity = JournalEntity.journalEntry(
-      meta: meta,
-      entryText: const EntryText(plainText: 'null'),
-    );
-    final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
+      final meta = Metadata(
+        id: 'null-both',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        vectorClock: null,
+      );
+      final entity = JournalEntity.journalEntry(
+        meta: meta,
+        entryText: const EntryText(plainText: 'null'),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
 
-    final message = SyncMessage.journalEntity(
-      id: entity.meta.id,
-      jsonPath: jsonPath,
-      vectorClock: null,
-      status: SyncEntryStatus.initial,
-    );
+      final message = SyncMessage.journalEntity(
+        id: entity.meta.id,
+        jsonPath: jsonPath,
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      );
 
-    final result = await sender.sendMatrixMessage(
-      message: message,
-      context: buildContext(),
-      onSent: (_, __) {},
-    );
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
 
-    expect(result, isTrue);
-    verifyNever(
-      () => loggingService.captureEvent(
-        any<String>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockAdjusted',
-      ),
-    );
-    final decoded = json.decode(
-      utf8.decode(base64.decode(capturedPayload)),
-    ) as Map<String, dynamic>;
-    expect(decoded['vectorClock'], isNull);
-  });
+      expect(result, isTrue);
+      verifyNever(
+        () => loggingService.captureEvent(
+          any<String>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.vclockAdjusted',
+        ),
+      );
+      final decoded =
+          json.decode(
+                utf8.decode(base64.decode(capturedPayload)),
+              )
+              as Map<String, dynamic>;
+      expect(decoded['vectorClock'], isNull);
+    },
+  );
 
   test('logs and returns false when sending text message throws', () async {
     when(
@@ -900,8 +927,9 @@ void main() {
         parseMarkdown: any<bool>(named: 'parseMarkdown'),
       ),
     ).thenAnswer((_) async => 'event-id');
-    when(() => journalDb.getConfigFlag(resendAttachments))
-        .thenAnswer((_) async => false);
+    when(
+      () => journalDb.getConfigFlag(resendAttachments),
+    ).thenAnswer((_) async => false);
 
     final sampleDate = DateTime.utc(2024, 1, 1);
     final metadata = Metadata(
@@ -969,8 +997,7 @@ void main() {
     );
   });
 
-  test('sends journal entity attachments without duplicating callback',
-      () async {
+  test('sends journal entity attachments without duplicating callback', () async {
     when(
       () => room.sendTextEvent(
         any<String>(),
@@ -985,8 +1012,9 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     ).thenAnswer((_) async => 'file-id');
-    when(() => journalDb.getConfigFlag(resendAttachments))
-        .thenAnswer((_) async => true);
+    when(
+      () => journalDb.getConfigFlag(resendAttachments),
+    ).thenAnswer((_) async => true);
 
     final sampleDate = DateTime.utc(2024, 1, 1);
     final metadata = Metadata(
@@ -1215,86 +1243,89 @@ void main() {
     ).called(1);
   });
 
-  test('resends audio attachment when resend flag true on update status',
-      () async {
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((_) async => 'event-id');
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-    when(() => journalDb.getConfigFlag(resendAttachments))
-        .thenAnswer((_) async => true);
+  test(
+    'resends audio attachment when resend flag true on update status',
+    () async {
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((_) async => 'event-id');
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => true);
 
-    final sampleDate = DateTime.utc(2024, 1, 1);
-    final metadata = Metadata(
-      id: 'entry',
-      createdAt: sampleDate,
-      updatedAt: sampleDate,
-      dateFrom: sampleDate,
-      dateTo: sampleDate,
-      vectorClock: VectorClock({'device': 1}),
-    );
-    final audioData = AudioData(
-      dateFrom: sampleDate,
-      dateTo: sampleDate,
-      audioFile: 'audio.m4a',
-      audioDirectory: '/audio/',
-      duration: const Duration(seconds: 1),
-    );
-    final journalAudio = JournalEntity.journalAudio(
-      meta: metadata,
-      data: audioData,
-    );
+      final sampleDate = DateTime.utc(2024, 1, 1);
+      final metadata = Metadata(
+        id: 'entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: VectorClock({'device': 1}),
+      );
+      final audioData = AudioData(
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        audioFile: 'audio.m4a',
+        audioDirectory: '/audio/',
+        duration: const Duration(seconds: 1),
+      );
+      final journalAudio = JournalEntity.journalAudio(
+        meta: metadata,
+        data: audioData,
+      );
 
-    const jsonPath = '/entries/audio.json';
-    File('${documentsDirectory.path}$jsonPath')
-      ..createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+      const jsonPath = '/entries/audio.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
 
-    final audioPath =
-        '${documentsDirectory.path}${audioData.audioDirectory}${audioData.audioFile}';
-    File(audioPath)
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(List<int>.filled(10, 1));
+      final audioPath =
+          '${documentsDirectory.path}${audioData.audioDirectory}${audioData.audioFile}';
+      File(audioPath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 1));
 
-    final audioEntity = SyncMessage.journalEntity(
-      id: 'entry',
-      jsonPath: jsonPath,
-      vectorClock: VectorClock({'device': 1}),
-      status: SyncEntryStatus.update,
-    );
+      final audioEntity = SyncMessage.journalEntity(
+        id: 'entry',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.update,
+      );
 
-    var callbackCount = 0;
-    final result = await sender.sendMatrixMessage(
-      message: audioEntity,
-      context: buildContext(),
-      onSent: (_, __) => callbackCount++,
-    );
+      var callbackCount = 0;
+      final result = await sender.sendMatrixMessage(
+        message: audioEntity,
+        context: buildContext(),
+        onSent: (_, __) => callbackCount++,
+      );
 
-    expect(result, isTrue);
-    expect(callbackCount, 1);
-    final capturedExtras = verify(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: captureAny(named: 'extraContent'),
-      ),
-    ).captured.cast<Map<String, dynamic>>();
-    final capturedPaths = capturedExtras
-        .map((entry) => entry['relativePath'] as String?)
-        .whereType<String>()
-        .toSet();
-    expect(capturedPaths, contains(jsonPath));
-    expect(capturedPaths.any((path) => path.endsWith('audio.m4a')), isTrue);
-  });
+      expect(result, isTrue);
+      expect(callbackCount, 1);
+      final capturedExtras = verify(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: captureAny(named: 'extraContent'),
+        ),
+      ).captured.cast<Map<String, dynamic>>();
+      final capturedPaths = capturedExtras
+          .map((entry) => entry['relativePath'] as String?)
+          .whereType<String>()
+          .toSet();
+      expect(capturedPaths, contains(jsonPath));
+      expect(capturedPaths.any((path) => path.endsWith('audio.m4a')), isTrue);
+    },
+  );
 
   test('rethrows file send failures after logging', () async {
     when(
@@ -1363,8 +1394,9 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     ).thenAnswer((_) async => 'file-id');
-    when(() => journalDb.getConfigFlag(resendAttachments))
-        .thenAnswer((_) async => true);
+    when(
+      () => journalDb.getConfigFlag(resendAttachments),
+    ).thenAnswer((_) async => true);
 
     final sampleDate = DateTime.utc(2024, 1, 1);
     final metadata = Metadata(
@@ -1432,8 +1464,9 @@ void main() {
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
       ).thenAnswer((_) async => 'file-id');
-      when(() => journalDb.getConfigFlag(resendAttachments))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => true);
 
       final sampleDate = DateTime.utc(2024, 1, 1);
       final metadata = Metadata(
@@ -1467,12 +1500,14 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsBytesSync(List<int>.filled(10, 42));
 
-      final message = SyncMessage.journalEntity(
-        id: 'entry',
-        jsonPath: jsonPath,
-        vectorClock: VectorClock({'device': 1}),
-        status: SyncEntryStatus.initial,
-      ) as SyncJournalEntity;
+      final message =
+          SyncMessage.journalEntity(
+                id: 'entry',
+                jsonPath: jsonPath,
+                vectorClock: VectorClock({'device': 1}),
+                status: SyncEntryStatus.initial,
+              )
+              as SyncJournalEntity;
 
       final result = await sender.sendJournalEntityPayloadForTesting(
         room: room,
@@ -1497,8 +1532,9 @@ void main() {
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
       ).thenAnswer((_) async => responses.removeAt(0));
-      when(() => journalDb.getConfigFlag(resendAttachments))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => true);
 
       final sampleDate = DateTime.utc(2024, 1, 1);
       final metadata = Metadata(
@@ -1532,12 +1568,14 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsBytesSync(List<int>.filled(10, 42));
 
-      final message = SyncMessage.journalEntity(
-        id: 'entry',
-        jsonPath: jsonPath,
-        vectorClock: VectorClock({'device': 1}),
-        status: SyncEntryStatus.initial,
-      ) as SyncJournalEntity;
+      final message =
+          SyncMessage.journalEntity(
+                id: 'entry',
+                jsonPath: jsonPath,
+                vectorClock: VectorClock({'device': 1}),
+                status: SyncEntryStatus.initial,
+              )
+              as SyncJournalEntity;
 
       final result = await sender.sendJournalEntityPayloadForTesting(
         room: room,
@@ -1833,9 +1871,11 @@ void main() {
       ).called(1);
 
       // Text event strips inline entity (file-only for large payloads)
-      final decoded = json.decode(
-        utf8.decode(base64.decode(capturedPayload)),
-      ) as Map<String, dynamic>;
+      final decoded =
+          json.decode(
+                utf8.decode(base64.decode(capturedPayload)),
+              )
+              as Map<String, dynamic>;
       expect(decoded['agentEntity'], isNull);
       expect(decoded['jsonPath'], '/agent_entities/legacy-agent.json');
     });
@@ -1975,9 +2015,11 @@ void main() {
         ),
       ).called(1);
 
-      final decoded = json.decode(
-        utf8.decode(base64.decode(capturedPayload)),
-      ) as Map<String, dynamic>;
+      final decoded =
+          json.decode(
+                utf8.decode(base64.decode(capturedPayload)),
+              )
+              as Map<String, dynamic>;
       expect(decoded['agentLink'], isNotNull);
       expect(decoded['jsonPath'], '/agent_links/legacy-link.json');
     });

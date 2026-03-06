@@ -22,8 +22,9 @@ class TaskProgressController extends _$TaskProgressController {
   final TimeService _timeService = getIt<TimeService>();
 
   void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.intersection(_subscribedIds).isNotEmpty) {
         final latest = await _fetch();
         if (latest != state.value) {

@@ -63,7 +63,7 @@ void main() {
       dashboard1,
       dashboard2,
       dashboard3,
-      dashboard4
+      dashboard4,
     ];
 
     test('should return all active dashboards sorted by name', () {
@@ -82,8 +82,11 @@ void main() {
     });
 
     test('should filter by match and showAll', () {
-      final result =
-          filteredSortedDashboards(dashboards, match: 'a', showAll: true);
+      final result = filteredSortedDashboards(
+        dashboards,
+        match: 'a',
+        showAll: true,
+      );
       expect(result.map((e) => e.id).toList(), ['1', '3', '2', '4']);
     });
   });

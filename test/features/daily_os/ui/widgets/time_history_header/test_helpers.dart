@@ -69,13 +69,15 @@ MockEntitiesCacheService setUpEntitiesCacheService() {
 
   // Set up specific category lookups (registered after fallback to take precedence)
   for (final entry in testCategories.entries) {
-    when(() => mockCacheService.getCategoryById(entry.key))
-        .thenReturn(entry.value);
+    when(
+      () => mockCacheService.getCategoryById(entry.key),
+    ).thenReturn(entry.value);
   }
 
   // Set up sortedCategories for the stream chart
-  when(() => mockCacheService.sortedCategories)
-      .thenReturn(testCategories.values.toList());
+  when(
+    () => mockCacheService.sortedCategories,
+  ).thenReturn(testCategories.values.toList());
 
   // Register in GetIt
   if (getIt.isRegistered<EntitiesCacheService>()) {
@@ -158,7 +160,7 @@ class LoadingTimeHistoryController extends TimeHistoryHeaderController {
 /// Mock notifier for date selection that tracks selected date.
 class TestDailyOsSelectedDate extends DailyOsSelectedDate {
   TestDailyOsSelectedDate(this._initialDate, {DateTime? today})
-      : _today = today ?? _initialDate;
+    : _today = today ?? _initialDate;
 
   final DateTime _initialDate;
   final DateTime _today;
@@ -269,7 +271,8 @@ Widget createTestWidget({
   List<Override> additionalOverrides = const [],
 }) {
   final date = selectedDate ?? testDate;
-  final effectiveStats = stats ??
+  final effectiveStats =
+      stats ??
       const DayBudgetStats(
         totalPlanned: Duration.zero,
         totalRecorded: Duration.zero,

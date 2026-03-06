@@ -30,10 +30,12 @@ void main() {
     expect(yorubaFlag.flagCode, 'ng');
   });
 
-  test('falls back to country_flags language mapping when no override exists',
-      () {
-    final flag = buildFlag('fr');
+  test(
+    'falls back to country_flags language mapping when no override exists',
+    () {
+      final flag = buildFlag('fr');
 
-    expect(flag.flagCode, 'fr');
-  });
+      expect(flag.flagCode, 'fr');
+    },
+  );
 }

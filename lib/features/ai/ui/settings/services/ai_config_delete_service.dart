@@ -148,8 +148,9 @@ class AiConfigDeleteService {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: context.colorScheme.errorContainer
-                        .withValues(alpha: 0.3),
+                    color: context.colorScheme.errorContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: context.colorScheme.error.withValues(alpha: 0.2),
@@ -198,8 +199,9 @@ class AiConfigDeleteService {
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: context.colorScheme.primary
-                                  .withValues(alpha: 0.1),
+                              color: context.colorScheme.primary.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Icon(
@@ -215,21 +217,22 @@ class AiConfigDeleteService {
                               children: [
                                 Text(
                                   config.name,
-                                  style:
-                                      context.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: context.textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                                 if (config.description?.isNotEmpty ??
                                     false) ...[
                                   const SizedBox(height: 2),
                                   Text(
                                     config.description!,
-                                    style:
-                                        context.textTheme.bodySmall?.copyWith(
-                                      color:
-                                          context.colorScheme.onSurfaceVariant,
-                                    ),
+                                    style: context.textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: context
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -246,8 +249,9 @@ class AiConfigDeleteService {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: context.colorScheme.secondary
-                                .withValues(alpha: 0.1),
+                            color: context.colorScheme.secondary.withValues(
+                              alpha: 0.1,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -263,7 +267,8 @@ class AiConfigDeleteService {
                                   'Associated models will also be deleted',
                                   style: context.textTheme.bodySmall?.copyWith(
                                     color: context
-                                        .colorScheme.onSecondaryContainer,
+                                        .colorScheme
+                                        .onSecondaryContainer,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -378,34 +383,36 @@ class AiConfigDeleteService {
                       ),
                       if (result.deletedModels.length <= 4) ...[
                         const SizedBox(height: 8),
-                        ...result.deletedModels.map((model) => Padding(
-                              padding: const EdgeInsets.only(left: 24, top: 2),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 4,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          context.colorScheme.onSurfaceVariant,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
+                        ...result.deletedModels.map(
+                          (model) => Padding(
+                            padding: const EdgeInsets.only(left: 24, top: 2),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: context.colorScheme.onSurfaceVariant,
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      model.name,
-                                      style:
-                                          context.textTheme.bodySmall?.copyWith(
-                                        fontFamily: 'monospace',
-                                        color: context
-                                            .colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    model.name,
+                                    style: context.textTheme.bodySmall
+                                        ?.copyWith(
+                                          fontFamily: 'monospace',
+                                          color: context
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
                                   ),
-                                ],
-                              ),
-                            )),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ] else ...[
                         const SizedBox(height: 8),
                         Padding(
@@ -529,8 +536,9 @@ class AiConfigDeleteService {
                   Text(
                     error.toString(),
                     style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onErrorContainer
-                          .withValues(alpha: 0.8),
+                      color: context.colorScheme.onErrorContainer.withValues(
+                        alpha: 0.8,
+                      ),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

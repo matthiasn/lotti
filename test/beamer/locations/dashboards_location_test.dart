@@ -18,10 +18,13 @@ void main() {
     });
 
     test('pathPatterns are correct', () {
-      final location =
-          DashboardsLocation(RouteInformation(uri: Uri.parse('/dashboards')));
-      expect(
-          location.pathPatterns, ['/dashboards', '/dashboards/:dashboardId']);
+      final location = DashboardsLocation(
+        RouteInformation(uri: Uri.parse('/dashboards')),
+      );
+      expect(location.pathPatterns, [
+        '/dashboards',
+        '/dashboards/:dashboardId',
+      ]);
     });
 
     test('buildPages builds DashboardsListPage', () {
@@ -39,14 +42,16 @@ void main() {
 
     test('buildPages builds DashboardPage', () {
       final dashboardId = const Uuid().v4();
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/dashboards/$dashboardId'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/dashboards/$dashboardId'),
+      );
       final location = DashboardsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(
         routeInformation,
       );
-      final newPathParameters =
-          Map<String, String>.from(beamState.pathParameters);
+      final newPathParameters = Map<String, String>.from(
+        beamState.pathParameters,
+      );
       newPathParameters['dashboardId'] = dashboardId;
       final newBeamState = beamState.copyWith(
         pathParameters: newPathParameters,

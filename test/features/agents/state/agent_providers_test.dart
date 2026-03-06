@@ -90,9 +90,9 @@ void main() {
         () => container.read(updateNotificationsProvider),
         throwsA(
           predicate<Object>(
-            (error) => error
-                .toString()
-                .contains('UpdateNotifications is not registered in GetIt'),
+            (error) => error.toString().contains(
+              'UpdateNotifications is not registered in GetIt',
+            ),
           ),
         ),
       );
@@ -137,12 +137,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           loggingServiceProvider.overrideWithValue(LoggingService()),
-          configFlagProvider(logAgentRuntimeFlag)
-              .overrideWith((ref) => Stream.value(true)),
-          configFlagProvider(logAgentWorkflowFlag)
-              .overrideWith((ref) => Stream.value(false)),
-          configFlagProvider(logSyncFlag)
-              .overrideWith((ref) => Stream.value(true)),
+          configFlagProvider(
+            logAgentRuntimeFlag,
+          ).overrideWith((ref) => Stream.value(true)),
+          configFlagProvider(
+            logAgentWorkflowFlag,
+          ).overrideWith((ref) => Stream.value(false)),
+          configFlagProvider(
+            logSyncFlag,
+          ).overrideWith((ref) => Stream.value(true)),
         ],
       );
       addTearDown(container.dispose);
@@ -174,12 +177,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           loggingServiceProvider.overrideWithValue(LoggingService()),
-          configFlagProvider(logAgentRuntimeFlag)
-              .overrideWith((ref) => runtimeController.stream),
-          configFlagProvider(logAgentWorkflowFlag)
-              .overrideWith((ref) => workflowController.stream),
-          configFlagProvider(logSyncFlag)
-              .overrideWith((ref) => syncController.stream),
+          configFlagProvider(
+            logAgentRuntimeFlag,
+          ).overrideWith((ref) => runtimeController.stream),
+          configFlagProvider(
+            logAgentWorkflowFlag,
+          ).overrideWith((ref) => workflowController.stream),
+          configFlagProvider(
+            logSyncFlag,
+          ).overrideWith((ref) => syncController.stream),
         ],
       );
       addTearDown(container.dispose);
@@ -281,8 +287,9 @@ void main() {
       // Verify the outbox service was injected by exercising upsertEntity.
       final entity = makeTestIdentity();
       when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncService.upsertEntity(entity);
 
@@ -297,24 +304,28 @@ void main() {
     test('returns report entity when service finds one', () async {
       final report = makeTestReport();
 
-      when(() => mockService.getAgentReport(kTestAgentId))
-          .thenAnswer((_) async => report);
+      when(
+        () => mockService.getAgentReport(kTestAgentId),
+      ).thenAnswer((_) async => report);
 
       final container = createContainer();
-      final result =
-          await container.read(agentReportProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentReportProvider(kTestAgentId).future,
+      );
 
       expect(result, equals(report));
       verify(() => mockService.getAgentReport(kTestAgentId)).called(1);
     });
 
     test('returns null when service finds no report', () async {
-      when(() => mockService.getAgentReport(kTestAgentId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockService.getAgentReport(kTestAgentId),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
-      final result =
-          await container.read(agentReportProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentReportProvider(kTestAgentId).future,
+      );
 
       expect(result, isNull);
       verify(() => mockService.getAgentReport(kTestAgentId)).called(1);
@@ -325,24 +336,28 @@ void main() {
     test('returns state entity when repository finds one', () async {
       final state = makeTestState();
 
-      when(() => mockRepository.getAgentState(kTestAgentId))
-          .thenAnswer((_) async => state);
+      when(
+        () => mockRepository.getAgentState(kTestAgentId),
+      ).thenAnswer((_) async => state);
 
       final container = createContainer();
-      final result =
-          await container.read(agentStateProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentStateProvider(kTestAgentId).future,
+      );
 
       expect(result, equals(state));
       verify(() => mockRepository.getAgentState(kTestAgentId)).called(1);
     });
 
     test('returns null when repository finds no state', () async {
-      when(() => mockRepository.getAgentState(kTestAgentId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getAgentState(kTestAgentId),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
-      final result =
-          await container.read(agentStateProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentStateProvider(kTestAgentId).future,
+      );
 
       expect(result, isNull);
       verify(() => mockRepository.getAgentState(kTestAgentId)).called(1);
@@ -353,24 +368,28 @@ void main() {
     test('returns identity entity when service finds one', () async {
       final identity = makeTestIdentity();
 
-      when(() => mockService.getAgent(kTestAgentId))
-          .thenAnswer((_) async => identity);
+      when(
+        () => mockService.getAgent(kTestAgentId),
+      ).thenAnswer((_) async => identity);
 
       final container = createContainer();
-      final result =
-          await container.read(agentIdentityProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentIdentityProvider(kTestAgentId).future,
+      );
 
       expect(result, equals(identity));
       verify(() => mockService.getAgent(kTestAgentId)).called(1);
     });
 
     test('returns null when service finds no agent', () async {
-      when(() => mockService.getAgent(kTestAgentId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockService.getAgent(kTestAgentId),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
-      final result =
-          await container.read(agentIdentityProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentIdentityProvider(kTestAgentId).future,
+      );
 
       expect(result, isNull);
       verify(() => mockService.getAgent(kTestAgentId)).called(1);
@@ -403,8 +422,9 @@ void main() {
       ).thenAnswer((_) async => [msg2, msg3, msg1]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentRecentMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentRecentMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(3));
       expect((result[0] as AgentMessageEntity).id, 'msg-2');
@@ -443,8 +463,9 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final container = createContainer();
-      final result = await container
-          .read(agentRecentMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentRecentMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -463,8 +484,9 @@ void main() {
       ).thenAnswer((_) async => [msg, report, state]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentRecentMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentRecentMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(1));
       expect((result[0] as AgentMessageEntity).id, 'msg-1');
@@ -482,12 +504,14 @@ void main() {
         content: const {'text': 'hello world'},
       );
 
-      when(() => mockRepository.getEntity(payloadId))
-          .thenAnswer((_) async => payloadEntity);
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => payloadEntity);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagePayloadTextProvider(payloadId).future);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
 
       expect(result, 'hello world');
       verify(() => mockRepository.getEntity(payloadId)).called(1);
@@ -496,12 +520,14 @@ void main() {
     test('returns null when entity is not found', () async {
       const payloadId = 'nonexistent';
 
-      when(() => mockRepository.getEntity(payloadId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagePayloadTextProvider(payloadId).future);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
 
       expect(result, isNull);
     });
@@ -510,12 +536,14 @@ void main() {
       const payloadId = 'not-a-payload';
       final identity = makeTestIdentity(id: payloadId);
 
-      when(() => mockRepository.getEntity(payloadId))
-          .thenAnswer((_) async => identity);
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => identity);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagePayloadTextProvider(payloadId).future);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
 
       expect(result, isNull);
     });
@@ -530,12 +558,14 @@ void main() {
         content: const {'text': ''},
       );
 
-      when(() => mockRepository.getEntity(payloadId))
-          .thenAnswer((_) async => payloadEntity);
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => payloadEntity);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagePayloadTextProvider(payloadId).future);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
 
       expect(result, isNull);
     });
@@ -550,12 +580,14 @@ void main() {
         content: const {'other': 'data'},
       );
 
-      when(() => mockRepository.getEntity(payloadId))
-          .thenAnswer((_) async => payloadEntity);
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => payloadEntity);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagePayloadTextProvider(payloadId).future);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
 
       expect(result, isNull);
     });
@@ -570,12 +602,14 @@ void main() {
         content: const {'text': 42},
       );
 
-      when(() => mockRepository.getEntity(payloadId))
-          .thenAnswer((_) async => payloadEntity);
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => payloadEntity);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagePayloadTextProvider(payloadId).future);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
 
       expect(result, isNull);
     });
@@ -608,8 +642,9 @@ void main() {
       ).thenAnswer((_) async => [msg1, msg2, msg3]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(2));
       expect(result['thread-a'], hasLength(2));
@@ -642,8 +677,9 @@ void main() {
       ).thenAnswer((_) async => [msg1, msg2, msg3]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
 
       final thread = result['thread-a']!;
       expect((thread[0] as AgentMessageEntity).id, 'msg-2');
@@ -661,8 +697,9 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -680,8 +717,9 @@ void main() {
       ).thenAnswer((_) async => [msg, report]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(1));
       expect(result['thread-a'], hasLength(1));
@@ -739,8 +777,9 @@ void main() {
       ).thenAnswer((_) async => messages);
 
       final container = createContainer();
-      final result = await container
-          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
 
       final threadIds = result.keys.toList();
       expect(threadIds, ['thread-b', 'thread-c', 'thread-a']);
@@ -778,8 +817,9 @@ void main() {
       ).thenAnswer((_) async => [obs, thought, action, obs2]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentObservationMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentObservationMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(2));
       expect((result[0] as AgentMessageEntity).id, 'obs-1');
@@ -801,8 +841,9 @@ void main() {
       ).thenAnswer((_) async => [thought]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentObservationMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentObservationMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -817,8 +858,9 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final container = createContainer();
-      final result = await container
-          .read(agentObservationMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentObservationMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -839,8 +881,9 @@ void main() {
       ).thenAnswer((_) async => [obs, report]);
 
       final container = createContainer();
-      final result = await container
-          .read(agentObservationMessagesProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentObservationMessagesProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(1));
       expect((result[0] as AgentMessageEntity).id, 'obs-1');
@@ -867,8 +910,9 @@ void main() {
       ).thenAnswer((_) async => [report2, report1]);
 
       final container = createContainer();
-      final result =
-          await container.read(agentReportHistoryProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentReportHistoryProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(2));
       expect((result[0] as AgentReportEntity).id, 'report-2');
@@ -885,8 +929,9 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final container = createContainer();
-      final result =
-          await container.read(agentReportHistoryProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentReportHistoryProvider(kTestAgentId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -904,8 +949,9 @@ void main() {
       ).thenAnswer((_) async => [report, msg]);
 
       final container = createContainer();
-      final result =
-          await container.read(agentReportHistoryProvider(kTestAgentId).future);
+      final result = await container.read(
+        agentReportHistoryProvider(kTestAgentId).future,
+      );
 
       expect(result, hasLength(1));
       expect((result[0] as AgentReportEntity).id, 'report-1');
@@ -1055,10 +1101,12 @@ void main() {
       StreamController<Set<String>> controller,
     ) async {
       final mockNotifications = MockUpdateNotifications();
-      when(() => mockNotifications.updateStream)
-          .thenAnswer((_) => controller.stream);
-      when(() => mockNotifications.localUpdateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockNotifications.updateStream,
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockNotifications.localUpdateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       await getIt.reset();
       getIt.registerSingleton<UpdateNotifications>(mockNotifications);
@@ -1069,28 +1117,30 @@ void main() {
       return container;
     }
 
-    test('emits when UpdateNotifications fires with matching agent ID',
-        () async {
-      final controller = StreamController<Set<String>>.broadcast();
-      addTearDown(controller.close);
+    test(
+      'emits when UpdateNotifications fires with matching agent ID',
+      () async {
+        final controller = StreamController<Set<String>>.broadcast();
+        addTearDown(controller.close);
 
-      final container = await setUpStreamTest(controller);
+        final container = await setUpStreamTest(controller);
 
-      final values = <AsyncValue<Set<String>>>[];
-      final sub = container.listen(
-        agentUpdateStreamProvider(kTestAgentId),
-        (_, next) => values.add(next),
-      );
-      addTearDown(sub.close);
+        final values = <AsyncValue<Set<String>>>[];
+        final sub = container.listen(
+          agentUpdateStreamProvider(kTestAgentId),
+          (_, next) => values.add(next),
+        );
+        addTearDown(sub.close);
 
-      await pumpEventQueue();
+        await pumpEventQueue();
 
-      // Fire notification with matching agent ID.
-      controller.add({kTestAgentId, 'other-id'});
-      await pumpEventQueue();
+        // Fire notification with matching agent ID.
+        controller.add({kTestAgentId, 'other-id'});
+        await pumpEventQueue();
 
-      expect(values, isNotEmpty);
-    });
+        expect(values, isNotEmpty);
+      },
+    );
 
     test('does NOT emit for unrelated agent IDs', () async {
       final controller = StreamController<Set<String>>.broadcast();
@@ -1166,18 +1216,22 @@ void main() {
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
-      when(() => mockTaskAgentService.restoreSubscriptions())
-          .thenAnswer((_) async {});
+      when(
+        () => mockTaskAgentService.restoreSubscriptions(),
+      ).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
-      when(() => mockTemplateService.getTemplateForAgent(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockRepository.abandonOrphanedWakeRuns())
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockTemplateService.getTemplateForAgent(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepository.abandonOrphanedWakeRuns(),
+      ).thenAnswer((_) async => 0);
       when(() => mockScheduledWakeManager.start()).thenReturn(null);
       when(() => mockScheduledWakeManager.stop()).thenReturn(null);
       // Profile seeding stubs.
-      when(() => mockAiConfigRepo.getConfigById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.getConfigById(any()),
+      ).thenAnswer((_) async => null);
       when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
     });
 
@@ -1196,8 +1250,9 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          scheduledWakeManagerProvider
-              .overrideWithValue(mockScheduledWakeManager),
+          scheduledWakeManagerProvider.overrideWithValue(
+            mockScheduledWakeManager,
+          ),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
               flagName == enableAgentsFlag && enableAgents,
@@ -1225,22 +1280,24 @@ void main() {
       verifyNever(() => mockTaskAgentService.restoreSubscriptions());
     });
 
-    test('starts orchestrator and restores subscriptions when enabled',
-        () async {
-      final container = createInitContainer(enableAgents: true);
+    test(
+      'starts orchestrator and restores subscriptions when enabled',
+      () async {
+        final container = createInitContainer(enableAgents: true);
 
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, __) {},
-      );
-      addTearDown(sub.close);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
 
-      await container.read(agentInitializationProvider.future);
+        await container.read(agentInitializationProvider.future);
 
-      verify(() => mockOrchestrator.start(any())).called(1);
-      verify(() => mockTemplateService.seedDefaults()).called(1);
-      verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
-    });
+        verify(() => mockOrchestrator.start(any())).called(1);
+        verify(() => mockTemplateService.seedDefaults()).called(1);
+        verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
+      },
+    );
 
     test('starts scheduled wake manager when enabled', () async {
       final container = createInitContainer(enableAgents: true);
@@ -1274,8 +1331,9 @@ void main() {
     test(
       'wakeExecutor returns null when agent identity not found',
       () async {
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => null);
 
         // Use a capturing orchestrator to grab the wakeExecutor callback.
         WakeExecutor? capturedExecutor;
@@ -1313,8 +1371,9 @@ void main() {
           'entry-1': const VectorClock({}),
         };
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1365,8 +1424,9 @@ void main() {
       () async {
         final identity = makeTestIdentity();
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1430,8 +1490,9 @@ void main() {
           'entry-1': const VectorClock({}),
         };
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1490,8 +1551,9 @@ void main() {
           agentId: 'tpl-1',
         );
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1502,8 +1564,9 @@ void main() {
         ).thenAnswer(
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
-        when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
-            .thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getTemplateForAgent(kTestAgentId),
+        ).thenAnswer((_) async => template);
 
         WakeExecutor? capturedExecutor;
         when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
@@ -1546,8 +1609,9 @@ void main() {
           'entry-1': const VectorClock({}),
         };
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1558,8 +1622,9 @@ void main() {
         ).thenAnswer(
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
-        when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
-            .thenThrow(Exception('db connection lost'));
+        when(
+          () => mockTemplateService.getTemplateForAgent(kTestAgentId),
+        ).thenThrow(Exception('db connection lost'));
 
         WakeExecutor? capturedExecutor;
         when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
@@ -1608,8 +1673,9 @@ void main() {
           'entry-improver': const VectorClock({}),
         };
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockImproverWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1670,8 +1736,9 @@ void main() {
           kind: AgentKinds.templateImprover,
         );
 
-        when(() => mockService.getAgent(kTestAgentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
         when(
           () => mockImproverWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
@@ -1733,8 +1800,9 @@ void main() {
       await container.read(agentInitializationProvider.future);
 
       verify(() => mockProcessor.wakeOrchestrator = mockOrchestrator).called(1);
-      verify(() => mockProcessor.agentRepository = any(that: isNotNull))
-          .called(1);
+      verify(
+        () => mockProcessor.agentRepository = any(that: isNotNull),
+      ).called(1);
     });
 
     test('clears SyncEventProcessor fields on dispose', () async {
@@ -1797,8 +1865,9 @@ void main() {
       final templates = [
         makeTestTemplate(id: 'tpl-a', agentId: 'tpl-a'),
       ];
-      when(() => mockTemplateService.listTemplates())
-          .thenAnswer((_) async => templates);
+      when(
+        () => mockTemplateService.listTemplates(),
+      ).thenAnswer((_) async => templates);
 
       final container = createTemplateContainer();
       final result = await container.read(agentTemplatesProvider.future);
@@ -1809,122 +1878,149 @@ void main() {
 
     test('agentTemplateProvider delegates to getTemplate', () async {
       final template = makeTestTemplate();
-      when(() => mockTemplateService.getTemplate(kTestTemplateId))
-          .thenAnswer((_) async => template);
+      when(
+        () => mockTemplateService.getTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => template);
 
       final container = createTemplateContainer();
-      final result =
-          await container.read(agentTemplateProvider(kTestTemplateId).future);
+      final result = await container.read(
+        agentTemplateProvider(kTestTemplateId).future,
+      );
 
       expect(result, isNotNull);
       expect((result! as AgentTemplateEntity).id, kTestTemplateId);
     });
 
     test('agentTemplateProvider returns null when not found', () async {
-      when(() => mockTemplateService.getTemplate('missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockTemplateService.getTemplate('missing'),
+      ).thenAnswer((_) async => null);
 
       final container = createTemplateContainer();
-      final result =
-          await container.read(agentTemplateProvider('missing').future);
+      final result = await container.read(
+        agentTemplateProvider('missing').future,
+      );
 
       expect(result, isNull);
     });
 
-    test('activeTemplateVersionProvider delegates to getActiveVersion',
-        () async {
-      final version = makeTestTemplateVersion();
-      when(() => mockTemplateService.getActiveVersion(kTestTemplateId))
-          .thenAnswer((_) async => version);
+    test(
+      'activeTemplateVersionProvider delegates to getActiveVersion',
+      () async {
+        final version = makeTestTemplateVersion();
+        when(
+          () => mockTemplateService.getActiveVersion(kTestTemplateId),
+        ).thenAnswer((_) async => version);
 
-      final container = createTemplateContainer();
-      final result = await container
-          .read(activeTemplateVersionProvider(kTestTemplateId).future);
+        final container = createTemplateContainer();
+        final result = await container.read(
+          activeTemplateVersionProvider(kTestTemplateId).future,
+        );
 
-      expect(result, isNotNull);
-      expect((result! as AgentTemplateVersionEntity).version, 1);
-    });
+        expect(result, isNotNull);
+        expect((result! as AgentTemplateVersionEntity).version, 1);
+      },
+    );
 
-    test('templateVersionHistoryProvider delegates to getVersionHistory',
-        () async {
-      final versions = [
-        makeTestTemplateVersion(id: 'v2', version: 2),
-        makeTestTemplateVersion(id: 'v1'),
-      ];
-      when(() => mockTemplateService.getVersionHistory(kTestTemplateId))
-          .thenAnswer((_) async => versions);
+    test(
+      'templateVersionHistoryProvider delegates to getVersionHistory',
+      () async {
+        final versions = [
+          makeTestTemplateVersion(id: 'v2', version: 2),
+          makeTestTemplateVersion(id: 'v1'),
+        ];
+        when(
+          () => mockTemplateService.getVersionHistory(kTestTemplateId),
+        ).thenAnswer((_) async => versions);
 
-      final container = createTemplateContainer();
-      final result = await container
-          .read(templateVersionHistoryProvider(kTestTemplateId).future);
+        final container = createTemplateContainer();
+        final result = await container.read(
+          templateVersionHistoryProvider(kTestTemplateId).future,
+        );
 
-      expect(result, hasLength(2));
-    });
+        expect(result, hasLength(2));
+      },
+    );
 
     test('templateForAgentProvider delegates to getTemplateForAgent', () async {
       final template = makeTestTemplate();
-      when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
-          .thenAnswer((_) async => template);
+      when(
+        () => mockTemplateService.getTemplateForAgent(kTestAgentId),
+      ).thenAnswer((_) async => template);
 
       final container = createTemplateContainer();
-      final result =
-          await container.read(templateForAgentProvider(kTestAgentId).future);
+      final result = await container.read(
+        templateForAgentProvider(kTestAgentId).future,
+      );
 
       expect(result, isNotNull);
       expect((result! as AgentTemplateEntity).id, kTestTemplateId);
     });
 
-    test('templatePerformanceMetricsProvider delegates to computeMetrics',
-        () async {
-      final metrics = makeTestMetrics();
-      when(() => mockTemplateService.computeMetrics(kTestTemplateId))
-          .thenAnswer((_) async => metrics);
+    test(
+      'templatePerformanceMetricsProvider delegates to computeMetrics',
+      () async {
+        final metrics = makeTestMetrics();
+        when(
+          () => mockTemplateService.computeMetrics(kTestTemplateId),
+        ).thenAnswer((_) async => metrics);
 
-      final container = createTemplateContainer();
-      final result = await container
-          .read(templatePerformanceMetricsProvider(kTestTemplateId).future);
+        final container = createTemplateContainer();
+        final result = await container.read(
+          templatePerformanceMetricsProvider(kTestTemplateId).future,
+        );
 
-      expect(result.totalWakes, 10);
-      expect(result.successRate, 0.8);
-    });
+        expect(result.totalWakes, 10);
+        expect(result.successRate, 0.8);
+      },
+    );
 
     test('activeTemplateVersionProvider returns null when not found', () async {
-      when(() => mockTemplateService.getActiveVersion('missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockTemplateService.getActiveVersion('missing'),
+      ).thenAnswer((_) async => null);
 
       final container = createTemplateContainer();
-      final result =
-          await container.read(activeTemplateVersionProvider('missing').future);
+      final result = await container.read(
+        activeTemplateVersionProvider('missing').future,
+      );
 
       expect(result, isNull);
     });
 
-    test('templateForAgentProvider returns null when agent has no template',
-        () async {
-      when(() => mockTemplateService.getTemplateForAgent('no-template'))
-          .thenAnswer((_) async => null);
+    test(
+      'templateForAgentProvider returns null when agent has no template',
+      () async {
+        when(
+          () => mockTemplateService.getTemplateForAgent('no-template'),
+        ).thenAnswer((_) async => null);
 
-      final container = createTemplateContainer();
-      final result =
-          await container.read(templateForAgentProvider('no-template').future);
+        final container = createTemplateContainer();
+        final result = await container.read(
+          templateForAgentProvider('no-template').future,
+        );
 
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
     test('templateVersionHistoryProvider returns empty list', () async {
-      when(() => mockTemplateService.getVersionHistory('empty'))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getVersionHistory('empty'),
+      ).thenAnswer((_) async => []);
 
       final container = createTemplateContainer();
-      final result =
-          await container.read(templateVersionHistoryProvider('empty').future);
+      final result = await container.read(
+        templateVersionHistoryProvider('empty').future,
+      );
 
       expect(result, isEmpty);
     });
 
     test('agentTemplatesProvider returns empty list', () async {
-      when(() => mockTemplateService.listTemplates())
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.listTemplates(),
+      ).thenAnswer((_) async => []);
 
       final container = createTemplateContainer();
       final result = await container.read(agentTemplatesProvider.future);
@@ -2034,47 +2130,48 @@ void main() {
     });
 
     test(
-        'wires persisted-state callback to UpdateNotifications when registered',
-        () async {
-      final mockRepo = MockAgentRepository();
-      final queue = WakeQueue();
-      final runner = WakeRunner();
-      final mockNotifications = MockUpdateNotifications();
-      addTearDown(runner.dispose);
+      'wires persisted-state callback to UpdateNotifications when registered',
+      () async {
+        final mockRepo = MockAgentRepository();
+        final queue = WakeQueue();
+        final runner = WakeRunner();
+        final mockNotifications = MockUpdateNotifications();
+        addTearDown(runner.dispose);
 
-      when(
-        () => mockNotifications.notify(
-          any(),
-          fromSync: any(named: 'fromSync'),
-        ),
-      ).thenReturn(null);
-
-      await getIt.reset();
-      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
-      addTearDown(getIt.reset);
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(mockRepo),
-          wakeQueueProvider.overrideWithValue(queue),
-          wakeRunnerProvider.overrideWithValue(runner),
-          domainLoggerProvider.overrideWithValue(
-            DomainLogger(loggingService: LoggingService()),
+        when(
+          () => mockNotifications.notify(
+            any(),
+            fromSync: any(named: 'fromSync'),
           ),
-        ],
-      );
-      addTearDown(container.dispose);
+        ).thenReturn(null);
 
-      final orchestrator = container.read(wakeOrchestratorProvider);
-      orchestrator.onPersistedStateChanged?.call(kTestAgentId);
+        await getIt.reset();
+        getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+        addTearDown(getIt.reset);
 
-      verify(
-        () => mockNotifications.notify(
-          {kTestAgentId, agentNotification},
-          fromSync: true,
-        ),
-      ).called(1);
-    });
+        final container = ProviderContainer(
+          overrides: [
+            agentRepositoryProvider.overrideWithValue(mockRepo),
+            wakeQueueProvider.overrideWithValue(queue),
+            wakeRunnerProvider.overrideWithValue(runner),
+            domainLoggerProvider.overrideWithValue(
+              DomainLogger(loggingService: LoggingService()),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final orchestrator = container.read(wakeOrchestratorProvider);
+        orchestrator.onPersistedStateChanged?.call(kTestAgentId);
+
+        verify(
+          () => mockNotifications.notify(
+            {kTestAgentId, agentNotification},
+            fromSync: true,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('agentServiceProvider', () {
@@ -2197,8 +2294,9 @@ void main() {
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
-          templateEvolutionWorkflowProvider
-              .overrideWithValue(mockTemplateWorkflow),
+          templateEvolutionWorkflowProvider.overrideWithValue(
+            mockTemplateWorkflow,
+          ),
           loggingServiceProvider.overrideWithValue(mockLogging),
         ],
       );
@@ -2240,8 +2338,9 @@ void main() {
           outboxServiceProvider.overrideWithValue(mockOutbox),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfig),
-          cloudInferenceRepositoryProvider
-              .overrideWithValue(mockCloudInference),
+          cloudInferenceRepositoryProvider.overrideWithValue(
+            mockCloudInference,
+          ),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           if (improverOverride != null)
             improverAgentServiceProvider.overrideWithValue(improverOverride),
@@ -2262,10 +2361,12 @@ void main() {
       final identity = makeTestIdentity(
         kind: AgentKinds.templateImprover,
       );
-      when(() => mockImproverService.getImproverForTemplate(any()))
-          .thenAnswer((_) async => identity);
-      when(() => mockImproverService.scheduleNextRitual(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockImproverService.getImproverForTemplate(any()),
+      ).thenAnswer((_) async => identity);
+      when(
+        () => mockImproverService.scheduleNextRitual(any()),
+      ).thenAnswer((_) async {});
 
       final container = createWorkflowContainer(
         improverOverride: mockImproverService,
@@ -2288,8 +2389,9 @@ void main() {
     });
 
     test('onSessionCompleted is no-op when no improver exists', () async {
-      when(() => mockImproverService.getImproverForTemplate(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockImproverService.getImproverForTemplate(any()),
+      ).thenAnswer((_) async => null);
 
       final container = createWorkflowContainer(
         improverOverride: mockImproverService,
@@ -2336,12 +2438,14 @@ void main() {
           status: EvolutionSessionStatus.completed,
         ),
       ];
-      when(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
-          .thenAnswer((_) async => sessions);
+      when(
+        () => mockTemplateService.getEvolutionSessions(kTestTemplateId),
+      ).thenAnswer((_) async => sessions);
 
       final container = createEvolutionContainer();
-      final result = await container
-          .read(evolutionSessionsProvider(kTestTemplateId).future);
+      final result = await container.read(
+        evolutionSessionsProvider(kTestTemplateId).future,
+      );
 
       expect(result, hasLength(2));
       final first = result[0] as EvolutionSessionEntity;
@@ -2353,12 +2457,14 @@ void main() {
     });
 
     test('returns empty list when no sessions exist', () async {
-      when(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getEvolutionSessions(kTestTemplateId),
+      ).thenAnswer((_) async => []);
 
       final container = createEvolutionContainer();
-      final result = await container
-          .read(evolutionSessionsProvider(kTestTemplateId).future);
+      final result = await container.read(
+        evolutionSessionsProvider(kTestTemplateId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -2368,18 +2474,21 @@ void main() {
       addTearDown(controller.close);
 
       final mockNotifications = MockUpdateNotifications();
-      when(() => mockNotifications.updateStream)
-          .thenAnswer((_) => controller.stream);
-      when(() => mockNotifications.localUpdateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockNotifications.updateStream,
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockNotifications.localUpdateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       await getIt.reset();
       getIt.registerSingleton<UpdateNotifications>(mockNotifications);
       addTearDown(getIt.reset);
 
       var fetchCount = 0;
-      when(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
-          .thenAnswer((_) async {
+      when(
+        () => mockTemplateService.getEvolutionSessions(kTestTemplateId),
+      ).thenAnswer((_) async {
         fetchCount++;
         return [];
       });
@@ -2447,8 +2556,9 @@ void main() {
         agentId: 'tpl-2',
         updatedAt: DateTime(2024, 3, 15, 12),
       );
-      when(() => mockRepository.getAllEvolutionSessions())
-          .thenAnswer((_) async => [session2, session1]);
+      when(
+        () => mockRepository.getAllEvolutionSessions(),
+      ).thenAnswer((_) async => [session2, session1]);
 
       final container = ProviderContainer(
         overrides: [
@@ -2466,8 +2576,9 @@ void main() {
     });
 
     test('returns empty when no sessions exist', () async {
-      when(() => mockRepository.getAllEvolutionSessions())
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getAllEvolutionSessions(),
+      ).thenAnswer((_) async => []);
 
       final container = ProviderContainer(
         overrides: [
@@ -2488,15 +2599,17 @@ void main() {
         runKey: 'thread-abc',
         templateVersionId: 'ver-1',
       );
-      when(() => mockRepository.getWakeRun('thread-abc'))
-          .thenAnswer((_) async => wakeRun);
+      when(
+        () => mockRepository.getWakeRun('thread-abc'),
+      ).thenAnswer((_) async => wakeRun);
 
       final version = makeTestTemplateVersion(
         id: 'ver-1',
         modelId: 'models/gemini-3-pro',
       );
-      when(() => mockRepository.getEntity('ver-1'))
-          .thenAnswer((_) async => version);
+      when(
+        () => mockRepository.getEntity('ver-1'),
+      ).thenAnswer((_) async => version);
 
       final container = createContainer();
       final result = await container.read(
@@ -2507,8 +2620,9 @@ void main() {
     });
 
     test('returns null when wake run not found', () async {
-      when(() => mockRepository.getWakeRun('missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getWakeRun('missing'),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
       final result = await container.read(
@@ -2523,12 +2637,14 @@ void main() {
         runKey: 'thread-no-model',
         templateVersionId: 'ver-2',
       );
-      when(() => mockRepository.getWakeRun('thread-no-model'))
-          .thenAnswer((_) async => wakeRun);
+      when(
+        () => mockRepository.getWakeRun('thread-no-model'),
+      ).thenAnswer((_) async => wakeRun);
 
       final version = makeTestTemplateVersion(id: 'ver-2');
-      when(() => mockRepository.getEntity('ver-2'))
-          .thenAnswer((_) async => version);
+      when(
+        () => mockRepository.getEntity('ver-2'),
+      ).thenAnswer((_) async => version);
 
       final container = createContainer();
       final result = await container.read(
@@ -2540,8 +2656,9 @@ void main() {
 
     test('returns null when wake run has no templateVersionId', () async {
       final wakeRun = makeTestWakeRun(runKey: 'thread-no-ver');
-      when(() => mockRepository.getWakeRun('thread-no-ver'))
-          .thenAnswer((_) async => wakeRun);
+      when(
+        () => mockRepository.getWakeRun('thread-no-ver'),
+      ).thenAnswer((_) async => wakeRun);
 
       final container = createContainer();
       final result = await container.read(
@@ -2569,12 +2686,14 @@ void main() {
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
-      when(() => mockTaskAgentService.restoreSubscriptions())
-          .thenAnswer((_) async {});
+      when(
+        () => mockTaskAgentService.restoreSubscriptions(),
+      ).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
       // Profile seeding stubs.
-      when(() => mockAiConfigRepo.getConfigById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.getConfigById(any()),
+      ).thenAnswer((_) async => null);
       when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
     });
 
@@ -2602,8 +2721,9 @@ void main() {
     }
 
     test('calls abandonOrphanedWakeRuns on startup', () async {
-      when(() => mockRepository.abandonOrphanedWakeRuns())
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockRepository.abandonOrphanedWakeRuns(),
+      ).thenAnswer((_) async => 0);
 
       final container = createInitContainer();
       final sub = container.listen(
@@ -2618,8 +2738,9 @@ void main() {
     });
 
     test('logs when orphaned runs are found', () async {
-      when(() => mockRepository.abandonOrphanedWakeRuns())
-          .thenAnswer((_) async => 3);
+      when(
+        () => mockRepository.abandonOrphanedWakeRuns(),
+      ).thenAnswer((_) async => 3);
 
       final container = createInitContainer();
       final sub = container.listen(
@@ -2666,12 +2787,14 @@ void main() {
           kind: EvolutionNoteKind.pattern,
         ),
       ];
-      when(() => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId))
-          .thenAnswer((_) async => notes);
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
+      ).thenAnswer((_) async => notes);
 
       final container = createEvolutionContainer();
-      final result =
-          await container.read(evolutionNotesProvider(kTestTemplateId).future);
+      final result = await container.read(
+        evolutionNotesProvider(kTestTemplateId).future,
+      );
 
       expect(result, hasLength(3));
       final first = result[0] as EvolutionNoteEntity;
@@ -2684,12 +2807,14 @@ void main() {
     });
 
     test('returns empty list when no notes exist', () async {
-      when(() => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
+      ).thenAnswer((_) async => []);
 
       final container = createEvolutionContainer();
-      final result =
-          await container.read(evolutionNotesProvider(kTestTemplateId).future);
+      final result = await container.read(
+        evolutionNotesProvider(kTestTemplateId).future,
+      );
 
       expect(result, isEmpty);
     });
@@ -2699,18 +2824,21 @@ void main() {
       addTearDown(controller.close);
 
       final mockNotifications = MockUpdateNotifications();
-      when(() => mockNotifications.updateStream)
-          .thenAnswer((_) => controller.stream);
-      when(() => mockNotifications.localUpdateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockNotifications.updateStream,
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockNotifications.localUpdateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       await getIt.reset();
       getIt.registerSingleton<UpdateNotifications>(mockNotifications);
       addTearDown(getIt.reset);
 
       var fetchCount = 0;
-      when(() => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId))
-          .thenAnswer((_) async {
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
+      ).thenAnswer((_) async {
         fetchCount++;
         return [];
       });
@@ -2760,14 +2888,17 @@ void main() {
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
-      when(() => mockTaskAgentService.restoreSubscriptions())
-          .thenAnswer((_) async {});
+      when(
+        () => mockTaskAgentService.restoreSubscriptions(),
+      ).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
-      when(() => mockRepository.abandonOrphanedWakeRuns())
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockRepository.abandonOrphanedWakeRuns(),
+      ).thenAnswer((_) async => 0);
       // Profile seeding stubs.
-      when(() => mockAiConfigRepo.getConfigById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.getConfigById(any()),
+      ).thenAnswer((_) async => null);
       when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
     });
 
@@ -2815,15 +2946,16 @@ void main() {
       required List<WakeTokenUsageEntity> records,
     }) {
       final repo = MockAgentRepository();
-      when(() =>
-              repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')))
-          .thenAnswer((_) async => records);
+      when(
+        () => repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')),
+      ).thenAnswer((_) async => records);
 
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider
-              .overrideWith((ref, agentId) => const Stream.empty()),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream.empty(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -2939,15 +3071,16 @@ void main() {
       required List<WakeTokenUsageEntity> records,
     }) {
       final repo = MockAgentRepository();
-      when(() =>
-              repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')))
-          .thenAnswer((_) async => records);
+      when(
+        () => repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')),
+      ).thenAnswer((_) async => records);
 
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider
-              .overrideWith((ref, agentId) => const Stream.empty()),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream.empty(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -3089,8 +3222,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider
-              .overrideWith((ref, agentId) => const Stream.empty()),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream.empty(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -3263,15 +3397,17 @@ void main() {
       ).thenAnswer((_) async => records);
 
       final templateService = MockAgentTemplateService();
-      when(() => templateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => agents);
+      when(
+        () => templateService.getAgentsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => agents);
 
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repo),
           agentTemplateServiceProvider.overrideWithValue(templateService),
-          agentUpdateStreamProvider
-              .overrideWith((ref, agentId) => const Stream.empty()),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream.empty(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -3291,76 +3427,78 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('groups records by instance and by model within each instance',
-        () async {
-      final now = DateTime(2025, 6, 15);
-      final agentA = makeTestIdentity(
-        id: 'agent-a',
-        agentId: 'agent-a',
-        displayName: 'Agent A',
-      );
-      final agentB = makeTestIdentity(
-        id: 'agent-b',
-        agentId: 'agent-b',
-        displayName: 'Agent B',
-      );
+    test(
+      'groups records by instance and by model within each instance',
+      () async {
+        final now = DateTime(2025, 6, 15);
+        final agentA = makeTestIdentity(
+          id: 'agent-a',
+          agentId: 'agent-a',
+          displayName: 'Agent A',
+        );
+        final agentB = makeTestIdentity(
+          id: 'agent-b',
+          agentId: 'agent-b',
+          displayName: 'Agent B',
+        );
 
-      final container = createBreakdownContainer(
-        records: [
-          WakeTokenUsageEntity(
-            id: 'u1',
-            agentId: 'agent-a',
-            runKey: 'run-1',
-            threadId: 't1',
-            modelId: 'gemini-2.5-pro',
-            createdAt: now,
-            vectorClock: null,
-            inputTokens: 100,
-            outputTokens: 50,
-          ),
-          WakeTokenUsageEntity(
-            id: 'u2',
-            agentId: 'agent-a',
-            runKey: 'run-2',
-            threadId: 't2',
-            modelId: 'claude-sonnet',
-            createdAt: now,
-            vectorClock: null,
-            inputTokens: 200,
-            outputTokens: 100,
-          ),
-          WakeTokenUsageEntity(
-            id: 'u3',
-            agentId: 'agent-b',
-            runKey: 'run-3',
-            threadId: 't3',
-            modelId: 'gemini-2.5-pro',
-            createdAt: now,
-            vectorClock: null,
-            inputTokens: 50,
-            outputTokens: 25,
-          ),
-        ],
-        agents: [agentA, agentB],
-      );
+        final container = createBreakdownContainer(
+          records: [
+            WakeTokenUsageEntity(
+              id: 'u1',
+              agentId: 'agent-a',
+              runKey: 'run-1',
+              threadId: 't1',
+              modelId: 'gemini-2.5-pro',
+              createdAt: now,
+              vectorClock: null,
+              inputTokens: 100,
+              outputTokens: 50,
+            ),
+            WakeTokenUsageEntity(
+              id: 'u2',
+              agentId: 'agent-a',
+              runKey: 'run-2',
+              threadId: 't2',
+              modelId: 'claude-sonnet',
+              createdAt: now,
+              vectorClock: null,
+              inputTokens: 200,
+              outputTokens: 100,
+            ),
+            WakeTokenUsageEntity(
+              id: 'u3',
+              agentId: 'agent-b',
+              runKey: 'run-3',
+              threadId: 't3',
+              modelId: 'gemini-2.5-pro',
+              createdAt: now,
+              vectorClock: null,
+              inputTokens: 50,
+              outputTokens: 25,
+            ),
+          ],
+          agents: [agentA, agentB],
+        );
 
-      final result = await container.read(
-        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
-      );
+        final result = await container.read(
+          templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+        );
 
-      expect(result, hasLength(2));
+        expect(result, hasLength(2));
 
-      // Agent A has more tokens (150+300=450) than Agent B (75)
-      expect(result[0].agentId, 'agent-a');
-      expect(result[0].displayName, 'Agent A');
-      expect(result[0].summaries, hasLength(2));
-      expect(result[0].totalTokens, 450);
+        // Agent A has more tokens (150+300=450) than Agent B (75)
+        expect(result[0].agentId, 'agent-a');
+        expect(result[0].displayName, 'Agent A');
+        expect(result[0].summaries, hasLength(2));
+        expect(result[0].totalTokens, 450);
 
-      expect(result[1].agentId, 'agent-b');
-      expect(result[1].displayName, 'Agent B');
-      expect(result[1].summaries, hasLength(1));
-      expect(result[1].totalTokens, 75);
-    });
+        expect(result[1].agentId, 'agent-b');
+        expect(result[1].displayName, 'Agent B');
+        expect(result[1].summaries, hasLength(1));
+        expect(result[1].totalTokens, 75);
+      },
+    );
 
     test('sorts instances by totalTokens descending', () async {
       final now = DateTime(2025, 6, 15);
@@ -3414,85 +3552,89 @@ void main() {
       expect(result[1].totalTokens, 15);
     });
 
-    test('includes instances with no token records (with empty summaries)',
-        () async {
-      final agentWithTokens = makeTestIdentity(
-        id: 'agent-with',
-        agentId: 'agent-with',
-        displayName: 'With Tokens',
-      );
-      final agentWithout = makeTestIdentity(
-        id: 'agent-without',
-        agentId: 'agent-without',
-        displayName: 'Without Tokens',
-      );
-      final now = DateTime(2025, 6, 15);
+    test(
+      'includes instances with no token records (with empty summaries)',
+      () async {
+        final agentWithTokens = makeTestIdentity(
+          id: 'agent-with',
+          agentId: 'agent-with',
+          displayName: 'With Tokens',
+        );
+        final agentWithout = makeTestIdentity(
+          id: 'agent-without',
+          agentId: 'agent-without',
+          displayName: 'Without Tokens',
+        );
+        final now = DateTime(2025, 6, 15);
 
-      final container = createBreakdownContainer(
-        records: [
-          WakeTokenUsageEntity(
-            id: 'u1',
-            agentId: 'agent-with',
-            runKey: 'run-1',
-            threadId: 't1',
-            modelId: 'model-a',
-            createdAt: now,
-            vectorClock: null,
-            inputTokens: 100,
-            outputTokens: 50,
-          ),
-        ],
-        agents: [agentWithTokens, agentWithout],
-      );
+        final container = createBreakdownContainer(
+          records: [
+            WakeTokenUsageEntity(
+              id: 'u1',
+              agentId: 'agent-with',
+              runKey: 'run-1',
+              threadId: 't1',
+              modelId: 'model-a',
+              createdAt: now,
+              vectorClock: null,
+              inputTokens: 100,
+              outputTokens: 50,
+            ),
+          ],
+          agents: [agentWithTokens, agentWithout],
+        );
 
-      final result = await container.read(
-        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
-      );
+        final result = await container.read(
+          templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+        );
 
-      expect(result, hasLength(2));
+        expect(result, hasLength(2));
 
-      // Agent with tokens sorted first (150 > 0)
-      expect(result[0].agentId, 'agent-with');
-      expect(result[0].totalTokens, 150);
-      expect(result[0].summaries, hasLength(1));
+        // Agent with tokens sorted first (150 > 0)
+        expect(result[0].agentId, 'agent-with');
+        expect(result[0].totalTokens, 150);
+        expect(result[0].summaries, hasLength(1));
 
-      expect(result[1].agentId, 'agent-without');
-      expect(result[1].totalTokens, 0);
-      expect(result[1].summaries, isEmpty);
-    });
+        expect(result[1].agentId, 'agent-without');
+        expect(result[1].totalTokens, 0);
+        expect(result[1].summaries, isEmpty);
+      },
+    );
 
-    test('returns all instances with empty summaries when no records exist',
-        () async {
-      final agentA = makeTestIdentity(
-        id: 'agent-a',
-        agentId: 'agent-a',
-        displayName: 'Agent A',
-      );
-      final agentB = makeTestIdentity(
-        id: 'agent-b',
-        agentId: 'agent-b',
-        displayName: 'Agent B',
-      );
+    test(
+      'returns all instances with empty summaries when no records exist',
+      () async {
+        final agentA = makeTestIdentity(
+          id: 'agent-a',
+          agentId: 'agent-a',
+          displayName: 'Agent A',
+        );
+        final agentB = makeTestIdentity(
+          id: 'agent-b',
+          agentId: 'agent-b',
+          displayName: 'Agent B',
+        );
 
-      final container = createBreakdownContainer(
-        records: [],
-        agents: [agentA, agentB],
-      );
+        final container = createBreakdownContainer(
+          records: [],
+          agents: [agentA, agentB],
+        );
 
-      final result = await container.read(
-        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
-      );
+        final result = await container.read(
+          templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+        );
 
-      expect(result, hasLength(2));
-      expect(
-        result.map((r) => r.agentId),
-        containsAll(<String>['agent-a', 'agent-b']),
-      );
-      for (final breakdown in result) {
-        expect(breakdown.totalTokens, 0);
-        expect(breakdown.summaries, isEmpty);
-      }
-    });
+        expect(result, hasLength(2));
+        expect(
+          result.map((r) => r.agentId),
+          containsAll(<String>['agent-a', 'agent-b']),
+        );
+        for (final breakdown in result) {
+          expect(breakdown.totalTokens, 0);
+          expect(breakdown.summaries, isEmpty);
+        }
+      },
+    );
   });
 
   group('templateRecentReportsProvider', () {
@@ -3519,8 +3661,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider
-              .overrideWith((ref, agentId) => const Stream.empty()),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream.empty(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -3546,8 +3689,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider
-              .overrideWith((ref, agentId) => const Stream.empty()),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream.empty(),
+          ),
         ],
       );
       addTearDown(container.dispose);

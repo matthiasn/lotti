@@ -8,26 +8,37 @@ class Settings extends Table with TableInfo<Settings, SettingsItem> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   Settings(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _configKeyMeta =
-      const VerificationMeta('configKey');
+  static const VerificationMeta _configKeyMeta = const VerificationMeta(
+    'configKey',
+  );
   late final GeneratedColumn<String> configKey = GeneratedColumn<String>(
-      'config_key', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
+    'config_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
   static const VerificationMeta _valueMeta = const VerificationMeta('value');
   late final GeneratedColumn<String> value = GeneratedColumn<String>(
-      'value', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [configKey, value, updatedAt];
   @override
@@ -36,25 +47,33 @@ class Settings extends Table with TableInfo<Settings, SettingsItem> {
   String get actualTableName => $name;
   static const String $name = 'settings';
   @override
-  VerificationContext validateIntegrity(Insertable<SettingsItem> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<SettingsItem> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('config_key')) {
-      context.handle(_configKeyMeta,
-          configKey.isAcceptableOrUnknown(data['config_key']!, _configKeyMeta));
+      context.handle(
+        _configKeyMeta,
+        configKey.isAcceptableOrUnknown(data['config_key']!, _configKeyMeta),
+      );
     } else if (isInserting) {
       context.missing(_configKeyMeta);
     }
     if (data.containsKey('value')) {
       context.handle(
-          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
     } else if (isInserting) {
       context.missing(_valueMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
@@ -67,12 +86,18 @@ class Settings extends Table with TableInfo<Settings, SettingsItem> {
   SettingsItem map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SettingsItem(
-      configKey: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}config_key'])!,
-      value: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}value'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      configKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_key'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -91,8 +116,11 @@ class SettingsItem extends DataClass implements Insertable<SettingsItem> {
   final String configKey;
   final String value;
   final DateTime updatedAt;
-  const SettingsItem(
-      {required this.configKey, required this.value, required this.updatedAt});
+  const SettingsItem({
+    required this.configKey,
+    required this.value,
+    required this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -110,8 +138,10 @@ class SettingsItem extends DataClass implements Insertable<SettingsItem> {
     );
   }
 
-  factory SettingsItem.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory SettingsItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SettingsItem(
       configKey: serializer.fromJson<String>(json['config_key']),
@@ -129,13 +159,15 @@ class SettingsItem extends DataClass implements Insertable<SettingsItem> {
     };
   }
 
-  SettingsItem copyWith(
-          {String? configKey, String? value, DateTime? updatedAt}) =>
-      SettingsItem(
-        configKey: configKey ?? this.configKey,
-        value: value ?? this.value,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  SettingsItem copyWith({
+    String? configKey,
+    String? value,
+    DateTime? updatedAt,
+  }) => SettingsItem(
+    configKey: configKey ?? this.configKey,
+    value: value ?? this.value,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
   SettingsItem copyWithCompanion(SettingsCompanion data) {
     return SettingsItem(
       configKey: data.configKey.present ? data.configKey.value : this.configKey,
@@ -181,9 +213,9 @@ class SettingsCompanion extends UpdateCompanion<SettingsItem> {
     required String value,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
-  })  : configKey = Value(configKey),
-        value = Value(value),
-        updatedAt = Value(updatedAt);
+  }) : configKey = Value(configKey),
+       value = Value(value),
+       updatedAt = Value(updatedAt);
   static Insertable<SettingsItem> custom({
     Expression<String>? configKey,
     Expression<String>? value,
@@ -198,11 +230,12 @@ class SettingsCompanion extends UpdateCompanion<SettingsItem> {
     });
   }
 
-  SettingsCompanion copyWith(
-      {Value<String>? configKey,
-      Value<String>? value,
-      Value<DateTime>? updatedAt,
-      Value<int>? rowid}) {
+  SettingsCompanion copyWith({
+    Value<String>? configKey,
+    Value<String>? value,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
     return SettingsCompanion(
       configKey: configKey ?? this.configKey,
       value: value ?? this.value,
@@ -247,13 +280,13 @@ abstract class _$SettingsDb extends GeneratedDatabase {
   $SettingsDbManager get managers => $SettingsDbManager(this);
   late final Settings settings = Settings(this);
   Selectable<SettingsItem> settingsItemByKey(String configKey) {
-    return customSelect('SELECT * FROM settings WHERE config_key = ?1',
-        variables: [
-          Variable<String>(configKey)
-        ],
-        readsFrom: {
-          settings,
-        }).asyncMap(settings.mapFromRow);
+    return customSelect(
+      'SELECT * FROM settings WHERE config_key = ?1',
+      variables: [Variable<String>(configKey)],
+      readsFrom: {
+        settings,
+      },
+    ).asyncMap(settings.mapFromRow);
   }
 
   @override
@@ -263,18 +296,20 @@ abstract class _$SettingsDb extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [settings];
 }
 
-typedef $SettingsCreateCompanionBuilder = SettingsCompanion Function({
-  required String configKey,
-  required String value,
-  required DateTime updatedAt,
-  Value<int> rowid,
-});
-typedef $SettingsUpdateCompanionBuilder = SettingsCompanion Function({
-  Value<String> configKey,
-  Value<String> value,
-  Value<DateTime> updatedAt,
-  Value<int> rowid,
-});
+typedef $SettingsCreateCompanionBuilder =
+    SettingsCompanion Function({
+      required String configKey,
+      required String value,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $SettingsUpdateCompanionBuilder =
+    SettingsCompanion Function({
+      Value<String> configKey,
+      Value<String> value,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
 
 class $SettingsFilterComposer extends Composer<_$SettingsDb, Settings> {
   $SettingsFilterComposer({
@@ -285,13 +320,19 @@ class $SettingsFilterComposer extends Composer<_$SettingsDb, Settings> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get configKey => $composableBuilder(
-      column: $table.configKey, builder: (column) => ColumnFilters(column));
+    column: $table.configKey,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get value => $composableBuilder(
-      column: $table.value, builder: (column) => ColumnFilters(column));
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $SettingsOrderingComposer extends Composer<_$SettingsDb, Settings> {
@@ -303,13 +344,19 @@ class $SettingsOrderingComposer extends Composer<_$SettingsDb, Settings> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get configKey => $composableBuilder(
-      column: $table.configKey, builder: (column) => ColumnOrderings(column));
+    column: $table.configKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get value => $composableBuilder(
-      column: $table.value, builder: (column) => ColumnOrderings(column));
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $SettingsAnnotationComposer extends Composer<_$SettingsDb, Settings> {
@@ -330,20 +377,24 @@ class $SettingsAnnotationComposer extends Composer<_$SettingsDb, Settings> {
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $SettingsTableManager extends RootTableManager<
-    _$SettingsDb,
-    Settings,
-    SettingsItem,
-    $SettingsFilterComposer,
-    $SettingsOrderingComposer,
-    $SettingsAnnotationComposer,
-    $SettingsCreateCompanionBuilder,
-    $SettingsUpdateCompanionBuilder,
-    (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
-    SettingsItem,
-    PrefetchHooks Function()> {
+class $SettingsTableManager
+    extends
+        RootTableManager<
+          _$SettingsDb,
+          Settings,
+          SettingsItem,
+          $SettingsFilterComposer,
+          $SettingsOrderingComposer,
+          $SettingsAnnotationComposer,
+          $SettingsCreateCompanionBuilder,
+          $SettingsUpdateCompanionBuilder,
+          (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
+          SettingsItem,
+          PrefetchHooks Function()
+        > {
   $SettingsTableManager(_$SettingsDb db, Settings table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -352,49 +403,52 @@ class $SettingsTableManager extends RootTableManager<
               $SettingsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $SettingsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> configKey = const Value.absent(),
-            Value<String> value = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SettingsCompanion(
-            configKey: configKey,
-            value: value,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String configKey,
-            required String value,
-            required DateTime updatedAt,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SettingsCompanion.insert(
-            configKey: configKey,
-            value: value,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> configKey = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingsCompanion(
+                configKey: configKey,
+                value: value,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String configKey,
+                required String value,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SettingsCompanion.insert(
+                configKey: configKey,
+                value: value,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $SettingsProcessedTableManager = ProcessedTableManager<
-    _$SettingsDb,
-    Settings,
-    SettingsItem,
-    $SettingsFilterComposer,
-    $SettingsOrderingComposer,
-    $SettingsAnnotationComposer,
-    $SettingsCreateCompanionBuilder,
-    $SettingsUpdateCompanionBuilder,
-    (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
-    SettingsItem,
-    PrefetchHooks Function()>;
+typedef $SettingsProcessedTableManager =
+    ProcessedTableManager<
+      _$SettingsDb,
+      Settings,
+      SettingsItem,
+      $SettingsFilterComposer,
+      $SettingsOrderingComposer,
+      $SettingsAnnotationComposer,
+      $SettingsCreateCompanionBuilder,
+      $SettingsUpdateCompanionBuilder,
+      (SettingsItem, BaseReferences<_$SettingsDb, Settings, SettingsItem>),
+      SettingsItem,
+      PrefetchHooks Function()
+    >;
 
 class $SettingsDbManager {
   final _$SettingsDb _db;

@@ -35,8 +35,9 @@ void main() {
             ..shouldThrow = throwError;
         }),
         // Needed for InferenceProfileForm when navigated to.
-        aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-            .overrideWith(_FakeConfigController.new),
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.model,
+        ).overrideWith(_FakeConfigController.new),
         aiConfigByTypeControllerProvider(
           configType: AiConfigType.inferenceProvider,
         ).overrideWith(_FakeConfigController.new),
@@ -140,8 +141,9 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('shows loading state while profiles are loading',
-        (tester) async {
+    testWidgets('shows loading state while profiles are loading', (
+      tester,
+    ) async {
       // Don't provide initial data — the stream hasn't emitted yet.
       await tester.pumpWidget(buildSubject());
       // Use pump with a short duration to avoid pending timer issues from

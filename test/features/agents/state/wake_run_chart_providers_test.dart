@@ -32,27 +32,30 @@ void main() {
       final day1 = DateTime(2024, 3, 15);
       final day2 = DateTime(2024, 3, 16);
 
-      when(() => mockRepository.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => [
-                makeTestWakeRun(
-                  runKey: 'r1',
-                  status: 'completed',
-                  createdAt: day1,
-                  templateId: kTestTemplateId,
-                  templateVersionId: 'v1',
-                  startedAt: day1,
-                  completedAt: day1.add(const Duration(seconds: 10)),
-                ),
-                makeTestWakeRun(
-                  runKey: 'r2',
-                  status: 'failed',
-                  createdAt: day2,
-                  templateId: kTestTemplateId,
-                  templateVersionId: 'v1',
-                  startedAt: day2,
-                  completedAt: day2.add(const Duration(seconds: 5)),
-                ),
-              ]);
+      when(
+        () => mockRepository.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer(
+        (_) async => [
+          makeTestWakeRun(
+            runKey: 'r1',
+            status: 'completed',
+            createdAt: day1,
+            templateId: kTestTemplateId,
+            templateVersionId: 'v1',
+            startedAt: day1,
+            completedAt: day1.add(const Duration(seconds: 10)),
+          ),
+          makeTestWakeRun(
+            runKey: 'r2',
+            status: 'failed',
+            createdAt: day2,
+            templateId: kTestTemplateId,
+            templateVersionId: 'v1',
+            startedAt: day2,
+            completedAt: day2.add(const Duration(seconds: 5)),
+          ),
+        ],
+      );
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -69,8 +72,9 @@ void main() {
     });
 
     test('returns empty time series when no runs exist', () async {
-      when(() => mockRepository.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -115,11 +119,13 @@ void main() {
         createdAt: agentCreated,
       );
 
-      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => [agent]);
 
-      when(() => mockRepository.getLinksFrom('agent-1', type: 'agent_task'))
-          .thenAnswer(
+      when(
+        () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+      ).thenAnswer(
         (_) async => [
           model.AgentLink.agentTask(
             id: 'link-1',
@@ -132,28 +138,29 @@ void main() {
         ],
       );
 
-      when(() => mockJournalDb.journalEntityById('task-1'))
-          .thenAnswer((_) async => _makeTask(
-                id: 'task-1',
-                createdAt: agentCreated,
-                statusHistory: [
-                  TaskStatus.open(
-                    id: uuid.v1(),
-                    createdAt: agentCreated,
-                    utcOffset: 0,
-                  ),
-                  TaskStatus.inProgress(
-                    id: uuid.v1(),
-                    createdAt: agentCreated.add(const Duration(hours: 1)),
-                    utcOffset: 0,
-                  ),
-                  TaskStatus.done(
-                    id: uuid.v1(),
-                    createdAt: taskResolved,
-                    utcOffset: 0,
-                  ),
-                ],
-              ));
+      when(() => mockJournalDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => _makeTask(
+          id: 'task-1',
+          createdAt: agentCreated,
+          statusHistory: [
+            TaskStatus.open(
+              id: uuid.v1(),
+              createdAt: agentCreated,
+              utcOffset: 0,
+            ),
+            TaskStatus.inProgress(
+              id: uuid.v1(),
+              createdAt: agentCreated.add(const Duration(hours: 1)),
+              utcOffset: 0,
+            ),
+            TaskStatus.done(
+              id: uuid.v1(),
+              createdAt: taskResolved,
+              utcOffset: 0,
+            ),
+          ],
+        ),
+      );
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -171,85 +178,91 @@ void main() {
     });
 
     test(
-        'loads each linked task entity once even when multiple agents link to it',
-        () async {
-      final createdAt = DateTime(2024, 3, 15, 10);
-      final resolvedAt = DateTime(2024, 3, 15, 13);
+      'loads each linked task entity once even when multiple agents link to it',
+      () async {
+        final createdAt = DateTime(2024, 3, 15, 10);
+        final resolvedAt = DateTime(2024, 3, 15, 13);
 
-      final agent1 = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        createdAt: createdAt,
-      );
-      final agent2 = makeTestIdentity(
-        id: 'agent-2',
-        agentId: 'agent-2',
-        createdAt: createdAt,
-      );
+        final agent1 = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          createdAt: createdAt,
+        );
+        final agent2 = makeTestIdentity(
+          id: 'agent-2',
+          agentId: 'agent-2',
+          createdAt: createdAt,
+        );
 
-      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => [agent1, agent2]);
+        when(
+          () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+        ).thenAnswer((_) async => [agent1, agent2]);
 
-      when(() => mockRepository.getLinksFrom('agent-1', type: 'agent_task'))
-          .thenAnswer(
-        (_) async => [
-          model.AgentLink.agentTask(
-            id: 'link-1',
-            fromId: 'agent-1',
-            toId: 'shared-task',
+        when(
+          () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+        ).thenAnswer(
+          (_) async => [
+            model.AgentLink.agentTask(
+              id: 'link-1',
+              fromId: 'agent-1',
+              toId: 'shared-task',
+              createdAt: createdAt,
+              updatedAt: createdAt,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.getLinksFrom('agent-2', type: 'agent_task'),
+        ).thenAnswer(
+          (_) async => [
+            model.AgentLink.agentTask(
+              id: 'link-2',
+              fromId: 'agent-2',
+              toId: 'shared-task',
+              createdAt: createdAt,
+              updatedAt: createdAt,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        when(() => mockJournalDb.journalEntityById('shared-task')).thenAnswer(
+          (_) async => _makeTask(
+            id: 'shared-task',
             createdAt: createdAt,
-            updatedAt: createdAt,
-            vectorClock: null,
-          ),
-        ],
-      );
-      when(() => mockRepository.getLinksFrom('agent-2', type: 'agent_task'))
-          .thenAnswer(
-        (_) async => [
-          model.AgentLink.agentTask(
-            id: 'link-2',
-            fromId: 'agent-2',
-            toId: 'shared-task',
-            createdAt: createdAt,
-            updatedAt: createdAt,
-            vectorClock: null,
-          ),
-        ],
-      );
-
-      when(() => mockJournalDb.journalEntityById('shared-task'))
-          .thenAnswer((_) async => _makeTask(
-                id: 'shared-task',
+            statusHistory: [
+              TaskStatus.open(
+                id: uuid.v1(),
                 createdAt: createdAt,
-                statusHistory: [
-                  TaskStatus.open(
-                    id: uuid.v1(),
-                    createdAt: createdAt,
-                    utcOffset: 0,
-                  ),
-                  TaskStatus.done(
-                    id: uuid.v1(),
-                    createdAt: resolvedAt,
-                    utcOffset: 0,
-                  ),
-                ],
-              ));
+                utcOffset: 0,
+              ),
+              TaskStatus.done(
+                id: uuid.v1(),
+                createdAt: resolvedAt,
+                utcOffset: 0,
+              ),
+            ],
+          ),
+        );
 
-      final container = createContainer();
-      addTearDown(container.dispose);
+        final container = createContainer();
+        addTearDown(container.dispose);
 
-      final result = await container.read(
-        templateTaskResolutionTimeSeriesProvider(kTestTemplateId).future,
-      );
+        final result = await container.read(
+          templateTaskResolutionTimeSeriesProvider(kTestTemplateId).future,
+        );
 
-      expect(result.dailyBuckets, hasLength(1));
-      expect(result.dailyBuckets.first.resolvedCount, 2);
-      verify(() => mockJournalDb.journalEntityById('shared-task')).called(1);
-    });
+        expect(result.dailyBuckets, hasLength(1));
+        expect(result.dailyBuckets.first.resolvedCount, 2);
+        verify(() => mockJournalDb.journalEntityById('shared-task')).called(1);
+      },
+    );
 
     test('returns empty when no agents exist for template', () async {
-      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -270,11 +283,13 @@ void main() {
         createdAt: agentCreated,
       );
 
-      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => [agent]);
 
-      when(() => mockRepository.getLinksFrom('agent-1', type: 'agent_task'))
-          .thenAnswer(
+      when(
+        () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+      ).thenAnswer(
         (_) async => [
           model.AgentLink.agentTask(
             id: 'link-1',
@@ -287,23 +302,24 @@ void main() {
         ],
       );
 
-      when(() => mockJournalDb.journalEntityById('task-1'))
-          .thenAnswer((_) async => _makeTask(
-                id: 'task-1',
-                createdAt: agentCreated,
-                statusHistory: [
-                  TaskStatus.open(
-                    id: uuid.v1(),
-                    createdAt: agentCreated,
-                    utcOffset: 0,
-                  ),
-                  TaskStatus.inProgress(
-                    id: uuid.v1(),
-                    createdAt: agentCreated.add(const Duration(hours: 1)),
-                    utcOffset: 0,
-                  ),
-                ],
-              ));
+      when(() => mockJournalDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => _makeTask(
+          id: 'task-1',
+          createdAt: agentCreated,
+          statusHistory: [
+            TaskStatus.open(
+              id: uuid.v1(),
+              createdAt: agentCreated,
+              utcOffset: 0,
+            ),
+            TaskStatus.inProgress(
+              id: uuid.v1(),
+              createdAt: agentCreated.add(const Duration(hours: 1)),
+              utcOffset: 0,
+            ),
+          ],
+        ),
+      );
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -326,11 +342,13 @@ void main() {
         createdAt: agentCreated,
       );
 
-      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => [agent]);
 
-      when(() => mockRepository.getLinksFrom('agent-1', type: 'agent_task'))
-          .thenAnswer(
+      when(
+        () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+      ).thenAnswer(
         (_) async => [
           model.AgentLink.agentTask(
             id: 'link-1',
@@ -343,23 +361,24 @@ void main() {
         ],
       );
 
-      when(() => mockJournalDb.journalEntityById('task-1'))
-          .thenAnswer((_) async => _makeTask(
-                id: 'task-1',
-                createdAt: agentCreated,
-                statusHistory: [
-                  TaskStatus.open(
-                    id: uuid.v1(),
-                    createdAt: agentCreated,
-                    utcOffset: 0,
-                  ),
-                  TaskStatus.rejected(
-                    id: uuid.v1(),
-                    createdAt: taskRejected,
-                    utcOffset: 0,
-                  ),
-                ],
-              ));
+      when(() => mockJournalDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => _makeTask(
+          id: 'task-1',
+          createdAt: agentCreated,
+          statusHistory: [
+            TaskStatus.open(
+              id: uuid.v1(),
+              createdAt: agentCreated,
+              utcOffset: 0,
+            ),
+            TaskStatus.rejected(
+              id: uuid.v1(),
+              createdAt: taskRejected,
+              utcOffset: 0,
+            ),
+          ],
+        ),
+      );
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -385,11 +404,13 @@ void main() {
         createdAt: agentCreated,
       );
 
-      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => [agent]);
 
-      when(() => mockRepository.getLinksFrom('agent-1', type: 'agent_task'))
-          .thenAnswer(
+      when(
+        () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+      ).thenAnswer(
         (_) async => [
           model.AgentLink.agentTask(
             id: 'link-1',
@@ -403,8 +424,9 @@ void main() {
       );
 
       // Return null (entity not found)
-      when(() => mockJournalDb.journalEntityById('not-a-task'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById('not-a-task'),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -425,19 +447,20 @@ Task _makeTask({
   required List<TaskStatus> statusHistory,
 }) {
   return JournalEntity.task(
-    meta: Metadata(
-      id: id,
-      createdAt: createdAt,
-      updatedAt: createdAt,
-      dateFrom: createdAt,
-      dateTo: createdAt,
-    ),
-    data: TaskData(
-      status: statusHistory.last,
-      dateFrom: createdAt,
-      dateTo: createdAt,
-      statusHistory: statusHistory,
-      title: 'Test Task',
-    ),
-  ) as Task;
+        meta: Metadata(
+          id: id,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+          dateFrom: createdAt,
+          dateTo: createdAt,
+        ),
+        data: TaskData(
+          status: statusHistory.last,
+          dateFrom: createdAt,
+          dateTo: createdAt,
+          statusHistory: statusHistory,
+          title: 'Test Task',
+        ),
+      )
+      as Task;
 }

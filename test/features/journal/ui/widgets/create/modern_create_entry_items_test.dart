@@ -59,22 +59,26 @@ void main() {
     setUpAll(() {
       registerFallbackValue(StackTrace.empty);
       registerFallbackValue(FakeBuildContext());
-      registerFallbackValue(const EventData(
-        title: '',
-        status: EventStatus.tentative,
-        stars: 0,
-      ));
-      registerFallbackValue(TaskData(
-        title: '',
-        status: TaskStatus.open(
-          id: 'test-id',
-          createdAt: DateTime.now(),
-          utcOffset: 0,
+      registerFallbackValue(
+        const EventData(
+          title: '',
+          status: EventStatus.tentative,
+          stars: 0,
         ),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        statusHistory: [],
-      ));
+      );
+      registerFallbackValue(
+        TaskData(
+          title: '',
+          status: TaskStatus.open(
+            id: 'test-id',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          statusHistory: [],
+        ),
+      );
       registerFallbackValue(const EntryText(plainText: ''));
     });
 
@@ -158,8 +162,9 @@ void main() {
         expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
       });
 
-      testWidgets('navigates to task after creation when not linked',
-          (tester) async {
+      testWidgets('navigates to task after creation when not linked', (
+        tester,
+      ) async {
         const testTaskId = 'test-task-id';
         final testTask = Task(
           meta: Metadata(
@@ -183,12 +188,14 @@ void main() {
         );
 
         // Mock the persistence logic to return our test task
-        when(() => mockPersistenceLogic.createTaskEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => testTask);
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => testTask);
 
         // Track navigation calls
         var navCalled = false;
@@ -221,8 +228,9 @@ void main() {
         expect(navPath, '/tasks/$testTaskId');
       });
 
-      testWidgets('navigates to task after creation with linked ID',
-          (tester) async {
+      testWidgets('navigates to task after creation with linked ID', (
+        tester,
+      ) async {
         const testTaskId = 'test-task-id';
         const linkedFromId = 'linked-entry-id';
         final testTask = Task(
@@ -247,12 +255,14 @@ void main() {
         );
 
         // Mock the persistence logic to return our test task
-        when(() => mockPersistenceLogic.createTaskEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => testTask);
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => testTask);
 
         // Track navigation calls
         var navCalled = false;
@@ -287,12 +297,14 @@ void main() {
 
       testWidgets('does not navigate when task creation fails', (tester) async {
         // Mock the persistence logic to return null (failure)
-        when(() => mockPersistenceLogic.createTaskEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
 
         // Track navigation calls
         var navCalled = false;
@@ -324,8 +336,9 @@ void main() {
     });
 
     group('CreateEventItem Navigation Tests', () {
-      testWidgets('navigates to event after creation when not linked',
-          (tester) async {
+      testWidgets('navigates to event after creation when not linked', (
+        tester,
+      ) async {
         const testEventId = 'test-event-id';
         final testEvent = JournalEvent(
           meta: Metadata(
@@ -343,12 +356,14 @@ void main() {
         );
 
         // Mock the persistence logic to return our test event
-        when(() => mockPersistenceLogic.createEventEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => testEvent);
+        when(
+          () => mockPersistenceLogic.createEventEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => testEvent);
 
         // Track navigation calls
         var navCalled = false;
@@ -381,8 +396,9 @@ void main() {
         expect(navPath, '/journal/$testEventId');
       });
 
-      testWidgets('navigates to event after creation with linked ID',
-          (tester) async {
+      testWidgets('navigates to event after creation with linked ID', (
+        tester,
+      ) async {
         const testEventId = 'test-event-id';
         const linkedFromId = 'linked-entry-id';
         final testEvent = JournalEvent(
@@ -401,12 +417,14 @@ void main() {
         );
 
         // Mock the persistence logic to return our test event
-        when(() => mockPersistenceLogic.createEventEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => testEvent);
+        when(
+          () => mockPersistenceLogic.createEventEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => testEvent);
 
         // Track navigation calls
         var navCalled = false;
@@ -439,15 +457,18 @@ void main() {
         expect(navPath, '/journal/$testEventId');
       });
 
-      testWidgets('does not navigate when event creation fails',
-          (tester) async {
+      testWidgets('does not navigate when event creation fails', (
+        tester,
+      ) async {
         // Mock the persistence logic to return null (failure)
-        when(() => mockPersistenceLogic.createEventEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            )).thenAnswer((_) async => null);
+        when(
+          () => mockPersistenceLogic.createEventEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
 
         // Track navigation calls
         var navCalled = false;
@@ -604,60 +625,64 @@ void main() {
 
   group('CreateTimerItem Auto-Scroll Logic Tests', () {
     test(
-        'publishJournalFocus is called with correct parameters when timer and linked entry exist',
-        () {
-      final container = ProviderContainer();
-      const linkedId = 'parent-entry-id';
-      const timerEntryId = 'new-timer-id';
+      'publishJournalFocus is called with correct parameters when timer and linked entry exist',
+      () {
+        final container = ProviderContainer();
+        const linkedId = 'parent-entry-id';
+        const timerEntryId = 'new-timer-id';
 
-      // Create mock timer and linked entries
-      final timerEntry = JournalEntry(
-        meta: Metadata(
-          id: timerEntryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        entryText: const EntryText(plainText: ''),
-      );
+        // Create mock timer and linked entries
+        final timerEntry = JournalEntry(
+          meta: Metadata(
+            id: timerEntryId,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          entryText: const EntryText(plainText: ''),
+        );
 
-      final linkedEntry = JournalEntry(
-        meta: Metadata(
-          id: linkedId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        entryText: const EntryText(plainText: 'Parent entry'),
-      );
+        final linkedEntry = JournalEntry(
+          meta: Metadata(
+            id: linkedId,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          entryText: const EntryText(plainText: 'Parent entry'),
+        );
 
-      // Initially no focus intent
-      final initialState =
-          container.read(journalFocusControllerProvider(id: linkedId));
-      expect(initialState, isNull);
+        // Initially no focus intent
+        final initialState = container.read(
+          journalFocusControllerProvider(id: linkedId),
+        );
+        expect(initialState, isNull);
 
-      // Simulate the auto-scroll logic from CreateTimerItem.onTap
-      // This is what happens after createTimerEntry succeeds
-      container
-          .read(
-              journalFocusControllerProvider(id: linkedEntry.meta.id).notifier)
-          .publishJournalFocus(
-            entryId: timerEntry.meta.id,
-            alignment: kDefaultScrollAlignment,
-          );
+        // Simulate the auto-scroll logic from CreateTimerItem.onTap
+        // This is what happens after createTimerEntry succeeds
+        container
+            .read(
+              journalFocusControllerProvider(id: linkedEntry.meta.id).notifier,
+            )
+            .publishJournalFocus(
+              entryId: timerEntry.meta.id,
+              alignment: kDefaultScrollAlignment,
+            );
 
-      // Verify focus was published with correct parameters
-      final focusState =
-          container.read(journalFocusControllerProvider(id: linkedId));
-      expect(focusState, isNotNull);
-      expect(focusState!.journalId, linkedId);
-      expect(focusState.entryId, timerEntryId);
-      expect(focusState.alignment, kDefaultScrollAlignment);
+        // Verify focus was published with correct parameters
+        final focusState = container.read(
+          journalFocusControllerProvider(id: linkedId),
+        );
+        expect(focusState, isNotNull);
+        expect(focusState!.journalId, linkedId);
+        expect(focusState.entryId, timerEntryId);
+        expect(focusState.alignment, kDefaultScrollAlignment);
 
-      container.dispose();
-    });
+        container.dispose();
+      },
+    );
 
     test('publishJournalFocus is not called when timerEntry is null', () {
       final container = ProviderContainer();
@@ -678,8 +703,9 @@ void main() {
       const JournalEntry? timerEntry = null;
       if (timerEntry != null) {
         container
-            .read(journalFocusControllerProvider(id: linkedEntry.meta.id)
-                .notifier)
+            .read(
+              journalFocusControllerProvider(id: linkedEntry.meta.id).notifier,
+            )
             .publishJournalFocus(
               entryId: timerEntry.meta.id,
               alignment: kDefaultScrollAlignment,
@@ -687,8 +713,9 @@ void main() {
       }
 
       // Verify focus was NOT published
-      final focusState =
-          container.read(journalFocusControllerProvider(id: linkedId));
+      final focusState = container.read(
+        journalFocusControllerProvider(id: linkedId),
+      );
       expect(focusState, isNull);
 
       container.dispose();
@@ -714,8 +741,9 @@ void main() {
           );
 
       // Verify alignment uses kDefaultScrollAlignment constant
-      final focusState =
-          container.read(journalFocusControllerProvider(id: linkedId));
+      final focusState = container.read(
+        journalFocusControllerProvider(id: linkedId),
+      );
       expect(focusState!.alignment, kDefaultScrollAlignment);
 
       container.dispose();
@@ -735,8 +763,9 @@ void main() {
             alignment: kDefaultScrollAlignment,
           );
 
-      final focusState =
-          container.read(journalFocusControllerProvider(id: linkedId));
+      final focusState = container.read(
+        journalFocusControllerProvider(id: linkedId),
+      );
       expect(focusState!.entryId, timer1Id);
 
       // Second timer creation (should update the focus)
@@ -747,8 +776,9 @@ void main() {
             alignment: kDefaultScrollAlignment,
           );
 
-      final updatedFocusState =
-          container.read(journalFocusControllerProvider(id: linkedId));
+      final updatedFocusState = container.read(
+        journalFocusControllerProvider(id: linkedId),
+      );
       expect(updatedFocusState!.entryId, timer2Id);
 
       container.dispose();
@@ -970,8 +1000,9 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('hides Event item when enableEventsFlag is OFF',
-        (tester) async {
+    testWidgets('hides Event item when enableEventsFlag is OFF', (
+      tester,
+    ) async {
       // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: false
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -1010,39 +1041,41 @@ void main() {
     });
 
     testWidgets(
-        'hides Event item while loading enableEventsFlag on initial load',
-        (tester) async {
-      final flagController = StreamController<Set<ConfigFlag>>();
+      'hides Event item while loading enableEventsFlag on initial load',
+      (tester) async {
+        final flagController = StreamController<Set<ConfigFlag>>();
 
-      when(() => mockDb.watchConfigFlags()).thenAnswer(
-        (_) => flagController.stream,
-      );
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) => flagController.stream,
+        );
 
-      getIt.registerSingleton<JournalDb>(mockDb);
+        getIt.registerSingleton<JournalDb>(mockDb);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const CreateEventItem(
-            'linked-id',
-            categoryId: 'category-id',
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const CreateEventItem(
+              'linked-id',
+              categoryId: 'category-id',
+            ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
           ),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-        ),
-      );
+        );
 
-      // Stays in loading state (no flag emitted yet)
-      await tester.pump();
+        // Stays in loading state (no flag emitted yet)
+        await tester.pump();
 
-      // Assert: Defaults to hidden during initial load with no previous value
-      expect(find.byType(CreateMenuListItem), findsNothing);
+        // Assert: Defaults to hidden during initial load with no previous value
+        expect(find.byType(CreateMenuListItem), findsNothing);
 
-      await flagController.close();
-    });
+        await flagController.close();
+      },
+    );
 
-    testWidgets('hides Event item when enableEventsFlag stream errors',
-        (tester) async {
+    testWidgets('hides Event item when enableEventsFlag stream errors', (
+      tester,
+    ) async {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.error(Exception('Test error')),
       );
@@ -1207,8 +1240,9 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
 
-    testWidgets('defaults to hidden when flag data is null/empty',
-        (tester) async {
+    testWidgets('defaults to hidden when flag data is null/empty', (
+      tester,
+    ) async {
       // Mock stream returns empty set
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
@@ -1244,8 +1278,9 @@ void main() {
   // Coverage will be achieved through integration tests
 
   group('Widget onTap Coverage Tests', () {
-    testWidgets('CreateTaskItem onTap creates task and navigates',
-        (tester) async {
+    testWidgets('CreateTaskItem onTap creates task and navigates', (
+      tester,
+    ) async {
       final mockNavService = MockNavService();
       final mockPersistenceLogic = MockPersistenceLogic();
       final mockDb = MockJournalDb();
@@ -1280,12 +1315,14 @@ void main() {
         ),
       );
 
-      when(() => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => testTask);
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => testTask);
 
       when(() => mockNavService.beamToNamed(any())).thenAnswer((_) {});
 
@@ -1303,11 +1340,13 @@ void main() {
       await tester.pump();
 
       // Verify task creation was called
-      verify(() => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: 'cat-id',
-          )).called(1);
+      verify(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: 'cat-id',
+        ),
+      ).called(1);
 
       // Verify navigation was called
       verify(() => mockNavService.beamToNamed('/tasks/task-id')).called(1);
@@ -1315,8 +1354,9 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('CreateEventItem onTap creates event and navigates',
-        (tester) async {
+    testWidgets('CreateEventItem onTap creates event and navigates', (
+      tester,
+    ) async {
       final mockNavService = MockNavService();
       final mockPersistenceLogic = MockPersistenceLogic();
       final mockDb = MockJournalDb();
@@ -1353,12 +1393,14 @@ void main() {
         ),
       );
 
-      when(() => mockPersistenceLogic.createEventEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => testEvent);
+      when(
+        () => mockPersistenceLogic.createEventEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => testEvent);
 
       when(() => mockNavService.beamToNamed(any())).thenAnswer((_) {});
 
@@ -1376,11 +1418,13 @@ void main() {
       await tester.pump();
 
       // Verify event creation was called
-      verify(() => mockPersistenceLogic.createEventEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: 'cat-id',
-          )).called(1);
+      verify(
+        () => mockPersistenceLogic.createEventEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: 'cat-id',
+        ),
+      ).called(1);
 
       // Verify navigation was called
       verify(() => mockNavService.beamToNamed('/journal/event-id')).called(1);
@@ -1462,14 +1506,16 @@ void main() {
       );
 
       final mockEntryCreationService = MockEntryCreationService();
-      when(() => mockEntryCreationService.createTimerEntry(linked: parentEntry))
-          .thenAnswer((_) async => timerEntry);
+      when(
+        () => mockEntryCreationService.createTimerEntry(linked: parentEntry),
+      ).thenAnswer((_) async => timerEntry);
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryCreationServiceProvider
-                .overrideWithValue(mockEntryCreationService),
+            entryCreationServiceProvider.overrideWithValue(
+              mockEntryCreationService,
+            ),
             entryControllerProvider(id: parentId).overrideWith(
               () => TestEntryController(parentEntry),
             ),
@@ -1497,9 +1543,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify createTimerEntry was called
-      verify(() =>
-              mockEntryCreationService.createTimerEntry(linked: parentEntry))
-          .called(1);
+      verify(
+        () => mockEntryCreationService.createTimerEntry(linked: parentEntry),
+      ).called(1);
 
       // Wait for the _waitForTimerAndScroll polling to complete or timeout
       // This prevents "Bad state: Cannot use ref after widget disposed" errors
@@ -1511,8 +1557,9 @@ void main() {
       // the Auto-Scroll Logic Tests group above.
     });
 
-    testWidgets('does not crash when timer creation returns null',
-        (tester) async {
+    testWidgets('does not crash when timer creation returns null', (
+      tester,
+    ) async {
       const parentId = 'parent-entry-id';
 
       final parentEntry = JournalEntry(
@@ -1528,14 +1575,16 @@ void main() {
 
       final mockEntryCreationService = MockEntryCreationService();
       // Timer creation fails and returns null
-      when(() => mockEntryCreationService.createTimerEntry(linked: parentEntry))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockEntryCreationService.createTimerEntry(linked: parentEntry),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryCreationServiceProvider
-                .overrideWithValue(mockEntryCreationService),
+            entryCreationServiceProvider.overrideWithValue(
+              mockEntryCreationService,
+            ),
             entryControllerProvider(id: parentId).overrideWith(
               () => TestEntryController(parentEntry),
             ),
@@ -1560,9 +1609,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify createTimerEntry was called
-      verify(() =>
-              mockEntryCreationService.createTimerEntry(linked: parentEntry))
-          .called(1);
+      verify(
+        () => mockEntryCreationService.createTimerEntry(linked: parentEntry),
+      ).called(1);
 
       // The test passing without errors confirms _waitForTimerAndScroll
       // guards against null timer entry
@@ -1601,17 +1650,20 @@ void main() {
       const categoryId = 'category-id';
 
       final mockEntryCreationService = MockEntryCreationService();
-      when(() => mockEntryCreationService.showAudioRecordingModal(
-            any(),
-            linkedId: linkedId,
-            categoryId: categoryId,
-          )).thenReturn(null);
+      when(
+        () => mockEntryCreationService.showAudioRecordingModal(
+          any(),
+          linkedId: linkedId,
+          categoryId: categoryId,
+        ),
+      ).thenReturn(null);
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryCreationServiceProvider
-                .overrideWithValue(mockEntryCreationService),
+            entryCreationServiceProvider.overrideWithValue(
+              mockEntryCreationService,
+            ),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -1633,11 +1685,13 @@ void main() {
       await tester.tap(find.byType(CreateMenuListItem));
       await tester.pump();
 
-      verify(() => mockEntryCreationService.showAudioRecordingModal(
-            any(),
-            linkedId: linkedId,
-            categoryId: categoryId,
-          )).called(1);
+      verify(
+        () => mockEntryCreationService.showAudioRecordingModal(
+          any(),
+          linkedId: linkedId,
+          categoryId: categoryId,
+        ),
+      ).called(1);
     });
   });
 
@@ -1685,16 +1739,19 @@ void main() {
       );
 
       final mockEntryCreationService = MockEntryCreationService();
-      when(() => mockEntryCreationService.createTextEntry(
-            linkedId: linkedId,
-            categoryId: categoryId,
-          )).thenAnswer((_) async => textEntry);
+      when(
+        () => mockEntryCreationService.createTextEntry(
+          linkedId: linkedId,
+          categoryId: categoryId,
+        ),
+      ).thenAnswer((_) async => textEntry);
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryCreationServiceProvider
-                .overrideWithValue(mockEntryCreationService),
+            entryCreationServiceProvider.overrideWithValue(
+              mockEntryCreationService,
+            ),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -1718,10 +1775,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify createTextEntry was called
-      verify(() => mockEntryCreationService.createTextEntry(
-            linkedId: linkedId,
-            categoryId: categoryId,
-          )).called(1);
+      verify(
+        () => mockEntryCreationService.createTextEntry(
+          linkedId: linkedId,
+          categoryId: categoryId,
+        ),
+      ).called(1);
     });
   });
 

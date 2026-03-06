@@ -23,7 +23,7 @@ void main() {
   Widget buildSubject({
     FutureOr<WakeRunTimeSeries> Function(Ref, String)? timeSeriesOverride,
     FutureOr<TaskResolutionTimeSeries> Function(Ref, String)?
-        resolutionOverride,
+    resolutionOverride,
   }) {
     return makeTestableWidgetWithScaffold(
       const EvolutionChartsSection(templateId: kTestTemplateId),
@@ -31,15 +31,15 @@ void main() {
         templateWakeRunTimeSeriesProvider.overrideWith(
           timeSeriesOverride ??
               (ref, id) async => WakeRunTimeSeries(
-                    dailyBuckets: _makeDaily(5),
-                    versionBuckets: _makeVersions(3),
-                  ),
+                dailyBuckets: _makeDaily(5),
+                versionBuckets: _makeVersions(3),
+              ),
         ),
         templateTaskResolutionTimeSeriesProvider.overrideWith(
           resolutionOverride ??
               (ref, id) async => TaskResolutionTimeSeries(
-                    dailyBuckets: _makeResolutionBuckets(5),
-                  ),
+                dailyBuckets: _makeResolutionBuckets(5),
+              ),
         ),
       ],
     );
@@ -79,8 +79,9 @@ void main() {
       expect(find.byType(EvolutionMttrChart), findsOneWidget);
     });
 
-    testWidgets('renders SizedBox.shrink when insufficient data',
-        (tester) async {
+    testWidgets('renders SizedBox.shrink when insufficient data', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           timeSeriesOverride: (ref, id) async => const WakeRunTimeSeries(
@@ -125,8 +126,7 @@ void main() {
       expect(find.byType(EvolutionSparklineChart), findsNothing);
     });
 
-    testWidgets(
-        'shows MTTR chart even when resolution data loads after '
+    testWidgets('shows MTTR chart even when resolution data loads after '
         'wake data', (tester) async {
       final resolutionCompleter = Completer<TaskResolutionTimeSeries>();
 

@@ -130,8 +130,9 @@ void main() {
       expect(longPressCount, equals(1));
     });
 
-    testWidgets('uses gradient when backgroundColor is not provided',
-        (tester) async {
+    testWidgets('uses gradient when backgroundColor is not provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameyCard(
@@ -151,8 +152,9 @@ void main() {
       expect(decoration?.gradient, isNotNull);
     });
 
-    testWidgets('uses solid color when backgroundColor is provided',
-        (tester) async {
+    testWidgets('uses solid color when backgroundColor is provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameyCard(
@@ -397,8 +399,9 @@ void main() {
       expect(find.text('Subtle Content'), findsOneWidget);
     });
 
-    testWidgets('uses theme primary color when accentColor not provided',
-        (tester) async {
+    testWidgets('uses theme primary color when accentColor not provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameySubtleCard(

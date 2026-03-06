@@ -7,8 +7,9 @@ import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  testWidgets('DiagnosticsPanel expands and renders parsed diagnostics',
-      (tester) async {
+  testWidgets('DiagnosticsPanel expands and renders parsed diagnostics', (
+    tester,
+  ) async {
     final text = [
       'dbMissingBase=2',
       'lastIgnoredCount=2',

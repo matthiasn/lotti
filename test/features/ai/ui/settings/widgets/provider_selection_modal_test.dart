@@ -26,11 +26,14 @@ void main() {
     }
 
     group('Modal Structure', () {
-      testWidgets('displays modal content correctly',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+      testWidgets('displays modal content correctly', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The modal content should render without the title (title is now in Wolt header)
@@ -38,9 +41,11 @@ void main() {
       });
 
       testWidgets('has proper widget structure', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The modal widget should exist (close button is now in Wolt header)
@@ -49,9 +54,11 @@ void main() {
       });
 
       testWidgets('has proper modal styling', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Check for modal container with proper decoration
@@ -64,8 +71,9 @@ void main() {
     });
 
     group('Provider Display', () {
-      testWidgets('displays providers when available',
-          (WidgetTester tester) async {
+      testWidgets('displays providers when available', (
+        WidgetTester tester,
+      ) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
             id: 'provider1',
@@ -77,10 +85,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for async providers to load
@@ -90,12 +100,15 @@ void main() {
         expect(find.byType(Column), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('displays empty state when no providers',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: [], // Explicitly provide empty list
-        ));
+      testWidgets('displays empty state when no providers', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: [], // Explicitly provide empty list
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -108,10 +121,12 @@ void main() {
       });
 
       testWidgets('shows loading state initially', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          // No mock providers provided, should use real providers
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            // No mock providers provided, should use real providers
+          ),
+        );
 
         // Before any pumping, check for loading state
         // Note: With mocked data, loading state might not appear
@@ -124,8 +139,9 @@ void main() {
         }
       });
 
-      testWidgets('provider cards have proper structure',
-          (WidgetTester tester) async {
+      testWidgets('provider cards have proper structure', (
+        WidgetTester tester,
+      ) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
             id: 'provider1',
@@ -133,10 +149,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -153,8 +171,9 @@ void main() {
     });
 
     group('User Interactions', () {
-      testWidgets('calls onProviderSelected when provider tapped',
-          (WidgetTester tester) async {
+      testWidgets('calls onProviderSelected when provider tapped', (
+        WidgetTester tester,
+      ) async {
         String? selectedProviderId;
         final testProviders = [
           AiTestDataFactory.createTestProvider(
@@ -163,12 +182,14 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (providerId) {
-            selectedProviderId = providerId;
-          },
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (providerId) {
+              selectedProviderId = providerId;
+            },
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -191,11 +212,14 @@ void main() {
         expect(selectedProviderId, equals('provider1'));
       });
 
-      testWidgets('maintains proper state during interaction',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+      testWidgets('maintains proper state during interaction', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Verify the modal exists and maintains state
@@ -213,10 +237,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -230,8 +256,55 @@ void main() {
       });
 
       testWidgets(
-          'shows checkmark for selected provider and empty circle for others',
-          (WidgetTester tester) async {
+        'shows checkmark for selected provider and empty circle for others',
+        (WidgetTester tester) async {
+          final testProviders = [
+            AiTestDataFactory.createTestProvider(
+              id: 'provider1',
+              name: 'Test Provider 1',
+            ),
+            AiTestDataFactory.createTestProvider(
+              id: 'provider2',
+              name: 'Test Provider 2',
+            ),
+          ];
+
+          await tester.pumpWidget(
+            createTestWidget(
+              onProviderSelected: (_) {},
+              providers: testProviders,
+              selectedProviderId: 'provider1', // Pre-select the first provider
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.pump();
+
+          // Should show checkmark for selected provider
+          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+
+          // Should show empty circles for non-selected providers
+          // The empty circle is represented by a Container with border decoration
+          final containers = tester.widgetList<Container>(
+            find.byType(Container),
+          );
+          final emptyCircleContainers = containers.where((container) {
+            final decoration = container.decoration;
+            if (decoration is BoxDecoration && decoration.border != null) {
+              // Check if it's the empty circle style (width/height 28)
+              return container.constraints?.maxWidth == 28 ||
+                  container.constraints?.maxHeight == 28;
+            }
+            return false;
+          });
+
+          // Should have at least one empty circle (for non-selected provider)
+          expect(emptyCircleContainers.length, greaterThan(0));
+        },
+      );
+
+      testWidgets('highlights selected provider with different colors', (
+        WidgetTester tester,
+      ) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
             id: 'provider1',
@@ -243,52 +316,13 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-          selectedProviderId: 'provider1', // Pre-select the first provider
-        ));
-        await tester.pumpAndSettle();
-        await tester.pump();
-
-        // Should show checkmark for selected provider
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-
-        // Should show empty circles for non-selected providers
-        // The empty circle is represented by a Container with border decoration
-        final containers = tester.widgetList<Container>(find.byType(Container));
-        final emptyCircleContainers = containers.where((container) {
-          final decoration = container.decoration;
-          if (decoration is BoxDecoration && decoration.border != null) {
-            // Check if it's the empty circle style (width/height 28)
-            return container.constraints?.maxWidth == 28 ||
-                container.constraints?.maxHeight == 28;
-          }
-          return false;
-        });
-
-        // Should have at least one empty circle (for non-selected provider)
-        expect(emptyCircleContainers.length, greaterThan(0));
-      });
-
-      testWidgets('highlights selected provider with different colors',
-          (WidgetTester tester) async {
-        final testProviders = [
-          AiTestDataFactory.createTestProvider(
-            id: 'provider1',
-            name: 'Test Provider 1',
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+            selectedProviderId: 'provider1', // Pre-select the first provider
           ),
-          AiTestDataFactory.createTestProvider(
-            id: 'provider2',
-            name: 'Test Provider 2',
-          ),
-        ];
-
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-          selectedProviderId: 'provider1', // Pre-select the first provider
-        ));
+        );
         await tester.pumpAndSettle();
         await tester.pump();
 
@@ -302,11 +336,14 @@ void main() {
     });
 
     group('Visual Design', () {
-      testWidgets('uses proper spacing and layout',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+      testWidgets('uses proper spacing and layout', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Should have proper padding and spacing
@@ -314,8 +351,9 @@ void main() {
         expect(find.byType(Padding), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('has consistent visual hierarchy',
-          (WidgetTester tester) async {
+      testWidgets('has consistent visual hierarchy', (
+        WidgetTester tester,
+      ) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
             id: 'provider1',
@@ -323,10 +361,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
         await tester.pump();
 
@@ -343,10 +383,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
         await tester.pump();
 
@@ -359,8 +401,9 @@ void main() {
         expect(styledContainers.length, greaterThan(0));
       });
 
-      testWidgets('has Series A quality modal styling',
-          (WidgetTester tester) async {
+      testWidgets('has Series A quality modal styling', (
+        WidgetTester tester,
+      ) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
             id: 'provider1',
@@ -368,10 +411,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
         await tester.pump();
 
@@ -390,9 +435,11 @@ void main() {
 
     group('Accessibility', () {
       testWidgets('has proper semantic structure', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Should have accessible text
@@ -402,8 +449,9 @@ void main() {
         expect(find.byType(ProviderSelectionModal), findsOneWidget);
       });
 
-      testWidgets('provider cards are properly labeled',
-          (WidgetTester tester) async {
+      testWidgets('provider cards are properly labeled', (
+        WidgetTester tester,
+      ) async {
         final testProviders = [
           AiTestDataFactory.createTestProvider(
             id: 'provider1',
@@ -411,10 +459,12 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-          providers: testProviders,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+            providers: testProviders,
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -427,11 +477,14 @@ void main() {
     });
 
     group('Error Handling', () {
-      testWidgets('displays error state when loading fails',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+      testWidgets('displays error state when loading fails', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // In case of error, should show error state
@@ -450,17 +503,20 @@ void main() {
     });
 
     group('Edge Cases', () {
-      testWidgets('handles rapid interactions gracefully',
-          (WidgetTester tester) async {
+      testWidgets('handles rapid interactions gracefully', (
+        WidgetTester tester,
+      ) async {
         // Track provider selection
         // ignore: unused_local_variable
         var providerSelected = false;
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (providerId) {
-            providerSelected = true;
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (providerId) {
+              providerSelected = true;
+            },
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -476,11 +532,14 @@ void main() {
         expect(find.byType(ProviderSelectionModal), findsOneWidget);
       });
 
-      testWidgets('maintains state consistency during interaction',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {},
-        ));
+      testWidgets('maintains state consistency during interaction', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onProviderSelected: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Wait for providers to load
@@ -492,42 +551,45 @@ void main() {
       });
 
       testWidgets(
-          'handles provider selection without navigation context errors',
-          (WidgetTester tester) async {
-        var callbackCalled = false;
-        final testProviders = [
-          AiTestDataFactory.createTestProvider(
-            id: 'provider1',
-            name: 'Test Provider 1',
-          ),
-        ];
+        'handles provider selection without navigation context errors',
+        (WidgetTester tester) async {
+          var callbackCalled = false;
+          final testProviders = [
+            AiTestDataFactory.createTestProvider(
+              id: 'provider1',
+              name: 'Test Provider 1',
+            ),
+          ];
 
-        await tester.pumpWidget(createTestWidget(
-          onProviderSelected: (_) {
-            callbackCalled = true;
-          },
-          providers: testProviders,
-        ));
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            createTestWidget(
+              onProviderSelected: (_) {
+                callbackCalled = true;
+              },
+              providers: testProviders,
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        // Wait for providers to load
-        await tester.pump();
+          // Wait for providers to load
+          await tester.pump();
 
-        // Tapping providers should work even in test context (using new InkWell design)
-        expect(find.text('Test Provider 1'), findsOneWidget);
+          // Tapping providers should work even in test context (using new InkWell design)
+          expect(find.text('Test Provider 1'), findsOneWidget);
 
-        // Find the InkWell that contains the provider text
-        final providerInkWell = find.ancestor(
-          of: find.text('Test Provider 1'),
-          matching: find.byType(InkWell),
-        );
-        expect(providerInkWell, findsOneWidget);
+          // Find the InkWell that contains the provider text
+          final providerInkWell = find.ancestor(
+            of: find.text('Test Provider 1'),
+            matching: find.byType(InkWell),
+          );
+          expect(providerInkWell, findsOneWidget);
 
-        await tester.tap(providerInkWell);
-        await tester.pumpAndSettle();
+          await tester.tap(providerInkWell);
+          await tester.pumpAndSettle();
 
-        expect(callbackCalled, isTrue);
-      });
+          expect(callbackCalled, isTrue);
+        },
+      );
     });
   });
 }

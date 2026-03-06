@@ -22,52 +22,62 @@ void main() {
       expect(state.preExpansionStates, isEmpty);
     });
 
-    test('enterSortingMode sets isSorting true and stores expansion states',
-        () {
-      final notifier =
-          container.read(checklistsSortingControllerProvider(taskId).notifier);
+    test(
+      'enterSortingMode sets isSorting true and stores expansion states',
+      () {
+        final notifier = container.read(
+          checklistsSortingControllerProvider(taskId).notifier,
+        );
 
-      final expansionStates = {
-        'checklist-1': true,
-        'checklist-2': false,
-        'checklist-3': true,
-      };
+        final expansionStates = {
+          'checklist-1': true,
+          'checklist-2': false,
+          'checklist-3': true,
+        };
 
-      notifier.enterSortingMode(expansionStates);
+        notifier.enterSortingMode(expansionStates);
 
-      final state = container.read(checklistsSortingControllerProvider(taskId));
-      expect(state.isSorting, true);
-      expect(state.preExpansionStates, expansionStates);
-    });
+        final state = container.read(
+          checklistsSortingControllerProvider(taskId),
+        );
+        expect(state.isSorting, true);
+        expect(state.preExpansionStates, expansionStates);
+      },
+    );
 
-    test('exitSortingMode sets isSorting false but preserves expansion states',
-        () {
-      final notifier =
-          container.read(checklistsSortingControllerProvider(taskId).notifier);
+    test(
+      'exitSortingMode sets isSorting false but preserves expansion states',
+      () {
+        final notifier = container.read(
+          checklistsSortingControllerProvider(taskId).notifier,
+        );
 
-      final expansionStates = {
-        'checklist-1': true,
-        'checklist-2': false,
-      };
+        final expansionStates = {
+          'checklist-1': true,
+          'checklist-2': false,
+        };
 
-      // Enter sorting mode first
-      notifier.enterSortingMode(expansionStates);
-      expect(
-        container.read(checklistsSortingControllerProvider(taskId)).isSorting,
-        true,
-      );
+        // Enter sorting mode first
+        notifier.enterSortingMode(expansionStates);
+        expect(
+          container.read(checklistsSortingControllerProvider(taskId)).isSorting,
+          true,
+        );
 
-      // Exit sorting mode
-      notifier.exitSortingMode();
+        // Exit sorting mode
+        notifier.exitSortingMode();
 
-      final state = container.read(checklistsSortingControllerProvider(taskId));
-      expect(state.isSorting, false);
-      expect(
-        state.preExpansionStates,
-        expansionStates,
-        reason: 'preExpansionStates should be preserved for restoration',
-      );
-    });
+        final state = container.read(
+          checklistsSortingControllerProvider(taskId),
+        );
+        expect(state.isSorting, false);
+        expect(
+          state.preExpansionStates,
+          expansionStates,
+          reason: 'preExpansionStates should be preserved for restoration',
+        );
+      },
+    );
 
     test('clearPreExpansionStates clears the stored states', () {
       // Enter and exit sorting mode, then clear
@@ -96,8 +106,9 @@ void main() {
     });
 
     test('enterSortingMode makes a copy of expansion states', () {
-      final notifier =
-          container.read(checklistsSortingControllerProvider(taskId).notifier);
+      final notifier = container.read(
+        checklistsSortingControllerProvider(taskId).notifier,
+      );
 
       final originalStates = <String, bool>{
         'checklist-1': true,
@@ -118,10 +129,12 @@ void main() {
       const taskId1 = 'task-1';
       const taskId2 = 'task-2';
 
-      final notifier1 =
-          container.read(checklistsSortingControllerProvider(taskId1).notifier);
-      final notifier2 =
-          container.read(checklistsSortingControllerProvider(taskId2).notifier);
+      final notifier1 = container.read(
+        checklistsSortingControllerProvider(taskId1).notifier,
+      );
+      final notifier2 = container.read(
+        checklistsSortingControllerProvider(taskId2).notifier,
+      );
 
       // Enter sorting mode only for task 1
       notifier1.enterSortingMode({'checklist-a': true});
@@ -142,10 +155,12 @@ void main() {
       notifier2.enterSortingMode({'checklist-b': false});
 
       // Both should now be in sorting mode with their own states
-      final state1 =
-          container.read(checklistsSortingControllerProvider(taskId1));
-      final state2 =
-          container.read(checklistsSortingControllerProvider(taskId2));
+      final state1 = container.read(
+        checklistsSortingControllerProvider(taskId1),
+      );
+      final state2 = container.read(
+        checklistsSortingControllerProvider(taskId2),
+      );
 
       expect(state1.isSorting, true);
       expect(state1.preExpansionStates, {'checklist-a': true});

@@ -13,20 +13,24 @@ part of 'unified_ai_inference_repository.dart';
 final unifiedAiInferenceRepositoryProvider =
     UnifiedAiInferenceRepositoryProvider._();
 
-final class UnifiedAiInferenceRepositoryProvider extends $FunctionalProvider<
-    UnifiedAiInferenceRepository,
-    UnifiedAiInferenceRepository,
-    UnifiedAiInferenceRepository> with $Provider<UnifiedAiInferenceRepository> {
+final class UnifiedAiInferenceRepositoryProvider
+    extends
+        $FunctionalProvider<
+          UnifiedAiInferenceRepository,
+          UnifiedAiInferenceRepository,
+          UnifiedAiInferenceRepository
+        >
+    with $Provider<UnifiedAiInferenceRepository> {
   UnifiedAiInferenceRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'unifiedAiInferenceRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'unifiedAiInferenceRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$unifiedAiInferenceRepositoryHash();
@@ -34,8 +38,8 @@ final class UnifiedAiInferenceRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<UnifiedAiInferenceRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   UnifiedAiInferenceRepository create(Ref ref) {

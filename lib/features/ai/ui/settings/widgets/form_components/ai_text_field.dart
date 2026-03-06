@@ -135,18 +135,21 @@ class _AiTextFieldState extends State<AiTextField> {
                 if (hasError)
                   context.colorScheme.errorContainer.withValues(alpha: 0.2)
                 else if (_isFocused)
-                  context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.5)
+                  context.colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  )
                 else
                   context.colorScheme.surfaceContainer.withValues(alpha: 0.3),
                 if (hasError)
                   context.colorScheme.errorContainer.withValues(alpha: 0.1)
                 else if (_isFocused)
-                  context.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.4)
+                  context.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  )
                 else
-                  context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.2),
+                  context.colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.2,
+                  ),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -156,9 +159,8 @@ class _AiTextFieldState extends State<AiTextField> {
               color: hasError
                   ? context.colorScheme.error.withValues(alpha: 0.7)
                   : _isFocused
-                      ? context.colorScheme.primary.withValues(alpha: 0.5)
-                      : context.colorScheme.primaryContainer
-                          .withValues(alpha: 0.2),
+                  ? context.colorScheme.primary.withValues(alpha: 0.5)
+                  : context.colorScheme.primaryContainer.withValues(alpha: 0.2),
               width: hasError || _isFocused ? 1.5 : 1,
             ),
             boxShadow: hasError
@@ -170,21 +172,21 @@ class _AiTextFieldState extends State<AiTextField> {
                     ),
                   ]
                 : _isFocused
-                    ? [
-                        BoxShadow(
-                          color: context.colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
+                ? [
+                    BoxShadow(
+                      color: context.colorScheme.primary.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: TextFormField(
             controller: widget.controller,
             focusNode: _focusNode,
-            initialValue:
-                widget.controller == null ? widget.initialValue : null,
+            initialValue: widget.controller == null
+                ? widget.initialValue
+                : null,
             onChanged: (value) {
               widget.onChanged?.call(value);
               _setErrorText(widget.validator?.call(value));
@@ -209,8 +211,9 @@ class _AiTextFieldState extends State<AiTextField> {
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: TextStyle(
-                color:
-                    context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                color: context.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.4,
+                ),
                 fontSize: 15,
                 fontWeight: FontWeight.w400,
               ),
@@ -221,9 +224,10 @@ class _AiTextFieldState extends State<AiTextField> {
                       color: hasError
                           ? context.colorScheme.error
                           : _isFocused
-                              ? context.colorScheme.primary
-                              : context.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
+                          ? context.colorScheme.primary
+                          : context.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
                     )
                   : null,
               suffixIcon: widget.suffixIcon,

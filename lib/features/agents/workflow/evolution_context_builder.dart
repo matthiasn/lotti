@@ -188,8 +188,9 @@ again. The conversation should always be driving toward an approved proposal.
     }
 
     // Version history (skip current, cap at maxVersionHistory)
-    final otherVersions =
-        recentVersions.where((v) => v.id != currentVersion.id).toList();
+    final otherVersions = recentVersions
+        .where((v) => v.id != currentVersion.id)
+        .toList();
     if (otherVersions.isNotEmpty) {
       _writeVersionHistory(buf, otherVersions);
     }
@@ -302,7 +303,8 @@ again. The conversation should always be driving toward an approved proposal.
     buf.writeln('## Your Notes From Past Sessions (${capped.length})');
     for (final note in capped) {
       buf.writeln(
-          '- **${note.kind.name}**: ${truncateAgentText(note.content, 200)}');
+        '- **${note.kind.name}**: ${truncateAgentText(note.content, 200)}',
+      );
     }
     buf.writeln();
   }

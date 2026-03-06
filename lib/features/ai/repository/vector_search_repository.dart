@@ -32,10 +32,10 @@ class VectorSearchRepository {
     required OllamaEmbeddingRepository embeddingRepository,
     required JournalDb journalDb,
     required AiConfigRepository aiConfigRepository,
-  })  : _embeddingsDb = embeddingsDb,
-        _embeddingRepository = embeddingRepository,
-        _journalDb = journalDb,
-        _aiConfigRepository = aiConfigRepository;
+  }) : _embeddingsDb = embeddingsDb,
+       _embeddingRepository = embeddingRepository,
+       _journalDb = journalDb,
+       _aiConfigRepository = aiConfigRepository;
 
   final EmbeddingsDb _embeddingsDb;
   final OllamaEmbeddingRepository _embeddingRepository;
@@ -214,8 +214,9 @@ class VectorSearchRepository {
 
     final allDirectTaskIds = {...directTaskIds, ...agentReportTaskIds};
     final directEntities = <String, JournalEntity>{
-      for (final e
-          in await _journalDb.getJournalEntitiesForIds(allDirectTaskIds))
+      for (final e in await _journalDb.getJournalEntitiesForIds(
+        allDirectTaskIds,
+      ))
         e.meta.id: e,
     };
 
@@ -241,8 +242,9 @@ class VectorSearchRepository {
     final allParentIds = childToParentIds.values.expand((ids) => ids).toSet();
     final parentEntities = allParentIds.isNotEmpty
         ? <String, JournalEntity>{
-            for (final e
-                in await _journalDb.getJournalEntitiesForIds(allParentIds))
+            for (final e in await _journalDb.getJournalEntitiesForIds(
+              allParentIds,
+            ))
               e.meta.id: e,
           }
         : <String, JournalEntity>{};

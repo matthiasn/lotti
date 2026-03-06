@@ -22,8 +22,8 @@ class RealtimeTranscriptionService {
     this._ref, {
     MistralRealtimeTranscriptionRepository? repository,
     Duration doneTimeout = const Duration(seconds: 10),
-  })  : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
-        _doneTimeout = doneTimeout;
+  }) : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
+       _doneTimeout = doneTimeout;
 
   final Ref _ref;
   final MistralRealtimeTranscriptionRepository _repository;
@@ -54,11 +54,12 @@ class RealtimeTranscriptionService {
   /// Returns the first matching model/provider pair found (iteration order
   /// is not guaranteed). Returns `null` if no real-time model is configured.
   Future<({AiConfigInferenceProvider provider, AiConfigModel model})?>
-      resolveRealtimeConfig() async {
+  resolveRealtimeConfig() async {
     final aiRepo = _ref.read(aiConfigRepositoryProvider);
     final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
-    final providersFuture =
-        aiRepo.getConfigsByType(AiConfigType.inferenceProvider);
+    final providersFuture = aiRepo.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
     final models = await modelsFuture;
     final providers = await providersFuture;
 
@@ -248,15 +249,17 @@ class RealtimeTranscriptionService {
   Future<String?> _saveAudio(String outputPath) async {
     if (_pcmBuffer.length == 0) return null;
 
-    final tempWavPath = '${Directory.systemTemp.path}/lotti_rt_'
+    final tempWavPath =
+        '${Directory.systemTemp.path}/lotti_rt_'
         '${DateTime.now().millisecondsSinceEpoch}.wav';
 
     try {
       await _writeTempWav(tempWavPath);
 
       // Attempt M4A conversion
-      final m4aPath =
-          outputPath.endsWith('.m4a') ? outputPath : '$outputPath.m4a';
+      final m4aPath = outputPath.endsWith('.m4a')
+          ? outputPath
+          : '$outputPath.m4a';
 
       final converted = await AudioConverterChannel.convertWavToM4a(
         inputPath: tempWavPath,
@@ -271,8 +274,9 @@ class RealtimeTranscriptionService {
         return m4aPath;
       } else {
         // Move WAV to final location as fallback
-        final wavOutputPath =
-            outputPath.endsWith('.wav') ? outputPath : '$outputPath.wav';
+        final wavOutputPath = outputPath.endsWith('.wav')
+            ? outputPath
+            : '$outputPath.wav';
         await File(tempWavPath).rename(wavOutputPath);
         return wavOutputPath;
       }
@@ -340,8 +344,9 @@ class RealtimeTranscriptionService {
 }
 
 final Provider<RealtimeTranscriptionService>
-    realtimeTranscriptionServiceProvider =
-    Provider<RealtimeTranscriptionService>((ref) {
+realtimeTranscriptionServiceProvider = Provider<RealtimeTranscriptionService>((
+  ref,
+) {
   return RealtimeTranscriptionService(ref);
 });
 

@@ -142,13 +142,16 @@ void main() {
 
     when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
-    when(() => mockRepository.insertLinkExclusive(any()))
-        .thenAnswer((_) async {});
-    when(() => mockOutboxService.enqueueMessage(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockRepository.insertLinkExclusive(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockOutboxService.enqueueMessage(any()),
+    ).thenAnswer((_) async {});
     when(
       () => mockVectorClockService.getNextVectorClock(
-          previous: any(named: 'previous')),
+        previous: any(named: 'previous'),
+      ),
     ).thenAnswer((_) async => testClock);
 
     syncService = AgentSyncService(
@@ -257,8 +260,9 @@ void main() {
       });
 
       test('propagates repository error, outbox not called', () async {
-        when(() => mockRepository.upsertEntity(any()))
-            .thenThrow(Exception('db error'));
+        when(
+          () => mockRepository.upsertEntity(any()),
+        ).thenThrow(Exception('db error'));
 
         await expectLater(
           () => syncService.upsertEntity(testEntity),
@@ -269,8 +273,9 @@ void main() {
       });
 
       test('propagates outbox error after entity is saved', () async {
-        when(() => mockOutboxService.enqueueMessage(any()))
-            .thenThrow(Exception('outbox error'));
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(Exception('outbox error'));
 
         await expectLater(
           () => syncService.upsertEntity(testEntity),
@@ -378,8 +383,9 @@ void main() {
       });
 
       test('propagates repository error, outbox not called', () async {
-        when(() => mockRepository.upsertLink(any()))
-            .thenThrow(Exception('db error'));
+        when(
+          () => mockRepository.upsertLink(any()),
+        ).thenThrow(Exception('db error'));
 
         await expectLater(
           () => syncService.upsertLink(testBasicLink),
@@ -390,8 +396,9 @@ void main() {
       });
 
       test('propagates outbox error after link is saved', () async {
-        when(() => mockOutboxService.enqueueMessage(any()))
-            .thenThrow(Exception('outbox error'));
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(Exception('outbox error'));
 
         await expectLater(
           () => syncService.upsertLink(testBasicLink),
@@ -529,42 +536,43 @@ void main() {
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
       });
 
-      test('inner TX rollback caught by outer — only outer messages flushed',
-          () async {
-        await syncService.runInTransaction(() async {
-          // Outer write — should be flushed.
-          await syncService.upsertEntity(testEntity);
-
-          // Inner TX rolls back, but outer catches and continues.
-          try {
-            await syncService.runInTransaction(() async {
-              await syncService.upsertLink(testBasicLink);
-              throw Exception('inner rollback');
-            });
-          } on Exception {
-            // Intentionally caught — outer TX continues.
-          }
-
-          // Another outer write after the caught inner failure.
-          await syncService.upsertEntity(testStateEntity);
-        });
-
-        // Only the two outer entity messages should be flushed.
-        // The inner link message must have been discarded on savepoint rollback.
-        verify(
-          () => mockOutboxService.enqueueMessage(
-            any(that: isA<SyncAgentEntity>()),
-          ),
-        ).called(2);
-        verifyNever(
-          () => mockOutboxService.enqueueMessage(
-            any(that: isA<SyncAgentLink>()),
-          ),
-        );
-      });
-
       test(
-          'concurrent chains are isolated — rollback in one does not '
+        'inner TX rollback caught by outer — only outer messages flushed',
+        () async {
+          await syncService.runInTransaction(() async {
+            // Outer write — should be flushed.
+            await syncService.upsertEntity(testEntity);
+
+            // Inner TX rolls back, but outer catches and continues.
+            try {
+              await syncService.runInTransaction(() async {
+                await syncService.upsertLink(testBasicLink);
+                throw Exception('inner rollback');
+              });
+            } on Exception {
+              // Intentionally caught — outer TX continues.
+            }
+
+            // Another outer write after the caught inner failure.
+            await syncService.upsertEntity(testStateEntity);
+          });
+
+          // Only the two outer entity messages should be flushed.
+          // The inner link message must have been discarded on savepoint rollback.
+          verify(
+            () => mockOutboxService.enqueueMessage(
+              any(that: isA<SyncAgentEntity>()),
+            ),
+          ).called(2);
+          verifyNever(
+            () => mockOutboxService.enqueueMessage(
+              any(that: isA<SyncAgentLink>()),
+            ),
+          );
+        },
+      );
+
+      test('concurrent chains are isolated — rollback in one does not '
           'affect the other', () async {
         // Chain A: will fail; its messages must be discarded.
         // Chain B: will succeed; its messages must be flushed.
@@ -600,8 +608,9 @@ void main() {
         'partial enqueue failure still attempts all messages',
         () async {
           var callCount = 0;
-          when(() => mockOutboxService.enqueueMessage(any()))
-              .thenAnswer((_) async {
+          when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+            _,
+          ) async {
             callCount++;
             if (callCount == 1) {
               throw Exception('outbox write failed');

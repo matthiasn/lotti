@@ -43,8 +43,9 @@ void main() {
       );
     }
 
-    testWidgets('empty list shows empty state, input field, and divider',
-        (tester) async {
+    testWidgets('empty list shows empty state, input field, and divider', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildBody());
 
       expect(find.byType(ChecklistEmptyState), findsOneWidget);
@@ -53,8 +54,9 @@ void main() {
       expect(find.byType(Divider), findsOneWidget);
     });
 
-    testWidgets('non-empty list shows ReorderableListView and input field',
-        (tester) async {
+    testWidgets('non-empty list shows ReorderableListView and input field', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildBody(itemIds: ['item-1', 'item-2'], completionRate: 0.5),
       );

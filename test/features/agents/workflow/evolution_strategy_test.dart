@@ -71,7 +71,7 @@ void main() {
         args: {
           'general_directive': '  ',
           'report_directive': '',
-          'rationale': 'Whatever'
+          'rationale': 'Whatever',
         },
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -90,7 +90,7 @@ void main() {
         args: {
           'general_directive': 'First draft',
           'report_directive': '',
-          'rationale': 'v1'
+          'rationale': 'v1',
         },
       );
       manager.addAssistantMessage(toolCalls: [call1]);
@@ -107,7 +107,7 @@ void main() {
         args: {
           'general_directive': 'Revised draft',
           'report_directive': '',
-          'rationale': 'v2'
+          'rationale': 'v2',
         },
       );
       manager.addAssistantMessage(toolCalls: [call2]);
@@ -125,7 +125,7 @@ void main() {
         args: {
           'general_directive': 'Some text',
           'report_directive': '',
-          'rationale': 'Because'
+          'rationale': 'Because',
         },
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
@@ -277,13 +277,14 @@ void main() {
     });
 
     test('returns false when manager has exhausted turns', () {
-      final exhausted = ConversationManager(
-        conversationId: 'exhausted',
-        maxTurns: 1,
-      )
-        ..initialize()
-        // Add one user message to exhaust the single turn.
-        ..addUserMessage('Hello');
+      final exhausted =
+          ConversationManager(
+              conversationId: 'exhausted',
+              maxTurns: 1,
+            )
+            ..initialize()
+            // Add one user message to exhaust the single turn.
+            ..addUserMessage('Hello');
 
       expect(strategy.shouldContinue(exhausted), isFalse);
     });
@@ -359,26 +360,28 @@ void main() {
       expect(surfaceIds.first, startsWith('proposal-'));
     });
 
-    test('propose_directives with empty directives does not create surface',
-        () async {
-      final toolCall = makeToolCall(
-        name: 'propose_directives',
-        args: {
-          'general_directive': '  ',
-          'report_directive': '',
-          'rationale': 'Whatever'
-        },
-      );
-      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+    test(
+      'propose_directives with empty directives does not create surface',
+      () async {
+        final toolCall = makeToolCall(
+          name: 'propose_directives',
+          args: {
+            'general_directive': '  ',
+            'report_directive': '',
+            'rationale': 'Whatever',
+          },
+        );
+        bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
 
-      await strategyWithBridge.processToolCalls(
-        toolCalls: [toolCall],
-        manager: bridgeManager,
-      );
+        await strategyWithBridge.processToolCalls(
+          toolCalls: [toolCall],
+          manager: bridgeManager,
+        );
 
-      expect(strategyWithBridge.latestProposal, isNull);
-      expect(bridge.drainPendingSurfaceIds(), isEmpty);
-    });
+        expect(strategyWithBridge.latestProposal, isNull);
+        expect(bridge.drainPendingSurfaceIds(), isEmpty);
+      },
+    );
   });
 
   group('GenUI bridge delegation', () {
@@ -462,28 +465,30 @@ void main() {
       );
     });
 
-    test('without bridge, render_surface falls through to unknown tool',
-        () async {
-      // Strategy without bridge.
-      final noBridgeStrategy = EvolutionStrategy();
-      final toolCall = makeToolCall(
-        name: 'render_surface',
-        args: {
-          'surfaceId': 'x',
-          'rootType': 'MetricsSummary',
-          'data': <String, dynamic>{},
-        },
-      );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
+    test(
+      'without bridge, render_surface falls through to unknown tool',
+      () async {
+        // Strategy without bridge.
+        final noBridgeStrategy = EvolutionStrategy();
+        final toolCall = makeToolCall(
+          name: 'render_surface',
+          args: {
+            'surfaceId': 'x',
+            'rootType': 'MetricsSummary',
+            'data': <String, dynamic>{},
+          },
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
 
-      final action = await noBridgeStrategy.processToolCalls(
-        toolCalls: [toolCall],
-        manager: manager,
-      );
+        final action = await noBridgeStrategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
 
-      expect(action, ConversationAction.wait);
-      // No crash, treated as unknown tool.
-    });
+        expect(action, ConversationAction.wait);
+        // No crash, treated as unknown tool.
+      },
+    );
   });
 
   group('malformed arguments', () {
@@ -517,7 +522,7 @@ void main() {
         args: {
           'general_directive': 42,
           'report_directive': true,
-          'rationale': true
+          'rationale': true,
         },
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);

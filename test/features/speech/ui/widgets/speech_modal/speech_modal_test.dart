@@ -28,8 +28,9 @@ void main() {
 
     // Mock directory path
     tempDir = await Directory.systemTemp.createTemp('lotti_speech_modal_test_');
-    when(mockPathProvider.getApplicationDocumentsPath)
-        .thenAnswer((_) => Future.value(tempDir!.path));
+    when(
+      mockPathProvider.getApplicationDocumentsPath,
+    ).thenAnswer((_) => Future.value(tempDir!.path));
   });
 
   tearDownAll(() async {

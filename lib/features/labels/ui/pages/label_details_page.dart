@@ -142,8 +142,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         builder: (dialogContext) => AlertDialog(
           title: Text(dialogContext.messages.settingsLabelsDeleteConfirmTitle),
           content: Text(
-            dialogContext.messages
-                .settingsLabelsDeleteConfirmMessage(label.name),
+            dialogContext.messages.settingsLabelsDeleteConfirmMessage(
+              label.name,
+            ),
           ),
           actions: [
             LottiTertiaryButton(
@@ -162,8 +163,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 ScaffoldMessenger.of(pageContext).showSnackBar(
                   SnackBar(
                     content: Text(
-                      pageContext.messages
-                          .settingsLabelsDeleteSuccess(label.name),
+                      pageContext.messages.settingsLabelsDeleteSuccess(
+                        label.name,
+                      ),
                     ),
                   ),
                 );
@@ -216,8 +218,8 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                     Text(
                       state.errorMessage!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 80), // space for bottom bar
@@ -344,11 +346,14 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
   ) {
     final theme = Theme.of(context);
     final cache = getIt<EntitiesCacheService>();
-    final chips = state.selectedCategoryIds
-        .map(cache.getCategoryById)
-        .whereType<CategoryDefinition>()
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final chips =
+        state.selectedCategoryIds
+            .map(cache.getCategoryById)
+            .whereType<CategoryDefinition>()
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,28 +374,32 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             runSpacing: 8,
             children: [
               for (final category in chips)
-                Builder(builder: (context) {
-                  final bg = colorFromCssHex(
-                    category.color,
-                    substitute: Theme.of(context).colorScheme.primary,
-                  );
-                  final isDark = ThemeData.estimateBrightnessForColor(bg) ==
-                      Brightness.dark;
-                  final fg = isDark ? Colors.white : Colors.black;
-                  return InputChip(
-                    label: Text(category.name),
-                    labelStyle:
-                        Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: fg,
-                            ),
-                    backgroundColor: bg,
-                    onDeleted: () => controller.removeCategoryId(category.id),
-                    deleteIcon: const Icon(Icons.close_rounded, size: 16),
-                    deleteIconColor: fg,
-                    deleteButtonTooltipMessage:
-                        context.messages.settingsLabelsCategoriesRemoveTooltip,
-                  );
-                }),
+                Builder(
+                  builder: (context) {
+                    final bg = colorFromCssHex(
+                      category.color,
+                      substitute: Theme.of(context).colorScheme.primary,
+                    );
+                    final isDark =
+                        ThemeData.estimateBrightnessForColor(bg) ==
+                        Brightness.dark;
+                    final fg = isDark ? Colors.white : Colors.black;
+                    return InputChip(
+                      label: Text(category.name),
+                      labelStyle: Theme.of(context).textTheme.labelSmall
+                          ?.copyWith(
+                            color: fg,
+                          ),
+                      backgroundColor: bg,
+                      onDeleted: () => controller.removeCategoryId(category.id),
+                      deleteIcon: const Icon(Icons.close_rounded, size: 16),
+                      deleteIconColor: fg,
+                      deleteButtonTooltipMessage: context
+                          .messages
+                          .settingsLabelsCategoriesRemoveTooltip,
+                    );
+                  },
+                ),
             ],
           ),
         const SizedBox(height: 8),

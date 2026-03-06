@@ -51,8 +51,9 @@ void main() {
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<EditorStateService>(EditorStateService());
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDownAll(() async {
@@ -69,8 +70,9 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('editor toolbar is invisible without autofocus',
-        (WidgetTester tester) async {
+    testWidgets('editor toolbar is invisible without autofocus', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EditorWidget(entryId: testTextEntry.meta.id),
@@ -83,8 +85,9 @@ void main() {
       expect(boldIconFinder, findsNothing);
     });
 
-    testWidgets('disables clipping when toolbar is hidden',
-        (WidgetTester tester) async {
+    testWidgets('disables clipping when toolbar is hidden', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'toolbar-hidden';
 
       await tester.pumpWidget(
@@ -103,8 +106,9 @@ void main() {
       expect(quillEditor.config.padding, EdgeInsets.zero);
     });
 
-    testWidgets('restores clipping when toolbar is visible',
-        (WidgetTester tester) async {
+    testWidgets('restores clipping when toolbar is visible', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'toolbar-visible';
 
       await tester.pumpWidget(
@@ -126,8 +130,9 @@ void main() {
       );
     });
 
-    testWidgets('divider toolbar button inserts divider embed',
-        (WidgetTester tester) async {
+    testWidgets('divider toolbar button inserts divider embed', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'toolbar-divider';
 
       await tester.pumpWidget(
@@ -151,8 +156,9 @@ void main() {
       expect(operations[1].value, equals('\n'));
     });
 
-    testWidgets('configures embed builders and unknown fallback',
-        (WidgetTester tester) async {
+    testWidgets('configures embed builders and unknown fallback', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'embed-config';
 
       await tester.pumpWidget(
@@ -169,13 +175,18 @@ void main() {
 
       expect(builders, isNotNull);
       expect(
-          builders!.any((builder) => builder is DividerEmbedBuilder), isTrue);
+        builders!.any((builder) => builder is DividerEmbedBuilder),
+        isTrue,
+      );
       expect(
-          quillEditor.config.unknownEmbedBuilder, isA<UnknownEmbedBuilder>());
+        quillEditor.config.unknownEmbedBuilder,
+        isA<UnknownEmbedBuilder>(),
+      );
     });
 
-    testWidgets('configures custom context menu builder',
-        (WidgetTester tester) async {
+    testWidgets('configures custom context menu builder', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'context-menu';
 
       await tester.pumpWidget(
@@ -193,8 +204,9 @@ void main() {
       expect(quillEditor.config.contextMenuBuilder, isNotNull);
     });
 
-    testWidgets('uses persistent ScrollController across rebuilds',
-        (WidgetTester tester) async {
+    testWidgets('uses persistent ScrollController across rebuilds', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'scroll-controller-test';
 
       await tester.pumpWidget(
@@ -227,8 +239,9 @@ void main() {
       expect(scrollController2, same(scrollController1));
     });
 
-    testWidgets('disposes ScrollController when widget is removed',
-        (WidgetTester tester) async {
+    testWidgets('disposes ScrollController when widget is removed', (
+      WidgetTester tester,
+    ) async {
       const entryId = 'scroll-controller-dispose';
 
       await tester.pumpWidget(
@@ -367,8 +380,9 @@ void main() {
       expect(find.text(messages.addToDictionaryNoCategory), findsOneWidget);
     });
 
-    testWidgets('returns false and shows no snackbar for silent results',
-        (tester) async {
+    testWidgets('returns false and shows no snackbar for silent results', (
+      tester,
+    ) async {
       late bool showResult;
 
       await tester.pumpWidget(

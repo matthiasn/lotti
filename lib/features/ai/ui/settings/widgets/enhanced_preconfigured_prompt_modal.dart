@@ -67,13 +67,15 @@ class _EnhancedPreconfiguredPromptModalState
         const SizedBox(height: 16),
 
         // Prompt template cards
-        ...preconfiguredPrompts.values.map((prompt) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _PromptTemplateCard(
-                prompt: prompt,
-                onTap: () => _selectPrompt(prompt),
-              ),
-            )),
+        ...preconfiguredPrompts.values.map(
+          (prompt) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _PromptTemplateCard(
+              prompt: prompt,
+              onTap: () => _selectPrompt(prompt),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -108,10 +110,12 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
           ..translateByVector3(Vector3(0, _isHovered ? -2 : 0, 0)),
         decoration: BoxDecoration(
           color: _isHovered
-              ? context.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.8)
-              : context.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.6),
+              ? context.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.8,
+                )
+              : context.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.6,
+                ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _isHovered
@@ -148,18 +152,21 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              context.colorScheme.primary
-                                  .withValues(alpha: 0.15),
-                              context.colorScheme.primary
-                                  .withValues(alpha: 0.1),
+                              context.colorScheme.primary.withValues(
+                                alpha: 0.15,
+                              ),
+                              context.colorScheme.primary.withValues(
+                                alpha: 0.1,
+                              ),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: context.colorScheme.primary
-                                .withValues(alpha: 0.2),
+                            color: context.colorScheme.primary.withValues(
+                              alpha: 0.2,
+                            ),
                           ),
                         ),
                         child: Icon(
@@ -187,7 +194,8 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
                         duration: const Duration(milliseconds: 200),
                         transform: Matrix4.identity()
                           ..translateByVector3(
-                              Vector3(_isHovered ? 4 : 0, 0, 0)),
+                            Vector3(_isHovered ? 4 : 0, 0, 0),
+                          ),
                         child: Icon(
                           Icons.arrow_forward_rounded,
                           color: context.colorScheme.onSurface.withValues(
@@ -204,8 +212,9 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
                   Text(
                     widget.prompt.description,
                     style: context.textTheme.bodyMedium?.copyWith(
-                      color:
-                          context.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: context.colorScheme.onSurface.withValues(
+                        alpha: 0.7,
+                      ),
                       height: 1.3,
                     ),
                   ),
@@ -229,8 +238,9 @@ class _PromptTemplateCardState extends State<_PromptTemplateCard> {
 
                       // Output type chip
                       _TagChip(
-                        label:
-                            widget.prompt.aiResponseType.localizedName(context),
+                        label: widget.prompt.aiResponseType.localizedName(
+                          context,
+                        ),
                         icon: Icons.output_rounded,
                         backgroundColor: context.colorScheme.secondaryContainer
                             .withValues(alpha: 0.3),

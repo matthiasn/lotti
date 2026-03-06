@@ -35,8 +35,9 @@ void main() {
     });
 
     test('addSuggestions updates state with new suggestions', () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
+      final notifier = container.read(
+        checklistCompletionServiceProvider.notifier,
+      );
 
       final suggestions = [
         const ChecklistCompletionSuggestion(
@@ -58,8 +59,9 @@ void main() {
     });
 
     test('clearSuggestion removes specific suggestion', () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
+      final notifier = container.read(
+        checklistCompletionServiceProvider.notifier,
+      );
 
       final suggestions = [
         const ChecklistCompletionSuggestion(
@@ -84,8 +86,9 @@ void main() {
     });
 
     test('getSuggestionForItem returns correct suggestion', () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
+      final notifier = container.read(
+        checklistCompletionServiceProvider.notifier,
+      );
 
       const targetSuggestion = ChecklistCompletionSuggestion(
         checklistItemId: 'item-1',
@@ -131,44 +134,48 @@ void main() {
       expect(invalid, equals(ChecklistCompletionConfidence.low));
     });
 
-    test('multiple addSuggestions calls replace previous suggestions',
-        () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
+    test(
+      'multiple addSuggestions calls replace previous suggestions',
+      () async {
+        final notifier = container.read(
+          checklistCompletionServiceProvider.notifier,
+        );
 
-      final firstBatch = [
-        const ChecklistCompletionSuggestion(
-          checklistItemId: 'item-1',
-          reason: 'First batch',
-          confidence: ChecklistCompletionConfidence.high,
-        ),
-      ];
+        final firstBatch = [
+          const ChecklistCompletionSuggestion(
+            checklistItemId: 'item-1',
+            reason: 'First batch',
+            confidence: ChecklistCompletionConfidence.high,
+          ),
+        ];
 
-      final secondBatch = [
-        const ChecklistCompletionSuggestion(
-          checklistItemId: 'item-2',
-          reason: 'Second batch',
-          confidence: ChecklistCompletionConfidence.medium,
-        ),
-        const ChecklistCompletionSuggestion(
-          checklistItemId: 'item-3',
-          reason: 'Second batch',
-          confidence: ChecklistCompletionConfidence.low,
-        ),
-      ];
+        final secondBatch = [
+          const ChecklistCompletionSuggestion(
+            checklistItemId: 'item-2',
+            reason: 'Second batch',
+            confidence: ChecklistCompletionConfidence.medium,
+          ),
+          const ChecklistCompletionSuggestion(
+            checklistItemId: 'item-3',
+            reason: 'Second batch',
+            confidence: ChecklistCompletionConfidence.low,
+          ),
+        ];
 
-      notifier.addSuggestions(firstBatch);
-      var state = container.read(checklistCompletionServiceProvider);
-      expect(state.value, equals(firstBatch));
+        notifier.addSuggestions(firstBatch);
+        var state = container.read(checklistCompletionServiceProvider);
+        expect(state.value, equals(firstBatch));
 
-      notifier.addSuggestions(secondBatch);
-      state = container.read(checklistCompletionServiceProvider);
-      expect(state.value, equals(secondBatch));
-    });
+        notifier.addSuggestions(secondBatch);
+        state = container.read(checklistCompletionServiceProvider);
+        expect(state.value, equals(secondBatch));
+      },
+    );
 
     test('clearSuggestion handles non-existent items gracefully', () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
+      final notifier = container.read(
+        checklistCompletionServiceProvider.notifier,
+      );
 
       final suggestions = [
         const ChecklistCompletionSuggestion(
@@ -184,7 +191,9 @@ void main() {
 
       final state = container.read(checklistCompletionServiceProvider);
       expect(
-          state.value, equals(suggestions)); // Original suggestions unchanged
+        state.value,
+        equals(suggestions),
+      ); // Original suggestions unchanged
     });
   });
 }

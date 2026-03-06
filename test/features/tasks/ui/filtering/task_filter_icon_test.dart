@@ -144,10 +144,11 @@ void main() {
 
     // Register a mock for the HapticFeedback service
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform,
-            (MethodCall methodCall) async {
-      return null;
-    });
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
 
     mockPagingController = MockPagingController();
     mockEntitiesCacheService = MockEntitiesCacheService();
@@ -168,8 +169,9 @@ void main() {
     );
 
     // Set up EntitiesCacheService mock
-    when(() => mockEntitiesCacheService.sortedCategories)
-        .thenReturn(mockCategories);
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn(mockCategories);
     when(() => mockEntitiesCacheService.sortedLabels).thenReturn(mockLabels);
 
     // Register the mocks with GetIt
@@ -187,8 +189,9 @@ void main() {
         child: ProviderScope(
           overrides: [
             journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true)
-                .overrideWith(() => fakeController),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
           ],
           child: const Scaffold(
             body: TaskFilterIcon(),

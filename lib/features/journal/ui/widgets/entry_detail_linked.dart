@@ -31,16 +31,18 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final provider = linkedEntriesControllerProvider(id: item.id);
     final entryLinks = ref.watch(provider).value ?? [];
 
-    final includeAiEntries =
-        ref.watch(includeAiEntriesControllerProvider(id: item.id));
+    final includeAiEntries = ref.watch(
+      includeAiEntriesControllerProvider(id: item.id),
+    );
 
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
     }
 
     if (hideTaskEntries) {
-      final hasNonTaskEntries =
-          ref.watch(hasNonTaskLinkedEntriesProvider(item.id));
+      final hasNonTaskEntries = ref.watch(
+        hasNonTaskLinkedEntriesProvider(item.id),
+      );
       if (!hasNonTaskEntries) {
         return const SizedBox.shrink();
       }

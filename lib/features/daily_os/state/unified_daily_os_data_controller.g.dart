@@ -51,16 +51,16 @@ final class UnifiedDailyOsDataControllerProvider
   ///
   /// This ensures that when a time entry is created or synced, all UI components
   /// (timeline, budget progress bars, summary) update together.
-  UnifiedDailyOsDataControllerProvider._(
-      {required UnifiedDailyOsDataControllerFamily super.from,
-      required DateTime super.argument})
-      : super(
-          retry: null,
-          name: r'unifiedDailyOsDataControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  UnifiedDailyOsDataControllerProvider._({
+    required UnifiedDailyOsDataControllerFamily super.from,
+    required DateTime super.argument,
+  }) : super(
+         retry: null,
+         name: r'unifiedDailyOsDataControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$unifiedDailyOsDataControllerHash();
@@ -107,19 +107,20 @@ String _$unifiedDailyOsDataControllerHash() =>
 final class UnifiedDailyOsDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            UnifiedDailyOsDataController,
-            AsyncValue<DailyOsData>,
-            DailyOsData,
-            FutureOr<DailyOsData>,
-            DateTime> {
+          UnifiedDailyOsDataController,
+          AsyncValue<DailyOsData>,
+          DailyOsData,
+          FutureOr<DailyOsData>,
+          DateTime
+        > {
   UnifiedDailyOsDataControllerFamily._()
-      : super(
-          retry: null,
-          name: r'unifiedDailyOsDataControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'unifiedDailyOsDataControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Unified data controller for the Daily OS view.
   ///
@@ -136,8 +137,7 @@ final class UnifiedDailyOsDataControllerFamily extends $Family
 
   UnifiedDailyOsDataControllerProvider call({
     required DateTime date,
-  }) =>
-      UnifiedDailyOsDataControllerProvider._(argument: date, from: this);
+  }) => UnifiedDailyOsDataControllerProvider._(argument: date, from: this);
 
   @override
   String toString() => r'unifiedDailyOsDataControllerProvider';
@@ -168,15 +168,19 @@ abstract class _$UnifiedDailyOsDataController
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<DailyOsData>, DailyOsData>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<DailyOsData>, DailyOsData>,
-        AsyncValue<DailyOsData>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<DailyOsData>, DailyOsData>,
+              AsyncValue<DailyOsData>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              date: _$args,
-            ));
+      ref,
+      () => build(
+        date: _$args,
+      ),
+    );
   }
 }

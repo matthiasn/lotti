@@ -61,27 +61,30 @@ void main() {
     });
 
     group('source label', () {
-      testWidgets('shows localized "Observation" label for observation source',
-          (tester) async {
-        final item = makeTestClassifiedFeedbackItem(
-          source: 'observation',
-          sentiment: FeedbackSentiment.negative,
-        );
+      testWidgets(
+        'shows localized "Observation" label for observation source',
+        (tester) async {
+          final item = makeTestClassifiedFeedbackItem(
+            source: 'observation',
+            sentiment: FeedbackSentiment.negative,
+          );
 
-        await tester.pumpWidget(
-          buildSubject(FeedbackItemTile(item: item)),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            buildSubject(FeedbackItemTile(item: item)),
+          );
+          await tester.pumpAndSettle();
 
-        final context = tester.element(find.byType(FeedbackItemTile));
-        expect(
-          find.text(context.messages.agentFeedbackSourceObservation),
-          findsOneWidget,
-        );
-      });
+          final context = tester.element(find.byType(FeedbackItemTile));
+          expect(
+            find.text(context.messages.agentFeedbackSourceObservation),
+            findsOneWidget,
+          );
+        },
+      );
 
-      testWidgets('shows localized "Decision" label for decision source',
-          (tester) async {
+      testWidgets('shows localized "Decision" label for decision source', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           category: FeedbackCategory.prioritization,
         );
@@ -98,8 +101,9 @@ void main() {
         );
       });
 
-      testWidgets('shows localized "Metric" label for metric source',
-          (tester) async {
+      testWidgets('shows localized "Metric" label for metric source', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           source: 'metric',
           sentiment: FeedbackSentiment.neutral,
@@ -118,8 +122,9 @@ void main() {
         );
       });
 
-      testWidgets('shows localized "Rating" label for rating source',
-          (tester) async {
+      testWidgets('shows localized "Rating" label for rating source', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           source: 'rating',
           category: FeedbackCategory.general,
@@ -171,8 +176,9 @@ void main() {
         );
       });
 
-      testWidgets('renders localized communication category badge',
-          (tester) async {
+      testWidgets('renders localized communication category badge', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           category: FeedbackCategory.communication,
         );
@@ -189,8 +195,9 @@ void main() {
         );
       });
 
-      testWidgets('renders localized prioritization category badge',
-          (tester) async {
+      testWidgets('renders localized prioritization category badge', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           category: FeedbackCategory.prioritization,
           sentiment: FeedbackSentiment.neutral,
@@ -225,8 +232,9 @@ void main() {
         );
       });
 
-      testWidgets('renders localized timeliness category badge',
-          (tester) async {
+      testWidgets('renders localized timeliness category badge', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           category: FeedbackCategory.timeliness,
           sentiment: FeedbackSentiment.neutral,
@@ -275,21 +283,23 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final colorStrip =
-            tester.widgetList<Container>(find.byType(Container)).firstWhere(
-                  (c) =>
-                      c.decoration is BoxDecoration &&
-                      (c.decoration! as BoxDecoration).color ==
-                          GameyColors.primaryRed,
-                  orElse: () => throw TestFailure(
-                    'No Container with primaryRed color found',
-                  ),
-                );
+        final colorStrip = tester
+            .widgetList<Container>(find.byType(Container))
+            .firstWhere(
+              (c) =>
+                  c.decoration is BoxDecoration &&
+                  (c.decoration! as BoxDecoration).color ==
+                      GameyColors.primaryRed,
+              orElse: () => throw TestFailure(
+                'No Container with primaryRed color found',
+              ),
+            );
         expect(colorStrip, isNotNull);
       });
 
-      testWidgets('positive item uses primaryGreen color strip',
-          (tester) async {
+      testWidgets('positive item uses primaryGreen color strip', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem();
 
         await tester.pumpWidget(
@@ -297,21 +307,23 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final colorStrip =
-            tester.widgetList<Container>(find.byType(Container)).firstWhere(
-                  (c) =>
-                      c.decoration is BoxDecoration &&
-                      (c.decoration! as BoxDecoration).color ==
-                          GameyColors.primaryGreen,
-                  orElse: () => throw TestFailure(
-                    'No Container with primaryGreen color found',
-                  ),
-                );
+        final colorStrip = tester
+            .widgetList<Container>(find.byType(Container))
+            .firstWhere(
+              (c) =>
+                  c.decoration is BoxDecoration &&
+                  (c.decoration! as BoxDecoration).color ==
+                      GameyColors.primaryGreen,
+              orElse: () => throw TestFailure(
+                'No Container with primaryGreen color found',
+              ),
+            );
         expect(colorStrip, isNotNull);
       });
 
-      testWidgets('neutral item uses primaryOrange color strip',
-          (tester) async {
+      testWidgets('neutral item uses primaryOrange color strip', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           sentiment: FeedbackSentiment.neutral,
           category: FeedbackCategory.general,
@@ -323,16 +335,17 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final colorStrip =
-            tester.widgetList<Container>(find.byType(Container)).firstWhere(
-                  (c) =>
-                      c.decoration is BoxDecoration &&
-                      (c.decoration! as BoxDecoration).color ==
-                          GameyColors.primaryOrange,
-                  orElse: () => throw TestFailure(
-                    'No Container with primaryOrange color found',
-                  ),
-                );
+        final colorStrip = tester
+            .widgetList<Container>(find.byType(Container))
+            .firstWhere(
+              (c) =>
+                  c.decoration is BoxDecoration &&
+                  (c.decoration! as BoxDecoration).color ==
+                      GameyColors.primaryOrange,
+              orElse: () => throw TestFailure(
+                'No Container with primaryOrange color found',
+              ),
+            );
         expect(colorStrip, isNotNull);
       });
     });
@@ -354,8 +367,9 @@ void main() {
         expect(find.byIcon(Icons.expand_less), findsNothing);
       });
 
-      testWidgets('tapping the expand icon toggles to expand_less icon',
-          (tester) async {
+      testWidgets('tapping the expand icon toggles to expand_less icon', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           detail: 'Feedback detail text',
           sentiment: FeedbackSentiment.negative,
@@ -375,8 +389,9 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsNothing);
       });
 
-      testWidgets('tapping expand icon twice returns to collapsed state',
-          (tester) async {
+      testWidgets('tapping expand icon twice returns to collapsed state', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           detail: 'Feedback detail text',
           category: FeedbackCategory.communication,

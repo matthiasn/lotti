@@ -104,8 +104,9 @@ void main() {
       expect(find.byType(EvolutionChatBubble), findsNWidgets(2));
     });
 
-    testWidgets('shows loading indicator when chat state is loading',
-        (tester) async {
+    testWidgets('shows loading indicator when chat state is loading', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) => Completer<EvolutionChatData>().future,
@@ -133,8 +134,9 @@ void main() {
       );
     });
 
-    testWidgets('resolves system message tokens to localized text',
-        (tester) async {
+    testWidgets('resolves system message tokens to localized text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
@@ -157,8 +159,9 @@ void main() {
       );
     });
 
-    testWidgets('disables message input when sessionId is null',
-        (tester) async {
+    testWidgets('disables message input when sessionId is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
@@ -179,8 +182,9 @@ void main() {
       expect(input.enabled, isFalse);
     });
 
-    testWidgets('shows waiting indicator when isWaiting is true',
-        (tester) async {
+    testWidgets('shows waiting indicator when isWaiting is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
@@ -205,8 +209,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
-    testWidgets('resolves session_completed token with version number',
-        (tester) async {
+    testWidgets('resolves session_completed token with version number', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
@@ -317,8 +322,9 @@ void main() {
       expect(find.text('unknown_token_xyz'), findsOneWidget);
     });
 
-    testWidgets('surface message renders SizedBox.shrink when no processor',
-        (tester) async {
+    testWidgets('surface message renders SizedBox.shrink when no processor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
@@ -338,8 +344,9 @@ void main() {
       expect(find.byType(EvolutionChatBubble), findsNothing);
     });
 
-    testWidgets('shows empty template name when template is not loaded',
-        (tester) async {
+    testWidgets('shows empty template name when template is not loaded', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           templateOverride: (ref, id) async => null,

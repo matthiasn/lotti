@@ -13,9 +13,10 @@ import 'package:lotti/features/ai/state/consts.dart';
 /// Used by [EmbeddingProcessor] to build the enriched "tiny template" for
 /// task embeddings. The callback should filter out deleted labels and return
 /// only active label names.
-typedef LabelNameResolver = Future<List<String>> Function(
-  List<String> labelIds,
-);
+typedef LabelNameResolver =
+    Future<List<String>> Function(
+      List<String> labelIds,
+    );
 
 /// Shared embedding processing logic used by both the embedding service
 /// (real-time) and the backfill controller (batch backfill).
@@ -102,8 +103,9 @@ class EmbeddingProcessor {
   ) async {
     if (entity is Task && labelNameResolver != null) {
       final labelIds = entity.meta.labelIds ?? const <String>[];
-      final labelNames =
-          labelIds.isEmpty ? <String>[] : await labelNameResolver(labelIds);
+      final labelNames = labelIds.isEmpty
+          ? <String>[]
+          : await labelNameResolver(labelIds);
       return EmbeddingContentExtractor.extractTaskText(
         title: entity.data.title,
         labelNames: labelNames,

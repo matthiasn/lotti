@@ -92,8 +92,10 @@ class _TaskAgentReportSectionState
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
     if (nextWakeAt == null) return 0;
     final remaining = nextWakeAt.difference(clock.now());
-    return remaining.inSeconds
-        .clamp(0, WakeOrchestrator.throttleWindow.inSeconds);
+    return remaining.inSeconds.clamp(
+      0,
+      WakeOrchestrator.throttleWindow.inSeconds,
+    );
   }
 
   @override
@@ -207,8 +209,9 @@ class _TaskAgentReportSectionState
     }
 
     final showCountdown = !isRunning && _countdownSeconds > 0;
-    final countdownText =
-        showCountdown ? _formatCountdown(_countdownSeconds) : null;
+    final countdownText = showCountdown
+        ? _formatCountdown(_countdownSeconds)
+        : null;
 
     return Padding(
       padding: const EdgeInsets.only(
@@ -248,7 +251,7 @@ class _TaskAgentReportSectionState
                 child: Text(
                   template != null
                       ? '${context.messages.agentReportSectionTitle}'
-                          ' — ${template.displayName}'
+                            ' — ${template.displayName}'
                       : context.messages.agentReportSectionTitle,
                   style: context.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
@@ -332,8 +335,9 @@ class _TaskAgentReportSectionState
   }
 
   Future<void> _createTaskAgent(BuildContext context, WidgetRef ref) async {
-    final entryStateResult =
-        await ref.read(entryControllerProvider(id: widget.taskId).future);
+    final entryStateResult = await ref.read(
+      entryControllerProvider(id: widget.taskId).future,
+    );
     final entryState = entryStateResult?.entry;
     if (entryState == null || entryState is! Task) return;
 

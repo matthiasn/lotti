@@ -54,7 +54,8 @@ class MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature,
     ConversationStrategy? strategy,
-  })? sendMessageDelegate;
+  })?
+  sendMessageDelegate;
 
   @override
   void build() {
@@ -266,23 +267,24 @@ void stubSendMessageToInvokeStrategy({
   required ConversationManager manager,
   required List<ChatCompletionMessageToolCall> toolCalls,
 }) {
-  repo.sendMessageDelegate = ({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    double temperature = 0.7,
-    ConversationStrategy? strategy,
-  }) async {
-    if (strategy != null) {
-      await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: manager,
-      );
-    }
-  };
+  repo.sendMessageDelegate =
+      ({
+        required String conversationId,
+        required String message,
+        required String model,
+        required AiConfigInferenceProvider provider,
+        required InferenceRepositoryInterface inferenceRepo,
+        List<ChatCompletionTool>? tools,
+        double temperature = 0.7,
+        ConversationStrategy? strategy,
+      }) async {
+        if (strategy != null) {
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: manager,
+          );
+        }
+      };
 }
 
 void main() {
@@ -300,20 +302,24 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(DateTime.now());
-    registerFallbackValue(AiConfigInferenceProvider(
-      id: 'ollama',
-      baseUrl: 'http://localhost:11434',
-      apiKey: '',
-      name: 'Ollama',
-      createdAt: DateTime.now(),
-      inferenceProviderType: InferenceProviderType.ollama,
-    ));
+    registerFallbackValue(
+      AiConfigInferenceProvider(
+        id: 'ollama',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      ),
+    );
     registerFallbackValue(TestDataFactory.createTask());
     registerFallbackValue(ConversationAction.complete);
     registerFallbackValue(<ChatCompletionMessageToolCall>[]);
-    registerFallbackValue(const ChatCompletionMessage.user(
-      content: ChatCompletionUserMessageContent.string('test'),
-    ));
+    registerFallbackValue(
+      const ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string('test'),
+      ),
+    );
     registerFallbackValue(MockOllamaInferenceRepository());
   });
 
@@ -399,14 +405,17 @@ void main() {
 
       // Mock conversation flow
       final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
       // Mock addToolResponse on conversation manager
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenReturn(null);
 
       stubSendMessageToInvokeStrategy(
         repo: mockConversationRepo,
@@ -416,11 +425,13 @@ void main() {
 
       // Mock checklist creation
       var createdItems = 0;
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: task.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: task.meta.id,
+          suggestions: any(named: 'suggestions'),
+          title: 'TODOs',
+        ),
+      ).thenAnswer((invocation) async {
         final suggestions =
             invocation.namedArguments[#suggestions] as List<ChecklistItemData>;
         createdItems += suggestions.length;
@@ -446,18 +457,21 @@ void main() {
         checklistIds: ['checklist-1'],
       );
 
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((invocation) async {
+      when(() => mockJournalDb.journalEntityById(task.meta.id)).thenAnswer((
+        invocation,
+      ) async {
         // Return task with checklist after first creation
         return createdItems > 0 ? taskWithChecklist : task;
       });
 
-      when(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: any(named: 'checklistId'),
+          title: any(named: 'title'),
+          isChecked: any(named: 'isChecked'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((invocation) async {
         final title = invocation.namedArguments[#title] as String;
         final itemId = _uuid.v4();
         return ChecklistItem(
@@ -530,14 +544,17 @@ void main() {
 
       // Mock conversation flow
       final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
       // Mock addToolResponse on conversation manager
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenReturn(null);
 
       stubSendMessageToInvokeStrategy(
         repo: mockConversationRepo,
@@ -585,22 +602,24 @@ void main() {
 
       // Mock conversation flow with timeout
       final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
       // Set delegate to throw timeout exception
-      mockConversationRepo.sendMessageDelegate = ({
-        required String conversationId,
-        required String message,
-        required String model,
-        required AiConfigInferenceProvider provider,
-        required InferenceRepositoryInterface inferenceRepo,
-        List<ChatCompletionTool>? tools,
-        double temperature = 0.7,
-        ConversationStrategy? strategy,
-      }) async {
-        throw TimeoutException('Request timeout');
-      };
+      mockConversationRepo.sendMessageDelegate =
+          ({
+            required String conversationId,
+            required String message,
+            required String model,
+            required AiConfigInferenceProvider provider,
+            required InferenceRepositoryInterface inferenceRepo,
+            List<ChatCompletionTool>? tools,
+            double temperature = 0.7,
+            ConversationStrategy? strategy,
+          }) async {
+            throw TimeoutException('Request timeout');
+          };
 
       // Act
       final result = await processor.processPromptWithConversation(
@@ -660,14 +679,17 @@ void main() {
 
       // Mock conversation flow
       final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => streamController.stream);
 
       // Mock addToolResponse on conversation manager
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenReturn(null);
 
       stubSendMessageToInvokeStrategy(
         repo: mockConversationRepo,
@@ -676,17 +698,20 @@ void main() {
       );
 
       // Mock task refresh
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Mock adding to existing checklist
-      when(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: existingChecklist.meta.id,
-            title: 'new item',
-            isChecked: false,
-            categoryId: any(named: 'categoryId'),
-            checkedBy: CheckedBySource.agent,
-          )).thenAnswer((_) async {
+      when(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: existingChecklist.meta.id,
+          title: 'new item',
+          isChecked: false,
+          categoryId: any(named: 'categoryId'),
+          checkedBy: CheckedBySource.agent,
+        ),
+      ).thenAnswer((_) async {
         final itemId = _uuid.v4();
         return ChecklistItem(
           meta: Metadata(
@@ -735,24 +760,27 @@ void main() {
       expect(result.responseText, contains('Created 1 checklist item'));
 
       // Verify it added to existing checklist instead of creating new one
-      verify(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: existingChecklist.meta.id,
-            title: 'new item',
-            isChecked: false,
-            categoryId: any(named: 'categoryId'),
-            checkedBy: CheckedBySource.agent,
-          )).called(1);
+      verify(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: existingChecklist.meta.id,
+          title: 'new item',
+          isChecked: false,
+          categoryId: any(named: 'categoryId'),
+          checkedBy: CheckedBySource.agent,
+        ),
+      ).called(1);
 
-      verifyNever(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: any(named: 'taskId'),
-            suggestions: any(named: 'suggestions'),
-            title: any(named: 'title'),
-          ));
+      verifyNever(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: any(named: 'taskId'),
+          suggestions: any(named: 'suggestions'),
+          title: any(named: 'title'),
+        ),
+      );
     });
   });
 
-  group('LottiConversationProcessor - Additional processPromptWithConversation',
-      () {
+  group('LottiConversationProcessor - Additional processPromptWithConversation', () {
     test('should handle non-task entities gracefully', () async {
       final image = TestDataFactory.createJournalImage();
       final model = TestDataFactory.createModel();
@@ -762,12 +790,16 @@ void main() {
       // Mock conversation setup - MockConversationRepository provides createConversation, getConversation, deleteConversation
 
       // Mock no task found
-      when(() => mockJournalRepo.getLinkedToEntities(
-          linkedTo: any(named: 'linkedTo'))).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepo.getLinkedToEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
 
       // Mock conversation flow
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => StreamController<ConversationEvent>().stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => StreamController<ConversationEvent>().stream);
 
       // sendMessageDelegate not set means it does nothing (default behavior)
 
@@ -798,18 +830,19 @@ void main() {
       // Mock conversation setup - MockConversationRepository provides createConversation, getConversation, deleteConversation
 
       // Set delegate to throw conversation error
-      mockConversationRepo.sendMessageDelegate = ({
-        required String conversationId,
-        required String message,
-        required String model,
-        required AiConfigInferenceProvider provider,
-        required InferenceRepositoryInterface inferenceRepo,
-        List<ChatCompletionTool>? tools,
-        double temperature = 0.7,
-        ConversationStrategy? strategy,
-      }) async {
-        throw Exception('Conversation error');
-      };
+      mockConversationRepo.sendMessageDelegate =
+          ({
+            required String conversationId,
+            required String message,
+            required String model,
+            required AiConfigInferenceProvider provider,
+            required InferenceRepositoryInterface inferenceRepo,
+            List<ChatCompletionTool>? tools,
+            double temperature = 0.7,
+            ConversationStrategy? strategy,
+          }) async {
+            throw Exception('Conversation error');
+          };
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Create items',
@@ -838,8 +871,9 @@ void main() {
       // Mock conversation setup - MockConversationRepository provides createConversation, getConversation, deleteConversation
 
       // Mock conversation flow
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => StreamController<ConversationEvent>().stream);
+      when(
+        () => mockConversationManager.events,
+      ).thenAnswer((_) => StreamController<ConversationEvent>().stream);
 
       // sendMessageDelegate not set means it does nothing (default behavior)
 
@@ -908,10 +942,12 @@ void main() {
         ),
       ];
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
 
       final action = await strategy.processToolCalls(
         toolCalls: toolCalls,
@@ -920,44 +956,50 @@ void main() {
 
       expect(action, ConversationAction.continueConversation);
 
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-1',
-            response: any(
-              named: 'response',
-              that: contains('add_multiple_checklist_items'),
-            ),
-          )).called(1);
-    });
-
-    test('should redirect deprecated add_checklist_item as retryable failure',
-        () async {
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-deprecated',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'add_checklist_item',
-            arguments: '{"actionItemDescription": "Buy milk"}',
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-1',
+          response: any(
+            named: 'response',
+            that: contains('add_multiple_checklist_items'),
           ),
         ),
-      ];
+      ).called(1);
+    });
 
-      when(() => mockConversationManager.addToolResponse(
+    test(
+      'should redirect deprecated add_checklist_item as retryable failure',
+      () async {
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-deprecated',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_checklist_item',
+              arguments: '{"actionItemDescription": "Buy milk"}',
+            ),
+          ),
+        ];
+
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((_) {});
+          ),
+        ).thenAnswer((_) {});
 
-      final action = await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
+        final action = await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockConversationManager,
+        );
 
-      // Should continue because the failure is retryable
-      expect(action, ConversationAction.continueConversation);
-      expect(strategy.hadErrors, true);
+        // Should continue because the failure is retryable
+        expect(action, ConversationAction.continueConversation);
+        expect(strategy.hadErrors, true);
 
-      // Verify the redirect message was sent
-      verify(() => mockConversationManager.addToolResponse(
+        // Verify the redirect message was sent
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-deprecated',
             response: any(
               named: 'response',
@@ -967,165 +1009,197 @@ void main() {
                 contains('add_multiple_checklist_items'),
               ),
             ),
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
-    test('should handle createBatchItems exception in coalesced flush',
-        () async {
-      // Mock autoCreateChecklist to throw during the coalesced flush
-      when(() => mockAutoChecklistService.autoCreateChecklist(
+    test(
+      'should handle createBatchItems exception in coalesced flush',
+      () async {
+        // Mock autoCreateChecklist to throw during the coalesced flush
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
             taskId: any(named: 'taskId'),
             suggestions: any(named: 'suggestions'),
             title: any(named: 'title'),
-          )).thenThrow(Exception('Database write failed'));
+          ),
+        ).thenThrow(Exception('Database write failed'));
 
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => task);
+        when(
+          () => mockJournalDb.journalEntityById(any()),
+        ).thenAnswer((_) async => task);
 
-      when(() => mockConversationManager.addToolResponse(
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((_) {});
-
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-batch-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'add_multiple_checklist_items',
-            arguments: '{"items": [{"title": "item A"}]}',
           ),
-        ),
-        const ChatCompletionMessageToolCall(
-          id: 'tool-batch-2',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'add_multiple_checklist_items',
-            arguments: '{"items": [{"title": "item B"}]}',
+        ).thenAnswer((_) {});
+
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-batch-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "item A"}]}',
+            ),
           ),
-        ),
-      ];
+          const ChatCompletionMessageToolCall(
+            id: 'tool-batch-2',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "item B"}]}',
+            ),
+          ),
+        ];
 
-      final action = await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
+        final action = await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockConversationManager,
+        );
 
-      // Should continue (Ollama provider) and report errors
-      expect(action, ConversationAction.continueConversation);
-      expect(strategy.hadErrors, true);
+        // Should continue (Ollama provider) and report errors
+        expect(action, ConversationAction.continueConversation);
+        expect(strategy.hadErrors, true);
 
-      // The exception is caught inside createBatchItems (which logs and
-      // returns 0), so the coalesced flush sends the normal tool response
-      // indicating no items were created rather than an error string.
-      verify(() => mockConversationManager.addToolResponse(
+        // The exception is caught inside createBatchItems (which logs and
+        // returns 0), so the coalesced flush sends the normal tool response
+        // indicating no items were created rather than an error string.
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-batch-1',
             response: any(
               named: 'response',
               that: contains('No checklist items were created.'),
             ),
-          )).called(1);
-      verify(() => mockConversationManager.addToolResponse(
+          ),
+        ).called(1);
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-batch-2',
             response: any(
               named: 'response',
               that: contains('No checklist items were created.'),
             ),
-          )).called(1);
+          ),
+        ).called(1);
 
-      // No items should have been recorded as successful
-      expect(strategy.getResponseSummary(),
-          'No checklist items were created or updated.');
-    });
+        // No items should have been recorded as successful
+        expect(
+          strategy.getResponseSummary(),
+          'No checklist items were created or updated.',
+        );
+      },
+    );
 
-    test('should coalesce multiple batch calls and flush successfully',
-        () async {
-      // Mock task lookup so createBatchItems can refresh state
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => task);
+    test(
+      'should coalesce multiple batch calls and flush successfully',
+      () async {
+        // Mock task lookup so createBatchItems can refresh state
+        when(
+          () => mockJournalDb.journalEntityById(any()),
+        ).thenAnswer((_) async => task);
 
-      // Mock autoCreateChecklist to succeed with created items
-      when(() => mockAutoChecklistService.autoCreateChecklist(
+        // Mock autoCreateChecklist to succeed with created items
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
             taskId: any(named: 'taskId'),
             suggestions: any(named: 'suggestions'),
             title: any(named: 'title'),
-          )).thenAnswer((invocation) async {
-        final suggestions =
-            invocation.namedArguments[#suggestions] as List<ChecklistItemData>;
-        return (
-          success: true,
-          checklistId: 'new-checklist',
-          createdItems: suggestions
-              .map(
-                (s) => (
-                  id: 'item-${s.title}',
-                  title: s.title,
-                  isChecked: s.isChecked,
-                ),
-              )
-              .toList(),
-          error: null,
-        );
-      });
+          ),
+        ).thenAnswer((invocation) async {
+          final suggestions =
+              invocation.namedArguments[#suggestions]
+                  as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map(
+                  (s) => (
+                    id: 'item-${s.title}',
+                    title: s.title,
+                    isChecked: s.isChecked,
+                  ),
+                )
+                .toList(),
+            error: null,
+          );
+        });
 
-      when(() => mockConversationManager.addToolResponse(
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((_) {});
-
-      // Two separate batch calls that should be coalesced into one flush
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-batch-a',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'add_multiple_checklist_items',
-            arguments: '{"items": [{"title": "item A"}]}',
           ),
-        ),
-        const ChatCompletionMessageToolCall(
-          id: 'tool-batch-b',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'add_multiple_checklist_items',
-            arguments: '{"items": [{"title": "item B"}, {"title": "item C"}]}',
+        ).thenAnswer((_) {});
+
+        // Two separate batch calls that should be coalesced into one flush
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-batch-a',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "item A"}]}',
+            ),
           ),
-        ),
-      ];
+          const ChatCompletionMessageToolCall(
+            id: 'tool-batch-b',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments:
+                  '{"items": [{"title": "item B"}, {"title": "item C"}]}',
+            ),
+          ),
+        ];
 
-      final action = await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
+        final action = await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockConversationManager,
+        );
 
-      expect(action, ConversationAction.continueConversation);
+        expect(action, ConversationAction.continueConversation);
 
-      // autoCreateChecklist should be called exactly once (coalesced)
-      verify(() => mockAutoChecklistService.autoCreateChecklist(
+        // autoCreateChecklist should be called exactly once (coalesced)
+        verify(
+          () => mockAutoChecklistService.autoCreateChecklist(
             taskId: task.meta.id,
             suggestions: any(named: 'suggestions'),
             title: 'TODOs',
-          )).called(1);
+          ),
+        ).called(1);
 
-      // Both original call IDs should get a tool response
-      verify(() => mockConversationManager.addToolResponse(
+        // Both original call IDs should get a tool response
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-batch-a',
             response: any(named: 'response'),
-          )).called(1);
-      verify(() => mockConversationManager.addToolResponse(
+          ),
+        ).called(1);
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-batch-b',
             response: any(named: 'response'),
-          )).called(1);
+          ),
+        ).called(1);
 
-      // Items should be tracked as successful
-      expect(strategy.getResponseSummary(), contains('3'));
-    });
+        // Items should be tracked as successful
+        expect(strategy.getResponseSummary(), contains('3'));
+      },
+    );
 
     test('should not flush when only deprecated calls are processed', () async {
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
 
       // Only deprecated single-item calls, no batch calls
       final toolCalls = [
@@ -1145,11 +1219,13 @@ void main() {
       );
 
       // autoCreateChecklist should NOT be called (no batch items to flush)
-      verifyNever(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: any(named: 'taskId'),
-            suggestions: any(named: 'suggestions'),
-            title: any(named: 'title'),
-          ));
+      verifyNever(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: any(named: 'taskId'),
+          suggestions: any(named: 'suggestions'),
+          title: any(named: 'title'),
+        ),
+      );
     });
 
     test('should handle unknown tool calls', () async {
@@ -1164,10 +1240,12 @@ void main() {
         ),
       ];
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
 
       final action = await strategy.processToolCalls(
         toolCalls: toolCalls,
@@ -1176,18 +1254,21 @@ void main() {
 
       expect(action, ConversationAction.continueConversation);
 
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-1',
-            response:
-                any(named: 'response', that: contains('Unknown function')),
-          )).called(1);
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-1',
+          response: any(named: 'response', that: contains('Unknown function')),
+        ),
+      ).called(1);
     });
 
     test('should send error tool response for failed batch parsing', () async {
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
 
       // Invalid format: missing "items" key entirely
       final toolCalls = [
@@ -1210,38 +1291,44 @@ void main() {
       expect(strategy.hadErrors, true);
 
       // The failed result should produce a tool response with the error
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-bad-batch',
-            response: any(named: 'response'),
-          )).called(1);
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-bad-batch',
+          response: any(named: 'response'),
+        ),
+      ).called(1);
     });
 
-    test('suggest_checklist_completion uses add_multiple_checklist_items text',
-        () async {
-      when(() => mockConversationManager.addToolResponse(
+    test(
+      'suggest_checklist_completion uses add_multiple_checklist_items text',
+      () async {
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((_) {});
-
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-suggest-items',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'suggest_checklist_completion',
-            arguments:
-                '{"suggestions": [{"title": "Alpha"}, {"title": "Beta"}]}',
           ),
-        ),
-      ];
+        ).thenAnswer((_) {});
 
-      await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-suggest-items',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'suggest_checklist_completion',
+              arguments:
+                  '{"suggestions": [{"title": "Alpha"}, {"title": "Beta"}]}',
+            ),
+          ),
+        ];
 
-      // Verify the redirect response mentions the correct function name
-      verify(() => mockConversationManager.addToolResponse(
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockConversationManager,
+        );
+
+        // Verify the redirect response mentions the correct function name
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-suggest-items',
             response: any(
               named: 'response',
@@ -1251,14 +1338,18 @@ void main() {
                 contains('Beta'),
               ),
             ),
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
     test('should handle update_checklist_items tool call', () async {
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
 
       // Note: The update handler requires valid items and task setup.
       // Since executeUpdates actually needs DB entities, we'll mock the
@@ -1290,38 +1381,42 @@ void main() {
       ).called(1);
     });
 
-    test('should handle update_checklist_items with validation error',
-        () async {
-      when(() => mockConversationManager.addToolResponse(
+    test(
+      'should handle update_checklist_items with validation error',
+      () async {
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((_) {});
-
-      // Test with invalid arguments (missing items array)
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-update-invalid',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_checklist_items',
-            arguments: '{"wrongField":"value"}',
           ),
-        ),
-      ];
+        ).thenAnswer((_) {});
 
-      final action = await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
+        // Test with invalid arguments (missing items array)
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-update-invalid',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_checklist_items',
+              arguments: '{"wrongField":"value"}',
+            ),
+          ),
+        ];
 
-      expect(action, ConversationAction.continueConversation);
-      verify(
-        () => mockConversationManager.addToolResponse(
-          toolCallId: 'tool-update-invalid',
-          response: any(named: 'response', that: contains('Error')),
-        ),
-      ).called(1);
-    });
+        final action = await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockConversationManager,
+        );
+
+        expect(action, ConversationAction.continueConversation);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-update-invalid',
+            response: any(named: 'response', that: contains('Error')),
+          ),
+        ).called(1);
+      },
+    );
 
     test('should provide continuation prompt when no items created', () async {
       // Simulate processing with no successful items
@@ -1334,7 +1429,9 @@ void main() {
 
       expect(prompt, isNotNull);
       expect(
-          prompt, contains("haven't created or updated any checklist items"));
+        prompt,
+        contains("haven't created or updated any checklist items"),
+      );
       expect(prompt, contains('add_multiple_checklist_items'));
     });
 
@@ -1407,37 +1504,47 @@ void main() {
       ];
 
       // Mock checklist operations
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: any(named: 'taskId'),
-            suggestions: any(named: 'suggestions'),
-            title: any(named: 'title'),
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: null,
-            error: null,
-          ));
+      when(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: any(named: 'taskId'),
+          suggestions: any(named: 'suggestions'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          checklistId: 'new-checklist',
+          createdItems: null,
+          error: null,
+        ),
+      );
 
-      when(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: any(named: 'checklistId'),
+          title: any(named: 'title'),
+          isChecked: any(named: 'isChecked'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((invocation) async {
         final title = invocation.namedArguments[#title] as String;
         return TestDataFactory.createChecklistItem(title: title);
       });
 
-      when(() => mockJournalRepo.updateJournalEntity(any<Task>()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepo.updateJournalEntity(any<Task>()),
+      ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => task);
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
 
       final action = await strategy.processToolCalls(
         toolCalls: toolCalls,
@@ -1447,37 +1554,45 @@ void main() {
       expect(action, ConversationAction.continueConversation);
     });
 
-    test('should handle errors in set_task_language without task language',
-        () async {
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'set_task_language',
-            arguments: 'invalid json',
+    test(
+      'should handle errors in set_task_language without task language',
+      () async {
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'set_task_language',
+              arguments: 'invalid json',
+            ),
           ),
-        ),
-      ];
+        ];
 
-      when(() => mockConversationManager.addToolResponse(
+        when(
+          () => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
-          )).thenAnswer((_) {});
+          ),
+        ).thenAnswer((_) {});
 
-      final action = await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
+        final action = await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockConversationManager,
+        );
 
-      expect(action, ConversationAction.continueConversation);
+        expect(action, ConversationAction.continueConversation);
 
-      verify(() => mockConversationManager.addToolResponse(
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-1',
             response: any(
-                named: 'response', that: contains('Error processing language')),
-          )).called(1);
-    });
+              named: 'response',
+              that: contains('Error processing language'),
+            ),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('ConversationResult', () {
@@ -1551,10 +1666,12 @@ void main() {
         ),
       );
 
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((_) {});
     });
 
     tearDown(() {
@@ -1562,77 +1679,81 @@ void main() {
     });
 
     test(
-        'should provide update-specific retry prompt for update validation errors',
-        () async {
-      // Process a failed update_checklist_items call
-      await strategy.processToolCalls(
-        toolCalls: [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_checklist_items',
-              arguments: '{"items": [{"isChecked": true}]}', // Missing id
+      'should provide update-specific retry prompt for update validation errors',
+      () async {
+        // Process a failed update_checklist_items call
+        await strategy.processToolCalls(
+          toolCalls: [
+            const ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_checklist_items',
+                arguments: '{"items": [{"isChecked": true}]}', // Missing id
+              ),
             ),
-          ),
-        ],
-        manager: mockConversationManager,
-      );
+          ],
+          manager: mockConversationManager,
+        );
 
-      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+        final prompt = strategy.getContinuationPrompt(mockConversationManager);
 
-      expect(prompt, isNotNull);
-      // Should contain update-specific guidance, not create guidance
-      expect(prompt, contains('update_checklist_items'));
-      expect(prompt, contains('"id"'));
-      expect(prompt, contains('UUID'));
-    });
+        expect(prompt, isNotNull);
+        // Should contain update-specific guidance, not create guidance
+        expect(prompt, contains('update_checklist_items'));
+        expect(prompt, contains('"id"'));
+        expect(prompt, contains('UUID'));
+      },
+    );
 
     test(
-        'should provide create-specific retry prompt for create validation errors',
-        () async {
-      // Process a failed add_multiple_checklist_items call
-      await strategy.processToolCalls(
-        toolCalls: [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'add_multiple_checklist_items',
-              arguments: '{"wrongField": "value"}', // Invalid format
+      'should provide create-specific retry prompt for create validation errors',
+      () async {
+        // Process a failed add_multiple_checklist_items call
+        await strategy.processToolCalls(
+          toolCalls: [
+            const ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'add_multiple_checklist_items',
+                arguments: '{"wrongField": "value"}', // Invalid format
+              ),
             ),
-          ),
-        ],
-        manager: mockConversationManager,
-      );
+          ],
+          manager: mockConversationManager,
+        );
 
-      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+        final prompt = strategy.getContinuationPrompt(mockConversationManager);
 
-      expect(prompt, isNotNull);
-      // Should contain create guidance (from existing handler)
-      expect(prompt, contains('items'));
-    });
+        expect(prompt, isNotNull);
+        // Should contain create guidance (from existing handler)
+        expect(prompt, contains('items'));
+      },
+    );
 
-    test('should provide context-aware continuation for update-only success',
-        () async {
-      // Simulate successful updates only (no created items)
-      await strategy.processToolCalls(
-        toolCalls: [], // Empty call to increment rounds
-        manager: mockConversationManager,
-      );
+    test(
+      'should provide context-aware continuation for update-only success',
+      () async {
+        // Simulate successful updates only (no created items)
+        await strategy.processToolCalls(
+          toolCalls: [], // Empty call to increment rounds
+          manager: mockConversationManager,
+        );
 
-      // Manually set successful updates (simulating successful update processing)
-      // Access the private field via reflection-like workaround: process a dummy round
-      // For this test, we'll verify the prompt structure when updates > 0
+        // Manually set successful updates (simulating successful update processing)
+        // Access the private field via reflection-like workaround: process a dummy round
+        // For this test, we'll verify the prompt structure when updates > 0
 
-      // Since we can't easily mock the internal _successfulUpdates,
-      // we verify the prompt logic by checking it handles the empty case correctly
-      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+        // Since we can't easily mock the internal _successfulUpdates,
+        // we verify the prompt logic by checking it handles the empty case correctly
+        final prompt = strategy.getContinuationPrompt(mockConversationManager);
 
-      expect(prompt, isNotNull);
-      // When no work done yet, should provide guidance
-      expect(prompt, contains("haven't created or updated"));
-    });
+        expect(prompt, isNotNull);
+        // When no work done yet, should provide guidance
+        expect(prompt, contains("haven't created or updated"));
+      },
+    );
 
     test('should handle suggest_checklist_completion function call', () async {
       await strategy.processToolCalls(
@@ -1651,55 +1772,65 @@ void main() {
       );
 
       // Verify tool response was added
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-suggest',
-            response: any(named: 'response'),
-          )).called(1);
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-suggest',
+          response: any(named: 'response'),
+        ),
+      ).called(1);
     });
 
-    test('should handle suggest_checklist_completion with empty suggestions',
-        () async {
-      await strategy.processToolCalls(
-        toolCalls: [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-suggest-empty',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'suggest_checklist_completion',
-              arguments: '{"suggestions": []}',
+    test(
+      'should handle suggest_checklist_completion with empty suggestions',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            const ChatCompletionMessageToolCall(
+              id: 'tool-suggest-empty',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'suggest_checklist_completion',
+                arguments: '{"suggestions": []}',
+              ),
             ),
-          ),
-        ],
-        manager: mockConversationManager,
-      );
+          ],
+          manager: mockConversationManager,
+        );
 
-      verify(() => mockConversationManager.addToolResponse(
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-suggest-empty',
             response: any(named: 'response'),
-          )).called(1);
-    });
-
-    test('should handle suggest_checklist_completion with invalid JSON',
-        () async {
-      await strategy.processToolCalls(
-        toolCalls: [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-suggest-invalid',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'suggest_checklist_completion',
-              arguments: 'invalid json',
-            ),
           ),
-        ],
-        manager: mockConversationManager,
-      );
+        ).called(1);
+      },
+    );
 
-      verify(() => mockConversationManager.addToolResponse(
+    test(
+      'should handle suggest_checklist_completion with invalid JSON',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            const ChatCompletionMessageToolCall(
+              id: 'tool-suggest-invalid',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'suggest_checklist_completion',
+                arguments: 'invalid json',
+              ),
+            ),
+          ],
+          manager: mockConversationManager,
+        );
+
+        verify(
+          () => mockConversationManager.addToolResponse(
             toolCallId: 'tool-suggest-invalid',
             response: any(named: 'response'),
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
     test('should handle batch checklist items with parsing error', () async {
       await strategy.processToolCalls(
@@ -1716,10 +1847,12 @@ void main() {
         manager: mockConversationManager,
       );
 
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-batch-invalid',
-            response: any(named: 'response'),
-          )).called(1);
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-batch-invalid',
+          response: any(named: 'response'),
+        ),
+      ).called(1);
     });
 
     test('should handle unknown function call gracefully', () async {
@@ -1738,10 +1871,12 @@ void main() {
       );
 
       // Should not throw, and should handle gracefully
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-unknown',
-            response: any(named: 'response'),
-          )).called(1);
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-unknown',
+          response: any(named: 'response'),
+        ),
+      ).called(1);
     });
   });
 }

@@ -85,16 +85,21 @@ void main() {
       ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
-    when(() => cacheService.getLabelById(testLabelDefinition1.id))
-        .thenReturn(testLabelDefinition1);
-    when(() => cacheService.getLabelById(testLabelDefinition2.id))
-        .thenReturn(testLabelDefinition2);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition1.id),
+    ).thenReturn(testLabelDefinition1);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition2.id),
+    ).thenReturn(testLabelDefinition2);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
 
     final task = _task('toast-task');
     final widget = ProviderScope(
@@ -129,32 +134,41 @@ void main() {
     expect(find.textContaining('Assigned:'), findsOneWidget);
 
     // Tap Undo triggers removeLabel for each id
-    when(() => repo.removeLabel(
-          journalEntityId: any(named: 'journalEntityId'),
-          labelId: any(named: 'labelId'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => repo.removeLabel(
+        journalEntityId: any(named: 'journalEntityId'),
+        labelId: any(named: 'labelId'),
+      ),
+    ).thenAnswer((_) async => true);
 
-    when(() => loggingService.captureEvent(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-        )).thenAnswer((_) {});
+    when(
+      () => loggingService.captureEvent(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
 
     await tester.tap(find.text('Undo'));
     await tester.pump();
 
-    verify(() => repo.removeLabel(
-          journalEntityId: task.meta.id,
-          labelId: testLabelDefinition1.id,
-        )).called(1);
-    verify(() => repo.removeLabel(
-          journalEntityId: task.meta.id,
-          labelId: testLabelDefinition2.id,
-        )).called(1);
+    verify(
+      () => repo.removeLabel(
+        journalEntityId: task.meta.id,
+        labelId: testLabelDefinition1.id,
+      ),
+    ).called(1);
+    verify(
+      () => repo.removeLabel(
+        journalEntityId: task.meta.id,
+        labelId: testLabelDefinition2.id,
+      ),
+    ).called(1);
   });
 
-  testWidgets('multiple rapid events update latest toast message',
-      (tester) async {
+  testWidgets('multiple rapid events update latest toast message', (
+    tester,
+  ) async {
     final cacheService = MockEntitiesCacheService();
     final editorStateService = MockEditorStateService();
     final journalDb = MockJournalDb();
@@ -173,12 +187,15 @@ void main() {
       ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
-    when(() => cacheService.getLabelById(testLabelDefinition1.id))
-        .thenReturn(testLabelDefinition1);
-    when(() => cacheService.getLabelById(testLabelDefinition2.id))
-        .thenReturn(testLabelDefinition2);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition1.id),
+    ).thenReturn(testLabelDefinition1);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition2.id),
+    ).thenReturn(testLabelDefinition2);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
 
     final task = _task('toast-task-2');
     final widget = ProviderScope(
@@ -203,7 +220,9 @@ void main() {
 
     events.publish(
       LabelAssignmentEvent(
-          taskId: task.meta.id, assignedIds: [testLabelDefinition1.id]),
+        taskId: task.meta.id,
+        assignedIds: [testLabelDefinition1.id],
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('Assigned:'), findsOneWidget);
@@ -211,7 +230,9 @@ void main() {
     // Publish second event quickly; expect message to reflect latest
     events.publish(
       LabelAssignmentEvent(
-          taskId: task.meta.id, assignedIds: [testLabelDefinition2.id]),
+        taskId: task.meta.id,
+        assignedIds: [testLabelDefinition2.id],
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -219,8 +240,9 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
   });
 
-  testWidgets('no toast after navigating away (widget unmounted)',
-      (tester) async {
+  testWidgets('no toast after navigating away (widget unmounted)', (
+    tester,
+  ) async {
     final cacheService = MockEntitiesCacheService();
     final editorStateService = MockEditorStateService();
     final journalDb = MockJournalDb();
@@ -238,8 +260,9 @@ void main() {
       ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
-    when(() => cacheService.getLabelById(testLabelDefinition1.id))
-        .thenReturn(testLabelDefinition1);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition1.id),
+    ).thenReturn(testLabelDefinition1);
     when(() => cacheService.sortedLabels).thenReturn([testLabelDefinition1]);
 
     final task = _task('toast-task-3');
@@ -278,8 +301,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Publish event after unmount; no snackbar should appear
-    events.publish(LabelAssignmentEvent(
-        taskId: task.meta.id, assignedIds: [testLabelDefinition1.id]));
+    events.publish(
+      LabelAssignmentEvent(
+        taskId: task.meta.id,
+        assignedIds: [testLabelDefinition1.id],
+      ),
+    );
     await tester.pump();
     expect(find.textContaining('Assigned:'), findsNothing);
   });
@@ -303,12 +330,15 @@ void main() {
       ..registerSingleton<LoggingService>(loggingService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
-    when(() => cacheService.getLabelById(testLabelDefinition1.id))
-        .thenReturn(testLabelDefinition1);
-    when(() => cacheService.getLabelById(testLabelDefinition2.id))
-        .thenReturn(testLabelDefinition2);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition1.id),
+    ).thenReturn(testLabelDefinition1);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition2.id),
+    ).thenReturn(testLabelDefinition2);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
 
     final task = _task('metrics-task');
     final widget = ProviderScope(
@@ -344,36 +374,46 @@ void main() {
     expect(find.text('Undo'), findsOneWidget);
 
     // Setup mocks for undo action
-    when(() => repo.removeLabel(
-          journalEntityId: any(named: 'journalEntityId'),
-          labelId: any(named: 'labelId'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => repo.removeLabel(
+        journalEntityId: any(named: 'journalEntityId'),
+        labelId: any(named: 'labelId'),
+      ),
+    ).thenAnswer((_) async => true);
 
-    when(() => loggingService.captureEvent(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-        )).thenAnswer((_) {});
+    when(
+      () => loggingService.captureEvent(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
 
     // Tap Undo
     await tester.tap(find.text('Undo'));
     await tester.pump();
 
     // Verify labels were removed
-    verify(() => repo.removeLabel(
-          journalEntityId: task.meta.id,
-          labelId: testLabelDefinition1.id,
-        )).called(1);
-    verify(() => repo.removeLabel(
-          journalEntityId: task.meta.id,
-          labelId: testLabelDefinition2.id,
-        )).called(1);
+    verify(
+      () => repo.removeLabel(
+        journalEntityId: task.meta.id,
+        labelId: testLabelDefinition1.id,
+      ),
+    ).called(1);
+    verify(
+      () => repo.removeLabel(
+        journalEntityId: task.meta.id,
+        labelId: testLabelDefinition2.id,
+      ),
+    ).called(1);
 
     // Verify metrics were logged
-    verify(() => loggingService.captureEvent(
-          'undo_triggered',
-          domain: 'labels_ai_assignment',
-          subDomain: 'ui',
-        )).called(1);
+    verify(
+      () => loggingService.captureEvent(
+        'undo_triggered',
+        domain: 'labels_ai_assignment',
+        subDomain: 'ui',
+      ),
+    ).called(1);
   });
 }

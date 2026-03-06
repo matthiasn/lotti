@@ -126,23 +126,23 @@ class AiSettingsNavigationService {
   PageRoute<void> _createEditRouteWithTransition(AiConfig config) {
     return switch (config) {
       AiConfigInferenceProvider() => _createSlideRoute(
-          builder: (context) => InferenceProviderEditPage(
-            configId: config.id,
-          ),
+        builder: (context) => InferenceProviderEditPage(
+          configId: config.id,
         ),
+      ),
       AiConfigModel() => _createSlideRoute(
-          builder: (context) => InferenceModelEditPage(
-            configId: config.id,
-          ),
+        builder: (context) => InferenceModelEditPage(
+          configId: config.id,
         ),
+      ),
       AiConfigPrompt() => _createSlideRoute(
-          builder: (context) => PromptEditPage(
-            configId: config.id,
-          ),
+        builder: (context) => PromptEditPage(
+          configId: config.id,
         ),
+      ),
       AiConfigInferenceProfile() => _createSlideRoute(
-          builder: (context) => InferenceProfileForm(existingProfile: config),
-        ),
+        builder: (context) => InferenceProfileForm(existingProfile: config),
+      ),
     };
   }
 
@@ -169,26 +169,30 @@ class AiSettingsNavigationService {
 
         // Secondary transition: old page slides out to left
         const secondaryBegin = Offset.zero;
-        const secondaryEnd =
-            Offset(-0.3, 0); // Slide out partially for depth effect
+        const secondaryEnd = Offset(
+          -0.3,
+          0,
+        ); // Slide out partially for depth effect
 
         const curve = Curves.easeInOut;
 
         // Animation for the incoming page (current page being navigated to)
-        final primarySlideAnimation = Tween(
-          begin: primaryBegin,
-          end: primaryEnd,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: curve),
-        );
+        final primarySlideAnimation =
+            Tween(
+              begin: primaryBegin,
+              end: primaryEnd,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: curve),
+            );
 
         // Animation for the outgoing page (previous page being left behind)
-        final secondarySlideAnimation = Tween(
-          begin: secondaryBegin,
-          end: secondaryEnd,
-        ).animate(
-          CurvedAnimation(parent: secondaryAnimation, curve: curve),
-        );
+        final secondarySlideAnimation =
+            Tween(
+              begin: secondaryBegin,
+              end: secondaryEnd,
+            ).animate(
+              CurvedAnimation(parent: secondaryAnimation, curve: curve),
+            );
 
         // Fade effect for extra polish on the incoming page
         final fadeAnimation = Tween<double>(begin: 0, end: 1).animate(

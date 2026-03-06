@@ -106,7 +106,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -119,8 +119,9 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
@@ -134,8 +135,9 @@ void main() {
         );
       }
 
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
@@ -160,11 +162,13 @@ void main() {
     });
 
     testWidgets('uses default key when builder not provided', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
@@ -185,8 +189,9 @@ void main() {
     });
 
     testWidgets('widget compiles with nullable key builder', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
@@ -207,8 +212,9 @@ void main() {
     });
 
     testWidgets('renders empty when no linked entries', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
@@ -287,7 +293,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -300,8 +306,9 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
@@ -368,8 +375,9 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
       );
-      when(() => mockEntitiesCacheService.getCategoryById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
       when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
@@ -403,8 +411,9 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
@@ -422,18 +431,22 @@ void main() {
       final dbEntries = links.map(_linkedDbEntry).toList();
       final toIds = links.map((l) => l.toId).toList();
 
-      when(() => mockJournalDb.linksFromId(any(), any()))
-          .thenReturn(MockSelectable<LinkedDbEntry>(dbEntries));
-      when(() => mockJournalDb.journalEntityIdsByDateFromDesc(any()))
-          .thenReturn(MockSelectable<String>(toIds));
+      when(
+        () => mockJournalDb.linksFromId(any(), any()),
+      ).thenReturn(MockSelectable<LinkedDbEntry>(dbEntries));
+      when(
+        () => mockJournalDb.journalEntityIdsByDateFromDesc(any()),
+      ).thenReturn(MockSelectable<String>(toIds));
     }
 
-    testWidgets('shows filter button and label when entries exist',
-        (tester) async {
+    testWidgets('shows filter button and label when entries exist', (
+      tester,
+    ) async {
       mockLinkedEntries([testLink]);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -446,49 +459,53 @@ void main() {
     });
 
     testWidgets(
-        'hideTaskEntries returns SizedBox.shrink when all linked entries are tasks',
-        (tester) async {
-      final linkedTask = testTask.copyWith(
-        meta: testTask.meta.copyWith(
-          id: 'linked-task-id',
-        ),
-      );
-
-      final taskLink = EntryLink.basic(
-        id: 'link-task-only',
-        fromId: testTask.meta.id,
-        toId: linkedTask.meta.id,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-      );
-
-      mockLinkedEntries([taskLink]);
-
-      when(() => mockJournalDb.journalEntityById(linkedTask.meta.id))
-          .thenAnswer((_) async => linkedTask);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedEntriesWidget(
-            testTask,
-            hideTaskEntries: true,
+      'hideTaskEntries returns SizedBox.shrink when all linked entries are tasks',
+      (tester) async {
+        final linkedTask = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            id: 'linked-task-id',
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
 
-      // No label or filter button because all linked entries are tasks
-      // and hideTaskEntries=true
-      expect(find.byIcon(Icons.filter_list), findsNothing);
-    });
+        final taskLink = EntryLink.basic(
+          id: 'link-task-only',
+          fromId: testTask.meta.id,
+          toId: linkedTask.meta.id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
 
-    testWidgets('hideTaskEntries shows section when non-task entries exist',
-        (tester) async {
+        mockLinkedEntries([taskLink]);
+
+        when(
+          () => mockJournalDb.journalEntityById(linkedTask.meta.id),
+        ).thenAnswer((_) async => linkedTask);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            LinkedEntriesWidget(
+              testTask,
+              hideTaskEntries: true,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // No label or filter button because all linked entries are tasks
+        // and hideTaskEntries=true
+        expect(find.byIcon(Icons.filter_list), findsNothing);
+      },
+    );
+
+    testWidgets('hideTaskEntries shows section when non-task entries exist', (
+      tester,
+    ) async {
       mockLinkedEntries([testLink]);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

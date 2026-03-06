@@ -54,8 +54,9 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -69,23 +70,26 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets(
-        'dashboard definition page is displayed with test item, '
-        'then save button becomes visible after entering text ',
-        (tester) async {
+    testWidgets('dashboard definition page is displayed with test item, '
+        'then save button becomes visible after entering text ', (
+      tester,
+    ) async {
       final formKey = GlobalKey<FormBuilderState>();
 
-      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
+        ),
       ).thenAnswer((_) async => measurableChocolate);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(
@@ -104,8 +108,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('dashboard_description_field'));
+      final descriptionFieldFinder = find.byKey(
+        const Key('dashboard_description_field'),
+      );
       final saveButtonFinder = find.byKey(const Key('dashboard_save'));
 
       expect(nameFieldFinder, findsOneWidget);
@@ -147,26 +152,29 @@ void main() {
       await tester.pumpAndSettle();
 
       // save button calls mocked function
-      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .called(1);
+      verify(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).called(1);
     });
 
-    testWidgets(
-        'dashboard definition page is displayed with test item, '
+    testWidgets('dashboard definition page is displayed with test item, '
         'then updating aggregation type in one measurement ', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
-      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
+        ),
       ).thenAnswer((_) async => measurableChocolate);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(
@@ -185,8 +193,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('dashboard_description_field'));
+      final descriptionFieldFinder = find.byKey(
+        const Key('dashboard_description_field'),
+      );
       final saveButtonFinder = find.byKey(const Key('dashboard_save'));
 
       expect(nameFieldFinder, findsOneWidget);
@@ -230,13 +239,13 @@ void main() {
       );
     });
 
-    testWidgets(
-        'dashboard definition page is displayed with test item, '
+    testWidgets('dashboard definition page is displayed with test item, '
         'then tapping delete', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
-      when(() => mockPersistenceLogic.deleteDashboardDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockPersistenceLogic.deleteDashboardDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -251,8 +260,10 @@ void main() {
 
       // Find and scroll to the delete button
       final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
-      expect(deleteButtonFinder,
-          findsWidgets); // Multiple items have delete buttons
+      expect(
+        deleteButtonFinder,
+        findsWidgets,
+      ); // Multiple items have delete buttons
 
       // Find the first delete button
       final firstDeleteButton = deleteButtonFinder.first;
@@ -271,23 +282,25 @@ void main() {
       // (Delete confirmation modal is not rendered in the test environment, so we do not assert on it here.)
     });
 
-    testWidgets(
-        'dashboard definition page is displayed with test item, '
+    testWidgets('dashboard definition page is displayed with test item, '
         'then tapping copy icon', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
-      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       // Mock getMeasurableDataTypeById for all possible items
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
+        ),
       ).thenAnswer((_) async => measurableChocolate);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(
@@ -330,17 +343,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that copy creates a new dashboard
-      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).called(greaterThanOrEqualTo(1));
     });
 
     // Tests for CreateDashboardPage
-    testWidgets(
-        'empty dashboard creation page is displayed, '
+    testWidgets('empty dashboard creation page is displayed, '
         'save button visible after entering data, '
         'tap save calls persistence mock', (tester) async {
-      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -357,8 +371,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('dashboard_description_field'));
+      final descriptionFieldFinder = find.byKey(
+        const Key('dashboard_description_field'),
+      );
       final saveButtonFinder = find.byKey(const Key('dashboard_save'));
 
       expect(nameFieldFinder, findsOneWidget);
@@ -377,12 +392,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // save button calls mocked function
-      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .called(1);
+      verify(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).called(1);
     });
 
-    testWidgets('dashboard definitions page is displayed with one test item',
-        (tester) async {
+    testWidgets('dashboard definitions page is displayed with one test item', (
+      tester,
+    ) async {
       when(mockJournalDb.getAllDashboards).thenAnswer(
         (_) async => [testDashboardConfig],
       );
@@ -407,8 +424,9 @@ void main() {
       expect(find.text(testDashboardName), findsOneWidget);
     });
 
-    testWidgets('dashboard definitions page is displayed with one test item',
-        (tester) async {
+    testWidgets('dashboard definitions page is displayed with one test item', (
+      tester,
+    ) async {
       when(mockJournalDb.getAllDashboards).thenAnswer(
         (_) async => [testDashboardConfig],
       );
@@ -437,16 +455,16 @@ void main() {
       // so we skip that verification
     });
 
-    testWidgets(
-        'dashboard definition page setCategory logs to DevLogger '
+    testWidgets('dashboard definition page setCategory logs to DevLogger '
         'when clearing category', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
       // Clear DevLogger captured logs before test
       DevLogger.clear();
 
-      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       when(
         () => mockJournalDb.getMeasurableDataTypeById(any()),
@@ -465,8 +483,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the category selector field
-      final categoryFieldFinder =
-          find.byKey(const Key('select_dashboard_category'));
+      final categoryFieldFinder = find.byKey(
+        const Key('select_dashboard_category'),
+      );
       expect(categoryFieldFinder, findsOneWidget);
 
       // The close button (clear category) must be visible since categoryId is set

@@ -83,8 +83,9 @@ class ProviderFilterChipsRow extends ConsumerWidget {
 
     return providersAsync.when(
       data: (providers) {
-        var providerConfigs =
-            providers.whereType<AiConfigInferenceProvider>().toList();
+        var providerConfigs = providers
+            .whereType<AiConfigInferenceProvider>()
+            .toList();
 
         // Filter to only show available providers if specified
         if (availableProviderIds != null) {
@@ -113,24 +114,24 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                     .colorScheme
                     .surfaceContainerHigh
                     .withValues(alpha: ProviderChipConstants.surfaceAlpha),
-                selectedColor:
-                    Theme.of(context).colorScheme.primaryContainer.withValues(
-                          alpha: ProviderChipConstants.primaryContainerAlpha,
-                        ),
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
+                selectedColor: Theme.of(context).colorScheme.primaryContainer
+                    .withValues(
+                      alpha: ProviderChipConstants.primaryContainerAlpha,
+                    ),
+                checkmarkColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer,
                 side: BorderSide(
                   color: selectedProviderIds.isEmpty
                       ? Theme.of(context).colorScheme.primary.withValues(
-                            alpha: ProviderChipConstants.primaryAlpha,
-                          )
-                      : Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(
-                            alpha: ProviderChipConstants
-                                .primaryContainerBorderAlpha,
-                          ),
+                          alpha: ProviderChipConstants.primaryAlpha,
+                        )
+                      : Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(
+                          alpha:
+                              ProviderChipConstants.primaryContainerBorderAlpha,
+                        ),
                 ),
                 labelStyle: TextStyle(
                   fontSize: ProviderChipConstants.chipFontSize,
@@ -138,12 +139,11 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                   letterSpacing: ProviderChipConstants.chipLetterSpacing,
                   color: selectedProviderIds.isEmpty
                       ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(
-                            alpha: ProviderChipConstants.onSurfaceVariantAlpha,
-                          ),
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(
+                          alpha: ProviderChipConstants.onSurfaceVariantAlpha,
+                        ),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: ProviderChipConstants.chipHorizontalPadding,
@@ -217,24 +217,24 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                     .colorScheme
                     .surfaceContainerHigh
                     .withValues(alpha: ProviderChipConstants.surfaceAlpha),
-                selectedColor:
-                    Theme.of(context).colorScheme.primaryContainer.withValues(
-                          alpha: ProviderChipConstants.primaryContainerAlpha,
-                        ),
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
+                selectedColor: Theme.of(context).colorScheme.primaryContainer
+                    .withValues(
+                      alpha: ProviderChipConstants.primaryContainerAlpha,
+                    ),
+                checkmarkColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer,
                 side: BorderSide(
                   color: isSelected
                       ? Theme.of(context).colorScheme.primary.withValues(
-                            alpha: ProviderChipConstants.primaryAlpha,
-                          )
-                      : Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(
-                            alpha: ProviderChipConstants
-                                .primaryContainerBorderAlpha,
-                          ),
+                          alpha: ProviderChipConstants.primaryAlpha,
+                        )
+                      : Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(
+                          alpha:
+                              ProviderChipConstants.primaryContainerBorderAlpha,
+                        ),
                 ),
                 labelStyle: TextStyle(
                   fontSize: ProviderChipConstants.chipFontSize,
@@ -242,12 +242,11 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                   letterSpacing: ProviderChipConstants.chipLetterSpacing,
                   color: isSelected
                       ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(
-                            alpha: ProviderChipConstants.onSurfaceVariantAlpha,
-                          ),
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(
+                          alpha: ProviderChipConstants.onSurfaceVariantAlpha,
+                        ),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: ProviderChipConstants.chipHorizontalPadding,
@@ -258,8 +257,9 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                     ProviderChipConstants.chipBorderRadius,
                   ),
                 ),
-                tooltip: context.messages
-                    .aiSettingsFilterByProviderTooltip(provider.name),
+                tooltip: context.messages.aiSettingsFilterByProviderTooltip(
+                  provider.name,
+                ),
               );
             }),
           ],

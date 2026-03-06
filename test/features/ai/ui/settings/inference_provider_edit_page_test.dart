@@ -26,7 +26,8 @@ class _MockWhatsNewController extends WhatsNewController {
 
 /// Helper to get localized strings from the widget tree.
 AppLocalizations l10n(WidgetTester tester) => AppLocalizations.of(
-    tester.element(find.byType(InferenceProviderEditPage)))!;
+  tester.element(find.byType(InferenceProviderEditPage)),
+)!;
 
 void main() {
   late MockAiConfigRepository mockRepository;
@@ -82,12 +83,15 @@ void main() {
 
     // Default mock responses
     when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-    when(() => mockRepository.getConfigById('test-provider-id'))
-        .thenAnswer((_) async => testProvider);
-    when(() => mockRepository.getConfigsByType(AiConfigType.model))
-        .thenAnswer((_) async => []);
-    when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockRepository.getConfigById('test-provider-id'),
+    ).thenAnswer((_) async => testProvider);
+    when(
+      () => mockRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockRepository.getConfigsByType(AiConfigType.prompt),
+    ).thenAnswer((_) async => []);
 
     // Default category mock responses
     when(
@@ -108,14 +112,17 @@ void main() {
         active: true,
       ),
     );
-    when(() => mockCategoryRepository.updateCategory(any()))
-        .thenAnswer((invocation) async {
+    when(() => mockCategoryRepository.updateCategory(any())).thenAnswer((
+      invocation,
+    ) async {
       return invocation.positionalArguments[0] as CategoryDefinition;
     });
-    when(() => mockCategoryRepository.getAllCategories())
-        .thenAnswer((_) async => []);
-    when(() => mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockCategoryRepository.getAllCategories(),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(() async {
@@ -130,9 +137,9 @@ void main() {
   }) {
     // Set up provider count mock if existingProviders is provided
     if (existingProviders != null) {
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => existingProviders);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => existingProviders);
     }
 
     return ProviderScope(
@@ -174,8 +181,9 @@ void main() {
   }
 
   group('InferenceProviderEditPage', () {
-    testWidgets('displays correct title for new provider',
-        (WidgetTester tester) async {
+    testWidgets('displays correct title for new provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -184,8 +192,9 @@ void main() {
       expect(find.text('Add Provider'), findsOneWidget);
     });
 
-    testWidgets('displays correct title for existing provider',
-        (WidgetTester tester) async {
+    testWidgets('displays correct title for existing provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -197,8 +206,9 @@ void main() {
       expect(find.text('Edit Provider'), findsOneWidget);
     });
 
-    testWidgets('loads and displays existing provider data',
-        (WidgetTester tester) async {
+    testWidgets('loads and displays existing provider data', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -212,8 +222,9 @@ void main() {
       expect(find.text('https://api.test.com'), findsOneWidget);
     });
 
-    testWidgets('shows form sections with proper labels',
-        (WidgetTester tester) async {
+    testWidgets('shows form sections with proper labels', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -234,8 +245,9 @@ void main() {
       expect(find.text('API Key'), findsOneWidget);
     });
 
-    testWidgets('enables save button when required fields are filled',
-        (WidgetTester tester) async {
+    testWidgets('enables save button when required fields are filled', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -247,14 +259,17 @@ void main() {
 
       // Fill in required fields (genericOpenAi now requires API key)
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My New Provider');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My New Provider',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'https://api.example.com'),
-          'https://api.myservice.com');
+        find.widgetWithText(TextFormField, 'https://api.example.com'),
+        'https://api.myservice.com',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'),
-          'sk-test-api-key-12345');
+        find.widgetWithText(TextFormField, 'Enter your API key'),
+        'sk-test-api-key-12345',
+      );
       await tester.pump();
 
       // Scroll to make save button visible
@@ -269,8 +284,9 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
 
-    testWidgets('opens provider type selection modal when field is tapped',
-        (WidgetTester tester) async {
+    testWidgets('opens provider type selection modal when field is tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -280,10 +296,12 @@ void main() {
       // Find and tap the provider type field
       final providerTypeField = find.text('OpenAI Compatible');
       expect(providerTypeField, findsOneWidget);
-      await tester.tap(find.ancestor(
-        of: providerTypeField,
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: providerTypeField,
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Verify modal appears with provider options
@@ -324,14 +342,16 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
-    testWidgets('shows error state when loading fails',
-        (WidgetTester tester) async {
+    testWidgets('shows error state when loading fails', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       // Setup repository to throw error
-      when(() => mockRepository.getConfigById('error-id'))
-          .thenThrow(Exception('Failed to load'));
+      when(
+        () => mockRepository.getConfigById('error-id'),
+      ).thenThrow(Exception('Failed to load'));
 
       await tester.pumpWidget(buildTestWidget(configId: 'error-id'));
       await tester.pumpAndSettle();
@@ -342,8 +362,9 @@ void main() {
       expect(find.text('Go Back'), findsOneWidget);
     });
 
-    testWidgets('validates form fields with valid and invalid data',
-        (WidgetTester tester) async {
+    testWidgets('validates form fields with valid and invalid data', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -352,31 +373,37 @@ void main() {
 
       // Test name validation - too short
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'), 'AB');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'AB',
+      );
       await tester.pump();
 
       // The form validates on change - validation errors may appear
 
       // Test URL validation - invalid format
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'https://api.example.com'),
-          'not-a-url');
+        find.widgetWithText(TextFormField, 'https://api.example.com'),
+        'not-a-url',
+      );
       await tester.pump();
 
       // The form validates on change - validation errors may appear
 
       // Enter valid data to verify errors disappear
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'Valid Name');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'Valid Name',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'https://api.example.com'),
-          'https://valid.url.com');
+        find.widgetWithText(TextFormField, 'https://api.example.com'),
+        'https://valid.url.com',
+      );
       await tester.pump();
     });
 
-    testWidgets('pre-fills form when changing provider type',
-        (WidgetTester tester) async {
+    testWidgets('pre-fills form when changing provider type', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -384,10 +411,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open provider type modal
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Select OpenAI from the modal options
@@ -396,10 +425,12 @@ void main() {
       await tester.ensureVisible(openAiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: openAiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: openAiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Check that form was pre-filled
@@ -441,11 +472,13 @@ void main() {
 
       // Fill form to make it valid (genericOpenAi default doesn't require API key)
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'Test Provider');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'Test Provider',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'https://api.example.com'),
-          'https://test.com');
+        find.widgetWithText(TextFormField, 'https://api.example.com'),
+        'https://test.com',
+      );
       await tester.pump();
 
       // Verify CallbackShortcuts widget exists
@@ -454,39 +487,43 @@ void main() {
   });
 
   group('API Key Field Visibility for Different Providers', () {
-    testWidgets('loads existing Ollama provider without showing API key field',
-        (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'loads existing Ollama provider without showing API key field',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 768));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      // Create an Ollama provider
-      final ollamaProvider = AiConfig.inferenceProvider(
-        id: 'ollama-id',
-        name: 'My Ollama',
-        baseUrl: 'http://localhost:11434/v1',
-        apiKey: '', // Empty API key for Ollama
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.ollama,
-      );
+        // Create an Ollama provider
+        final ollamaProvider = AiConfig.inferenceProvider(
+          id: 'ollama-id',
+          name: 'My Ollama',
+          baseUrl: 'http://localhost:11434/v1',
+          apiKey: '', // Empty API key for Ollama
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
 
-      when(() => mockRepository.getConfigById('ollama-id'))
-          .thenAnswer((_) async => ollamaProvider);
+        when(
+          () => mockRepository.getConfigById('ollama-id'),
+        ).thenAnswer((_) async => ollamaProvider);
 
-      await tester.pumpWidget(buildTestWidget(configId: 'ollama-id'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestWidget(configId: 'ollama-id'));
+        await tester.pumpAndSettle();
 
-      // Verify form loads with Ollama data
-      expect(find.text('My Ollama'), findsOneWidget);
-      expect(find.text('http://localhost:11434/v1'), findsOneWidget);
+        // Verify form loads with Ollama data
+        expect(find.text('My Ollama'), findsOneWidget);
+        expect(find.text('http://localhost:11434/v1'), findsOneWidget);
 
-      // API key field should not be visible
-      expect(find.text('Authentication'), findsNothing);
-      expect(find.text('API Key'), findsNothing);
-      expect(find.byIcon(Icons.key_rounded), findsNothing);
-    });
+        // API key field should not be visible
+        expect(find.text('Authentication'), findsNothing);
+        expect(find.text('API Key'), findsNothing);
+        expect(find.byIcon(Icons.key_rounded), findsNothing);
+      },
+    );
 
-    testWidgets('shows API key field for OpenAI provider',
-        (WidgetTester tester) async {
+    testWidgets('shows API key field for OpenAI provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -494,10 +531,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open provider type selection modal
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Select OpenAI
@@ -506,10 +545,12 @@ void main() {
       await tester.ensureVisible(openAiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: openAiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: openAiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // API key field should be visible
@@ -519,8 +560,9 @@ void main() {
       expect(find.byIcon(Icons.key_rounded), findsOneWidget);
     });
 
-    testWidgets('shows API key field for Anthropic provider',
-        (WidgetTester tester) async {
+    testWidgets('shows API key field for Anthropic provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -528,18 +570,22 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open provider type selection modal
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Select Anthropic
       final anthropicOption = find.text('Anthropic Claude');
-      await tester.tap(find.ancestor(
-        of: anthropicOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: anthropicOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // API key field should be visible
@@ -549,8 +595,9 @@ void main() {
       expect(find.byIcon(Icons.key_rounded), findsOneWidget);
     });
 
-    testWidgets('API key field visibility changes when switching providers',
-        (WidgetTester tester) async {
+    testWidgets('API key field visibility changes when switching providers', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -562,10 +609,12 @@ void main() {
       expect(find.text('API Key'), findsOneWidget);
 
       // Switch to Ollama (no API key required)
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Ensure Ollama option is visible before tapping
@@ -573,10 +622,12 @@ void main() {
       await tester.ensureVisible(ollamaOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: ollamaOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: ollamaOption,
+          matching: find.byType(InkWell),
+        ),
+      );
 
       // Wait for modal to close
       await tester.pumpAndSettle();
@@ -591,12 +642,14 @@ void main() {
       expect(find.text('API Key'), findsNothing);
 
       // Switch back to OpenAI - tap on the provider type field (which now shows "Ollama")
-      await tester.tap(find
-          .ancestor(
-            of: find.text('Provider Type'),
-            matching: find.byType(GestureDetector),
-          )
-          .first);
+      await tester.tap(
+        find
+            .ancestor(
+              of: find.text('Provider Type'),
+              matching: find.byType(GestureDetector),
+            )
+            .first,
+      );
       await tester.pumpAndSettle();
 
       // Ensure OpenAI option is visible before tapping
@@ -604,18 +657,21 @@ void main() {
       await tester.ensureVisible(openAiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: openAiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: openAiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // API key should be visible again
       expect(find.text('API Key'), findsOneWidget);
     });
 
-    testWidgets('can save Ollama provider without API key',
-        (WidgetTester tester) async {
+    testWidgets('can save Ollama provider without API key', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -623,22 +679,27 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select Ollama
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.ancestor(
-        of: find.text('Ollama'),
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('Ollama'),
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Fill only name and URL (no API key needed)
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Local Ollama');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My Local Ollama',
+      );
       // URL should already be pre-filled for Ollama
       await tester.pumpAndSettle();
 
@@ -655,8 +716,9 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
 
-    testWidgets('validates form correctly for different provider types',
-        (WidgetTester tester) async {
+    testWidgets('validates form correctly for different provider types', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -665,11 +727,13 @@ void main() {
 
       // For OpenAI, should require API key
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'OpenAI Test');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'OpenAI Test',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'https://api.example.com'),
-          'https://api.openai.com/v1');
+        find.widgetWithText(TextFormField, 'https://api.example.com'),
+        'https://api.openai.com/v1',
+      );
       // Don't enter API key
       await tester.pumpAndSettle();
 
@@ -679,16 +743,20 @@ void main() {
       await tester.pump();
 
       // Now switch to Ollama
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.ancestor(
-        of: find.text('Ollama'),
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('Ollama'),
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Should now be able to save without API key
@@ -701,8 +769,9 @@ void main() {
   });
 
   group('Gemini Prompt Setup Integration', () {
-    testWidgets('shows prompt setup dialog after saving new Gemini provider',
-        (WidgetTester tester) async {
+    testWidgets('shows prompt setup dialog after saving new Gemini provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -712,18 +781,22 @@ void main() {
         savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
         return Future.value();
       });
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer(
-              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       // Select Gemini provider type
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Find and tap Gemini option
@@ -731,19 +804,23 @@ void main() {
       await tester.ensureVisible(geminiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: geminiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: geminiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Fill required fields
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Gemini');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My Gemini',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-gemini-key');
+        find.widgetWithText(TextFormField, 'Enter your API key'),
+        'test-gemini-key',
+      );
       await tester.pump();
 
       // Scroll to save button and tap
@@ -759,93 +836,105 @@ void main() {
     });
 
     testWidgets(
-        'does not show prompt setup dialog for providers without FTUE support',
-        (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      'does not show prompt setup dialog for providers without FTUE support',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
 
-      // Select Anthropic provider type (which doesn't have FTUE support)
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
-      await tester.pumpAndSettle();
+        // Select Anthropic provider type (which doesn't have FTUE support)
+        await tester.tap(
+          find.ancestor(
+            of: find.text('OpenAI Compatible'),
+            matching: find.byType(GestureDetector),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final anthropicOption = find.text('Anthropic Claude');
-      await tester.ensureVisible(anthropicOption);
-      await tester.pump();
+        final anthropicOption = find.text('Anthropic Claude');
+        await tester.ensureVisible(anthropicOption);
+        await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: anthropicOption,
-        matching: find.byType(InkWell),
-      ));
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.ancestor(
+            of: anthropicOption,
+            matching: find.byType(InkWell),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Fill required fields
-      await tester.enterText(
+        // Fill required fields
+        await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Anthropic');
-      await tester.enterText(
+          'My Anthropic',
+        );
+        await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-anthropic-key');
-      await tester.pump();
+          'test-anthropic-key',
+        );
+        await tester.pump();
 
-      // Scroll to save button and tap
-      final saveButton = find.text('Save');
-      await tester.ensureVisible(saveButton);
-      await tester.pump();
+        // Scroll to save button and tap
+        final saveButton = find.text('Save');
+        await tester.ensureVisible(saveButton);
+        await tester.pump();
 
-      await tester.tap(saveButton);
-      await tester.pump();
+        await tester.tap(saveButton);
+        await tester.pump();
 
-      // Prompt setup dialog should NOT appear for non-Gemini/non-OpenAI providers
-      expect(find.text('Set Up AI Features?'), findsNothing);
-    });
+        // Prompt setup dialog should NOT appear for non-Gemini/non-OpenAI providers
+        expect(find.text('Set Up AI Features?'), findsNothing);
+      },
+    );
 
     testWidgets(
-        'does not show prompt setup dialog when editing existing provider',
-        (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      'does not show prompt setup dialog when editing existing provider',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      // Setup existing Gemini provider
-      final existingGemini = AiConfig.inferenceProvider(
-        id: 'existing-gemini-id',
-        name: 'Existing Gemini',
-        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-        apiKey: 'existing-key',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        // Setup existing Gemini provider
+        final existingGemini = AiConfig.inferenceProvider(
+          id: 'existing-gemini-id',
+          name: 'Existing Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          apiKey: 'existing-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      when(() => mockRepository.getConfigById('existing-gemini-id'))
-          .thenAnswer((_) async => existingGemini);
+        when(
+          () => mockRepository.getConfigById('existing-gemini-id'),
+        ).thenAnswer((_) async => existingGemini);
 
-      await tester.pumpWidget(buildTestWidget(configId: 'existing-gemini-id'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'existing-gemini-id'),
+        );
+        await tester.pumpAndSettle();
 
-      // Modify a field
-      final nameField = find.widgetWithText(TextFormField, 'Existing Gemini');
-      await tester.enterText(nameField, 'Updated Gemini');
-      await tester.pump();
+        // Modify a field
+        final nameField = find.widgetWithText(TextFormField, 'Existing Gemini');
+        await tester.enterText(nameField, 'Updated Gemini');
+        await tester.pump();
 
-      // Scroll to save button and tap
-      final saveButton = find.text('Save');
-      await tester.ensureVisible(saveButton);
-      await tester.pump();
+        // Scroll to save button and tap
+        final saveButton = find.text('Save');
+        await tester.ensureVisible(saveButton);
+        await tester.pump();
 
-      await tester.tap(saveButton);
-      await tester.pump();
+        await tester.tap(saveButton);
+        await tester.pump();
 
-      // Prompt setup dialog should NOT appear for edits
-      expect(find.text('Set Up AI Features?'), findsNothing);
-    });
+        // Prompt setup dialog should NOT appear for edits
+        expect(find.text('Set Up AI Features?'), findsNothing);
+      },
+    );
 
-    testWidgets('creates prompts when user confirms in setup dialog',
-        (WidgetTester tester) async {
+    testWidgets('creates prompts when user confirms in setup dialog', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -855,36 +944,45 @@ void main() {
         savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
         return Future.value();
       });
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer(
-              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       // Select Gemini
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final geminiOption = find.text('Google Gemini');
       await tester.ensureVisible(geminiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: geminiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: geminiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Fill fields
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Gemini');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My Gemini',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
+        find.widgetWithText(TextFormField, 'Enter your API key'),
+        'test-key',
+      );
       await tester.pump();
 
       // Save
@@ -906,8 +1004,9 @@ void main() {
       expect(promptsCreated, equals(8));
     });
 
-    testWidgets('skips prompt creation when user declines',
-        (WidgetTester tester) async {
+    testWidgets('skips prompt creation when user declines', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -917,36 +1016,45 @@ void main() {
         savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
         return Future.value();
       });
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer(
-              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       // Select Gemini
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final geminiOption = find.text('Google Gemini');
       await tester.ensureVisible(geminiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: geminiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: geminiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Fill fields
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Gemini');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My Gemini',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
+        find.widgetWithText(TextFormField, 'Enter your API key'),
+        'test-key',
+      );
       await tester.pump();
 
       // Save
@@ -970,8 +1078,9 @@ void main() {
   });
 
   group('Available Models Section', () {
-    testWidgets('shows Available Models section for existing provider',
-        (WidgetTester tester) async {
+    testWidgets('shows Available Models section for existing provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -985,10 +1094,12 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
       await tester.pumpAndSettle();
@@ -1002,12 +1113,15 @@ void main() {
 
       // Should show Available Models section
       expect(find.text('Available Models'), findsOneWidget);
-      expect(find.text('Quick-add preconfigured models for this provider'),
-          findsOneWidget);
+      expect(
+        find.text('Quick-add preconfigured models for this provider'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('does not show Available Models section for new provider',
-        (WidgetTester tester) async {
+    testWidgets('does not show Available Models section for new provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1018,8 +1132,9 @@ void main() {
       expect(find.text('Available Models'), findsNothing);
     });
 
-    testWidgets('displays known models for Gemini provider',
-        (WidgetTester tester) async {
+    testWidgets('displays known models for Gemini provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1032,10 +1147,12 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
       await tester.pumpAndSettle();
@@ -1048,11 +1165,14 @@ void main() {
       // Should show Gemini known models (from known_models.dart)
       // Nano Banana Pro is the first model for Gemini
       expect(
-          find.textContaining('Gemini 3 Pro Image'), findsAtLeastNWidgets(1));
+        find.textContaining('Gemini 3 Pro Image'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('shows Added indicator for already configured models',
-        (WidgetTester tester) async {
+    testWidgets('shows Added indicator for already configured models', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1077,10 +1197,12 @@ void main() {
         isReasoningModel: false,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([existingModel]));
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([existingModel]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
       await tester.pumpAndSettle();
@@ -1094,8 +1216,9 @@ void main() {
       expect(find.text('Added'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('can add a known model by tapping add button',
-        (WidgetTester tester) async {
+    testWidgets('can add a known model by tapping add button', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1108,10 +1231,12 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
       await tester.pumpAndSettle();
@@ -1130,17 +1255,22 @@ void main() {
       await tester.pump();
 
       // Verify saveConfig was called with a new model
-      verify(() => mockRepository.saveConfig(any(
+      verify(
+        () => mockRepository.saveConfig(
+          any(
             that: isA<AiConfigModel>().having(
               (m) => m.inferenceProviderId,
               'inferenceProviderId',
               'gemini-provider-id',
             ),
-          ))).called(1);
+          ),
+        ),
+      ).called(1);
     });
 
-    testWidgets('shows modality chips for known models',
-        (WidgetTester tester) async {
+    testWidgets('shows modality chips for known models', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1153,10 +1283,12 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
       await tester.pumpAndSettle();
@@ -1172,38 +1304,44 @@ void main() {
     });
 
     testWidgets(
-        'does not show Available Models for providers without known models',
-        (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      'does not show Available Models for providers without known models',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      // Create a custom provider type that doesn't have known models defined
-      // Using genericOpenAi which should have some models
-      final customProvider = AiConfig.inferenceProvider(
-        id: 'custom-provider-id',
-        name: 'Custom Provider',
-        baseUrl: 'https://api.custom.com',
-        apiKey: 'test-key',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      );
+        // Create a custom provider type that doesn't have known models defined
+        // Using genericOpenAi which should have some models
+        final customProvider = AiConfig.inferenceProvider(
+          id: 'custom-provider-id',
+          name: 'Custom Provider',
+          baseUrl: 'https://api.custom.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
 
-      when(() => mockRepository.getConfigById('custom-provider-id'))
-          .thenAnswer((_) async => customProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
+        when(
+          () => mockRepository.getConfigById('custom-provider-id'),
+        ).thenAnswer((_) async => customProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'custom-provider-id'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'custom-provider-id'),
+        );
+        await tester.pumpAndSettle();
 
-      // genericOpenAi has known models, so it should show
-      expect(find.text('Available Models'), findsOneWidget);
-    });
+        // genericOpenAi has known models, so it should show
+        expect(find.text('Available Models'), findsOneWidget);
+      },
+    );
   });
 
   group('AI Setup Wizard Section', () {
-    testWidgets('shows AI Setup Wizard section for existing Gemini provider',
-        (WidgetTester tester) async {
+    testWidgets('shows AI Setup Wizard section for existing Gemini provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1216,18 +1354,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [geminiProvider]);
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'gemini-provider-id',
-        existingProviders: [geminiProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          existingProviders: [geminiProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1251,8 +1393,9 @@ void main() {
       expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
     });
 
-    testWidgets('shows AI Setup Wizard section for existing OpenAI provider',
-        (WidgetTester tester) async {
+    testWidgets('shows AI Setup Wizard section for existing OpenAI provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1265,18 +1408,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
-      when(() => mockRepository.getConfigById('openai-provider-id'))
-          .thenAnswer((_) async => openAiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [openAiProvider]);
+      when(
+        () => mockRepository.getConfigById('openai-provider-id'),
+      ).thenAnswer((_) async => openAiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [openAiProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'openai-provider-id',
-        existingProviders: [openAiProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'openai-provider-id',
+          existingProviders: [openAiProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1294,8 +1441,9 @@ void main() {
       );
     });
 
-    testWidgets('shows AI Setup Wizard section for existing Mistral provider',
-        (WidgetTester tester) async {
+    testWidgets('shows AI Setup Wizard section for existing Mistral provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1308,18 +1456,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.mistral,
       );
 
-      when(() => mockRepository.getConfigById('mistral-provider-id'))
-          .thenAnswer((_) async => mistralProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [mistralProvider]);
+      when(
+        () => mockRepository.getConfigById('mistral-provider-id'),
+      ).thenAnswer((_) async => mistralProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [mistralProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'mistral-provider-id',
-        existingProviders: [mistralProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'mistral-provider-id',
+          existingProviders: [mistralProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1337,8 +1489,9 @@ void main() {
       );
     });
 
-    testWidgets('does not show AI Setup Wizard for unsupported providers',
-        (WidgetTester tester) async {
+    testWidgets('does not show AI Setup Wizard for unsupported providers', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1351,18 +1504,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
-      when(() => mockRepository.getConfigById('ollama-provider-id'))
-          .thenAnswer((_) async => ollamaProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [ollamaProvider]);
+      when(
+        () => mockRepository.getConfigById('ollama-provider-id'),
+      ).thenAnswer((_) async => ollamaProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'ollama-provider-id',
-        existingProviders: [ollamaProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'ollama-provider-id',
+          existingProviders: [ollamaProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1371,8 +1528,9 @@ void main() {
       expect(find.text(strings.aiSetupWizardTitle), findsNothing);
     });
 
-    testWidgets('does not show AI Setup Wizard for new provider',
-        (WidgetTester tester) async {
+    testWidgets('does not show AI Setup Wizard for new provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1385,8 +1543,9 @@ void main() {
       expect(find.text(strings.aiSetupWizardTitle), findsNothing);
     });
 
-    testWidgets('Run Setup button shows confirmation dialog when tapped',
-        (WidgetTester tester) async {
+    testWidgets('Run Setup button shows confirmation dialog when tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1399,18 +1558,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [geminiProvider]);
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'gemini-provider-id',
-        existingProviders: [geminiProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          existingProviders: [geminiProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1431,8 +1594,9 @@ void main() {
       expect(find.text('Set Up AI Features?'), findsOneWidget);
     });
 
-    testWidgets('displays all localized strings correctly',
-        (WidgetTester tester) async {
+    testWidgets('displays all localized strings correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1445,18 +1609,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [geminiProvider]);
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'gemini-provider-id',
-        existingProviders: [geminiProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          existingProviders: [geminiProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1480,8 +1648,9 @@ void main() {
       expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
     });
 
-    testWidgets('shows Running state while setup is in progress',
-        (WidgetTester tester) async {
+    testWidgets('shows Running state while setup is in progress', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1494,18 +1663,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() => mockRepository.getConfigById('gemini-provider-id'))
-          .thenAnswer((_) async => geminiProvider);
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([]));
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [geminiProvider]);
+      when(
+        () => mockRepository.getConfigById('gemini-provider-id'),
+      ).thenAnswer((_) async => geminiProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider]);
 
-      await tester.pumpWidget(buildTestWidget(
-        configId: 'gemini-provider-id',
-        existingProviders: [geminiProvider],
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          existingProviders: [geminiProvider],
+        ),
+      );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
@@ -1522,8 +1695,9 @@ void main() {
   });
 
   group('New Provider FTUE Flow', () {
-    testWidgets('shows prompt setup dialog after saving new OpenAI provider',
-        (WidgetTester tester) async {
+    testWidgets('shows prompt setup dialog after saving new OpenAI provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1533,18 +1707,22 @@ void main() {
         savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
         return Future.value();
       });
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer(
-              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       // Select OpenAI provider type
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Find and tap OpenAI option
@@ -1552,19 +1730,23 @@ void main() {
       await tester.ensureVisible(openAiOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: openAiOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: openAiOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Fill required fields
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My OpenAI');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My OpenAI',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-openai-key');
+        find.widgetWithText(TextFormField, 'Enter your API key'),
+        'test-openai-key',
+      );
       await tester.pump();
 
       // Scroll to save button and tap
@@ -1579,8 +1761,9 @@ void main() {
       expect(find.text('Set Up AI Features?'), findsOneWidget);
     });
 
-    testWidgets('shows prompt setup dialog after saving new Mistral provider',
-        (WidgetTester tester) async {
+    testWidgets('shows prompt setup dialog after saving new Mistral provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -1590,18 +1773,22 @@ void main() {
         savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
         return Future.value();
       });
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer(
-              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       // Select Mistral provider type
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('OpenAI Compatible'),
+          matching: find.byType(GestureDetector),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Find and tap Mistral option (displayed as 'Mistral' not 'Mistral AI')
@@ -1609,19 +1796,23 @@ void main() {
       await tester.ensureVisible(mistralOption);
       await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: mistralOption,
-        matching: find.byType(InkWell),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: mistralOption,
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Fill required fields
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Mistral');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'My Mistral',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-mistral-key');
+        find.widgetWithText(TextFormField, 'Enter your API key'),
+        'test-mistral-key',
+      );
       await tester.pump();
 
       // Scroll to save button and tap
@@ -1636,65 +1827,76 @@ void main() {
       expect(find.text('Set Up AI Features?'), findsOneWidget);
     });
 
-    testWidgets('creates prompts for OpenAI when user confirms in setup dialog',
-        (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'creates prompts for OpenAI when user confirms in setup dialog',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      // Track saved configs to return dynamically created models
-      final savedConfigs = <AiConfig>[];
-      when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
-        savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
-        return Future.value();
-      });
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer(
-              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+        // Track saved configs to return dynamically created models
+        final savedConfigs = <AiConfig>[];
+        when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+          savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+          return Future.value();
+        });
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+        );
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
 
-      // Select OpenAI
-      await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
-        matching: find.byType(GestureDetector),
-      ));
-      await tester.pumpAndSettle();
+        // Select OpenAI
+        await tester.tap(
+          find.ancestor(
+            of: find.text('OpenAI Compatible'),
+            matching: find.byType(GestureDetector),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final openAiOption = find.text('OpenAI').first;
-      await tester.ensureVisible(openAiOption);
-      await tester.pump();
+        final openAiOption = find.text('OpenAI').first;
+        await tester.ensureVisible(openAiOption);
+        await tester.pump();
 
-      await tester.tap(find.ancestor(
-        of: openAiOption,
-        matching: find.byType(InkWell),
-      ));
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.ancestor(
+            of: openAiOption,
+            matching: find.byType(InkWell),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Fill fields
-      await tester.enterText(
+        // Fill fields
+        await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My OpenAI');
-      await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
-      await tester.pump();
+          'My OpenAI',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter your API key'),
+          'test-key',
+        );
+        await tester.pump();
 
-      // Save
-      final saveButton = find.text('Save');
-      await tester.ensureVisible(saveButton);
-      await tester.pump();
+        // Save
+        final saveButton = find.text('Save');
+        await tester.ensureVisible(saveButton);
+        await tester.pump();
 
-      await tester.tap(saveButton);
-      await tester.pump();
+        await tester.tap(saveButton);
+        await tester.pump();
 
-      // Confirm prompt setup
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
-      await tester.tap(find.text('Set Up'));
-      await tester.pump();
+        // Confirm prompt setup
+        expect(find.text('Set Up AI Features?'), findsOneWidget);
+        await tester.tap(find.text('Set Up'));
+        await tester.pump();
 
-      // Verify prompts were created for OpenAI
-      final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-      expect(promptsCreated, equals(8));
-    });
+        // Verify prompts were created for OpenAI
+        final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
+        expect(promptsCreated, equals(8));
+      },
+    );
   });
 }

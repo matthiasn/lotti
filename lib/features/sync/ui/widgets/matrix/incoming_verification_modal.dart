@@ -90,7 +90,8 @@ class _IncomingVerificationModalState
       (deviceKeys) => deviceKeys.deviceId == widget.keyVerification.deviceId,
     );
 
-    final displayName = requestingDevice?.deviceDisplayName ??
+    final displayName =
+        requestingDevice?.deviceDisplayName ??
         widget.keyVerification.deviceId ??
         'device name not found';
 
@@ -147,7 +148,8 @@ class _IncomingVerificationModalState
                     if (_awaitingOtherDevice)
                       Text(
                         context
-                            .messages.settingsMatrixContinueVerificationLabel,
+                            .messages
+                            .settingsMatrixContinueVerificationLabel,
                         style: context.textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
@@ -182,8 +184,9 @@ class _IncomingVerificationModalState
                                 ? null
                                 : () => _acceptEmojiVerification(runner),
                             label: _awaitingOtherDevice
-                                ? context.messages
-                                    .settingsMatrixContinueVerificationLabel
+                                ? context
+                                      .messages
+                                      .settingsMatrixContinueVerificationLabel
                                 : context.messages.settingsMatrixAccept,
                           ),
                         ),
@@ -214,7 +217,8 @@ class _IncomingVerificationModalState
                             runner?.stopTimer();
                             pop();
                           },
-                          label: context.messages
+                          label: context
+                              .messages
                               .settingsMatrixVerificationSuccessConfirm,
                         ),
                       ],
@@ -250,25 +254,25 @@ class _IncomingVerificationWrapperState
         .read(matrixServiceProvider)
         .getIncomingKeyVerificationStream()
         .listen((keyVerification) {
-      if (mounted) {
-        final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-        if (!lock.tryAcquire()) return;
-        unawaited(() async {
-          try {
-            await showVerificationModalSheet(
-              context: context,
-              title: context.messages.settingsMatrixVerifyLabel,
-              child: IncomingVerificationModal(keyVerification),
-            );
-          } finally {
-            if (mounted) {
-              ref.invalidate(matrixUnverifiedControllerProvider);
-            }
-            lock.release();
+          if (mounted) {
+            final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+            if (!lock.tryAcquire()) return;
+            unawaited(() async {
+              try {
+                await showVerificationModalSheet(
+                  context: context,
+                  title: context.messages.settingsMatrixVerifyLabel,
+                  child: IncomingVerificationModal(keyVerification),
+                );
+              } finally {
+                if (mounted) {
+                  ref.invalidate(matrixUnverifiedControllerProvider);
+                }
+                lock.release();
+              }
+            }());
           }
-        }());
-      }
-    });
+        });
   }
 
   @override

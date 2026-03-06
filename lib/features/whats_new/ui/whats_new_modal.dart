@@ -99,8 +99,10 @@ class WhatsNewModal {
         }
 
         // Extract and precache images from markdown content
-        final allMarkdown =
-            [release.headerMarkdown, ...release.sections].join();
+        final allMarkdown = [
+          release.headerMarkdown,
+          ...release.sections,
+        ].join();
         for (final imageUrl in _extractImageUrls(allMarkdown)) {
           unawaited(
             precacheImage(
@@ -685,15 +687,15 @@ class _IndicatorDots extends StatelessWidget {
 /// Custom dialog type that allows configurable max height (90% of screen).
 class _TallDialogType extends WoltModalType {
   const _TallDialogType()
-      : super(
-          shapeBorder: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(28)),
-          ),
-          showDragHandle: false,
-          dismissDirection: WoltModalDismissDirection.down,
-          transitionDuration: const Duration(milliseconds: 350),
-          reverseTransitionDuration: const Duration(milliseconds: 350),
-        );
+    : super(
+        shapeBorder: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(28)),
+        ),
+        showDragHandle: false,
+        dismissDirection: WoltModalDismissDirection.down,
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 350),
+      );
 
   static const double _maxHeightFraction = 0.9;
 
@@ -705,8 +707,9 @@ class _TallDialogType extends WoltModalType {
   @override
   BoxConstraints layoutModal(Size availableSize) {
     const maxWidth = 500.0;
-    final width =
-        availableSize.width > maxWidth ? maxWidth : availableSize.width * 0.9;
+    final width = availableSize.width > maxWidth
+        ? maxWidth
+        : availableSize.width * 0.9;
     return BoxConstraints(
       minWidth: width,
       maxWidth: width,

@@ -43,9 +43,9 @@ class DayPlanRepositoryImpl implements DayPlanRepository {
     required JournalDb journalDb,
     required PersistenceLogic persistenceLogic,
     required UpdateNotifications updateNotifications,
-  })  : _journalDb = journalDb,
-        _persistenceLogic = persistenceLogic,
-        _updateNotifications = updateNotifications;
+  }) : _journalDb = journalDb,
+       _persistenceLogic = persistenceLogic,
+       _updateNotifications = updateNotifications;
 
   final JournalDb _journalDb;
   final PersistenceLogic _persistenceLogic;

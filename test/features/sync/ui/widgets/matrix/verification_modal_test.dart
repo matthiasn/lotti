@@ -48,8 +48,9 @@ void main() {
     mockDeviceKeys = MockDeviceKeys();
     controller = StreamController<KeyVerificationRunner>.broadcast();
 
-    when(() => mockMatrixService.keyVerificationStream)
-        .thenAnswer((_) => controller.stream);
+    when(
+      () => mockMatrixService.keyVerificationStream,
+    ).thenAnswer((_) => controller.stream);
     when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(() => mockDeviceKeys.userId).thenReturn('@user:server');
@@ -61,8 +62,9 @@ void main() {
     await controller.close();
   });
 
-  testWidgets('starts verification and shows start button when idle',
-      (tester) async {
+  testWidgets('starts verification and shows start button when idle', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         VerificationModal(mockDeviceKeys),
@@ -78,8 +80,9 @@ void main() {
     expect(find.byKey(const Key('matrix_start_verify')), findsOneWidget);
   });
 
-  testWidgets('shows continue message when waiting for acceptance',
-      (tester) async {
+  testWidgets('shows continue message when waiting for acceptance', (
+    tester,
+  ) async {
     final runner = MockKeyVerificationRunner();
     final keyVerification = MockKeyVerification();
 
@@ -106,8 +109,9 @@ void main() {
     );
   });
 
-  testWidgets('displays emojis and actions when verification key is shown',
-      (tester) async {
+  testWidgets('displays emojis and actions when verification key is shown', (
+    tester,
+  ) async {
     final runner = MockKeyVerificationRunner();
     final keyVerification = MockKeyVerification();
     final emojis = List.generate(
@@ -143,8 +147,9 @@ void main() {
     verify(runner.cancelVerification).called(1);
   });
 
-  testWidgets('shows success state when verification is complete',
-      (tester) async {
+  testWidgets('shows success state when verification is complete', (
+    tester,
+  ) async {
     final runner = MockKeyVerificationRunner();
     final keyVerification = MockKeyVerification();
 
@@ -177,8 +182,9 @@ void main() {
     await tester.pump(const Duration(seconds: 30));
   });
 
-  testWidgets('shows cancelled message when verification stops elsewhere',
-      (tester) async {
+  testWidgets('shows cancelled message when verification stops elsewhere', (
+    tester,
+  ) async {
     final runner = MockKeyVerificationRunner();
     final keyVerification = MockKeyVerification();
 
@@ -313,8 +319,9 @@ void main() {
   testWidgets(
     'manual start button works when no runner is present',
     (tester) async {
-      when(() => mockMatrixService.verifyDevice(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockMatrixService.verifyDevice(any()),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -334,8 +341,9 @@ void main() {
       // Tap to retry manually
       await tester.tap(startBtn);
       await tester.pump();
-      verify(() => mockMatrixService.verifyDevice(mockDeviceKeys))
-          .called(greaterThan(1));
+      verify(
+        () => mockMatrixService.verifyDevice(mockDeviceKeys),
+      ).called(greaterThan(1));
     },
   );
 }

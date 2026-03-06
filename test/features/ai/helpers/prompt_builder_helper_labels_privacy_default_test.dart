@@ -42,18 +42,18 @@ void main() {
   });
 
   AiConfigPrompt makePrompt() => AiConfigPrompt(
-        id: 'p',
-        defaultModelId: 'm',
-        modelIds: const ['m'],
-        createdAt: DateTime(2025),
-        name: 'checklist updates',
-        systemMessage: '',
-        userMessage: 'Available Labels (id and name):```json\n{{labels}}\n```',
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.checklistUpdates,
-        useReasoning: false,
-        trackPreconfigured: false,
-      );
+    id: 'p',
+    defaultModelId: 'm',
+    modelIds: const ['m'],
+    createdAt: DateTime(2025),
+    name: 'checklist updates',
+    systemMessage: '',
+    userMessage: 'Available Labels (id and name):```json\n{{labels}}\n```',
+    requiredInputData: const [],
+    aiResponseType: AiResponseType.checklistUpdates,
+    useReasoning: false,
+    trackPreconfigured: false,
+  );
 
   test('privacy default excludes private labels when flag unset', () async {
     final publicLabel = LabelDefinition(
@@ -70,16 +70,20 @@ void main() {
 
     // Privacy filtering handled at DB layer via config flag
     // When flag is false, DB query returns only public labels
-    when(() => db.getAllLabelDefinitions())
-        .thenAnswer((_) async => [publicLabel]);
-    when(() => db.getLabelUsageCounts())
-        .thenAnswer((_) async => <String, int>{});
+    when(
+      () => db.getAllLabelDefinitions(),
+    ).thenAnswer((_) async => [publicLabel]);
+    when(
+      () => db.getLabelUsageCounts(),
+    ).thenAnswer((_) async => <String, int>{});
 
     final mockLabelsRepo = _MockLabelsRepository();
-    when(mockLabelsRepo.getAllLabels)
-        .thenAnswer((_) => db.getAllLabelDefinitions());
-    when(mockLabelsRepo.getLabelUsageCounts)
-        .thenAnswer((_) => db.getLabelUsageCounts());
+    when(
+      mockLabelsRepo.getAllLabels,
+    ).thenAnswer((_) => db.getAllLabelDefinitions());
+    when(
+      mockLabelsRepo.getLabelUsageCounts,
+    ).thenAnswer((_) => db.getLabelUsageCounts());
     final helper = PromptBuilderHelper(
       aiInputRepository: container.read(aiInputRepositoryProvider),
       checklistRepository: mockChecklistRepository,
@@ -119,38 +123,43 @@ void main() {
   test('privacy flag true includes private labels', () async {
     // Privacy filtering handled at DB layer via config flag
     // When flag is true, DB query returns both public and private labels
-    when(() => db.getAllLabelDefinitions()).thenAnswer((_) async => [
-          LabelDefinition(
-            id: 'public',
-            name: 'Public Label',
-            color: '#FF0000',
-            description: null,
-            sortOrder: null,
-            createdAt: DateTime(2025),
-            updatedAt: DateTime(2025),
-            vectorClock: null,
-            private: false,
-          ),
-          LabelDefinition(
-            id: 'private',
-            name: 'Private Label',
-            color: '#00FF00',
-            description: null,
-            sortOrder: null,
-            createdAt: DateTime(2025),
-            updatedAt: DateTime(2025),
-            vectorClock: null,
-            private: true,
-          ),
-        ]);
-    when(() => db.getLabelUsageCounts())
-        .thenAnswer((_) async => <String, int>{});
+    when(() => db.getAllLabelDefinitions()).thenAnswer(
+      (_) async => [
+        LabelDefinition(
+          id: 'public',
+          name: 'Public Label',
+          color: '#FF0000',
+          description: null,
+          sortOrder: null,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          vectorClock: null,
+          private: false,
+        ),
+        LabelDefinition(
+          id: 'private',
+          name: 'Private Label',
+          color: '#00FF00',
+          description: null,
+          sortOrder: null,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          vectorClock: null,
+          private: true,
+        ),
+      ],
+    );
+    when(
+      () => db.getLabelUsageCounts(),
+    ).thenAnswer((_) async => <String, int>{});
 
     final mockLabelsRepo = _MockLabelsRepository();
-    when(mockLabelsRepo.getAllLabels)
-        .thenAnswer((_) => db.getAllLabelDefinitions());
-    when(mockLabelsRepo.getLabelUsageCounts)
-        .thenAnswer((_) => db.getLabelUsageCounts());
+    when(
+      mockLabelsRepo.getAllLabels,
+    ).thenAnswer((_) => db.getAllLabelDefinitions());
+    when(
+      mockLabelsRepo.getLabelUsageCounts,
+    ).thenAnswer((_) => db.getLabelUsageCounts());
     final helper = PromptBuilderHelper(
       aiInputRepository: container.read(aiInputRepositoryProvider),
       checklistRepository: mockChecklistRepository,

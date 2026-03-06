@@ -51,11 +51,13 @@ void main() {
     ).thenReturn(null);
 
     // Setup AI config repository mock behavior
-    when(() => mockAiConfigRepository.getConfigById(any<String>()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockAiConfigRepository.getConfigById(any<String>()),
+    ).thenAnswer((_) async => null);
 
-    when(() => mockAiConfigRepository.watchConfigsByType(any<AiConfigType>()))
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockAiConfigRepository.watchConfigsByType(any<AiConfigType>()),
+    ).thenAnswer((_) => const Stream.empty());
   });
 
   tearDown(getIt.reset);
@@ -85,69 +87,72 @@ void main() {
     });
 
     testWidgets(
-        'tapping animation opens progress modal when inference is active',
-        (tester) async {
-      final container = ProviderContainer(
-        overrides: [
-          // Override the AI config provider
-          aiConfigByIdProvider(testPromptId)
-              .overrideWith((ref) async => testPrompt),
-        ],
-      );
+      'tapping animation opens progress modal when inference is active',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            // Override the AI config provider
+            aiConfigByIdProvider(
+              testPromptId,
+            ).overrideWith((ref) async => testPrompt),
+          ],
+        );
 
-      // Set up active inference
-      container
-          .read(
-            activeInferenceControllerProvider(
-              entityId: testId,
-              aiResponseType: testType,
-            ).notifier,
-          )
-          .startInference(
-            promptId: testPromptId,
-          );
+        // Set up active inference
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .startInference(
+              promptId: testPromptId,
+            );
 
-      // Set status to running
-      container
-          .read(
-            inferenceStatusControllerProvider(
-              id: testId,
-              aiResponseType: testType,
-            ).notifier,
-          )
-          .setStatus(InferenceStatus.running);
+        // Set status to running
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.running);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: WidgetTestBench(
-            child: AiRunningAnimationWrapper(
-              entryId: testId,
-              height: 100,
-              responseTypes: testTypes,
-              isInteractive: true,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: WidgetTestBench(
+              child: AiRunningAnimationWrapper(
+                entryId: testId,
+                height: 100,
+                responseTypes: testTypes,
+                isInteractive: true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Verify animation is shown and is interactive
-      expect(find.byType(AiRunningAnimation), findsOneWidget);
-      expect(find.byType(GestureDetector), findsOneWidget);
+        // Verify animation is shown and is interactive
+        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(find.byType(GestureDetector), findsOneWidget);
 
-      // Verify the tap handler exists
-      final gesture = tester.widget<GestureDetector>(
-        find.byType(GestureDetector),
-      );
-      expect(gesture.onTap, isNotNull);
+        // Verify the tap handler exists
+        final gesture = tester.widget<GestureDetector>(
+          find.byType(GestureDetector),
+        );
+        expect(gesture.onTap, isNotNull);
 
-      container.dispose();
-    });
+        container.dispose();
+      },
+    );
 
-    testWidgets('animation does not open modal when not interactive',
-        (tester) async {
+    testWidgets('animation does not open modal when not interactive', (
+      tester,
+    ) async {
       final container = ProviderContainer();
 
       // Set status to running
@@ -221,12 +226,14 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('shows existing inference progress with showExisting flag',
-        (tester) async {
+    testWidgets('shows existing inference progress with showExisting flag', (
+      tester,
+    ) async {
       final container = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider(testPromptId)
-              .overrideWith((ref) async => testPrompt),
+          aiConfigByIdProvider(
+            testPromptId,
+          ).overrideWith((ref) async => testPrompt),
         ],
       );
 
@@ -284,8 +291,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider(testPromptId)
-              .overrideWith((ref) async => testPrompt),
+          aiConfigByIdProvider(
+            testPromptId,
+          ).overrideWith((ref) async => testPrompt),
         ],
       );
 
@@ -334,67 +342,70 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('AiRunningAnimationWrapperCard shows animation and handles tap',
-        (tester) async {
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigByIdProvider(testPromptId)
-              .overrideWith((ref) async => testPrompt),
-        ],
-      );
+    testWidgets(
+      'AiRunningAnimationWrapperCard shows animation and handles tap',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            aiConfigByIdProvider(
+              testPromptId,
+            ).overrideWith((ref) async => testPrompt),
+          ],
+        );
 
-      // Set up active inference
-      container
-          .read(
-            activeInferenceControllerProvider(
-              entityId: testId,
-              aiResponseType: testType,
-            ).notifier,
-          )
-          .startInference(
-            promptId: testPromptId,
-          );
+        // Set up active inference
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .startInference(
+              promptId: testPromptId,
+            );
 
-      // Set status to running
-      container
-          .read(
-            inferenceStatusControllerProvider(
-              id: testId,
-              aiResponseType: testType,
-            ).notifier,
-          )
-          .setStatus(InferenceStatus.running);
+        // Set status to running
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.running);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: WidgetTestBench(
-            child: AiRunningAnimationWrapperCard(
-              entryId: testId,
-              height: 50,
-              responseTypes: testTypes,
-              isInteractive: true,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: WidgetTestBench(
+              child: AiRunningAnimationWrapperCard(
+                entryId: testId,
+                height: 50,
+                responseTypes: testTypes,
+                isInteractive: true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Verify glass container and animation are shown
-      expect(find.byType(AiRunningAnimation), findsOneWidget);
-      expect(find.byType(GestureDetector), findsOneWidget);
+        // Verify glass container and animation are shown
+        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(find.byType(GestureDetector), findsOneWidget);
 
-      // Verify it's wrapped in the glass container
-      expect(
-        find.ancestor(
-          of: find.byType(AiRunningAnimation),
-          matching: find.byType(GlassContainer),
-        ),
-        findsOneWidget,
-      );
+        // Verify it's wrapped in the glass container
+        expect(
+          find.ancestor(
+            of: find.byType(AiRunningAnimation),
+            matching: find.byType(GlassContainer),
+          ),
+          findsOneWidget,
+        );
 
-      container.dispose();
-    });
+        container.dispose();
+      },
+    );
   });
 }

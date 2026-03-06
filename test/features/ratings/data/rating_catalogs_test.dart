@@ -57,8 +57,9 @@ void main() {
     });
 
     test('tapBar questions have no options', () {
-      final tapBarQuestions =
-          questions.where((q) => q.inputType == 'tapBar').toList();
+      final tapBarQuestions = questions
+          .where((q) => q.inputType == 'tapBar')
+          .toList();
       expect(tapBarQuestions, hasLength(3));
       for (final q in tapBarQuestions) {
         expect(q.options, isNull, reason: '${q.key} should have no options');
@@ -159,7 +160,8 @@ void main() {
         expect(
           deQ.description,
           equals(enQ.description),
-          reason: '${deQ.key} description should match English regardless '
+          reason:
+              '${deQ.key} description should match English regardless '
               'of locale',
         );
       }

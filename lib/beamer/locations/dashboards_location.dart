@@ -9,9 +9,9 @@ class DashboardsLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
-        '/dashboards',
-        '/dashboards/:dashboardId',
-      ];
+    '/dashboards',
+    '/dashboards/:dashboardId',
+  ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {

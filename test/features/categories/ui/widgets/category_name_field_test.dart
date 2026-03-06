@@ -212,8 +212,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('passes through LottiTextField properties correctly',
-        (tester) async {
+    testWidgets('passes through LottiTextField properties correctly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: CategoryNameField(

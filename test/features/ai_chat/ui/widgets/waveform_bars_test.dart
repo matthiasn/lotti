@@ -93,7 +93,7 @@ void main() {
                     0.9,
                     0.6,
                     0.4,
-                    0.2
+                    0.2,
                   ],
                 ),
               ),
@@ -104,8 +104,9 @@ void main() {
 
       expect(find.byType(WaveformBars), findsOneWidget);
       // Get the first CustomPaint (the waveform painter)
-      final customPaints =
-          tester.widgetList<CustomPaint>(find.byType(CustomPaint));
+      final customPaints = tester.widgetList<CustomPaint>(
+        find.byType(CustomPaint),
+      );
       expect(customPaints.length, greaterThan(0));
       expect(customPaints.first.size, isNotNull);
     });
@@ -223,8 +224,9 @@ void main() {
       expect(borderRadius?.topLeft.x, customBorderRadius);
     });
 
-    testWidgets('handles very large amplitude lists gracefully',
-        (tester) async {
+    testWidgets('handles very large amplitude lists gracefully', (
+      tester,
+    ) async {
       // Create a list with 500 amplitude values
       final largeAmplitudeList = List.generate(
         500,
@@ -392,8 +394,9 @@ void main() {
       expect(waveform.minBarHeight, customMinHeight);
     });
 
-    testWidgets('renders with LayoutBuilder for responsive sizing',
-        (tester) async {
+    testWidgets('renders with LayoutBuilder for responsive sizing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -412,8 +415,9 @@ void main() {
       expect(find.byType(LayoutBuilder), findsOneWidget);
     });
 
-    testWidgets('CustomPaint size matches container constraints',
-        (tester) async {
+    testWidgets('CustomPaint size matches container constraints', (
+      tester,
+    ) async {
       const containerWidth = 300.0;
       const containerHeight = 48.0;
 
@@ -434,8 +438,9 @@ void main() {
       );
 
       // Get all CustomPaint widgets
-      final customPaints =
-          tester.widgetList<CustomPaint>(find.byType(CustomPaint));
+      final customPaints = tester.widgetList<CustomPaint>(
+        find.byType(CustomPaint),
+      );
       // The CustomPaint should receive the proper size from LayoutBuilder
       expect(customPaints.length, greaterThan(0));
       expect(customPaints.first.size, isNotNull);
@@ -506,29 +511,30 @@ void main() {
 
   group('WaveformBarsPainter shouldRepaint Tests', () {
     test(
-        'shouldRepaint returns true even when amplitude values are identical (different list instances)',
-        () {
-      final painter1 = TestWaveformBarsPainter(
-        amplitudes: [0.5, 0.7],
-        barWidth: 2,
-        barSpacing: 3,
-        minBarHeight: 2,
-        primary: Colors.blue,
-        secondary: Colors.green,
-      );
+      'shouldRepaint returns true even when amplitude values are identical (different list instances)',
+      () {
+        final painter1 = TestWaveformBarsPainter(
+          amplitudes: [0.5, 0.7],
+          barWidth: 2,
+          barSpacing: 3,
+          minBarHeight: 2,
+          primary: Colors.blue,
+          secondary: Colors.green,
+        );
 
-      final painter2 = TestWaveformBarsPainter(
-        amplitudes: [0.5, 0.7], // Different list instance with same values
-        barWidth: 2,
-        barSpacing: 3,
-        minBarHeight: 2,
-        primary: Colors.blue,
-        secondary: Colors.green,
-      );
+        final painter2 = TestWaveformBarsPainter(
+          amplitudes: [0.5, 0.7], // Different list instance with same values
+          barWidth: 2,
+          barSpacing: 3,
+          minBarHeight: 2,
+          primary: Colors.blue,
+          secondary: Colors.green,
+        );
 
-      // Should return true because lists are different instances even with same values
-      expect(painter2.shouldRepaint(painter1), isTrue);
-    });
+        // Should return true because lists are different instances even with same values
+        expect(painter2.shouldRepaint(painter1), isTrue);
+      },
+    );
 
     test('shouldRepaint returns false when using same list reference', () {
       final sharedAmplitudes = [0.5, 0.7];
@@ -707,28 +713,30 @@ void main() {
       expect(painter2.shouldRepaint(painter1), isTrue);
     });
 
-    test('shouldRepaint returns true when amplitude list is empty vs non-empty',
-        () {
-      final painter1 = TestWaveformBarsPainter(
-        amplitudes: [0.5, 0.7],
-        barWidth: 2,
-        barSpacing: 3,
-        minBarHeight: 2,
-        primary: Colors.blue,
-        secondary: Colors.green,
-      );
+    test(
+      'shouldRepaint returns true when amplitude list is empty vs non-empty',
+      () {
+        final painter1 = TestWaveformBarsPainter(
+          amplitudes: [0.5, 0.7],
+          barWidth: 2,
+          barSpacing: 3,
+          minBarHeight: 2,
+          primary: Colors.blue,
+          secondary: Colors.green,
+        );
 
-      final painter2 = TestWaveformBarsPainter(
-        amplitudes: [], // Empty list
-        barWidth: 2,
-        barSpacing: 3,
-        minBarHeight: 2,
-        primary: Colors.blue,
-        secondary: Colors.green,
-      );
+        final painter2 = TestWaveformBarsPainter(
+          amplitudes: [], // Empty list
+          barWidth: 2,
+          barSpacing: 3,
+          minBarHeight: 2,
+          primary: Colors.blue,
+          secondary: Colors.green,
+        );
 
-      expect(painter2.shouldRepaint(painter1), isTrue);
-    });
+        expect(painter2.shouldRepaint(painter1), isTrue);
+      },
+    );
 
     test('shouldRepaint returns true for multiple property changes', () {
       final painter1 = TestWaveformBarsPainter(

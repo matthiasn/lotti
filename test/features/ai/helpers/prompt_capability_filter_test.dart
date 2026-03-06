@@ -60,10 +60,12 @@ void main() {
           apiKey: '',
         );
 
-        when(() => mockRepo.getConfigById('whisper-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('whisper-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('whisper-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('whisper-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act - Note: This test assumes we're running on desktop
         // In a real scenario, you'd need to mock the platform detection
@@ -79,53 +81,9 @@ void main() {
           defaultModelId: 'non-existent-model',
         );
 
-        when(() => mockRepo.getConfigById('non-existent-model'))
-            .thenAnswer((_) async => null);
-
-        // Act
-        final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-        // Assert
-        // On desktop, all prompts are available regardless of configuration
-        expect(result, isTrue);
-      });
-
-      test('returns true on desktop even when model is not AiConfigModel',
-          () async {
-        // Arrange
-        final prompt = AiTestDataFactory.createTestPrompt(
-          defaultModelId: 'wrong-type',
-        );
-
-        final wrongType = AiTestDataFactory.createTestPrompt(
-          id: 'wrong-type',
-          name: 'Wrong',
-          defaultModelId: 'model',
-        );
-
-        when(() => mockRepo.getConfigById('wrong-type'))
-            .thenAnswer((_) async => wrongType);
-
-        // Act
-        final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-        // Assert
-        // On desktop, all prompts are available regardless of configuration
-        expect(result, isTrue);
-      });
-
-      test('returns true on desktop even when provider is null', () async {
-        // Arrange
-        final prompt = AiTestDataFactory.createTestPrompt();
-
-        final model = AiTestDataFactory.createTestModel(
-          inferenceProviderId: 'non-existent-provider',
-        );
-
-        when(() => mockRepo.getConfigById('test-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('non-existent-provider'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('non-existent-model'),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -136,25 +94,46 @@ void main() {
       });
 
       test(
-          'returns true on desktop even when provider is not AiConfigInferenceProvider',
-          () async {
+        'returns true on desktop even when model is not AiConfigModel',
+        () async {
+          // Arrange
+          final prompt = AiTestDataFactory.createTestPrompt(
+            defaultModelId: 'wrong-type',
+          );
+
+          final wrongType = AiTestDataFactory.createTestPrompt(
+            id: 'wrong-type',
+            name: 'Wrong',
+            defaultModelId: 'model',
+          );
+
+          when(
+            () => mockRepo.getConfigById('wrong-type'),
+          ).thenAnswer((_) async => wrongType);
+
+          // Act
+          final result = await filter.isPromptAvailableOnPlatform(prompt);
+
+          // Assert
+          // On desktop, all prompts are available regardless of configuration
+          expect(result, isTrue);
+        },
+      );
+
+      test('returns true on desktop even when provider is null', () async {
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt();
 
         final model = AiTestDataFactory.createTestModel(
-          inferenceProviderId: 'wrong-type',
+          inferenceProviderId: 'non-existent-provider',
         );
 
-        final wrongType = AiTestDataFactory.createTestPrompt(
-          id: 'wrong-type',
-          name: 'Wrong',
-          defaultModelId: 'model',
-        );
-
-        when(() => mockRepo.getConfigById('test-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('wrong-type'))
-            .thenAnswer((_) async => wrongType);
+        when(
+          () => mockRepo.getConfigById('test-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('non-existent-provider'),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -163,6 +142,38 @@ void main() {
         // On desktop, all prompts are available regardless of configuration
         expect(result, isTrue);
       });
+
+      test(
+        'returns true on desktop even when provider is not AiConfigInferenceProvider',
+        () async {
+          // Arrange
+          final prompt = AiTestDataFactory.createTestPrompt();
+
+          final model = AiTestDataFactory.createTestModel(
+            inferenceProviderId: 'wrong-type',
+          );
+
+          final wrongType = AiTestDataFactory.createTestPrompt(
+            id: 'wrong-type',
+            name: 'Wrong',
+            defaultModelId: 'model',
+          );
+
+          when(
+            () => mockRepo.getConfigById('test-model'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockRepo.getConfigById('wrong-type'),
+          ).thenAnswer((_) async => wrongType);
+
+          // Act
+          final result = await filter.isPromptAvailableOnPlatform(prompt);
+
+          // Assert
+          // On desktop, all prompts are available regardless of configuration
+          expect(result, isTrue);
+        },
+      );
     });
 
     group('filterPromptsByPlatform', () {
@@ -202,12 +213,15 @@ void main() {
           type: InferenceProviderType.openAi,
         );
 
-        when(() => mockRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model1);
-        when(() => mockRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider1);
-        when(() => mockRepo.getConfigById('non-existent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model1);
+        when(
+          () => mockRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider1);
+        when(
+          () => mockRepo.getConfigById('non-existent'),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await filter.filterPromptsByPlatform([prompt1, prompt2]);
@@ -252,12 +266,15 @@ void main() {
           type: InferenceProviderType.openAi,
         );
 
-        when(() => mockRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model1);
-        when(() => mockRepo.getConfigById('model-2'))
-            .thenAnswer((_) async => model2);
-        when(() => mockRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider1);
+        when(
+          () => mockRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model1);
+        when(
+          () => mockRepo.getConfigById('model-2'),
+        ).thenAnswer((_) async => model2);
+        when(
+          () => mockRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider1);
 
         // Act
         final result = await filter.filterPromptsByPlatform([prompt1, prompt2]);
@@ -299,12 +316,15 @@ void main() {
           type: InferenceProviderType.openAi,
         );
 
-        when(() => mockRepo.getConfigById('prompt-1'))
-            .thenAnswer((_) async => prompt1);
-        when(() => mockRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model1);
-        when(() => mockRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider1);
+        when(
+          () => mockRepo.getConfigById('prompt-1'),
+        ).thenAnswer((_) async => prompt1);
+        when(
+          () => mockRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model1);
+        when(
+          () => mockRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider1);
 
         // Act
         final result = await filter.getFirstAvailablePrompt(['prompt-1']);
@@ -335,18 +355,24 @@ void main() {
           apiKey: 'key',
         );
 
-        when(() => mockRepo.getConfigById('prompt-1'))
-            .thenAnswer((_) async => null);
-        when(() => mockRepo.getConfigById('prompt-2'))
-            .thenAnswer((_) async => prompt2);
-        when(() => mockRepo.getConfigById('model-2'))
-            .thenAnswer((_) async => model2);
-        when(() => mockRepo.getConfigById('provider-2'))
-            .thenAnswer((_) async => provider2);
+        when(
+          () => mockRepo.getConfigById('prompt-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('prompt-2'),
+        ).thenAnswer((_) async => prompt2);
+        when(
+          () => mockRepo.getConfigById('model-2'),
+        ).thenAnswer((_) async => model2);
+        when(
+          () => mockRepo.getConfigById('provider-2'),
+        ).thenAnswer((_) async => provider2);
 
         // Act
-        final result =
-            await filter.getFirstAvailablePrompt(['prompt-1', 'prompt-2']);
+        final result = await filter.getFirstAvailablePrompt([
+          'prompt-1',
+          'prompt-2',
+        ]);
 
         // Assert
         expect(result, isNotNull);
@@ -355,14 +381,18 @@ void main() {
 
       test('returns null when all prompts unavailable', () async {
         // Arrange
-        when(() => mockRepo.getConfigById('prompt-1'))
-            .thenAnswer((_) async => null);
-        when(() => mockRepo.getConfigById('prompt-2'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('prompt-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('prompt-2'),
+        ).thenAnswer((_) async => null);
 
         // Act
-        final result =
-            await filter.getFirstAvailablePrompt(['prompt-1', 'prompt-2']);
+        final result = await filter.getFirstAvailablePrompt([
+          'prompt-1',
+          'prompt-2',
+        ]);
 
         // Assert
         expect(result, isNull);
@@ -376,8 +406,9 @@ void main() {
           inferenceProviderId: 'provider-1',
         );
 
-        when(() => mockRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => notAPrompt);
+        when(
+          () => mockRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => notAPrompt);
 
         // Act
         final result = await filter.getFirstAvailablePrompt(['model-1']);
@@ -394,10 +425,12 @@ void main() {
           defaultModelId: 'non-existent-model',
         );
 
-        when(() => mockRepo.getConfigById('prompt-1'))
-            .thenAnswer((_) async => prompt1);
-        when(() => mockRepo.getConfigById('non-existent-model'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('prompt-1'),
+        ).thenAnswer((_) async => prompt1);
+        when(
+          () => mockRepo.getConfigById('non-existent-model'),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await filter.getFirstAvailablePrompt(['prompt-1']);
@@ -529,10 +562,12 @@ void main() {
           apiKey: '',
         );
 
-        when(() => mockRepo.getConfigById('voxtral-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('voxtral-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('voxtral-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('voxtral-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -565,10 +600,12 @@ void main() {
           apiKey: 'test-key',
         );
 
-        when(() => mockRepo.getConfigById('gemini-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('gemini-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('gemini-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('gemini-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -606,10 +643,12 @@ void main() {
             apiKey: 'key',
           );
 
-          when(() => mockRepo.getConfigById('model-$i'))
-              .thenAnswer((_) async => model);
-          when(() => mockRepo.getConfigById('provider-$i'))
-              .thenAnswer((_) async => provider);
+          when(
+            () => mockRepo.getConfigById('model-$i'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockRepo.getConfigById('provider-$i'),
+          ).thenAnswer((_) async => provider);
         }
 
         // Act
@@ -619,45 +658,50 @@ void main() {
         expect(result, hasLength(100));
       });
 
-      test('handles prompts with corrupted model references gracefully',
-          () async {
-        // Arrange
-        final validPrompt = AiTestDataFactory.createTestPrompt(
-          id: 'valid-prompt',
-          defaultModelId: 'valid-model',
-        );
+      test(
+        'handles prompts with corrupted model references gracefully',
+        () async {
+          // Arrange
+          final validPrompt = AiTestDataFactory.createTestPrompt(
+            id: 'valid-prompt',
+            defaultModelId: 'valid-model',
+          );
 
-        final corruptedPrompt = AiTestDataFactory.createTestPrompt(
-          id: 'corrupted-prompt',
-          defaultModelId: 'corrupted-model',
-        );
+          final corruptedPrompt = AiTestDataFactory.createTestPrompt(
+            id: 'corrupted-prompt',
+            defaultModelId: 'corrupted-model',
+          );
 
-        final validModel = AiTestDataFactory.createTestModel(
-          id: 'valid-model',
-          inferenceProviderId: 'valid-provider',
-        );
+          final validModel = AiTestDataFactory.createTestModel(
+            id: 'valid-model',
+            inferenceProviderId: 'valid-provider',
+          );
 
-        final validProvider = AiTestDataFactory.createTestProvider(
-          id: 'valid-provider',
-          type: InferenceProviderType.openAi,
-        );
+          final validProvider = AiTestDataFactory.createTestProvider(
+            id: 'valid-provider',
+            type: InferenceProviderType.openAi,
+          );
 
-        when(() => mockRepo.getConfigById('valid-model'))
-            .thenAnswer((_) async => validModel);
-        when(() => mockRepo.getConfigById('valid-provider'))
-            .thenAnswer((_) async => validProvider);
-        when(() => mockRepo.getConfigById('corrupted-model'))
-            .thenAnswer((_) async => null);
+          when(
+            () => mockRepo.getConfigById('valid-model'),
+          ).thenAnswer((_) async => validModel);
+          when(
+            () => mockRepo.getConfigById('valid-provider'),
+          ).thenAnswer((_) async => validProvider);
+          when(
+            () => mockRepo.getConfigById('corrupted-model'),
+          ).thenAnswer((_) async => null);
 
-        // Act
-        final result = await filter.filterPromptsByPlatform([
-          validPrompt,
-          corruptedPrompt,
-        ]);
+          // Act
+          final result = await filter.filterPromptsByPlatform([
+            validPrompt,
+            corruptedPrompt,
+          ]);
 
-        // Assert - On desktop, both should be returned
-        expect(result, hasLength(2));
-      });
+          // Assert - On desktop, both should be returned
+          expect(result, hasLength(2));
+        },
+      );
 
       test('handles concurrent calls to filterPromptsByPlatform', () async {
         // Arrange
@@ -689,10 +733,12 @@ void main() {
             type: InferenceProviderType.openAi,
           );
 
-          when(() => mockRepo.getConfigById('model-$i'))
-              .thenAnswer((_) async => model);
-          when(() => mockRepo.getConfigById('provider-$i'))
-              .thenAnswer((_) async => provider);
+          when(
+            () => mockRepo.getConfigById('model-$i'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockRepo.getConfigById('provider-$i'),
+          ).thenAnswer((_) async => provider);
         }
 
         // Act - Run multiple filters concurrently
@@ -739,10 +785,12 @@ void main() {
           inferenceProviderId: 'provider-1',
         );
 
-        when(() => mockRepo.getConfigById('test-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('provider-1'))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockRepo.getConfigById('test-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('provider-1'),
+        ).thenThrow(Exception('Database error'));
 
         // Act - On desktop, should return true before checking provider
         final result = await filter.isPromptAvailableOnPlatform(prompt);

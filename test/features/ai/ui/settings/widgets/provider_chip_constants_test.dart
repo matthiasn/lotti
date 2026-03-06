@@ -114,7 +114,9 @@ void main() {
         );
 
         expect(
-            color, equals(const Color(0xFFFF6B6B))); // Mistral Red/Coral dark
+          color,
+          equals(const Color(0xFFFF6B6B)),
+        ); // Mistral Red/Coral dark
       });
     });
 

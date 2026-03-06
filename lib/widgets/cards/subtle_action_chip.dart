@@ -18,9 +18,9 @@ class SubtleActionChip extends StatelessWidget {
     this.urgentColor,
     super.key,
   }) : assert(
-          label != null || child != null,
-          'Provide either label or child, not neither',
-        );
+         label != null || child != null,
+         'Provide either label or child, not neither',
+       );
 
   final String? label;
   final IconData? icon;
@@ -63,7 +63,8 @@ class SubtleActionChip extends StatelessWidget {
           color: borderColor,
         ),
       ),
-      child: child ??
+      child:
+          child ??
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [

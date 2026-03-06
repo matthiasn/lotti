@@ -208,15 +208,19 @@ void main() {
     when(() => mockPlayer.state).thenReturn(mockPlayerState);
     when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
     when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
-    when(() => mockPlayerStream.position)
-        .thenAnswer((_) => positionController.stream);
-    when(() => mockPlayerStream.buffer)
-        .thenAnswer((_) => bufferController.stream);
-    when(() => mockPlayerStream.completed)
-        .thenAnswer((_) => completedController.stream);
+    when(
+      () => mockPlayerStream.position,
+    ).thenAnswer((_) => positionController.stream);
+    when(
+      () => mockPlayerStream.buffer,
+    ).thenAnswer((_) => bufferController.stream);
+    when(
+      () => mockPlayerStream.completed,
+    ).thenAnswer((_) => completedController.stream);
     when(() => mockPlayer.dispose()).thenAnswer((_) async {});
-    when(() => mockPlayer.open(any(), play: any(named: 'play')))
-        .thenAnswer((_) async {});
+    when(
+      () => mockPlayer.open(any(), play: any(named: 'play')),
+    ).thenAnswer((_) async {});
     when(() => mockPlayer.play()).thenAnswer((_) async {});
     when(() => mockPlayer.pause()).thenAnswer((_) async {});
     when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
@@ -226,20 +230,27 @@ void main() {
     when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
       (_) => const Stream<Amplitude>.empty(),
     );
-    when(() => mockAudioRecorderRepository.hasPermission())
-        .thenAnswer((_) async => false);
-    when(() => mockAudioRecorderRepository.isPaused())
-        .thenAnswer((_) async => false);
-    when(() => mockAudioRecorderRepository.isRecording())
-        .thenAnswer((_) async => false);
-    when(() => mockAudioRecorderRepository.stopRecording())
-        .thenAnswer((_) async {});
-    when(() => mockAudioRecorderRepository.startRecording())
-        .thenAnswer((_) async => null);
-    when(() => mockAudioRecorderRepository.pauseRecording())
-        .thenAnswer((_) async {});
-    when(() => mockAudioRecorderRepository.resumeRecording())
-        .thenAnswer((_) async {});
+    when(
+      () => mockAudioRecorderRepository.hasPermission(),
+    ).thenAnswer((_) async => false);
+    when(
+      () => mockAudioRecorderRepository.isPaused(),
+    ).thenAnswer((_) async => false);
+    when(
+      () => mockAudioRecorderRepository.isRecording(),
+    ).thenAnswer((_) async => false);
+    when(
+      () => mockAudioRecorderRepository.stopRecording(),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockAudioRecorderRepository.startRecording(),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockAudioRecorderRepository.pauseRecording(),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockAudioRecorderRepository.resumeRecording(),
+    ).thenAnswer((_) async {});
 
     // Register mocks with GetIt
     getIt
@@ -269,8 +280,9 @@ void main() {
 
     // Set up category mock BEFORE creating widget (critical for synchronous resolution)
     if (provideCategory) {
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(categoryToUse));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(categoryToUse));
     }
 
     // Create a mock Task entity when linkedTaskId is provided
@@ -351,8 +363,9 @@ void main() {
   }
 
   group('AudioRecordingModal - Speech Recognition Checkbox', () {
-    testWidgets('shows checkbox when transcription prompts exist',
-        (tester) async {
+    testWidgets('shows checkbox when transcription prompts exist', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       // Extra pump for Riverpod async provider resolution
@@ -364,10 +377,12 @@ void main() {
       );
     });
 
-    testWidgets('hides checkbox when transcription prompts are absent',
-        (tester) async {
-      final category =
-          FakeCategoryDefinition(includeTranscriptionPrompts: false);
+    testWidgets('hides checkbox when transcription prompts are absent', (
+      tester,
+    ) async {
+      final category = FakeCategoryDefinition(
+        includeTranscriptionPrompts: false,
+      );
 
       await tester.pumpWidget(createTestWidget(category: category));
       await tester.pump();
@@ -382,15 +397,18 @@ void main() {
   });
 
   group('AudioRecordingModal - Visibility Integration', () {
-    testWidgets('hides entire section when no categoryId provided',
-        (tester) async {
+    testWidgets('hides entire section when no categoryId provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(provideCategory: false));
       await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
       expect(
-          find.byKey(const Key('speech_recognition_checkbox')), findsNothing);
+        find.byKey(const Key('speech_recognition_checkbox')),
+        findsNothing,
+      );
       expect(find.byType(LottiAnimatedCheckbox), findsNothing);
     });
 
@@ -408,8 +426,9 @@ void main() {
       expect(find.byType(LottiAnimatedCheckbox), findsNothing);
     });
 
-    testWidgets('shows speech recognition checkbox when configured',
-        (tester) async {
+    testWidgets('shows speech recognition checkbox when configured', (
+      tester,
+    ) async {
       final category = FakeCategoryDefinition();
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
@@ -437,7 +456,9 @@ void main() {
 
       // Speech checkbox should be present
       expect(
-          find.byKey(const Key('speech_recognition_checkbox')), findsOneWidget);
+        find.byKey(const Key('speech_recognition_checkbox')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides section when automaticPrompts is empty', (tester) async {
@@ -481,8 +502,9 @@ void main() {
     }) {
       final categoryToUse = category ?? FakeCategoryDefinition();
 
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(categoryToUse));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(categoryToUse));
 
       return ProviderScope(
         overrides: [
@@ -555,8 +577,9 @@ void main() {
       );
     });
 
-    testWidgets('hides task checkboxes when linked entry is an Event',
-        (tester) async {
+    testWidgets('hides task checkboxes when linked entry is an Event', (
+      tester,
+    ) async {
       final mockEvent = JournalEvent(
         meta: createMockMetadata('event-123'),
         data: const EventData(
@@ -578,8 +601,9 @@ void main() {
       );
 
       // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -587,8 +611,9 @@ void main() {
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Override entryControllerProvider to return an Event
             entryControllerProvider(id: 'event-123').overrideWith(
@@ -631,8 +656,9 @@ void main() {
       );
     });
 
-    testWidgets('hides task checkboxes when linked entry is a JournalEntry',
-        (tester) async {
+    testWidgets('hides task checkboxes when linked entry is a JournalEntry', (
+      tester,
+    ) async {
       final mockJournalEntry = JournalEntry(
         meta: createMockMetadata('journal-123'),
       );
@@ -649,8 +675,9 @@ void main() {
       );
 
       // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -658,8 +685,9 @@ void main() {
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             entryControllerProvider(id: 'journal-123').overrideWith(
               () => FakeEntryController(mockEntry: mockJournalEntry),
@@ -714,8 +742,9 @@ void main() {
       );
 
       // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -723,8 +752,9 @@ void main() {
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Return null entry
             entryControllerProvider(id: 'nonexistent-123').overrideWith(
@@ -767,75 +797,80 @@ void main() {
       );
     });
 
-    testWidgets('hides task checkboxes when entryController returns null value',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'null-value-123',
-        enableSpeechRecognition: true,
-      );
+    testWidgets(
+      'hides task checkboxes when entryController returns null value',
+      (tester) async {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          vu: 0,
+          dBFS: -60,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: true,
+          linkedId: 'null-value-123',
+          enableSpeechRecognition: true,
+        );
 
-      // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
+        // Set up category mock BEFORE creating widget
+        when(
+          () => mockCategoryRepository.watchCategory('test-category'),
+        ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Return AsyncValue with null value
-            entryControllerProvider(id: 'null-value-123').overrideWith(
-              () => FakeEntryController(mockEntry: null),
-            ),
-          ],
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              playerFactoryProvider.overrideWithValue(() => mockPlayer),
+              // Return AsyncValue with null value
+              entryControllerProvider(id: 'null-value-123').overrideWith(
+                () => FakeEntryController(mockEntry: null),
+              ),
+            ],
+            child: Builder(
+              builder: (context) {
+                if (state.enableSpeechRecognition != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ProviderScope.containerOf(context)
+                        .read(audioRecorderControllerProvider.notifier)
+                        .setEnableSpeechRecognition(
+                          enable: state.enableSpeechRecognition,
+                        );
+                  });
+                }
 
-              return const MaterialApp(
-                home: Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'null-value-123',
+                return const MaterialApp(
+                  home: Scaffold(
+                    body: AudioRecordingModalContent(
+                      categoryId: 'test-category',
+                      linkedId: 'null-value-123',
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
+        await tester.pump();
+        // Extra pump for Riverpod async provider resolution
+        await tester.pump();
 
-      // Only speech recognition visible
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
-        findsOneWidget,
-      );
-    });
+        // Only speech recognition visible
+        expect(
+          find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('shows task checkboxes optimistically during loading state',
-        (tester) async {
+    testWidgets('shows task checkboxes optimistically during loading state', (
+      tester,
+    ) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         vu: 0,
@@ -848,8 +883,9 @@ void main() {
       );
 
       // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -857,8 +893,9 @@ void main() {
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Return loading state
             entryControllerProvider(id: 'loading-123').overrideWith(
@@ -914,8 +951,9 @@ void main() {
       );
 
       // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
+      when(
+        () => mockCategoryRepository.watchCategory('test-category'),
+      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -923,8 +961,9 @@ void main() {
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Override checkboxVisibilityProvider to simulate error state behavior
             // When entryController is in error state, isLinkedToTask should be false,
@@ -976,93 +1015,96 @@ void main() {
     });
 
     testWidgets(
-        'shows Task checkboxes even with Task + no category prompts still respects category config',
-        (tester) async {
-      final now = DateTime.now();
-      const uuid = Uuid();
-      final openStatus = TaskStatus.open(
-        id: uuid.v1(),
-        createdAt: now,
-        utcOffset: 0,
-      );
-      final mockTask = Task(
-        meta: createMockMetadata('task-123'),
-        data: TaskData(
-          title: 'Test Task',
-          status: openStatus,
-          dateFrom: now,
-          dateTo: now,
-          statusHistory: [openStatus],
-        ),
-      );
-
-      final categoryWithoutPrompts = FakeCategoryDefinition(
-        includeChecklistPrompts: false,
-        includeTaskSummaryPrompts: false,
-      );
-
-      // Set up category mock BEFORE creating widget
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(categoryWithoutPrompts));
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-123',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            entryControllerProvider(id: 'task-123').overrideWith(
-              () => FakeEntryController(mockEntry: mockTask),
-            ),
-          ],
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
-
-              return const MaterialApp(
-                home: Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'task-123',
-                  ),
-                ),
-              );
-            },
+      'shows Task checkboxes even with Task + no category prompts still respects category config',
+      (tester) async {
+        final now = DateTime.now();
+        const uuid = Uuid();
+        final openStatus = TaskStatus.open(
+          id: uuid.v1(),
+          createdAt: now,
+          utcOffset: 0,
+        );
+        final mockTask = Task(
+          meta: createMockMetadata('task-123'),
+          data: TaskData(
+            title: 'Test Task',
+            status: openStatus,
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: [openStatus],
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
+        final categoryWithoutPrompts = FakeCategoryDefinition(
+          includeChecklistPrompts: false,
+          includeTaskSummaryPrompts: false,
+        );
 
-      // Task type detected but category config prevents checkboxes
-      expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
-        findsOneWidget,
-      );
-    });
+        // Set up category mock BEFORE creating widget
+        when(
+          () => mockCategoryRepository.watchCategory('test-category'),
+        ).thenAnswer((_) => Stream.value(categoryWithoutPrompts));
+
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          vu: 0,
+          dBFS: -60,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: true,
+          linkedId: 'task-123',
+          enableSpeechRecognition: true,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              playerFactoryProvider.overrideWithValue(() => mockPlayer),
+              entryControllerProvider(id: 'task-123').overrideWith(
+                () => FakeEntryController(mockEntry: mockTask),
+              ),
+            ],
+            child: Builder(
+              builder: (context) {
+                if (state.enableSpeechRecognition != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ProviderScope.containerOf(context)
+                        .read(audioRecorderControllerProvider.notifier)
+                        .setEnableSpeechRecognition(
+                          enable: state.enableSpeechRecognition,
+                        );
+                  });
+                }
+
+                return const MaterialApp(
+                  home: Scaffold(
+                    body: AudioRecordingModalContent(
+                      categoryId: 'test-category',
+                      linkedId: 'task-123',
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+        // Extra pump for Riverpod async provider resolution
+        await tester.pump();
+
+        // Task type detected but category config prevents checkboxes
+        expect(
+          find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

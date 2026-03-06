@@ -6,8 +6,9 @@ void setFakeDocumentsPath() {
   final dir = uuid.v1();
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-          const MethodChannel('plugins.flutter.io/path_provider'),
-          (MethodCall methodCall) async {
-    return '/tmp/$dir';
-  });
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall methodCall) async {
+          return '/tmp/$dir';
+        },
+      );
 }

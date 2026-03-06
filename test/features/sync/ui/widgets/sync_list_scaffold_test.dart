@@ -132,11 +132,13 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => setUpTestGetIt(
-        additionalSetup: () {
-          getIt.registerSingleton<UserActivityService>(UserActivityService());
-        },
-      ));
+  setUp(
+    () => setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<UserActivityService>(UserActivityService());
+      },
+    ),
+  );
   tearDown(tearDownTestGetIt);
 
   group('SyncListScaffold', () {

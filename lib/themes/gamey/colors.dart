@@ -176,9 +176,9 @@ class GameyColors {
 
   /// Get priority color for tasks.
   static Color priorityColor(TaskPriority priority) => switch (priority) {
-        TaskPriority.p0Urgent => priorityUrgent,
-        TaskPriority.p1High => priorityHigh,
-        TaskPriority.p2Medium => priorityMedium,
-        TaskPriority.p3Low => priorityLow,
-      };
+    TaskPriority.p0Urgent => priorityUrgent,
+    TaskPriority.p1High => priorityHigh,
+    TaskPriority.p2Medium => priorityMedium,
+    TaskPriority.p3Low => priorityLow,
+  };
 }

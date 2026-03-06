@@ -71,7 +71,8 @@ class TaskLabelHandler {
     // Parse and rank by confidence.
     final parseResult = parseLabelCallArgs(jsonEncode(args));
     if (parseResult.selectedIds.isEmpty) {
-      const message = 'No valid labels after parsing '
+      const message =
+          'No valid labels after parsing '
           '(all dropped due to low confidence or empty input).';
       developer.log(message, name: 'TaskLabelHandler');
       return const TaskLabelResult(

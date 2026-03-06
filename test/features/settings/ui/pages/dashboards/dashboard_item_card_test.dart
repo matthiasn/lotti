@@ -24,8 +24,9 @@ void main() {
       mockJournalDb = MockJournalDb();
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       // Register mocks with GetIt
       if (getIt.isRegistered<TagsService>()) {
@@ -47,8 +48,9 @@ void main() {
     tearDown(getIt.reset);
 
     group('Measurement Item', () {
-      testWidgets('should render measurement item card correctly',
-          (tester) async {
+      testWidgets('should render measurement item card correctly', (
+        tester,
+      ) async {
         const measurementItem = DashboardItem.measurement(
           id: 'test-measurement-id',
           aggregationType: AggregationType.dailySum,
@@ -56,19 +58,21 @@ void main() {
 
         final measurableTypes = [
           EntityDefinition.measurableDataType(
-            id: 'test-measurement-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            displayName: 'Test Measurement',
-            description: 'Test description',
-            unitName: 'kg',
-            version: 1,
-            vectorClock: const VectorClock({'user': 0}),
-          ) as MeasurableDataType,
+                id: 'test-measurement-id',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                displayName: 'Test Measurement',
+                description: 'Test description',
+                unitName: 'kg',
+                version: 1,
+                vectorClock: const VectorClock({'user': 0}),
+              )
+              as MeasurableDataType,
         ];
 
-        when(() => mockJournalDb.getAllMeasurableDataTypes())
-            .thenAnswer((_) async => measurableTypes);
+        when(
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenAnswer((_) async => measurableTypes);
 
         var updateCalled = false;
         DashboardItem? updatedItem;
@@ -109,27 +113,30 @@ void main() {
         expect(updatedIndex, equals(0));
       });
 
-      testWidgets('should handle measurement item without aggregation type',
-          (tester) async {
+      testWidgets('should handle measurement item without aggregation type', (
+        tester,
+      ) async {
         const measurementItem = DashboardItem.measurement(
           id: 'test-measurement-id',
         );
 
         final measurableTypes = [
           EntityDefinition.measurableDataType(
-            id: 'test-measurement-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            displayName: 'Test Measurement',
-            description: 'Test description',
-            unitName: 'kg',
-            version: 1,
-            vectorClock: const VectorClock({'user': 0}),
-          ) as MeasurableDataType,
+                id: 'test-measurement-id',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                displayName: 'Test Measurement',
+                description: 'Test description',
+                unitName: 'kg',
+                version: 1,
+                vectorClock: const VectorClock({'user': 0}),
+              )
+              as MeasurableDataType,
         ];
 
-        when(() => mockJournalDb.getAllMeasurableDataTypes())
-            .thenAnswer((_) async => measurableTypes);
+        when(
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenAnswer((_) async => measurableTypes);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -147,15 +154,17 @@ void main() {
         expect(find.text('Test Measurement'), findsOneWidget);
       });
 
-      testWidgets('should handle measurement item with no matching data type',
-          (tester) async {
+      testWidgets('should handle measurement item with no matching data type', (
+        tester,
+      ) async {
         const measurementItem = DashboardItem.measurement(
           id: 'non-existent-id',
           aggregationType: AggregationType.dailySum,
         );
 
-        when(() => mockJournalDb.getAllMeasurableDataTypes())
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenAnswer((_) async => []);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -252,20 +261,25 @@ void main() {
           habitId: 'test-habit-id',
         );
 
-        final habitDefinition = EntityDefinition.habit(
-          id: 'test-habit-id',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          name: 'Daily Exercise',
-          description: 'Exercise for 30 minutes',
-          habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
-          vectorClock: const VectorClock({'user': 0}),
-          active: true,
-          private: false,
-        ) as HabitDefinition;
+        final habitDefinition =
+            EntityDefinition.habit(
+                  id: 'test-habit-id',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  name: 'Daily Exercise',
+                  description: 'Exercise for 30 minutes',
+                  habitSchedule: const HabitSchedule.daily(
+                    requiredCompletions: 1,
+                  ),
+                  vectorClock: const VectorClock({'user': 0}),
+                  active: true,
+                  private: false,
+                )
+                as HabitDefinition;
 
-        when(() => mockJournalDb.getHabitById('test-habit-id'))
-            .thenAnswer((_) async => habitDefinition);
+        when(
+          () => mockJournalDb.getHabitById('test-habit-id'),
+        ).thenAnswer((_) async => habitDefinition);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -284,14 +298,16 @@ void main() {
         expect(find.text('Daily Exercise'), findsOneWidget);
       });
 
-      testWidgets('should handle habit item with no habit definition',
-          (tester) async {
+      testWidgets('should handle habit item with no habit definition', (
+        tester,
+      ) async {
         const habitItem = DashboardItem.habitChart(
           habitId: 'non-existent-habit',
         );
 
-        when(() => mockJournalDb.getHabitById('non-existent-habit'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.getHabitById('non-existent-habit'),
+        ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -312,8 +328,9 @@ void main() {
     });
 
     group('Story Time Chart Item', () {
-      testWidgets('should render story time chart item correctly',
-          (tester) async {
+      testWidgets('should render story time chart item correctly', (
+        tester,
+      ) async {
         const storyTimeItem = DashboardItem.storyTimeChart(
           storyTagId: 'test-tag-id',
           color: '#0000FF',
@@ -328,8 +345,9 @@ void main() {
           vectorClock: const VectorClock({'user': 0}),
         );
 
-        when(() => mockTagsService.getTagById('test-tag-id'))
-            .thenReturn(tagEntity);
+        when(
+          () => mockTagsService.getTagById('test-tag-id'),
+        ).thenReturn(tagEntity);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -346,15 +364,17 @@ void main() {
         expect(find.text('Story Tag'), findsOneWidget);
       });
 
-      testWidgets('should handle story time item with no tag entity',
-          (tester) async {
+      testWidgets('should handle story time item with no tag entity', (
+        tester,
+      ) async {
         const storyTimeItem = DashboardItem.storyTimeChart(
           storyTagId: 'non-existent-tag',
           color: '#0000FF',
         );
 
-        when(() => mockTagsService.getTagById('non-existent-tag'))
-            .thenReturn(null);
+        when(
+          () => mockTagsService.getTagById('non-existent-tag'),
+        ).thenReturn(null);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -373,8 +393,9 @@ void main() {
     });
 
     group('Wildcard Story Time Chart Item', () {
-      testWidgets('should render wildcard story time chart item correctly',
-          (tester) async {
+      testWidgets('should render wildcard story time chart item correctly', (
+        tester,
+      ) async {
         const wildcardItem = DashboardItem.wildcardStoryTimeChart(
           storySubstring: 'Adventure Stories',
           color: '#FF00FF',

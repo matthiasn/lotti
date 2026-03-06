@@ -59,10 +59,10 @@ class FakeMetadata extends Fake implements Metadata {
 class FakeTaskData extends Fake implements TaskData {
   @override
   TaskStatus get status => TaskStatus.open(
-        id: 'status-1',
-        createdAt: DateTime.now(),
-        utcOffset: 0,
-      );
+    id: 'status-1',
+    createdAt: DateTime.now(),
+    utcOffset: 0,
+  );
 
   @override
   DateTime get dateFrom => DateTime.now();
@@ -119,16 +119,19 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb);
 
-    when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+    ).thenAnswer((_) async => false);
 
     // Setup default mocks
-    when(() => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     container = ProviderContainer(
       overrides: [
@@ -153,65 +156,71 @@ void main() {
   });
 
   group('UnifiedAiInferenceRepository - Checklist Updates', () {
-    test('should include function tools for checklistUpdates response type',
-        () async {
-      // Arrange
-      final task = Task(
-        meta: FakeMetadata(),
-        data: FakeTaskData(),
-        entryText: const EntryText(plainText: 'Test task'),
-      );
+    test(
+      'should include function tools for checklistUpdates response type',
+      () async {
+        // Arrange
+        final task = Task(
+          meta: FakeMetadata(),
+          data: FakeTaskData(),
+          entryText: const EntryText(plainText: 'Test task'),
+        );
 
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Checklist Updates',
-        systemMessage: 'Process checklist updates',
-        userMessage: 'Update checklists',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-      );
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Checklist Updates',
+          systemMessage: 'Process checklist updates',
+          userMessage: 'Update checklists',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
 
-      final model = AiConfigModel(
-        id: 'model-1',
-        name: 'Test Model',
-        providerModelId: 'gpt-4',
-        inferenceProviderId: 'provider-1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Test Model',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
 
-      final provider = AiConfigInferenceProvider(
-        id: 'provider-1',
-        baseUrl: 'https://api.example.com',
-        apiKey: 'test-key',
-        name: 'Test Provider',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-key',
+          name: 'Test Provider',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
 
-      // Setup mocks
-      when(() => mockAiInputRepo.getEntity('task-1'))
-          .thenAnswer((_) async => task);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'))
-          .thenAnswer((_) async => '{"task": "details"}');
+        // Setup mocks
+        when(
+          () => mockAiInputRepo.getEntity('task-1'),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+        ).thenAnswer((_) async => '{"task": "details"}');
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
 
-      // Capture the tools passed to generate method
-      List<ChatCompletionTool>? capturedTools;
-      when(() => mockCloudRepo.generate(
+        // Capture the tools passed to generate method
+        List<ChatCompletionTool>? capturedTools;
+        when(
+          () => mockCloudRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -221,108 +230,121 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
-          )).thenAnswer((invocation) {
-        capturedTools =
-            invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
-        return streamController.stream;
-      });
+          ),
+        ).thenAnswer((invocation) {
+          capturedTools =
+              invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
+          return streamController.stream;
+        });
 
-      // Act
-      final future = repository.runInference(
-        entityId: 'task-1',
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        // Act
+        final future = repository.runInference(
+          entityId: 'task-1',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Add test response
-      streamController.add(
-        CreateChatCompletionStreamResponse(
-          id: 'test',
-          created: DateTime.now().millisecondsSinceEpoch,
-          model: 'gpt-4',
-          choices: [],
-        ),
-      );
-      await streamController.close();
+        // Add test response
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'test',
+            created: DateTime.now().millisecondsSinceEpoch,
+            model: 'gpt-4',
+            choices: [],
+          ),
+        );
+        await streamController.close();
 
-      await future;
+        await future;
 
-      // Assert
-      expect(capturedTools, isNotNull);
-      expect(capturedTools!.length, greaterThan(0));
+        // Assert
+        expect(capturedTools, isNotNull);
+        expect(capturedTools!.length, greaterThan(0));
 
-      // Should include both checklist and task functions
-      final functionNames =
-          capturedTools!.map((tool) => tool.function.name).toSet();
+        // Should include both checklist and task functions
+        final functionNames = capturedTools!
+            .map((tool) => tool.function.name)
+            .toSet();
 
-      expect(functionNames,
-          contains(ChecklistCompletionFunctions.suggestChecklistCompletion));
-      // Single-item tool removed; only batch tool is exposed
-      expect(functionNames,
-          contains(ChecklistCompletionFunctions.addMultipleChecklistItems));
-      expect(functionNames, contains(TaskFunctions.setTaskLanguage));
+        expect(
+          functionNames,
+          contains(ChecklistCompletionFunctions.suggestChecklistCompletion),
+        );
+        // Single-item tool removed; only batch tool is exposed
+        expect(
+          functionNames,
+          contains(ChecklistCompletionFunctions.addMultipleChecklistItems),
+        );
+        expect(functionNames, contains(TaskFunctions.setTaskLanguage));
 
-      // Label assignment tool is always enabled for checklistUpdates
-      expect(functionNames, contains('assign_task_labels'));
-    });
+        // Label assignment tool is always enabled for checklistUpdates
+        expect(functionNames, contains('assign_task_labels'));
+      },
+    );
 
-    test('should not create AI response entry for checklistUpdates type',
-        () async {
-      // Arrange
-      final task = Task(
-        meta: FakeMetadata(),
-        data: FakeTaskData(),
-        entryText: const EntryText(plainText: 'Test task'),
-      );
+    test(
+      'should not create AI response entry for checklistUpdates type',
+      () async {
+        // Arrange
+        final task = Task(
+          meta: FakeMetadata(),
+          data: FakeTaskData(),
+          entryText: const EntryText(plainText: 'Test task'),
+        );
 
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Checklist Updates',
-        systemMessage: 'Process checklist updates',
-        userMessage: 'Update checklists',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-      );
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Checklist Updates',
+          systemMessage: 'Process checklist updates',
+          userMessage: 'Update checklists',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
 
-      final model = AiConfigModel(
-        id: 'model-1',
-        name: 'Test Model',
-        providerModelId: 'gpt-4',
-        inferenceProviderId: 'provider-1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Test Model',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
 
-      final provider = AiConfigInferenceProvider(
-        id: 'provider-1',
-        baseUrl: 'https://api.example.com',
-        apiKey: 'test-key',
-        name: 'Test Provider',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-key',
+          name: 'Test Provider',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
 
-      // Setup mocks
-      when(() => mockAiInputRepo.getEntity('task-1'))
-          .thenAnswer((_) async => task);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'))
-          .thenAnswer((_) async => '{"task": "details"}');
+        // Setup mocks
+        when(
+          () => mockAiInputRepo.getEntity('task-1'),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+        ).thenAnswer((_) async => '{"task": "details"}');
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
-      when(() => mockCloudRepo.generate(
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+        when(
+          () => mockCloudRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -332,105 +354,115 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
-          )).thenAnswer((_) => streamController.stream);
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-      // Act
-      final future = repository.runInference(
-        entityId: 'task-1',
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        // Act
+        final future = repository.runInference(
+          entityId: 'task-1',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Add test response
-      streamController.add(
-        CreateChatCompletionStreamResponse(
-          id: 'test',
-          created: DateTime.now().millisecondsSinceEpoch,
-          model: 'gpt-4',
-          choices: [
-            const ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(
-                content: 'Test response',
+        // Add test response
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'test',
+            created: DateTime.now().millisecondsSinceEpoch,
+            model: 'gpt-4',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
               ),
-            ),
-          ],
-        ),
-      );
+            ],
+          ),
+        );
 
-      await streamController.close();
+        await streamController.close();
 
-      await future;
+        await future;
 
-      // Assert - should NOT call createAiResponseEntry for checklistUpdates type
-      verifyNever(() => mockAiInputRepo.createAiResponseEntry(
+        // Assert - should NOT call createAiResponseEntry for checklistUpdates type
+        verifyNever(
+          () => mockAiInputRepo.createAiResponseEntry(
             data: any<AiResponseData>(named: 'data'),
             start: any<DateTime>(named: 'start'),
             linkedId: any<String?>(named: 'linkedId'),
             categoryId: any<String?>(named: 'categoryId'),
-          ));
-    });
+          ),
+        );
+      },
+    );
 
-    test('should exclude function tools for taskSummary response type',
-        () async {
-      // Arrange
-      final task = Task(
-        meta: FakeMetadata(),
-        data: FakeTaskData(),
-        entryText: const EntryText(plainText: 'Test task'),
-      );
+    test(
+      'should exclude function tools for taskSummary response type',
+      () async {
+        // Arrange
+        final task = Task(
+          meta: FakeMetadata(),
+          data: FakeTaskData(),
+          entryText: const EntryText(plainText: 'Test task'),
+        );
 
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Task Summary',
-        systemMessage: 'Generate task summary',
-        userMessage: 'Summarize the task',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: true,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-      );
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          systemMessage: 'Generate task summary',
+          userMessage: 'Summarize the task',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime.now(),
+          useReasoning: true,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        );
 
-      final model = AiConfigModel(
-        id: 'model-1',
-        name: 'Test Model',
-        providerModelId: 'gpt-4',
-        inferenceProviderId: 'provider-1',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      );
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Test Model',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
 
-      final provider = AiConfigInferenceProvider(
-        id: 'provider-1',
-        baseUrl: 'https://api.example.com',
-        apiKey: 'test-key',
-        name: 'Test Provider',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-key',
+          name: 'Test Provider',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
 
-      // Setup mocks
-      when(() => mockAiInputRepo.getEntity('task-1'))
-          .thenAnswer((_) async => task);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'))
-          .thenAnswer((_) async => '{"task": "details"}');
+        // Setup mocks
+        when(
+          () => mockAiInputRepo.getEntity('task-1'),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+        ).thenAnswer((_) async => '{"task": "details"}');
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
 
-      // Capture the tools passed to generate method
-      List<ChatCompletionTool>? capturedTools;
-      when(() => mockCloudRepo.generate(
+        // Capture the tools passed to generate method
+        List<ChatCompletionTool>? capturedTools;
+        when(
+          () => mockCloudRepo.generate(
             any(),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -440,35 +472,37 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
-          )).thenAnswer((invocation) {
-        capturedTools =
-            invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
-        return streamController.stream;
-      });
+          ),
+        ).thenAnswer((invocation) {
+          capturedTools =
+              invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
+          return streamController.stream;
+        });
 
-      // Act
-      final future = repository.runInference(
-        entityId: 'task-1',
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        // Act
+        final future = repository.runInference(
+          entityId: 'task-1',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Add test response
-      streamController.add(
-        CreateChatCompletionStreamResponse(
-          id: 'test',
-          created: DateTime.now().millisecondsSinceEpoch,
-          model: 'gpt-4',
-          choices: [],
-        ),
-      );
-      await streamController.close();
+        // Add test response
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'test',
+            created: DateTime.now().millisecondsSinceEpoch,
+            model: 'gpt-4',
+            choices: [],
+          ),
+        );
+        await streamController.close();
 
-      await future;
+        await future;
 
-      // Assert - should NOT include tools for task summary
-      expect(capturedTools, isNull);
-    });
+        // Assert - should NOT include tools for task summary
+        expect(capturedTools, isNull);
+      },
+    );
   });
 }

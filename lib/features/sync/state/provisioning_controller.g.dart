@@ -15,15 +15,15 @@ final provisioningControllerProvider = ProvisioningControllerProvider._();
 final class ProvisioningControllerProvider
     extends $NotifierProvider<ProvisioningController, ProvisioningState> {
   ProvisioningControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'provisioningControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'provisioningControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$provisioningControllerHash();
@@ -50,11 +50,14 @@ abstract class _$ProvisioningController extends $Notifier<ProvisioningState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<ProvisioningState, ProvisioningState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<ProvisioningState, ProvisioningState>,
-        ProvisioningState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ProvisioningState, ProvisioningState>,
+              ProvisioningState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

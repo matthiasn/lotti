@@ -43,7 +43,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   @override
   void initState() {
     final provider = taskAppBarControllerProvider(id: widget.taskId);
-    _updateOffsetListener = () => ref.read(provider.notifier).updateOffset(
+    _updateOffsetListener = () => ref
+        .read(provider.notifier)
+        .updateOffset(
           _scrollController.offset,
         );
 
@@ -148,21 +150,22 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                       left: 10,
                       right: 10,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        LinkedEntriesWithTimer(
-                          item: task,
-                          entryKeyBuilder: _getEntryKey,
-                          highlightedEntryId: highlightedEntryId,
-                          hideTaskEntries: true,
-                        ),
-                        LinkedFromEntriesWidget(
-                          task,
-                          hideTaskEntries: true,
-                        ),
-                      ],
-                    ).animate().fadeIn(
+                    child:
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            LinkedEntriesWithTimer(
+                              item: task,
+                              entryKeyBuilder: _getEntryKey,
+                              highlightedEntryId: highlightedEntryId,
+                              hideTaskEntries: true,
+                            ),
+                            LinkedFromEntriesWidget(
+                              task,
+                              hideTaskEntries: true,
+                            ),
+                          ],
+                        ).animate().fadeIn(
                           duration: const Duration(milliseconds: 100),
                         ),
                   ),

@@ -60,7 +60,9 @@ void publishTaskFocus({
   required WidgetRef ref,
   double alignment = 0.0,
 }) {
-  ref.read(taskFocusControllerProvider(id: taskId).notifier).publishTaskFocus(
+  ref
+      .read(taskFocusControllerProvider(id: taskId).notifier)
+      .publishTaskFocus(
         entryId: entryId,
         alignment: alignment,
       );

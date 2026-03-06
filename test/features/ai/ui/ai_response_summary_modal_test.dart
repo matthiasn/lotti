@@ -110,8 +110,9 @@ void main() {
       }
     });
 
-    testWidgets('has GestureDetector for copying text in Input tab',
-        (tester) async {
+    testWidgets('has GestureDetector for copying text in Input tab', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
@@ -322,8 +323,9 @@ void main() {
       expect(find.text('450ms'), findsOneWidget);
     });
 
-    testWidgets('does not show Performance section without usage data',
-        (tester) async {
+    testWidgets('does not show Performance section without usage data', (
+      tester,
+    ) async {
       final aiResponseNoUsage = AiResponseEntry(
         meta: Metadata(
           id: 'no-usage-id',
@@ -408,10 +410,12 @@ void main() {
       UrlLauncherPlatform.instance = mockUrlLauncher;
       addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
 
-      when(() => mockUrlLauncher.canLaunch(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockUrlLauncher.launchUrl(any(), any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.canLaunch(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
 
       final aiResponseWithLink = AiResponseEntry(
         meta: Metadata(
@@ -447,8 +451,9 @@ void main() {
       // Find GestureDetector widgets with onTap and manually call the callback
       // to verify the URL launcher integration
       var linkCallbackFound = false;
-      final gestureDetectors =
-          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      final gestureDetectors = tester.widgetList<GestureDetector>(
+        find.byType(GestureDetector),
+      );
       for (final gd in gestureDetectors) {
         if (gd.onTap != null) {
           // Try to invoke the callback and check if it triggers URL launcher
@@ -457,19 +462,23 @@ void main() {
 
           // Check if URL launcher was called with the expected URL
           try {
-            verify(() => mockUrlLauncher.launchUrl(
-                  'https://docs.flutter.dev',
-                  any(),
-                )).called(1);
+            verify(
+              () => mockUrlLauncher.launchUrl(
+                'https://docs.flutter.dev',
+                any(),
+              ),
+            ).called(1);
             linkCallbackFound = true;
             break;
           } catch (_) {
             // This callback didn't trigger the right URL, continue searching
             reset(mockUrlLauncher);
-            when(() => mockUrlLauncher.canLaunch(any()))
-                .thenAnswer((_) async => true);
-            when(() => mockUrlLauncher.launchUrl(any(), any()))
-                .thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.canLaunch(any()),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.launchUrl(any(), any()),
+            ).thenAnswer((_) async => true);
           }
         }
       }

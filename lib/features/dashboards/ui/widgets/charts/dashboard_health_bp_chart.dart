@@ -25,7 +25,8 @@ class DashboardHealthBpChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final systolicData = ref
+    final systolicData =
+        ref
             .watch(
               healthObservationsControllerProvider(
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
@@ -36,7 +37,8 @@ class DashboardHealthBpChart extends ConsumerWidget {
             .value ??
         [];
 
-    final diastolicData = ref
+    final diastolicData =
+        ref
             .watch(
               healthObservationsControllerProvider(
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',

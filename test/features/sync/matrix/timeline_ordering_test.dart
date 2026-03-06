@@ -13,12 +13,14 @@ void main() {
     older = _MockEvent();
     newer = _MockEvent();
 
-    when(() => older.originServerTs)
-        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+    when(
+      () => older.originServerTs,
+    ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
     when(() => older.eventId).thenReturn(r'$0001');
 
-    when(() => newer.originServerTs)
-        .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+    when(
+      () => newer.originServerTs,
+    ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
     when(() => newer.eventId).thenReturn(r'$0002');
   });
 
@@ -37,12 +39,15 @@ void main() {
       final second = _MockEvent();
       final later = _MockEvent();
 
-      when(() => first.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-      when(() => second.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-      when(() => later.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+      when(
+        () => first.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(
+        () => second.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(
+        () => later.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
 
       when(() => first.eventId).thenReturn(r'$0002');
       when(() => second.eventId).thenReturn(r'$0001');
@@ -63,14 +68,18 @@ void main() {
       final c = _MockEvent();
       final d = _MockEvent();
 
-      when(() => a.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-      when(() => b.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-      when(() => c.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
-      when(() => d.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(
+        () => a.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(
+        () => b.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(
+        () => c.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+      when(
+        () => d.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
 
       when(() => a.eventId).thenReturn(r'$a');
       when(() => b.eventId).thenReturn(r'$b');

@@ -16,8 +16,8 @@ class CategorySwitchSettings {
 }
 
 /// Callback type for switch value changes
-typedef SwitchFieldChanged = void Function(SwitchFieldType field,
-    {required bool value});
+typedef SwitchFieldChanged =
+    void Function(SwitchFieldType field, {required bool value});
 
 /// Enum to identify which switch was changed
 enum SwitchFieldType { private, active, favorite }

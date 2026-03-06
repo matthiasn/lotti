@@ -73,8 +73,9 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockTimeService = MockTimeService();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -255,24 +256,30 @@ void main() {
         data: testTask.data.copyWith(due: DateTime(2025, 6, 15)),
       );
 
-      when(() => mockPersistenceLogic.updateJournalEntityText(
-            any(),
-            any(),
-            any(),
-          )).thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
 
-      when(() => mockEditorStateService.entryWasSaved(
-            id: any(named: 'id'),
-            lastSaved: any(named: 'lastSaved'),
-            controller: any(named: 'controller'),
-          )).thenAnswer((_) async {});
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: any(named: 'id'),
+          lastSaved: any(named: 'lastSaved'),
+          controller: any(named: 'controller'),
+        ),
+      ).thenAnswer((_) async {});
 
-      when(() => mockPersistenceLogic.updateTask(
-            journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
-            categoryId: any(named: 'categoryId'),
-            entryText: any(named: 'entryText'),
-          )).thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+          categoryId: any(named: 'categoryId'),
+          entryText: any(named: 'entryText'),
+        ),
+      ).thenAnswer((_) async => true);
 
       final overrides = <Override>[
         entryControllerProvider(id: task.meta.id).overrideWith(
@@ -297,12 +304,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify updateTask was called with null due date
-      final captured = verify(() => mockPersistenceLogic.updateTask(
-            journalEntityId: task.meta.id,
-            taskData: captureAny(named: 'taskData'),
-            categoryId: any(named: 'categoryId'),
-            entryText: any(named: 'entryText'),
-          )).captured;
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: task.meta.id,
+          taskData: captureAny(named: 'taskData'),
+          categoryId: any(named: 'categoryId'),
+          entryText: any(named: 'entryText'),
+        ),
+      ).captured;
 
       final updatedData = captured.single as TaskData;
       expect(updatedData.due, isNull);
@@ -343,73 +352,80 @@ void main() {
     });
 
     testWidgets(
-        'shows grayed-out styling for completed tasks with overdue date',
-        (tester) async {
-      // Set due date to yesterday (would be overdue for non-completed tasks)
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final now = DateTime(2025, 6, 10);
-      final task = testTask.copyWith(
-        data: testTask.data.copyWith(
-          due: yesterday,
-          status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
-        ),
-      );
+      'shows grayed-out styling for completed tasks with overdue date',
+      (tester) async {
+        // Set due date to yesterday (would be overdue for non-completed tasks)
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        final now = DateTime(2025, 6, 10);
+        final task = testTask.copyWith(
+          data: testTask.data.copyWith(
+            due: yesterday,
+            status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+          ),
+        );
 
-      final overrides = <Override>[
-        entryControllerProvider(id: task.meta.id).overrideWith(
-          () => _TestEntryController(task),
-        ),
-      ];
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+        ];
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: overrides,
-          child: TaskDueDateWrapper(taskId: task.meta.id),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskDueDateWrapper(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Verify icon does NOT have red color (should be grayed out)
-      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-      // For completed tasks, urgency is disabled so color should NOT be red
-      expect(icon.color?.r, isNot(taskStatusRed.r));
-    });
+        // Verify icon does NOT have red color (should be grayed out)
+        final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+        // For completed tasks, urgency is disabled so color should NOT be red
+        expect(icon.color?.r, isNot(taskStatusRed.r));
+      },
+    );
 
-    testWidgets('shows grayed-out styling for rejected tasks with overdue date',
-        (tester) async {
-      // Set due date to yesterday (would be overdue for non-rejected tasks)
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final now = DateTime(2025, 6, 10);
-      final task = testTask.copyWith(
-        data: testTask.data.copyWith(
-          due: yesterday,
-          status: TaskStatus.rejected(
-              id: 's-rejected', createdAt: now, utcOffset: 0),
-        ),
-      );
+    testWidgets(
+      'shows grayed-out styling for rejected tasks with overdue date',
+      (tester) async {
+        // Set due date to yesterday (would be overdue for non-rejected tasks)
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        final now = DateTime(2025, 6, 10);
+        final task = testTask.copyWith(
+          data: testTask.data.copyWith(
+            due: yesterday,
+            status: TaskStatus.rejected(
+              id: 's-rejected',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+          ),
+        );
 
-      final overrides = <Override>[
-        entryControllerProvider(id: task.meta.id).overrideWith(
-          () => _TestEntryController(task),
-        ),
-      ];
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+        ];
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: overrides,
-          child: TaskDueDateWrapper(taskId: task.meta.id),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskDueDateWrapper(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Verify icon does NOT have red color (should be grayed out)
-      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-      // For rejected tasks, urgency is disabled so color should NOT be red
-      expect(icon.color?.r, isNot(taskStatusRed.r));
-    });
+        // Verify icon does NOT have red color (should be grayed out)
+        final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+        // For rejected tasks, urgency is disabled so color should NOT be red
+        expect(icon.color?.r, isNot(taskStatusRed.r));
+      },
+    );
 
-    testWidgets('shows grayed-out styling for completed tasks due today',
-        (tester) async {
+    testWidgets('shows grayed-out styling for completed tasks due today', (
+      tester,
+    ) async {
       final today = DateTime.now();
       final now = DateTime(2025, 6, 10);
       final task = testTask.copyWith(

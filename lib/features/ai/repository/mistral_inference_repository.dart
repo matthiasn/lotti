@@ -15,7 +15,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// returned as an array instead of a string.
 class MistralInferenceRepository {
   MistralInferenceRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -102,88 +102,101 @@ class MistralInferenceRepository {
 
   /// Convert openai_dart messages to plain maps for manual serialization.
   List<Map<String, dynamic>> _convertMessages(
-      List<ChatCompletionMessage> messages) {
+    List<ChatCompletionMessage> messages,
+  ) {
     return messages.map((message) {
       final role = message.role;
       switch (role) {
         case ChatCompletionMessageRole.system:
           return message.mapOrNull(
-              system: (m) => {
-                    'role': 'system',
-                    'content': m.content,
-                  })!;
+            system: (m) => {
+              'role': 'system',
+              'content': m.content,
+            },
+          )!;
 
         case ChatCompletionMessageRole.user:
-          return message.mapOrNull(user: (m) {
-            final content = m.content.mapOrNull(
-              string: (c) => c.value,
-              parts: (c) => c.value
-                  .map((part) => part.mapOrNull(
+          return message.mapOrNull(
+            user: (m) {
+              final content = m.content.mapOrNull(
+                string: (c) => c.value,
+                parts: (c) => c.value
+                    .map(
+                      (part) => part.mapOrNull(
                         text: (t) => {'type': 'text', 'text': t.text},
                         image: (i) => {
                           'type': 'image_url',
-                          'image_url': {'url': i.imageUrl.url}
+                          'image_url': {'url': i.imageUrl.url},
                         },
                         audio: (a) => {
                           'type': 'input_audio',
                           'input_audio': {
                             'data': a.inputAudio.data,
-                            'format': a.inputAudio.format.name
-                          }
+                            'format': a.inputAudio.format.name,
+                          },
                         },
-                      ))
-                  .whereType<Map<String, dynamic>>()
-                  .toList(),
-            );
-            return {
-              'role': 'user',
-              'content': content,
-            };
-          })!;
+                      ),
+                    )
+                    .whereType<Map<String, dynamic>>()
+                    .toList(),
+              );
+              return {
+                'role': 'user',
+                'content': content,
+              };
+            },
+          )!;
 
         case ChatCompletionMessageRole.assistant:
-          return message.mapOrNull(assistant: (m) {
-            final map = <String, dynamic>{'role': 'assistant'};
-            if (m.content != null) {
-              map['content'] = m.content;
-            }
-            if (m.toolCalls != null && m.toolCalls!.isNotEmpty) {
-              map['tool_calls'] = m.toolCalls!
-                  .map((tc) => {
+          return message.mapOrNull(
+            assistant: (m) {
+              final map = <String, dynamic>{'role': 'assistant'};
+              if (m.content != null) {
+                map['content'] = m.content;
+              }
+              if (m.toolCalls != null && m.toolCalls!.isNotEmpty) {
+                map['tool_calls'] = m.toolCalls!
+                    .map(
+                      (tc) => {
                         'id': tc.id,
                         'type': 'function',
                         'function': {
                           'name': tc.function.name,
                           'arguments': tc.function.arguments,
-                        }
-                      })
-                  .toList();
-            }
-            return map;
-          })!;
+                        },
+                      },
+                    )
+                    .toList();
+              }
+              return map;
+            },
+          )!;
 
         case ChatCompletionMessageRole.tool:
           return message.mapOrNull(
-              tool: (m) => {
-                    'role': 'tool',
-                    'tool_call_id': m.toolCallId,
-                    'content': m.content,
-                  })!;
+            tool: (m) => {
+              'role': 'tool',
+              'tool_call_id': m.toolCallId,
+              'content': m.content,
+            },
+          )!;
 
         case ChatCompletionMessageRole.function:
           return message.mapOrNull(
-              function: (m) => {
-                    'role': 'function',
-                    'name': m.name,
-                    'content': m.content,
-                  })!;
+            function: (m) => {
+              'role': 'function',
+              'name': m.name,
+              'content': m.content,
+            },
+          )!;
 
         case ChatCompletionMessageRole.developer:
           return message.mapOrNull(
-              developer: (m) => {
-                    'role': 'developer',
-                    'content': m.content,
-                  })!;
+            developer: (m) => {
+              'role': 'developer',
+              'content': m.content,
+            },
+          )!;
       }
     }).toList();
   }
@@ -216,7 +229,7 @@ class MistralInferenceRepository {
             'description': tool.function.description,
             if (tool.function.parameters != null)
               'parameters': tool.function.parameters,
-          }
+          },
         };
       }).toList();
       requestBody['tool_choice'] = 'auto';
@@ -261,8 +274,9 @@ class MistralInferenceRepository {
       const maxParseErrors = 5;
       var buffer = StringBuffer();
 
-      await for (final chunk
-          in streamedResponse.stream.transform(utf8.decoder)) {
+      await for (final chunk in streamedResponse.stream.transform(
+        utf8.decoder,
+      )) {
         // Append chunk to buffer and process complete lines
         buffer.write(chunk);
         final bufferContent = buffer.toString();
@@ -342,7 +356,8 @@ class MistralInferenceRepository {
   /// This method handles Mistral's response format where content may be
   /// returned as an array instead of a string.
   CreateChatCompletionStreamResponse? _parseStreamResponse(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     final choices = json['choices'] as List<dynamic>?;
     if (choices == null || choices.isEmpty) {
       return null;
@@ -412,11 +427,13 @@ class MistralInferenceRepository {
     }
 
     return CreateChatCompletionStreamResponse(
-      id: json['id'] as String? ??
+      id:
+          json['id'] as String? ??
           'mistral-${DateTime.now().millisecondsSinceEpoch}',
       choices: parsedChoices,
       object: 'chat.completion.chunk',
-      created: json['created'] as int? ??
+      created:
+          json['created'] as int? ??
           DateTime.now().millisecondsSinceEpoch ~/ 1000,
       model: json['model'] as String?,
       usage: usage,
@@ -474,7 +491,8 @@ class MistralInferenceRepository {
 
   /// Parse tool calls from the delta.
   List<ChatCompletionStreamMessageToolCallChunk>? _parseToolCalls(
-      dynamic toolCalls) {
+    dynamic toolCalls,
+  ) {
     if (toolCalls == null) return null;
 
     if (toolCalls is! List) return null;

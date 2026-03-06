@@ -25,13 +25,13 @@ class SyncLifecycleCoordinator {
     required SyncPipeline pipeline,
     LifecycleCallback? onLogin,
     LifecycleCallback? onLogout,
-  })  : _gateway = gateway,
-        _sessionManager = sessionManager,
-        _roomManager = roomManager,
-        _loggingService = loggingService,
-        _pipeline = pipeline,
-        _onLogin = onLogin,
-        _onLogout = onLogout;
+  }) : _gateway = gateway,
+       _sessionManager = sessionManager,
+       _roomManager = roomManager,
+       _loggingService = loggingService,
+       _pipeline = pipeline,
+       _onLogin = onLogin,
+       _onLogout = onLogout;
 
   final MatrixSyncGateway _gateway;
   final MatrixSessionManager _sessionManager;
@@ -91,8 +91,9 @@ class SyncLifecycleCoordinator {
     try {
       await _pipeline.initialize();
       await _roomManager.initialize();
-      _loginSubscription ??=
-          _gateway.loginStateChanges.listen(_handleLoginState);
+      _loginSubscription ??= _gateway.loginStateChanges.listen(
+        _handleLoginState,
+      );
 
       if (_sessionManager.isLoggedIn()) {
         await _handleLoggedIn();

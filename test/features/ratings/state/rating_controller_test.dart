@@ -42,8 +42,9 @@ void main() {
 
   group('RatingController', () {
     test('build returns null when no existing rating', () async {
-      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => null);
 
       final container = ProviderContainer(
         overrides: [
@@ -56,15 +57,17 @@ void main() {
       );
 
       expect(result, isNull);
-      verify(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .called(1);
+      verify(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).called(1);
 
       container.dispose();
     });
 
     test('build returns existing rating', () async {
-      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .thenAnswer((_) async => testRatingEntry);
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => testRatingEntry);
 
       final container = ProviderContainer(
         overrides: [
@@ -77,8 +80,9 @@ void main() {
       );
 
       expect(result, equals(testRatingEntry));
-      verify(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .called(1);
+      verify(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).called(1);
 
       container.dispose();
     });
@@ -115,8 +119,9 @@ void main() {
     });
 
     test('submitRating calls repository and updates state', () async {
-      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => null);
       when(
         () => mockRepository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -161,8 +166,9 @@ void main() {
     });
 
     test('submitRating without note', () async {
-      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => null);
       when(
         () => mockRepository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -197,8 +203,9 @@ void main() {
     });
 
     test('submitRating handles repository returning null', () async {
-      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => null);
       when(
         () => mockRepository.createOrUpdateRating(
           targetId: testTimeEntryId,

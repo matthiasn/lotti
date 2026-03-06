@@ -348,8 +348,9 @@ Future<String?> modelIdForThread(
 
   final wakeRun = await repository.getWakeRun(threadId);
   if (wakeRun?.templateVersionId != null) {
-    final versionEntity =
-        await repository.getEntity(wakeRun!.templateVersionId!);
+    final versionEntity = await repository.getEntity(
+      wakeRun!.templateVersionId!,
+    );
     final version = versionEntity?.mapOrNull(agentTemplateVersion: (v) => v);
     if (version?.modelId != null) return version!.modelId;
   }
@@ -445,8 +446,9 @@ Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
   Ref ref,
   String agentId,
 ) async {
-  final entities =
-      await ref.watch(agentTokenUsageRecordsProvider(agentId).future);
+  final entities = await ref.watch(
+    agentTokenUsageRecordsProvider(agentId).future,
+  );
   final records = entities.whereType<WakeTokenUsageEntity>();
   return _aggregateByModel(records);
 }
@@ -462,8 +464,9 @@ Future<AgentTokenUsageSummary?> tokenUsageForThread(
   String agentId,
   String threadId,
 ) async {
-  final entities =
-      await ref.watch(agentTokenUsageRecordsProvider(agentId).future);
+  final entities = await ref.watch(
+    agentTokenUsageRecordsProvider(agentId).future,
+  );
   final threadRecords = entities
       .whereType<WakeTokenUsageEntity>()
       .where((r) => r.threadId == threadId)
@@ -511,8 +514,9 @@ Future<List<AgentTokenUsageSummary>> templateTokenUsageSummaries(
   Ref ref,
   String templateId,
 ) async {
-  final entities =
-      await ref.watch(templateTokenUsageRecordsProvider(templateId).future);
+  final entities = await ref.watch(
+    templateTokenUsageRecordsProvider(templateId).future,
+  );
   final records = entities.whereType<WakeTokenUsageEntity>();
   return _aggregateByModel(records);
 }
@@ -527,8 +531,9 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
   Ref ref,
   String templateId,
 ) async {
-  final entities =
-      await ref.watch(templateTokenUsageRecordsProvider(templateId).future);
+  final entities = await ref.watch(
+    templateTokenUsageRecordsProvider(templateId).future,
+  );
   final records = entities.whereType<WakeTokenUsageEntity>();
 
   // Group by agentId, then aggregate each group by model.
@@ -550,8 +555,7 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
       lifecycle: agent.lifecycle,
       summaries: summaries,
     );
-  }).toList()
-    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+  }).toList()..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
 }
 
 /// Recent reports from all instances of a template, newest-first.
@@ -738,8 +742,9 @@ Future<List<AgentDomainEntity>> evolutionNotes(
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
   // Embedding dependencies are optional — the pipeline may not be available
   // (e.g. missing native sqlite-vec library on CI).
-  final embeddingsDb =
-      getIt.isRegistered<EmbeddingsDb>() ? getIt<EmbeddingsDb>() : null;
+  final embeddingsDb = getIt.isRegistered<EmbeddingsDb>()
+      ? getIt<EmbeddingsDb>()
+      : null;
   final embeddingRepository = getIt.isRegistered<OllamaEmbeddingRepository>()
       ? getIt<OllamaEmbeddingRepository>()
       : null;

@@ -35,21 +35,28 @@ void main() {
     mockLoggingService = MockLoggingService();
 
     final mockUpdateNotifications = MockUpdateNotifications();
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
 
-    when(() => mockSettingsDb.itemByKey('theme'))
-        .thenAnswer((_) async => 'Grey Law');
-    when(() => mockSettingsDb.itemByKey('LIGHT_SCHEME'))
-        .thenAnswer((_) async => 'Grey Law');
-    when(() => mockSettingsDb.itemByKey('DARK_SCHEMA'))
-        .thenAnswer((_) async => 'Grey Law');
-    when(() => mockSettingsDb.itemByKey('THEME_MODE'))
-        .thenAnswer((_) async => 'system');
-    when(() => mockSettingsDb.saveSettingsItem(any(), any()))
-        .thenAnswer((_) async => 1);
-    when(() => mockJournalDb.watchConfigFlag(enableTooltipFlag))
-        .thenAnswer((_) => Stream.value(true));
+    when(
+      () => mockSettingsDb.itemByKey('theme'),
+    ).thenAnswer((_) async => 'Grey Law');
+    when(
+      () => mockSettingsDb.itemByKey('LIGHT_SCHEME'),
+    ).thenAnswer((_) async => 'Grey Law');
+    when(
+      () => mockSettingsDb.itemByKey('DARK_SCHEMA'),
+    ).thenAnswer((_) async => 'Grey Law');
+    when(
+      () => mockSettingsDb.itemByKey('THEME_MODE'),
+    ).thenAnswer((_) async => 'system');
+    when(
+      () => mockSettingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => mockJournalDb.watchConfigFlag(enableTooltipFlag),
+    ).thenAnswer((_) => Stream.value(true));
 
     when(
       () => mockLoggingService.captureException(
@@ -93,13 +100,15 @@ void main() {
   }
 
   group('ThemingPage Widget Tests', () {
-    testWidgets('theming page loads and displays theme selection controls',
-        (tester) async {
+    testWidgets('theming page loads and displays theme selection controls', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
-      final l10n =
-          AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ThemingPage)),
+      )!;
 
       // Verify the page title is displayed (localized)
       expect(find.text(l10n.settingsThemingTitle), findsOneWidget);
@@ -115,8 +124,9 @@ void main() {
       expect(find.text(l10n.settingThemingDark), findsOneWidget);
     });
 
-    testWidgets('theme mode segmented button changes theme mode',
-        (tester) async {
+    testWidgets('theme mode segmented button changes theme mode', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
@@ -131,54 +141,65 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the settings were saved
-      verify(() => mockSettingsDb.saveSettingsItem('THEME_MODE', 'light'))
-          .called(1);
+      verify(
+        () => mockSettingsDb.saveSettingsItem('THEME_MODE', 'light'),
+      ).called(1);
     });
 
-    testWidgets('light theme selection opens modal and allows theme selection',
-        (tester) async {
+    testWidgets(
+      'light theme selection opens modal and allows theme selection',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(ThemingPage)),
+        )!;
+
+        // Find and tap the light theme input decorator by label
+        final lightThemeField = find.widgetWithText(
+          InputDecorator,
+          l10n.settingThemingLight,
+        );
+        expect(lightThemeField, findsOneWidget);
+        await tester.tap(lightThemeField);
+        await tester.pumpAndSettle();
+
+        // Verify the modal is shown
+        expect(find.byType(BottomSheet), findsOneWidget);
+
+        // Verify theme options are displayed in the modal
+        expect(find.text('Material'), findsOneWidget);
+        expect(find.text('Grey Law'), findsAtLeastNWidgets(1));
+        expect(find.text('Deep Blue'), findsOneWidget);
+
+        // Select a different theme from the modal
+        await tester.tap(find.text('Material').last);
+        await tester.pumpAndSettle();
+
+        // Verify the modal is closed and the theme was saved
+        expect(find.byType(BottomSheet), findsNothing);
+        verify(
+          () => mockSettingsDb.saveSettingsItem('LIGHT_SCHEME', 'Material'),
+        ).called(1);
+      },
+    );
+
+    testWidgets('dark theme selection opens modal and allows theme selection', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
-      final l10n =
-          AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
-
-      // Find and tap the light theme input decorator by label
-      final lightThemeField =
-          find.widgetWithText(InputDecorator, l10n.settingThemingLight);
-      expect(lightThemeField, findsOneWidget);
-      await tester.tap(lightThemeField);
-      await tester.pumpAndSettle();
-
-      // Verify the modal is shown
-      expect(find.byType(BottomSheet), findsOneWidget);
-
-      // Verify theme options are displayed in the modal
-      expect(find.text('Material'), findsOneWidget);
-      expect(find.text('Grey Law'), findsAtLeastNWidgets(1));
-      expect(find.text('Deep Blue'), findsOneWidget);
-
-      // Select a different theme from the modal
-      await tester.tap(find.text('Material').last);
-      await tester.pumpAndSettle();
-
-      // Verify the modal is closed and the theme was saved
-      expect(find.byType(BottomSheet), findsNothing);
-      verify(() => mockSettingsDb.saveSettingsItem('LIGHT_SCHEME', 'Material'))
-          .called(1);
-    });
-
-    testWidgets('dark theme selection opens modal and allows theme selection',
-        (tester) async {
-      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
-      await tester.pumpAndSettle();
-
-      final l10n =
-          AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ThemingPage)),
+      )!;
 
       // Find and tap the dark theme input decorator by label
-      final darkThemeField =
-          find.widgetWithText(InputDecorator, l10n.settingThemingDark);
+      final darkThemeField = find.widgetWithText(
+        InputDecorator,
+        l10n.settingThemingDark,
+      );
       expect(darkThemeField, findsOneWidget);
       await tester.tap(darkThemeField);
       await tester.pumpAndSettle();
@@ -197,18 +218,22 @@ void main() {
 
       // Verify the modal is closed and the theme was saved
       expect(find.byType(BottomSheet), findsNothing);
-      verify(() => mockSettingsDb.saveSettingsItem('DARK_SCHEMA', 'Deep Blue'))
-          .called(1);
+      verify(
+        () => mockSettingsDb.saveSettingsItem('DARK_SCHEMA', 'Deep Blue'),
+      ).called(1);
     });
 
     testWidgets('theme selection modal can be dismissed', (tester) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
-      final l10n =
-          AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
-      final lightThemeField =
-          find.widgetWithText(InputDecorator, l10n.settingThemingLight);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ThemingPage)),
+      )!;
+      final lightThemeField = find.widgetWithText(
+        InputDecorator,
+        l10n.settingThemingLight,
+      );
       await tester.tap(lightThemeField);
       await tester.pumpAndSettle();
 
@@ -241,8 +266,9 @@ void main() {
       );
     });
 
-    testWidgets('theme selection fields are read-only (using InputDecorator)',
-        (tester) async {
+    testWidgets('theme selection fields are read-only (using InputDecorator)', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 

@@ -19,14 +19,14 @@ class MatrixStreamSignalBinder {
     required MatrixStreamCatchUpCoordinator catchUpCoordinator,
     required MatrixStreamLiveScanController liveScanController,
     required String Function(String message) withInstance,
-  })  : _sessionManager = sessionManager,
-        _roomManager = roomManager,
-        _loggingService = loggingService,
-        _metrics = metrics,
-        _collectMetrics = collectMetrics,
-        _catchUp = catchUpCoordinator,
-        _liveScan = liveScanController,
-        _withInstance = withInstance;
+  }) : _sessionManager = sessionManager,
+       _roomManager = roomManager,
+       _loggingService = loggingService,
+       _metrics = metrics,
+       _collectMetrics = collectMetrics,
+       _catchUp = catchUpCoordinator,
+       _liveScan = liveScanController,
+       _withInstance = withInstance;
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
@@ -124,8 +124,11 @@ class MatrixStreamSignalBinder {
             domain: syncLoggingDomain,
             subDomain: 'start.catchUpRetry',
           );
-          unawaited(Future<void>.delayed(const Duration(milliseconds: 150))
-              .then((_) => _catchUp.runGuardedCatchUp('start.catchUpRetry')));
+          unawaited(
+            Future<void>.delayed(
+              const Duration(milliseconds: 150),
+            ).then((_) => _catchUp.runGuardedCatchUp('start.catchUpRetry')),
+          );
         }
       } catch (e, st) {
         _loggingService.captureException(

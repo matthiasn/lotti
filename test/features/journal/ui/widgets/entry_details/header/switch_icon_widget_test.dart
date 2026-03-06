@@ -7,8 +7,9 @@ import '../../../../../../widget_test_utils.dart';
 
 void main() {
   group('SwitchIconWidget', () {
-    testWidgets('renders correctly when value is false',
-        (WidgetTester tester) async {
+    testWidgets('renders correctly when value is false', (
+      WidgetTester tester,
+    ) async {
       // ignore: unused_local_variable
       var iconPressed = false;
 
@@ -38,8 +39,9 @@ void main() {
       expect(icon.color, isA<Color>());
     });
 
-    testWidgets('renders correctly when value is true',
-        (WidgetTester tester) async {
+    testWidgets('renders correctly when value is true', (
+      WidgetTester tester,
+    ) async {
       // ignore: unused_local_variable
       var iconPressed = false;
 
@@ -120,22 +122,23 @@ void main() {
       expect(iconButton.tooltip, testTooltip);
     });
 
-    testWidgets('triggers haptic feedback when tapped',
-        (WidgetTester tester) async {
+    testWidgets('triggers haptic feedback when tapped', (
+      WidgetTester tester,
+    ) async {
       // Set up a log to track which haptic feedback was triggered
       final hapticLog = <String>[];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        SystemChannels.platform,
-        (methodCall) async {
-          if (methodCall.method == 'HapticFeedback.vibrate') {
-            final type = methodCall.arguments as String;
-            hapticLog.add(type);
-            return null;
-          }
-          return null;
-        },
-      );
+            SystemChannels.platform,
+            (methodCall) async {
+              if (methodCall.method == 'HapticFeedback.vibrate') {
+                final type = methodCall.arguments as String;
+                hapticLog.add(type);
+                return null;
+              }
+              return null;
+            },
+          );
 
       // Test with value = false (should trigger heavy impact)
       await tester.pumpWidget(

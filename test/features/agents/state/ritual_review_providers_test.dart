@@ -44,36 +44,38 @@ void main() {
       expect(session.status, EvolutionSessionStatus.active);
     });
 
-    test('returns null when newest session is completed (stale active ignored)',
-        () async {
-      // Completed session is newer; the older active session is stale.
-      final completedSession = makeTestEvolutionSession(
-        id: 'evo-completed',
-        sessionNumber: 2,
-        status: EvolutionSessionStatus.completed,
-      );
-      final staleActiveSession = makeTestEvolutionSession(
-        id: 'evo-stale',
-      );
+    test(
+      'returns null when newest session is completed (stale active ignored)',
+      () async {
+        // Completed session is newer; the older active session is stale.
+        final completedSession = makeTestEvolutionSession(
+          id: 'evo-completed',
+          sessionNumber: 2,
+          status: EvolutionSessionStatus.completed,
+        );
+        final staleActiveSession = makeTestEvolutionSession(
+          id: 'evo-stale',
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          evolutionSessionsProvider(kTestTemplateId).overrideWith(
-            (ref) async => <AgentDomainEntity>[
-              completedSession,
-              staleActiveSession,
-            ],
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            evolutionSessionsProvider(kTestTemplateId).overrideWith(
+              (ref) async => <AgentDomainEntity>[
+                completedSession,
+                staleActiveSession,
+              ],
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final result = await container.read(
-        pendingRitualReviewProvider(kTestTemplateId).future,
-      );
+        final result = await container.read(
+          pendingRitualReviewProvider(kTestTemplateId).future,
+        );
 
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
     test('returns null when all sessions are completed or abandoned', () async {
       final container = ProviderContainer(
@@ -171,8 +173,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final result =
-          await container.read(templatesPendingReviewProvider.future);
+      final result = await container.read(
+        templatesPendingReviewProvider.future,
+      );
 
       expect(result, {'template-A', 'template-B'});
     });
@@ -207,8 +210,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final result =
-          await container.read(templatesPendingReviewProvider.future);
+      final result = await container.read(
+        templatesPendingReviewProvider.future,
+      );
 
       expect(result, {'template-C'});
     });
@@ -231,42 +235,46 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final result =
-          await container.read(templatesPendingReviewProvider.future);
+      final result = await container.read(
+        templatesPendingReviewProvider.future,
+      );
 
       expect(result, isEmpty);
     });
 
-    test('deduplicates when multiple active sessions share a template',
-        () async {
-      final container = ProviderContainer(
-        overrides: [
-          agentUpdateStreamProvider(agentNotification).overrideWith(
-            (ref) => const Stream<Set<String>>.empty(),
-          ),
-          allEvolutionSessionsProvider.overrideWith(
-            (ref) async => <AgentDomainEntity>[
-              makeTestEvolutionSession(
-                id: 'evo-1',
-                templateId: 'template-A',
-              ),
-              makeTestEvolutionSession(
-                id: 'evo-2',
-                templateId: 'template-A',
-                sessionNumber: 2,
-              ),
-            ],
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'deduplicates when multiple active sessions share a template',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            agentUpdateStreamProvider(agentNotification).overrideWith(
+              (ref) => const Stream<Set<String>>.empty(),
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[
+                makeTestEvolutionSession(
+                  id: 'evo-1',
+                  templateId: 'template-A',
+                ),
+                makeTestEvolutionSession(
+                  id: 'evo-2',
+                  templateId: 'template-A',
+                  sessionNumber: 2,
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final result =
-          await container.read(templatesPendingReviewProvider.future);
+        final result = await container.read(
+          templatesPendingReviewProvider.future,
+        );
 
-      expect(result, hasLength(1));
-      expect(result, contains('template-A'));
-    });
+        expect(result, hasLength(1));
+        expect(result, contains('template-A'));
+      },
+    );
   });
 
   group('evolutionSessionStatsProvider', () {

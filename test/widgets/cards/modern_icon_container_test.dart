@@ -67,8 +67,9 @@ void main() {
       expect(find.byType(Icon), findsNothing);
     });
 
-    testWidgets('assert fails when neither icon nor child provided',
-        (tester) async {
+    testWidgets('assert fails when neither icon nor child provided', (
+      tester,
+    ) async {
       expect(
         ModernIconContainer.new,
         throwsAssertionError,
@@ -90,9 +91,13 @@ void main() {
       // Check container size
       final container = tester.widget<Container>(find.byType(Container));
       expect(
-          container.constraints?.maxWidth, AppTheme.iconContainerSizeCompact);
+        container.constraints?.maxWidth,
+        AppTheme.iconContainerSizeCompact,
+      );
       expect(
-          container.constraints?.maxHeight, AppTheme.iconContainerSizeCompact);
+        container.constraints?.maxHeight,
+        AppTheme.iconContainerSizeCompact,
+      );
 
       // Check icon size
       final icon = tester.widget<Icon>(find.byIcon(Icons.star));

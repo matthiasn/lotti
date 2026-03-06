@@ -12,20 +12,24 @@ part of 'ai_config_repository.dart';
 @ProviderFor(aiConfigRepository)
 final aiConfigRepositoryProvider = AiConfigRepositoryProvider._();
 
-final class AiConfigRepositoryProvider extends $FunctionalProvider<
-    AiConfigRepository,
-    AiConfigRepository,
-    AiConfigRepository> with $Provider<AiConfigRepository> {
+final class AiConfigRepositoryProvider
+    extends
+        $FunctionalProvider<
+          AiConfigRepository,
+          AiConfigRepository,
+          AiConfigRepository
+        >
+    with $Provider<AiConfigRepository> {
   AiConfigRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'aiConfigRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'aiConfigRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$aiConfigRepositoryHash();
@@ -33,8 +37,8 @@ final class AiConfigRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<AiConfigRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   AiConfigRepository create(Ref ref) {

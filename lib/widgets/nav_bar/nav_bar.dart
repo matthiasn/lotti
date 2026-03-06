@@ -239,21 +239,21 @@ class SpotifyStyleBottomNavigationBar extends StatefulWidget {
     this.enableFeedback,
     this.landscapeLayout,
     this.useLegacyColorScheme = true,
-  })  : assert(items.length >= 2),
-        assert(
-          items.every((BottomNavigationBarItem item) => item.label != null),
-          'Every item must have a non-null label',
-        ),
-        assert(0 <= currentIndex && currentIndex < items.length),
-        assert(elevation == null || elevation >= 0.0),
-        assert(iconSize >= 0.0),
-        assert(
-          selectedItemColor == null || fixedColor == null,
-          'Either selectedItemColor or fixedColor can be specified, but not both',
-        ),
-        assert(selectedFontSize >= 0.0),
-        assert(unselectedFontSize >= 0.0),
-        selectedItemColor = selectedItemColor ?? fixedColor;
+  }) : assert(items.length >= 2),
+       assert(
+         items.every((BottomNavigationBarItem item) => item.label != null),
+         'Every item must have a non-null label',
+       ),
+       assert(0 <= currentIndex && currentIndex < items.length),
+       assert(elevation == null || elevation >= 0.0),
+       assert(iconSize >= 0.0),
+       assert(
+         selectedItemColor == null || fixedColor == null,
+         'Either selectedItemColor or fixedColor can be specified, but not both',
+       ),
+       assert(selectedFontSize >= 0.0),
+       assert(unselectedFontSize >= 0.0),
+       selectedItemColor = selectedItemColor ?? fixedColor;
 
   /// Defines the appearance of the button items that are arrayed within the
   /// bottom navigation bar.
@@ -498,12 +498,16 @@ class _BottomNavigationTile extends StatelessWidget {
 
     // The amount that the selected icon is bigger than the unselected icons,
     // (or zero if the selected icon is not bigger than the unselected icons).
-    final double selectedIconDiff =
-        math.max(selectedIconSize - unselectedIconSize, 0);
+    final double selectedIconDiff = math.max(
+      selectedIconSize - unselectedIconSize,
+      0,
+    );
     // The amount that the unselected icons are bigger than the selected icon,
     // (or zero if the unselected icons are not any bigger than the selected icon).
-    final double unselectedIconDiff =
-        math.max(unselectedIconSize - selectedIconSize, 0);
+    final double unselectedIconDiff = math.max(
+      unselectedIconSize - selectedIconSize,
+      0,
+    );
 
     // The effective tool tip message to be shown on the BottomNavigationBarItem.
     final String? effectiveTooltip = item.tooltip == '' ? null : item.tooltip;
@@ -618,21 +622,21 @@ class _BottomNavigationTile extends StatelessWidget {
 
     result = selected
         ? result
-            .animate()
-            .fadeIn(begin: 0.5)
-            .scaleXY(
-              duration: const Duration(milliseconds: 40),
-              begin: 1,
-              end: 9 / 10,
-              curve: Curves.easeOut,
-            )
-            .then(delay: const Duration(milliseconds: 50))
-            .scaleXY(
-              duration: const Duration(milliseconds: 70),
-              begin: 1,
-              end: 10 / 9,
-              curve: Curves.easeIn,
-            )
+              .animate()
+              .fadeIn(begin: 0.5)
+              .scaleXY(
+                duration: const Duration(milliseconds: 40),
+                begin: 1,
+                end: 9 / 10,
+                curve: Curves.easeOut,
+              )
+              .then(delay: const Duration(milliseconds: 50))
+              .scaleXY(
+                duration: const Duration(milliseconds: 70),
+                begin: 1,
+                end: 10 / 9,
+                curve: Curves.easeIn,
+              )
         : result;
 
     return Expanded(
@@ -821,8 +825,10 @@ class _SpotifyStyleBottomNavigationBarState
   // animation is complete.
   Color? _backgroundColor;
 
-  static final Animatable<double> _flexTween =
-      Tween<double>(begin: 1.0, end: 1.5);
+  static final Animatable<double> _flexTween = Tween<double>(
+    begin: 1.0,
+    end: 1.5,
+  );
 
   void _resetState() {
     for (final AnimationController controller in _controllers) {
@@ -833,15 +839,17 @@ class _SpotifyStyleBottomNavigationBarState
     }
     _circles.clear();
 
-    _controllers =
-        List<AnimationController>.generate(widget.items.length, (int index) {
+    _controllers = List<AnimationController>.generate(widget.items.length, (
+      int index,
+    ) {
       return AnimationController(
         duration: kThemeAnimationDuration,
         vsync: this,
       )..addListener(_rebuild);
     });
-    _animations =
-        List<CurvedAnimation>.generate(widget.items.length, (int index) {
+    _animations = List<CurvedAnimation>.generate(widget.items.length, (
+      int index,
+    ) {
       return CurvedAnimation(
         parent: _controllers[index],
         curve: Curves.fastOutSlowIn,
@@ -909,11 +917,12 @@ class _SpotifyStyleBottomNavigationBarState
     if (widget.items[index].backgroundColor != null) {
       _circles.add(
         _Circle(
-          state: this,
-          index: index,
-          color: widget.items[index].backgroundColor!,
-          vsync: this,
-        )..controller.addStatusListener(
+            state: this,
+            index: index,
+            color: widget.items[index].backgroundColor!,
+            vsync: this,
+          )
+          ..controller.addStatusListener(
             (AnimationStatus status) {
               switch (status) {
                 case AnimationStatus.completed:
@@ -974,14 +983,17 @@ class _SpotifyStyleBottomNavigationBarState
   // Otherwise, the [IconThemeData]'s color should be selectedItemColor
   // or unselectedItemColor.
   static IconThemeData _effectiveIconTheme(
-      IconThemeData? iconTheme, Color? itemColor) {
+    IconThemeData? iconTheme,
+    Color? itemColor,
+  ) {
     // Prefer the iconTheme over itemColor if present.
     return iconTheme ?? IconThemeData(color: itemColor);
   }
 
   List<Widget> _createTiles(BottomNavigationBarLandscapeLayout layout) {
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
 
     final ThemeData themeData = Theme.of(context);
     final BottomNavigationBarThemeData bottomTheme =
@@ -1006,35 +1018,39 @@ class _SpotifyStyleBottomNavigationBarState
     );
 
     final IconThemeData effectiveSelectedIconTheme = _effectiveIconTheme(
-        widget.selectedIconTheme ?? bottomTheme.selectedIconTheme,
-        widget.selectedItemColor ??
-            bottomTheme.selectedItemColor ??
-            themeColor);
+      widget.selectedIconTheme ?? bottomTheme.selectedIconTheme,
+      widget.selectedItemColor ?? bottomTheme.selectedItemColor ?? themeColor,
+    );
 
     final IconThemeData effectiveUnselectedIconTheme = _effectiveIconTheme(
-        widget.unselectedIconTheme ?? bottomTheme.unselectedIconTheme,
-        widget.unselectedItemColor ??
-            bottomTheme.unselectedItemColor ??
-            themeData.unselectedWidgetColor);
+      widget.unselectedIconTheme ?? bottomTheme.unselectedIconTheme,
+      widget.unselectedItemColor ??
+          bottomTheme.unselectedItemColor ??
+          themeData.unselectedWidgetColor,
+    );
 
     final ColorTween colorTween;
     switch (_effectiveType) {
       case SpotifyStyleBottomNavigationBarType.fixed:
         colorTween = ColorTween(
-          begin: widget.unselectedItemColor ??
+          begin:
+              widget.unselectedItemColor ??
               bottomTheme.unselectedItemColor ??
               themeData.unselectedWidgetColor,
-          end: widget.selectedItemColor ??
+          end:
+              widget.selectedItemColor ??
               bottomTheme.selectedItemColor ??
               widget.fixedColor ??
               themeColor,
         );
       case SpotifyStyleBottomNavigationBarType.shifting:
         colorTween = ColorTween(
-          begin: widget.unselectedItemColor ??
+          begin:
+              widget.unselectedItemColor ??
               bottomTheme.unselectedItemColor ??
               themeData.colorScheme.surface,
-          end: widget.selectedItemColor ??
+          end:
+              widget.selectedItemColor ??
               bottomTheme.selectedItemColor ??
               themeData.colorScheme.surface,
         );
@@ -1044,11 +1060,13 @@ class _SpotifyStyleBottomNavigationBarState
     switch (_effectiveType) {
       case SpotifyStyleBottomNavigationBarType.fixed:
         labelColorTween = ColorTween(
-          begin: effectiveUnselectedLabelStyle.color ??
+          begin:
+              effectiveUnselectedLabelStyle.color ??
               widget.unselectedItemColor ??
               bottomTheme.unselectedItemColor ??
               themeData.unselectedWidgetColor,
-          end: effectiveSelectedLabelStyle.color ??
+          end:
+              effectiveSelectedLabelStyle.color ??
               widget.selectedItemColor ??
               bottomTheme.selectedItemColor ??
               widget.fixedColor ??
@@ -1056,11 +1074,13 @@ class _SpotifyStyleBottomNavigationBarState
         );
       case SpotifyStyleBottomNavigationBarType.shifting:
         labelColorTween = ColorTween(
-          begin: effectiveUnselectedLabelStyle.color ??
+          begin:
+              effectiveUnselectedLabelStyle.color ??
               widget.unselectedItemColor ??
               bottomTheme.unselectedItemColor ??
               themeData.colorScheme.surface,
-          end: effectiveSelectedLabelStyle.color ??
+          end:
+              effectiveSelectedLabelStyle.color ??
               widget.selectedItemColor ??
               bottomTheme.selectedItemColor ??
               themeColor,
@@ -1071,11 +1091,13 @@ class _SpotifyStyleBottomNavigationBarState
     switch (_effectiveType) {
       case SpotifyStyleBottomNavigationBarType.fixed:
         iconColorTween = ColorTween(
-          begin: effectiveSelectedIconTheme.color ??
+          begin:
+              effectiveSelectedIconTheme.color ??
               widget.unselectedItemColor ??
               bottomTheme.unselectedItemColor ??
               themeData.unselectedWidgetColor,
-          end: effectiveUnselectedIconTheme.color ??
+          end:
+              effectiveUnselectedIconTheme.color ??
               widget.selectedItemColor ??
               bottomTheme.selectedItemColor ??
               widget.fixedColor ??
@@ -1083,11 +1105,13 @@ class _SpotifyStyleBottomNavigationBarState
         );
       case SpotifyStyleBottomNavigationBarType.shifting:
         iconColorTween = ColorTween(
-          begin: effectiveUnselectedIconTheme.color ??
+          begin:
+              effectiveUnselectedIconTheme.color ??
               widget.unselectedItemColor ??
               bottomTheme.unselectedItemColor ??
               themeData.colorScheme.surface,
-          end: effectiveSelectedIconTheme.color ??
+          end:
+              effectiveSelectedIconTheme.color ??
               widget.selectedItemColor ??
               bottomTheme.selectedItemColor ??
               themeColor,
@@ -1102,44 +1126,55 @@ class _SpotifyStyleBottomNavigationBarState
 
       final MouseCursor effectiveMouseCursor =
           WidgetStateProperty.resolveAs<MouseCursor?>(
-                  widget.mouseCursor, states) ??
-              bottomTheme.mouseCursor?.resolve(states) ??
-              WidgetStateMouseCursor.clickable.resolve(states);
+            widget.mouseCursor,
+            states,
+          ) ??
+          bottomTheme.mouseCursor?.resolve(states) ??
+          WidgetStateMouseCursor.clickable.resolve(states);
 
-      tiles.add(_BottomNavigationTile(
-        _effectiveType,
-        widget.items[i],
-        _animations[i],
-        widget.iconSize,
-        selectedIconTheme: widget.useLegacyColorScheme
-            ? widget.selectedIconTheme ?? bottomTheme.selectedIconTheme
-            : effectiveSelectedIconTheme,
-        unselectedIconTheme: widget.useLegacyColorScheme
-            ? widget.unselectedIconTheme ?? bottomTheme.unselectedIconTheme
-            : effectiveUnselectedIconTheme,
-        selectedLabelStyle: effectiveSelectedLabelStyle,
-        unselectedLabelStyle: effectiveUnselectedLabelStyle,
-        enableFeedback:
-            widget.enableFeedback ?? bottomTheme.enableFeedback ?? true,
-        onTap: () {
-          widget.onTap?.call(i);
-        },
-        labelColorTween:
-            widget.useLegacyColorScheme ? colorTween : labelColorTween,
-        iconColorTween:
-            widget.useLegacyColorScheme ? colorTween : iconColorTween,
-        flex: _evaluateFlex(_animations[i]),
-        selected: i == widget.currentIndex,
-        showSelectedLabels:
-            widget.showSelectedLabels ?? bottomTheme.showSelectedLabels ?? true,
-        showUnselectedLabels: widget.showUnselectedLabels ??
-            bottomTheme.showUnselectedLabels ??
-            _defaultShowUnselected,
-        indexLabel: localizations.tabLabel(
-            tabIndex: i + 1, tabCount: widget.items.length),
-        mouseCursor: effectiveMouseCursor,
-        layout: layout,
-      ));
+      tiles.add(
+        _BottomNavigationTile(
+          _effectiveType,
+          widget.items[i],
+          _animations[i],
+          widget.iconSize,
+          selectedIconTheme: widget.useLegacyColorScheme
+              ? widget.selectedIconTheme ?? bottomTheme.selectedIconTheme
+              : effectiveSelectedIconTheme,
+          unselectedIconTheme: widget.useLegacyColorScheme
+              ? widget.unselectedIconTheme ?? bottomTheme.unselectedIconTheme
+              : effectiveUnselectedIconTheme,
+          selectedLabelStyle: effectiveSelectedLabelStyle,
+          unselectedLabelStyle: effectiveUnselectedLabelStyle,
+          enableFeedback:
+              widget.enableFeedback ?? bottomTheme.enableFeedback ?? true,
+          onTap: () {
+            widget.onTap?.call(i);
+          },
+          labelColorTween: widget.useLegacyColorScheme
+              ? colorTween
+              : labelColorTween,
+          iconColorTween: widget.useLegacyColorScheme
+              ? colorTween
+              : iconColorTween,
+          flex: _evaluateFlex(_animations[i]),
+          selected: i == widget.currentIndex,
+          showSelectedLabels:
+              widget.showSelectedLabels ??
+              bottomTheme.showSelectedLabels ??
+              true,
+          showUnselectedLabels:
+              widget.showUnselectedLabels ??
+              bottomTheme.showUnselectedLabels ??
+              _defaultShowUnselected,
+          indexLabel: localizations.tabLabel(
+            tabIndex: i + 1,
+            tabCount: widget.items.length,
+          ),
+          mouseCursor: effectiveMouseCursor,
+          layout: layout,
+        ),
+      );
     }
     return tiles;
   }
@@ -1155,8 +1190,9 @@ class _SpotifyStyleBottomNavigationBarState
         BottomNavigationBarTheme.of(context);
     final BottomNavigationBarLandscapeLayout layout =
         widget.landscapeLayout ?? BottomNavigationBarLandscapeLayout.spread;
-    final double additionalBottomPadding =
-        MediaQuery.viewPaddingOf(context).bottom;
+    final double additionalBottomPadding = MediaQuery.viewPaddingOf(
+      context,
+    ).bottom;
 
     Color? backgroundColor;
     switch (_effectiveType) {
@@ -1174,7 +1210,8 @@ class _SpotifyStyleBottomNavigationBarState
         color: backgroundColor,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-              minHeight: kBottomNavigationBarHeight + additionalBottomPadding),
+            minHeight: kBottomNavigationBarHeight + additionalBottomPadding,
+          ),
           child: CustomPaint(
             painter: _RadialPainter(
               circles: _circles.toList(),
@@ -1278,8 +1315,9 @@ class _Circle {
 
     final double allWeights = weightSum(state._animations);
     // These weights sum to the start edge of the indexed item.
-    final double leadingWeights =
-        weightSum(state._animations.sublist(0, index));
+    final double leadingWeights = weightSum(
+      state._animations.sublist(0, index),
+    );
 
     // Add half of its flex value in order to get to the center.
     return (leadingWeights +
@@ -1344,8 +1382,10 @@ class _RadialPainter extends CustomPainter {
         case TextDirection.ltr:
           leftFraction = circle.horizontalLeadingOffset;
       }
-      final Offset center =
-          Offset(leftFraction * size.width, size.height / 2.0);
+      final Offset center = Offset(
+        leftFraction * size.width,
+        size.height / 2.0,
+      );
       final Tween<double> radiusTween = Tween<double>(
         begin: 0.0,
         end: _maxRadius(center, size),

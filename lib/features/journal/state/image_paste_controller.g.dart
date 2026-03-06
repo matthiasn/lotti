@@ -14,20 +14,20 @@ final imagePasteControllerProvider = ImagePasteControllerFamily._();
 
 final class ImagePasteControllerProvider
     extends $AsyncNotifierProvider<ImagePasteController, bool> {
-  ImagePasteControllerProvider._(
-      {required ImagePasteControllerFamily super.from,
-      required ({
-        String? linkedFromId,
-        String? categoryId,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'imagePasteControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ImagePasteControllerProvider._({
+    required ImagePasteControllerFamily super.from,
+    required ({
+      String? linkedFromId,
+      String? categoryId,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'imagePasteControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$imagePasteControllerHash();
@@ -60,41 +60,46 @@ String _$imagePasteControllerHash() =>
 final class ImagePasteControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            ImagePasteController,
-            AsyncValue<bool>,
-            bool,
-            FutureOr<bool>,
-            ({
-              String? linkedFromId,
-              String? categoryId,
-            })> {
+          ImagePasteController,
+          AsyncValue<bool>,
+          bool,
+          FutureOr<bool>,
+          ({
+            String? linkedFromId,
+            String? categoryId,
+          })
+        > {
   ImagePasteControllerFamily._()
-      : super(
-          retry: null,
-          name: r'imagePasteControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'imagePasteControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   ImagePasteControllerProvider call({
     required String? linkedFromId,
     required String? categoryId,
-  }) =>
-      ImagePasteControllerProvider._(argument: (
-        linkedFromId: linkedFromId,
-        categoryId: categoryId,
-      ), from: this);
+  }) => ImagePasteControllerProvider._(
+    argument: (
+      linkedFromId: linkedFromId,
+      categoryId: categoryId,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'imagePasteControllerProvider';
 }
 
 abstract class _$ImagePasteController extends $AsyncNotifier<bool> {
-  late final _$args = ref.$arg as ({
-    String? linkedFromId,
-    String? categoryId,
-  });
+  late final _$args =
+      ref.$arg
+          as ({
+            String? linkedFromId,
+            String? categoryId,
+          });
   String? get linkedFromId => _$args.linkedFromId;
   String? get categoryId => _$args.categoryId;
 
@@ -106,16 +111,20 @@ abstract class _$ImagePasteController extends $AsyncNotifier<bool> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<bool>, bool>,
-        AsyncValue<bool>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool>, bool>,
+              AsyncValue<bool>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              linkedFromId: _$args.linkedFromId,
-              categoryId: _$args.categoryId,
-            ));
+      ref,
+      () => build(
+        linkedFromId: _$args.linkedFromId,
+        categoryId: _$args.categoryId,
+      ),
+    );
   }
 }

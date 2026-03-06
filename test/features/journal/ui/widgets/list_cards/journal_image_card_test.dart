@@ -95,8 +95,9 @@ void main() {
     getIt.allowReassignment = true;
 
     // Create temp directory for tests
-    final tempDir =
-        Directory.systemTemp.createTempSync('journal_image_card_test');
+    final tempDir = Directory.systemTemp.createTempSync(
+      'journal_image_card_test',
+    );
 
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
@@ -294,8 +295,9 @@ void main() {
       );
     });
 
-    testWidgets('text viewer receives finite maxHeight instead of infinity',
-        (tester) async {
+    testWidgets('text viewer receives finite maxHeight instead of infinity', (
+      tester,
+    ) async {
       final imageEntry = testImageEntry.copyWith(
         entryText: const EntryText(
           plainText: 'Test content for overflow detection',

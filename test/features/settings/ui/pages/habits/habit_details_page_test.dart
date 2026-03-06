@@ -43,16 +43,19 @@ void main() {
         (_) => [categoryMindfulness],
       );
 
-      when(() => mockNotificationService.scheduleHabitNotification(any()))
-          .thenAnswer(
+      when(
+        () => mockNotificationService.scheduleHabitNotification(any()),
+      ).thenAnswer(
         (_) => Future.value(),
       );
 
-      when(mockJournalDb.getAllDashboards)
-          .thenAnswer((_) async => [testDashboardConfig]);
+      when(
+        mockJournalDb.getAllDashboards,
+      ).thenAnswer((_) async => [testDashboardConfig]);
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream<Set<String>>.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
       mockPersistenceLogic = MockPersistenceLogic();
 
@@ -64,7 +67,7 @@ void main() {
             testStoryTag1,
             testPersonTag1,
             testTag1,
-          ]
+          ],
         ]),
       );
 
@@ -98,8 +101,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final nameFieldFinder = find.byKey(const Key('habit_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('habit_description_field'));
+      final descriptionFieldFinder = find.byKey(
+        const Key('habit_description_field'),
+      );
       final saveButtonFinder = find.byKey(const Key('habit_save'));
 
       expect(nameFieldFinder, findsOneWidget);
@@ -147,7 +151,10 @@ void main() {
 
       // Scroll to the bottom to make sure the delete button is visible
       await tester.fling(
-          find.byType(CustomScrollView), const Offset(0, -300), 1000);
+        find.byType(CustomScrollView),
+        const Offset(0, -300),
+        1000,
+      );
       await tester.pumpAndSettle();
 
       // Find the delete button by looking for the IconButton with trash icon
@@ -168,8 +175,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Wait for modal to appear and check for the delete question
-      final deleteQuestionFinder =
-          find.text('Do you want to delete this habit?');
+      final deleteQuestionFinder = find.text(
+        'Do you want to delete this habit?',
+      );
       final confirmDeleteFinder = find.text('YES, DELETE THIS HABIT');
 
       // Check if modal appeared
@@ -203,8 +211,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final nameFieldFinder = find.byKey(const Key('habit_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('habit_description_field'));
+      final descriptionFieldFinder = find.byKey(
+        const Key('habit_description_field'),
+      );
       final saveButtonFinder = find.byKey(const Key('habit_save'));
 
       expect(nameFieldFinder, findsOneWidget);
@@ -229,8 +238,9 @@ void main() {
       await tester.tap(saveButtonFinder);
     });
 
-    testWidgets('habit details page is displayed & date updated',
-        (tester) async {
+    testWidgets('habit details page is displayed & date updated', (
+      tester,
+    ) async {
       when(
         () => mockPersistenceLogic.upsertEntityDefinition(any()),
       ).thenAnswer((_) async => 1);
@@ -285,8 +295,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final nameFieldFinder = find.byKey(const Key('habit_name_field'));
-      final descriptionFieldFinder =
-          find.byKey(const Key('habit_description_field'));
+      final descriptionFieldFinder = find.byKey(
+        const Key('habit_description_field'),
+      );
       final saveButtonFinder = find.byKey(const Key('habit_save'));
 
       expect(nameFieldFinder, findsOneWidget);

@@ -50,32 +50,41 @@ void main() {
     );
 
     test(
-        'form should start with clean (non-dirty) state when loading existing config',
-        () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      'form should start with clean (non-dirty) state when loading existing config',
+      () async {
+        when(
+          () => mockAiConfigRepository.getConfigById(testConfigId),
+        ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+        await container.read(
+          promptFormControllerProvider(configId: testConfigId).future,
+        );
 
-      final state = container
-          .read(promptFormControllerProvider(configId: testConfigId))
-          .value;
+        final state = container
+            .read(promptFormControllerProvider(configId: testConfigId))
+            .value;
 
-      expect(state, isNotNull);
-      expect(state!.isDirty, isFalse,
-          reason: 'Form should not be dirty when initially loaded');
-    });
+        expect(state, isNotNull);
+        expect(
+          state!.isDirty,
+          isFalse,
+          reason: 'Form should not be dirty when initially loaded',
+        );
+      },
+    );
 
     test('changing modelIds should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Initially clean
       var state = container
@@ -90,19 +99,25 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing modelIds');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing modelIds',
+      );
     });
 
     test('changing defaultModelId should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Initially clean
       var state = container
@@ -117,19 +132,25 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing defaultModelId');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing defaultModelId',
+      );
     });
 
     test('changing useReasoning should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Initially clean
       var state = container
@@ -144,19 +165,25 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing useReasoning');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing useReasoning',
+      );
     });
 
     test('changing requiredInputData should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Initially clean
       var state = container
@@ -165,26 +192,34 @@ void main() {
       expect(state!.isDirty, isFalse);
 
       // Change requiredInputData
-      controller
-          .requiredInputDataChanged([InputDataType.task, InputDataType.images]);
+      controller.requiredInputDataChanged([
+        InputDataType.task,
+        InputDataType.images,
+      ]);
 
       // Should be dirty now
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing requiredInputData');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing requiredInputData',
+      );
     });
 
     test('changing text fields should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Test name field
       var state = container
@@ -196,8 +231,11 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing name');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing name',
+      );
 
       // Reset for next test
       container.dispose();
@@ -206,8 +244,9 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         ],
       );
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
       // Test description field
       container
@@ -216,19 +255,25 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing description');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing description',
+      );
     });
 
     test('changing aiResponseType should make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Initially clean
       var state = container
@@ -243,19 +288,25 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isTrue,
-          reason: 'Form should be dirty after changing aiResponseType');
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing aiResponseType',
+      );
     });
 
     test('setting same value should not make form dirty', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: testConfigId).notifier,
+      );
 
       // Initially clean
       var state = container
@@ -270,8 +321,11 @@ void main() {
       state = container
           .read(promptFormControllerProvider(configId: testConfigId))
           .value;
-      expect(state!.isDirty, isFalse,
-          reason: 'Form should not be dirty when setting same value');
+      expect(
+        state!.isDirty,
+        isFalse,
+        reason: 'Form should not be dirty when setting same value',
+      );
     });
   });
 }

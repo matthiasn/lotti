@@ -27,8 +27,9 @@ class _SearchWidgetState extends State<SearchWidget> {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: Theme.of(context)
-          .copyWith(inputDecorationTheme: const InputDecorationTheme()),
+      data: Theme.of(
+        context,
+      ).copyWith(inputDecorationTheme: const InputDecorationTheme()),
       child: Container(
         margin: widget.margin,
         height: 53,

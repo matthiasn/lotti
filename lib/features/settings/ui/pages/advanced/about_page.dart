@@ -70,156 +70,183 @@ class _AboutPageState extends ConsumerState<AboutPage> {
 
     return FutureBuilder<int>(
       future: getIt<JournalDb>().getJournalCount(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<int> snapshot,
-      ) {
-        return SliverBoxAdapterPage(
-          title: context.messages.settingsAboutTitle,
-          showBackButton: true,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: GradientThemes.backgroundGradient(context),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(SpacingConstants.inputSpacerHeight),
-              child: Column(
-                children: [
-                  // App Info Card
-                  EnhancedModernCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(
-                          SpacingConstants.enhancedSmallFontSize),
-                      child: Column(
-                        children: [
-                          // App Icon/Logo placeholder
-                          Container(
-                            width: enhancedIconSize,
-                            height: enhancedIconSize,
-                            decoration: BoxDecoration(
-                              gradient: GradientThemes.accentGradient(context),
-                              borderRadius: BorderRadius.circular(
-                                  enhancedIconBorderRadius),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.colorScheme.shadow.withValues(
-                                      alpha: GradientConstants
-                                          .enhancedShadowLightAlpha),
-                                  blurRadius:
-                                      GradientConstants.enhancedShadowBlurLight,
-                                  offset: const Offset(
-                                      0,
-                                      GradientConstants.enhancedShadowOffsetY /
-                                          2),
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<int> snapshot,
+          ) {
+            return SliverBoxAdapterPage(
+              title: context.messages.settingsAboutTitle,
+              showBackButton: true,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: GradientThemes.backgroundGradient(context),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(
+                    SpacingConstants.inputSpacerHeight,
+                  ),
+                  child: Column(
+                    children: [
+                      // App Info Card
+                      EnhancedModernCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(
+                            SpacingConstants.enhancedSmallFontSize,
+                          ),
+                          child: Column(
+                            children: [
+                              // App Icon/Logo placeholder
+                              Container(
+                                width: enhancedIconSize,
+                                height: enhancedIconSize,
+                                decoration: BoxDecoration(
+                                  gradient: GradientThemes.accentGradient(
+                                    context,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    enhancedIconBorderRadius,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.colorScheme.shadow
+                                          .withValues(
+                                            alpha: GradientConstants
+                                                .enhancedShadowLightAlpha,
+                                          ),
+                                      blurRadius: GradientConstants
+                                          .enhancedShadowBlurLight,
+                                      offset: const Offset(
+                                        0,
+                                        GradientConstants
+                                                .enhancedShadowOffsetY /
+                                            2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.auto_stories_rounded,
+                                  size: enhancedIconInnerSize,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: halfVerticalSpacer),
+                              const Text(
+                                'Lotti',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: halfSmallSpacer),
+                              Text(
+                                context.messages.settingsAboutAppTagline,
+                                style: context.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: halfVerticalSpacer),
+                      // Version Info Card
+                      buildCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: context.colorScheme.primary,
+                                  size: SpacingConstants.inputSpacerHeight,
+                                ),
+                                const SizedBox(
+                                  width:
+                                      SpacingConstants.inputSpacerSmallHeight,
+                                ),
+                                Text(
+                                  context.messages.settingsAboutAppInformation,
+                                  style: context.textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: context.colorScheme.onSurface,
+                                      ),
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.auto_stories_rounded,
-                              size: enhancedIconInnerSize,
-                              color: Colors.white,
+                            const SizedBox(height: halfVerticalSpacer),
+                            _buildInfoRow(
+                              context.messages.settingsAboutVersion,
+                              '$version ($buildNumber)',
+                              context,
                             ),
-                          ),
-                          const SizedBox(height: halfVerticalSpacer),
-                          const Text(
-                            'Lotti',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            const SizedBox(height: halfSmallSpacer),
+                            _buildInfoRow(
+                              context.messages.settingsAboutPlatform,
+                              _getPlatformName(),
+                              context,
                             ),
-                          ),
-                          const SizedBox(height: halfSmallSpacer),
-                          Text(
-                            context.messages.settingsAboutAppTagline,
-                            style: context.textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w300,
+                            const SizedBox(height: halfSmallSpacer),
+                            _buildInfoRow(
+                              context.messages.settingsAboutBuildType,
+                              _getBuildType(),
+                              context,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: halfVerticalSpacer),
-                  // Version Info Card
-                  buildCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      const SizedBox(height: halfVerticalSpacer),
+                      // Statistics Card
+                      buildCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: context.colorScheme.primary,
-                              size: SpacingConstants.inputSpacerHeight,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.analytics_rounded,
+                                  color: context.colorScheme.primary,
+                                  size: SpacingConstants.inputSpacerHeight,
+                                ),
+                                const SizedBox(
+                                  width:
+                                      SpacingConstants.inputSpacerSmallHeight,
+                                ),
+                                Text(
+                                  context.messages.settingsAboutYourData,
+                                  style: context.textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: context.colorScheme.onSurface,
+                                      ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(
-                                width: SpacingConstants.inputSpacerSmallHeight),
-                            Text(
-                              context.messages.settingsAboutAppInformation,
-                              style: context.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: context.colorScheme.onSurface,
-                              ),
+                            const SizedBox(height: halfVerticalSpacer),
+                            _buildInfoRow(
+                              context.messages.settingsAboutJournalEntries,
+                              '${snapshot.data ?? 0}',
+                              context,
                             ),
+                            const SizedBox(height: halfSmallSpacer),
+                            const FlaggedCount(),
+                            const SizedBox(height: halfVerticalSpacer),
+                            const TaskCounts(),
                           ],
                         ),
-                        const SizedBox(height: halfVerticalSpacer),
-                        _buildInfoRow(context.messages.settingsAboutVersion,
-                            '$version ($buildNumber)', context),
-                        const SizedBox(height: halfSmallSpacer),
-                        _buildInfoRow(context.messages.settingsAboutPlatform,
-                            _getPlatformName(), context),
-                        const SizedBox(height: halfSmallSpacer),
-                        _buildInfoRow(context.messages.settingsAboutBuildType,
-                            _getBuildType(), context),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: halfVerticalSpacer),
+                      // Credits Card
+                    ],
                   ),
-                  const SizedBox(height: halfVerticalSpacer),
-                  // Statistics Card
-                  buildCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.analytics_rounded,
-                              color: context.colorScheme.primary,
-                              size: SpacingConstants.inputSpacerHeight,
-                            ),
-                            const SizedBox(
-                                width: SpacingConstants.inputSpacerSmallHeight),
-                            Text(
-                              context.messages.settingsAboutYourData,
-                              style: context.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: context.colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: halfVerticalSpacer),
-                        _buildInfoRow(
-                            context.messages.settingsAboutJournalEntries,
-                            '${snapshot.data ?? 0}',
-                            context),
-                        const SizedBox(height: halfSmallSpacer),
-                        const FlaggedCount(),
-                        const SizedBox(height: halfVerticalSpacer),
-                        const TaskCounts(),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: halfVerticalSpacer),
-                  // Credits Card
-                ],
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
     );
   }
 

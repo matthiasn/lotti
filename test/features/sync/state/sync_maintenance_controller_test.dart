@@ -35,11 +35,12 @@ void main() {
     controller = container.read(syncControllerProvider.notifier);
 
     void stubSuccess(Invocation invocation) {
-      final onProgress = invocation.namedArguments[const Symbol('onProgress')]
-          as void Function(double)?;
+      final onProgress =
+          invocation.namedArguments[const Symbol('onProgress')]
+              as void Function(double)?;
       final onDetailedProgress =
-          invocation.namedArguments[const Symbol('onDetailedProgress')] as void
-              Function(int, int)?;
+          invocation.namedArguments[const Symbol('onDetailedProgress')]
+              as void Function(int, int)?;
       onDetailedProgress?.call(0, 1);
       onDetailedProgress?.call(1, 1);
       onProgress?.call(1);
@@ -124,15 +125,17 @@ void main() {
         fireImmediately: true,
       );
 
-      await controller.syncAll(selectedSteps: {
-        SyncStep.tags,
-        SyncStep.measurables,
-        SyncStep.labels,
-        SyncStep.categories,
-        SyncStep.dashboards,
-        SyncStep.habits,
-        SyncStep.aiSettings,
-      });
+      await controller.syncAll(
+        selectedSteps: {
+          SyncStep.tags,
+          SyncStep.measurables,
+          SyncStep.labels,
+          SyncStep.categories,
+          SyncStep.dashboards,
+          SyncStep.habits,
+          SyncStep.aiSettings,
+        },
+      );
 
       expect(states.first, const SyncState());
       expect(states.last.isSyncing, isFalse);
@@ -202,10 +205,12 @@ void main() {
     });
 
     test('syncAll runs only selected steps', () async {
-      await controller.syncAll(selectedSteps: {
-        SyncStep.tags,
-        SyncStep.aiSettings,
-      });
+      await controller.syncAll(
+        selectedSteps: {
+          SyncStep.tags,
+          SyncStep.aiSettings,
+        },
+      );
 
       verify(
         () => mockRepository.syncTags(
@@ -272,15 +277,17 @@ void main() {
       );
 
       await expectLater(
-        controller.syncAll(selectedSteps: {
-          SyncStep.tags,
-          SyncStep.measurables,
-          SyncStep.labels,
-          SyncStep.categories,
-          SyncStep.dashboards,
-          SyncStep.habits,
-          SyncStep.aiSettings,
-        }),
+        controller.syncAll(
+          selectedSteps: {
+            SyncStep.tags,
+            SyncStep.measurables,
+            SyncStep.labels,
+            SyncStep.categories,
+            SyncStep.dashboards,
+            SyncStep.habits,
+            SyncStep.aiSettings,
+          },
+        ),
         throwsA(exception),
       );
 
@@ -343,15 +350,17 @@ void main() {
     });
 
     test('reset sets state to initial', () async {
-      await controller.syncAll(selectedSteps: {
-        SyncStep.tags,
-        SyncStep.measurables,
-        SyncStep.labels,
-        SyncStep.categories,
-        SyncStep.dashboards,
-        SyncStep.habits,
-        SyncStep.aiSettings,
-      });
+      await controller.syncAll(
+        selectedSteps: {
+          SyncStep.tags,
+          SyncStep.measurables,
+          SyncStep.labels,
+          SyncStep.categories,
+          SyncStep.dashboards,
+          SyncStep.habits,
+          SyncStep.aiSettings,
+        },
+      );
       expect(container.read(syncControllerProvider).progress, 100);
 
       controller.reset();

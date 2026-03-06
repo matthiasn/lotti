@@ -11,8 +11,9 @@ MockSyncDatabase mockSyncDatabaseWithCount(int count) {
     (_) => Stream<int>.fromIterable([count]),
   );
 
-  when(() => mock.getDailyOutboxVolume(days: any(named: 'days')))
-      .thenAnswer((_) async => <OutboxDailyVolume>[]);
+  when(
+    () => mock.getDailyOutboxVolume(days: any(named: 'days')),
+  ).thenAnswer((_) async => <OutboxDailyVolume>[]);
 
   return mock;
 }

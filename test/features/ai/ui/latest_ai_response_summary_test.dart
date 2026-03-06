@@ -161,11 +161,13 @@ void main() {
       );
     });
 
-    testWidgets('keeps old summary visible while generating new one',
-        (tester) async {
+    testWidgets('keeps old summary visible while generating new one', (
+      tester,
+    ) async {
       // Setup mock to return the test response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       final container = ProviderContainer(
         overrides: [
@@ -211,10 +213,12 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('has AnimatedSize and AnimatedSwitcher widgets',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+    testWidgets('has AnimatedSize and AnimatedSwitcher widgets', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -236,10 +240,12 @@ void main() {
       expect(find.byType(AiResponseSummary), findsOneWidget);
     });
 
-    testWidgets('AnimatedSize wraps AnimatedSwitcher correctly',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+    testWidgets('AnimatedSize wraps AnimatedSwitcher correctly', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -274,11 +280,13 @@ void main() {
       );
     });
 
-    testWidgets('transitions between summaries with size and fade animation',
-        (tester) async {
+    testWidgets('transitions between summaries with size and fade animation', (
+      tester,
+    ) async {
       // Start with first response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -302,8 +310,9 @@ void main() {
     });
 
     testWidgets('shows spinner in header while running', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       final container = ProviderContainer(
         overrides: [
@@ -353,8 +362,9 @@ void main() {
     });
 
     testWidgets('shows delete button when not running', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -376,8 +386,9 @@ void main() {
     });
 
     testWidgets('handles null response gracefully', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -401,8 +412,9 @@ void main() {
     });
 
     testWidgets('AnimatedSwitcher uses only FadeTransition', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -444,8 +456,9 @@ void main() {
 
     testWidgets('preserves state during inference', (tester) async {
       // Initial state with first response
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       final container = ProviderContainer(
         overrides: [
@@ -486,8 +499,10 @@ void main() {
       // During inference, old summary should still be visible
       expect(find.text('This is the first summary'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.delete_outline),
-          findsNothing); // Delete hidden during run
+      expect(
+        find.byIcon(Icons.delete_outline),
+        findsNothing,
+      ); // Delete hidden during run
 
       // Set inference status back to idle
       container
@@ -509,13 +524,15 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('loading state shows CircularProgressIndicator',
-        (tester) async {
+    testWidgets('loading state shows CircularProgressIndicator', (
+      tester,
+    ) async {
       // Create a completer to control when the future completes
       final completer = Completer<List<JournalEntity>>();
 
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) => completer.future);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -544,8 +561,9 @@ void main() {
     testWidgets('error state shows error message', (tester) async {
       const errorMessage = 'Failed to load summary';
 
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenThrow(errorMessage);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenThrow(errorMessage);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -562,15 +580,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show error message
-      expect(find.text('Failed to load AI summary. Please try again.'),
-          findsOneWidget);
+      expect(
+        find.text('Failed to load AI summary. Please try again.'),
+        findsOneWidget,
+      );
       expect(find.byType(AnimatedSize), findsNothing);
       expect(find.byType(AnimatedSwitcher), findsNothing);
     });
 
     testWidgets('spinner button is disabled during inference', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => [testResponse1]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [testResponse1]);
 
       final container = ProviderContainer(
         overrides: [
@@ -692,10 +713,12 @@ void main() {
       );
     });
 
-    testWidgets('shows delete button when summaries exist and not running',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer(
+    testWidgets('shows delete button when summaries exist and not running', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer(
         (_) async => [testResponse1, testResponse2, testResponse3],
       );
 
@@ -726,8 +749,9 @@ void main() {
     });
 
     testWidgets('hides delete button when no summaries exist', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -746,10 +770,12 @@ void main() {
       expect(find.byIcon(Icons.delete_outline), findsNothing);
     });
 
-    testWidgets('hides delete button when inference is running',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer(
+    testWidgets('hides delete button when inference is running', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer(
         (_) async => [testResponse1],
       );
 
@@ -794,10 +820,12 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('tapping delete shows confirmation dialog with count',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer(
+    testWidgets('tapping delete shows confirmation dialog with count', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer(
         (_) async => [testResponse1, testResponse2, testResponse3],
       );
 
@@ -828,14 +856,17 @@ void main() {
       );
     });
 
-    testWidgets('confirming deletion calls deleteJournalEntity for each',
-        (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer(
+    testWidgets('confirming deletion calls deleteJournalEntity for each', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer(
         (_) async => [testResponse1, testResponse2, testResponse3],
       );
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepository.deleteJournalEntity(any()),
+      ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -860,17 +891,21 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify deleteJournalEntity was called for each summary
-      verify(() => mockJournalRepository.deleteJournalEntity('response-1'))
-          .called(1);
-      verify(() => mockJournalRepository.deleteJournalEntity('response-2'))
-          .called(1);
-      verify(() => mockJournalRepository.deleteJournalEntity('response-3'))
-          .called(1);
+      verify(
+        () => mockJournalRepository.deleteJournalEntity('response-1'),
+      ).called(1);
+      verify(
+        () => mockJournalRepository.deleteJournalEntity('response-2'),
+      ).called(1);
+      verify(
+        () => mockJournalRepository.deleteJournalEntity('response-3'),
+      ).called(1);
     });
 
     testWidgets('canceling deletion does not delete', (tester) async {
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-          .thenAnswer(
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer(
         (_) async => [testResponse1, testResponse2],
       );
 

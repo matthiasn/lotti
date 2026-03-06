@@ -71,8 +71,9 @@ class _ConfigActionBar extends ConsumerWidget {
             const SizedBox(width: 8),
             Flexible(
               child: LottiPrimaryButton(
-                onPressed:
-                    isComplete ? () => pageIndexNotifier.value = 2 : null,
+                onPressed: isComplete
+                    ? () => pageIndexNotifier.value = 2
+                    : null,
                 label: context.messages.settingsMatrixNextPage,
               ),
             ),
@@ -225,7 +226,8 @@ class _ReadyViewState extends ConsumerState<_ReadyView> {
     }
 
     Future<void> maybeAdvance(KeyVerificationRunner runner) async {
-      final isDone = runner.lastStep == 'm.key.verification.done' ||
+      final isDone =
+          runner.lastStep == 'm.key.verification.done' ||
           runner.keyVerification.isDone;
       if (!isDone ||
           _autoAdvancedToStatus ||

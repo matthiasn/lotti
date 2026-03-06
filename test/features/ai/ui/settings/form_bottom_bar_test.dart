@@ -80,8 +80,9 @@ void main() {
       expect(saveButton, findsOneWidget);
     });
 
-    testWidgets('shows save button when form is valid and dirty',
-        (tester) async {
+    testWidgets('shows save button when form is valid and dirty', (
+      tester,
+    ) async {
       var saveCalled = false;
       var cancelCalled = false;
 

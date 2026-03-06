@@ -34,19 +34,22 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(geminiModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(geminiModels.length);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(geminiModels.length);
       });
 
       test('should create all known models for Nebius provider', () async {
@@ -61,19 +64,22 @@ void main() {
           inferenceProviderType: InferenceProviderType.nebiusAiStudio,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(nebiusModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(nebiusModels.length);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(nebiusModels.length);
       });
 
       test('should create all known models for Ollama provider', () async {
@@ -88,19 +94,22 @@ void main() {
           inferenceProviderType: InferenceProviderType.ollama,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(ollamaModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(ollamaModels.length);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(ollamaModels.length);
       });
 
       test('should create all known models for Anthropic provider', () async {
@@ -115,19 +124,22 @@ void main() {
           inferenceProviderType: InferenceProviderType.anthropic,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(anthropicModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(anthropicModels.length);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(anthropicModels.length);
       });
 
       test('should create all known models for OpenRouter provider', () async {
@@ -142,19 +154,22 @@ void main() {
           inferenceProviderType: InferenceProviderType.openRouter,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(openRouterModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(openRouterModels.length);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(openRouterModels.length);
       });
 
       test('should create all known models for OpenAI provider', () async {
@@ -169,19 +184,22 @@ void main() {
           inferenceProviderType: InferenceProviderType.openAi,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(openaiModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(openaiModels.length);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(openaiModels.length);
       });
 
       test('should skip existing models and only create new ones', () async {
@@ -212,48 +230,56 @@ void main() {
           isReasoningModel: false,
         );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [existingModel]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [existingModel]);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
         expect(result, equals(geminiModels.length - 1));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(geminiModels.length - 1);
+        verify(
+          () => mockRepository.saveConfig(any()),
+        ).called(geminiModels.length - 1);
       });
 
-      test('should create all known models for Generic OpenAI provider',
-          () async {
-        // Arrange
-        const providerId = 'generic-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'http://localhost:8002/v1',
-          apiKey: '',
-          name: 'AI Proxy (local)',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
+      test(
+        'should create all known models for Generic OpenAI provider',
+        () async {
+          // Arrange
+          const providerId = 'generic-provider-id';
+          final provider = AiConfigInferenceProvider(
+            id: providerId,
+            baseUrl: 'http://localhost:8002/v1',
+            apiKey: '',
+            name: 'AI Proxy (local)',
+            createdAt: DateTime.now(),
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((_) async => {});
+          when(
+            () => mockRepository.saveConfig(any()),
+          ).thenAnswer((_) async => {});
 
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
+          // Act
+          final result = await service.prepopulateModelsForProvider(provider);
 
-        // Assert
-        expect(result, equals(genericOpenAiModels.length));
-        verify(() => mockRepository.saveConfig(any()))
-            .called(genericOpenAiModels.length);
-      });
+          // Assert
+          expect(result, equals(genericOpenAiModels.length));
+          verify(
+            () => mockRepository.saveConfig(any()),
+          ).called(genericOpenAiModels.length);
+        },
+      );
 
       test('should create models with correct properties', () async {
         // Arrange
@@ -268,11 +294,13 @@ void main() {
         );
 
         AiConfigModel? capturedModel;
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
-        when(() => mockRepository.saveConfig(any()))
-            .thenAnswer((invocation) async {
+        when(() => mockRepository.saveConfig(any())).thenAnswer((
+          invocation,
+        ) async {
           capturedModel = invocation.positionalArguments[0] as AiConfigModel;
         });
 
@@ -337,8 +365,10 @@ void main() {
       expect(aiConfigModel.name, equals('Test Model'));
       expect(aiConfigModel.providerModelId, equals('test-model-id'));
       expect(aiConfigModel.inferenceProviderId, equals('provider-id'));
-      expect(aiConfigModel.inputModalities,
-          equals([Modality.text, Modality.image]));
+      expect(
+        aiConfigModel.inputModalities,
+        equals([Modality.text, Modality.image]),
+      );
       expect(aiConfigModel.outputModalities, equals([Modality.text]));
       expect(aiConfigModel.isReasoningModel, isTrue);
       expect(aiConfigModel.description, equals('Test description'));

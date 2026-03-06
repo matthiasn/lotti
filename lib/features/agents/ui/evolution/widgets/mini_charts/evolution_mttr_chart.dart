@@ -24,8 +24,9 @@ class EvolutionMttrChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nonZeroBuckets =
-        buckets.where((b) => b.averageMttr > Duration.zero).toList();
+    final nonZeroBuckets = buckets
+        .where((b) => b.averageMttr > Duration.zero)
+        .toList();
     if (nonZeroBuckets.isEmpty) return const SizedBox.shrink();
 
     final isSingle = nonZeroBuckets.length == 1;

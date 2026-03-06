@@ -249,16 +249,18 @@ class GameyTaskCard extends StatelessWidget {
                 Icon(
                   Icons.calendar_today_rounded,
                   size: AppTheme.statusIndicatorFontSize,
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.7),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.7,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   DateFormat.yMMMd().format(task.meta.dateFrom),
                   style: context.textTheme.bodySmall?.copyWith(
                     fontSize: AppTheme.statusIndicatorFontSize,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.7),
+                    color: context.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.7,
+                    ),
                   ),
                 ),
               ],
@@ -335,8 +337,9 @@ class _GameyStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     // Use Flutter's built-in brightness estimation for text contrast
     final brightness = ThemeData.estimateBrightnessForColor(color);
-    final textColor =
-        brightness == Brightness.light ? Colors.black : Colors.white;
+    final textColor = brightness == Brightness.light
+        ? Colors.black
+        : Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -345,7 +348,10 @@ class _GameyStatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color, color.withValues(alpha: _chipGradientEndAlpha)],
+          colors: [
+            color,
+            color.withValues(alpha: _chipGradientEndAlpha),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

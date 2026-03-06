@@ -112,7 +112,10 @@ class _WaveformBarsPainter extends CustomPainter {
       ..color = Colors.grey.withValues(alpha: 0.25)
       ..strokeWidth = 1;
     canvas.drawLine(
-        Offset(0, baselineY), Offset(size.width, baselineY), basePaint);
+      Offset(0, baselineY),
+      Offset(size.width, baselineY),
+      basePaint,
+    );
   }
 
   @override

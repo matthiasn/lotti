@@ -13,20 +13,24 @@ part of 'dashscope_inference_repository.dart';
 final dashScopeInferenceRepositoryProvider =
     DashScopeInferenceRepositoryProvider._();
 
-final class DashScopeInferenceRepositoryProvider extends $FunctionalProvider<
-    DashScopeInferenceRepository,
-    DashScopeInferenceRepository,
-    DashScopeInferenceRepository> with $Provider<DashScopeInferenceRepository> {
+final class DashScopeInferenceRepositoryProvider
+    extends
+        $FunctionalProvider<
+          DashScopeInferenceRepository,
+          DashScopeInferenceRepository,
+          DashScopeInferenceRepository
+        >
+    with $Provider<DashScopeInferenceRepository> {
   DashScopeInferenceRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'dashScopeInferenceRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dashScopeInferenceRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$dashScopeInferenceRepositoryHash();
@@ -34,8 +38,8 @@ final class DashScopeInferenceRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<DashScopeInferenceRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   DashScopeInferenceRepository create(Ref ref) {

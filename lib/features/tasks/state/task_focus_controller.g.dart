@@ -14,16 +14,16 @@ final taskFocusControllerProvider = TaskFocusControllerFamily._();
 
 final class TaskFocusControllerProvider
     extends $NotifierProvider<TaskFocusController, TaskFocusIntent?> {
-  TaskFocusControllerProvider._(
-      {required TaskFocusControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'taskFocusControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TaskFocusControllerProvider._({
+    required TaskFocusControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'taskFocusControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$taskFocusControllerHash();
@@ -63,21 +63,25 @@ String _$taskFocusControllerHash() =>
 
 final class TaskFocusControllerFamily extends $Family
     with
-        $ClassFamilyOverride<TaskFocusController, TaskFocusIntent?,
-            TaskFocusIntent?, TaskFocusIntent?, String> {
+        $ClassFamilyOverride<
+          TaskFocusController,
+          TaskFocusIntent?,
+          TaskFocusIntent?,
+          TaskFocusIntent?,
+          String
+        > {
   TaskFocusControllerFamily._()
-      : super(
-          retry: null,
-          name: r'taskFocusControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'taskFocusControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   TaskFocusControllerProvider call({
     required String id,
-  }) =>
-      TaskFocusControllerProvider._(argument: id, from: this);
+  }) => TaskFocusControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'taskFocusControllerProvider';
@@ -94,15 +98,19 @@ abstract class _$TaskFocusController extends $Notifier<TaskFocusIntent?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<TaskFocusIntent?, TaskFocusIntent?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<TaskFocusIntent?, TaskFocusIntent?>,
-        TaskFocusIntent?,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<TaskFocusIntent?, TaskFocusIntent?>,
+              TaskFocusIntent?,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+      ref,
+      () => build(
+        id: _$args,
+      ),
+    );
   }
 }

@@ -197,7 +197,8 @@ class TaskEstimateHandler {
 
       // Validate minutes value
       if (minutes == null) {
-        final message = 'Invalid estimate: minutes must be a positive integer '
+        final message =
+            'Invalid estimate: minutes must be a positive integer '
             'between 1 and $maxEstimateMinutes. Received: $rawMinutes';
         _sendResponse(call.id, message, manager);
         return TaskEstimateResult(

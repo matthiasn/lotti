@@ -56,7 +56,7 @@ class EmbeddingsDb {
   /// If [inMemory] is true an in-memory database is created (useful for
   /// tests). Otherwise the database is opened at [path].
   EmbeddingsDb({this.path, this.inMemory = false})
-      : assert(inMemory || path != null, 'path must be set when not inMemory');
+    : assert(inMemory || path != null, 'path must be set when not inMemory');
 
   /// File path for the database. Ignored when [inMemory] is true.
   final String? path;
@@ -79,7 +79,8 @@ class EmbeddingsDb {
   void open() {
     if (!inMemory && path == null) {
       throw ArgumentError(
-          "EmbeddingsDb.open(): 'path' must be set when not inMemory");
+        "EmbeddingsDb.open(): 'path' must be set when not inMemory",
+      );
     }
     _db = inMemory ? sqlite3.openInMemory() : sqlite3.open(path!);
 
@@ -194,8 +195,9 @@ class EmbeddingsDb {
 
     // In PRAGMA table_info, `pk` is nonzero for PK columns.
     // The new schema has pk=1 for entity_id and pk=2 for chunk_index.
-    final pkColumns =
-        info.where((row) => (row['pk'] as int) > 0).map((row) => row['name']);
+    final pkColumns = info
+        .where((row) => (row['pk'] as int) > 0)
+        .map((row) => row['name']);
     return !pkColumns.contains('chunk_index');
   }
 

@@ -28,14 +28,18 @@ class RatingTapBar extends StatelessWidget {
 
         return GestureDetector(
           onTapDown: (details) {
-            final normalized =
-                (details.localPosition.dx / width).clamp(0.0, 1.0);
+            final normalized = (details.localPosition.dx / width).clamp(
+              0.0,
+              1.0,
+            );
             onChanged(normalized);
             HapticFeedback.selectionClick();
           },
           onHorizontalDragUpdate: (details) {
-            final normalized =
-                (details.localPosition.dx / width).clamp(0.0, 1.0);
+            final normalized = (details.localPosition.dx / width).clamp(
+              0.0,
+              1.0,
+            );
             onChanged(normalized);
           },
           child: Container(
@@ -50,8 +54,9 @@ class RatingTapBar extends StatelessWidget {
                 value: value,
                 tickCount: _tickCount,
                 activeColor: colorScheme.primary,
-                inactiveColor:
-                    colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                inactiveColor: colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.3,
+                ),
                 fillColor: colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),

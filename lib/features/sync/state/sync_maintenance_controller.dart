@@ -42,8 +42,9 @@ class SyncMaintenanceController extends Notifier<SyncState> {
     }
 
     // Precompute totals so the UI can show "processed / total" immediately.
-    final initialTotals =
-        await _repository.fetchTotalsForSteps(orderedSteps.toSet());
+    final initialTotals = await _repository.fetchTotalsForSteps(
+      orderedSteps.toSet(),
+    );
 
     state = state.copyWith(
       isSyncing: true,
@@ -60,23 +61,27 @@ class SyncMaintenanceController extends Notifier<SyncState> {
     );
 
     // Define all sync operations using equal weighting
-    final allOperations = <SyncStep,
-        Future<void> Function({
-      void Function(double)? onProgress,
-      void Function(int processed, int total)? onDetailedProgress,
-    })>{
-      SyncStep.tags: _repository.syncTags,
-      SyncStep.measurables: _repository.syncMeasurables,
-      SyncStep.labels: _repository.syncLabels,
-      SyncStep.categories: _repository.syncCategories,
-      SyncStep.dashboards: _repository.syncDashboards,
-      SyncStep.habits: _repository.syncHabits,
-      SyncStep.aiSettings: _repository.syncAiSettings,
-      SyncStep.backfillAgentEntityClocks: _repository.backfillAgentEntityClocks,
-      SyncStep.backfillAgentLinkClocks: _repository.backfillAgentLinkClocks,
-      SyncStep.agentEntities: _repository.syncAgentEntities,
-      SyncStep.agentLinks: _repository.syncAgentLinks,
-    };
+    final allOperations =
+        <
+          SyncStep,
+          Future<void> Function({
+            void Function(double)? onProgress,
+            void Function(int processed, int total)? onDetailedProgress,
+          })
+        >{
+          SyncStep.tags: _repository.syncTags,
+          SyncStep.measurables: _repository.syncMeasurables,
+          SyncStep.labels: _repository.syncLabels,
+          SyncStep.categories: _repository.syncCategories,
+          SyncStep.dashboards: _repository.syncDashboards,
+          SyncStep.habits: _repository.syncHabits,
+          SyncStep.aiSettings: _repository.syncAiSettings,
+          SyncStep.backfillAgentEntityClocks:
+              _repository.backfillAgentEntityClocks,
+          SyncStep.backfillAgentLinkClocks: _repository.backfillAgentLinkClocks,
+          SyncStep.agentEntities: _repository.syncAgentEntities,
+          SyncStep.agentLinks: _repository.syncAgentLinks,
+        };
 
     final syncOperations = orderedSteps
         .map(
@@ -88,8 +93,9 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         .toList();
 
     // Each selected step contributes the same weight to overall progress.
-    final operationWeight =
-        syncOperations.isEmpty ? 0.0 : 1 / syncOperations.length;
+    final operationWeight = syncOperations.isEmpty
+        ? 0.0
+        : 1 / syncOperations.length;
 
     try {
       var totalProgress = 0.0;
@@ -110,8 +116,10 @@ class SyncMaintenanceController extends Notifier<SyncState> {
           onDetailedProgress: (processed, total) {
             final updatedProgress =
                 Map<SyncStep, StepProgress>.from(state.stepProgress)
-                  ..[operation.step] =
-                      StepProgress(processed: processed, total: total);
+                  ..[operation.step] = StepProgress(
+                    processed: processed,
+                    total: total,
+                  );
             state = state.copyWith(stepProgress: updatedProgress);
           },
         );
@@ -149,8 +157,8 @@ class SyncMaintenanceController extends Notifier<SyncState> {
 
 final syncControllerProvider =
     NotifierProvider<SyncMaintenanceController, SyncState>(
-  SyncMaintenanceController.new,
-);
+      SyncMaintenanceController.new,
+    );
 
 final syncLoggingServiceProvider = Provider<LoggingService>((ref) {
   return ref.watch(loggingServiceProvider);

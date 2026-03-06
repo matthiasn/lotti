@@ -24,10 +24,12 @@ void main() {
     mockAiInputRepo = MockAiInputRepository();
     getIt.registerSingleton<JournalDb>(mockDb);
     final mockLabelsRepo = MockLabelsRepository();
-    when(() => mockLabelsRepo.getAllLabels())
-        .thenAnswer((_) => mockDb.getAllLabelDefinitions());
-    when(() => mockLabelsRepo.getLabelUsageCounts())
-        .thenAnswer((_) => mockDb.getLabelUsageCounts());
+    when(
+      () => mockLabelsRepo.getAllLabels(),
+    ).thenAnswer((_) => mockDb.getAllLabelDefinitions());
+    when(
+      () => mockLabelsRepo.getLabelUsageCounts(),
+    ).thenAnswer((_) => mockDb.getLabelUsageCounts());
     helper = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepo,
       checklistRepository: MockChecklistRepository(),
@@ -41,125 +43,137 @@ void main() {
   });
 
   AiConfigPrompt makePrompt() => AiConfigPrompt(
-        id: 'p1',
-        name: 'Checklist Updates',
-        systemMessage: 'sys',
-        userMessage:
-            'Task:```json\n{{task}}\n```\nLabels:```json\n{{labels}}\n```',
-        defaultModelId: 'm1',
-        modelIds: const ['m1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: const [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-      );
+    id: 'p1',
+    name: 'Checklist Updates',
+    systemMessage: 'sys',
+    userMessage: 'Task:```json\n{{task}}\n```\nLabels:```json\n{{labels}}\n```',
+    defaultModelId: 'm1',
+    modelIds: const ['m1'],
+    createdAt: DateTime.now(),
+    useReasoning: false,
+    requiredInputData: const [InputDataType.task],
+    aiResponseType: AiResponseType.checklistUpdates,
+  );
 
   Task makeTask() => Task(
-        meta: Metadata(
-          id: 't1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          categoryId: 'cat',
-        ),
-        data: TaskData(
-          title: 'Task',
-          status: TaskStatus.open(
-            id: 's',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
-          ),
-          statusHistory: const [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
+    meta: Metadata(
+      id: 't1',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+      categoryId: 'cat',
+    ),
+    data: TaskData(
+      title: 'Task',
+      status: TaskStatus.open(
+        id: 's',
+        createdAt: DateTime.now(),
+        utcOffset: 0,
+      ),
+      statusHistory: const [],
+      dateFrom: DateTime.now(),
+      dateTo: DateTime.now(),
+    ),
+  );
 
   LabelDefinition makeLabel({
     required String id,
     required String name,
     bool? private,
-  }) =>
-      LabelDefinition(
-        id: id,
-        name: name,
-        color: '#000000',
-        description: null,
-        sortOrder: null,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        private: private,
+  }) => LabelDefinition(
+    id: id,
+    name: name,
+    color: '#000000',
+    description: null,
+    sortOrder: null,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    vectorClock: null,
+    private: private,
+  );
+
+  test(
+    'handles 500+ labels with correct subset selection and performance',
+    () async {
+      final labels = <LabelDefinition>[];
+      final usage = <String, int>{};
+
+      // High usage: 100 labels, descending usage
+      for (var i = 0; i < 100; i++) {
+        labels.add(makeLabel(id: 'high-$i', name: 'High Usage $i'));
+        usage['high-$i'] = 1000 - i;
+      }
+
+      // Medium usage: 200 labels
+      for (var i = 0; i < 200; i++) {
+        labels.add(makeLabel(id: 'med-$i', name: 'Medium $i'));
+        usage['med-$i'] = 100 - (i % 100);
+      }
+
+      // Unused: 200 labels with names sorting alphabetically by padded index
+      for (var i = 0; i < 200; i++) {
+        labels.add(
+          makeLabel(
+            id: 'unused-$i',
+            name: 'Alpha ${i.toString().padLeft(3, '0')}',
+          ),
+        );
+      }
+
+      when(
+        () => mockDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => labels);
+      when(() => mockDb.getLabelUsageCounts()).thenAnswer((_) async => usage);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{}');
+
+      final sw = Stopwatch()..start();
+      final prompt = await helper.buildPromptWithData(
+        promptConfig: makePrompt(),
+        entity: makeTask(),
       );
+      sw.stop();
 
-  test('handles 500+ labels with correct subset selection and performance',
-      () async {
-    final labels = <LabelDefinition>[];
-    final usage = <String, int>{};
+      // Performance sanity check (keep generous to avoid flakiness)
+      expect(sw.elapsedMilliseconds, lessThan(200));
 
-    // High usage: 100 labels, descending usage
-    for (var i = 0; i < 100; i++) {
-      labels.add(makeLabel(id: 'high-$i', name: 'High Usage $i'));
-      usage['high-$i'] = 1000 - i;
-    }
+      final match = RegExp(
+        r'Labels:```json\n(.*?)\n```',
+        dotAll: true,
+      ).firstMatch(prompt!);
+      final jsonPart = match!.group(1)!;
+      final injected = (jsonDecode(jsonPart) as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
 
-    // Medium usage: 200 labels
-    for (var i = 0; i < 200; i++) {
-      labels.add(makeLabel(id: 'med-$i', name: 'Medium $i'));
-      usage['med-$i'] = 100 - (i % 100);
-    }
+      // Cap at 100
+      expect(injected.length, 100);
 
-    // Unused: 200 labels with names sorting alphabetically by padded index
-    for (var i = 0; i < 200; i++) {
-      labels.add(
-        makeLabel(
-            id: 'unused-$i', name: 'Alpha ${i.toString().padLeft(3, '0')}'),
-      );
-    }
+      // First 50 should be top usage IDs (order within usage can vary due to name tie-breaks)
+      final topFiftyIds = injected
+          .take(50)
+          .map((e) => e['id'] as String)
+          .toList();
+      for (var i = 0; i < 50; i++) {
+        expect(topFiftyIds, contains('high-$i'));
+      }
 
-    when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => labels);
-    when(() => mockDb.getLabelUsageCounts()).thenAnswer((_) async => usage);
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+      // Next 50 should be alphabetical by name from the remainder
+      final nextFiftyNames = injected
+          .skip(50)
+          .take(50)
+          .map((e) => e['name'] as String)
+          .toList();
+      final sorted = [...nextFiftyNames]..sort();
+      expect(nextFiftyNames, equals(sorted));
 
-    final sw = Stopwatch()..start();
-    final prompt = await helper.buildPromptWithData(
-      promptConfig: makePrompt(),
-      entity: makeTask(),
-    );
-    sw.stop();
-
-    // Performance sanity check (keep generous to avoid flakiness)
-    expect(sw.elapsedMilliseconds, lessThan(200));
-
-    final match =
-        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
-    final jsonPart = match!.group(1)!;
-    final injected = (jsonDecode(jsonPart) as List<dynamic>)
-        .map((e) => e as Map<String, dynamic>)
-        .toList();
-
-    // Cap at 100
-    expect(injected.length, 100);
-
-    // First 50 should be top usage IDs (order within usage can vary due to name tie-breaks)
-    final topFiftyIds =
-        injected.take(50).map((e) => e['id'] as String).toList();
-    for (var i = 0; i < 50; i++) {
-      expect(topFiftyIds, contains('high-$i'));
-    }
-
-    // Next 50 should be alphabetical by name from the remainder
-    final nextFiftyNames =
-        injected.skip(50).take(50).map((e) => e['name'] as String).toList();
-    final sorted = [...nextFiftyNames]..sort();
-    expect(nextFiftyNames, equals(sorted));
-
-    // No duplicates
-    final ids = injected.map((e) => e['id'] as String).toSet();
-    expect(ids.length, 100);
-  });
+      // No duplicates
+      final ids = injected.map((e) => e['id'] as String).toSet();
+      expect(ids.length, 100);
+    },
+  );
 
   test('prevents prompt injection via malicious label names', () async {
     final maliciousLabels = [
@@ -170,12 +184,15 @@ void main() {
       makeLabel(id: '5', name: '\u0000\u0001\u0002'),
     ];
 
-    when(() => mockDb.getAllLabelDefinitions())
-        .thenAnswer((_) async => maliciousLabels);
-    when(() => mockDb.getLabelUsageCounts())
-        .thenAnswer((_) async => <String, int>{});
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(
+      () => mockDb.getAllLabelDefinitions(),
+    ).thenAnswer((_) async => maliciousLabels);
+    when(
+      () => mockDb.getLabelUsageCounts(),
+    ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
@@ -183,8 +200,10 @@ void main() {
     );
 
     // Extract JSON block and ensure it parses cleanly
-    final match =
-        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final match = RegExp(
+      r'Labels:```json\n(.*?)\n```',
+      dotAll: true,
+    ).firstMatch(prompt!);
     expect(match, isNotNull);
     final jsonPart = match!.group(1)!;
     expect(() => jsonDecode(jsonPart), returnsNormally);
@@ -200,10 +219,12 @@ void main() {
       (i) => makeLabel(id: 'id$i', name: 'Label $i'),
     );
     when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => labels);
-    when(() => mockDb.getLabelUsageCounts())
-        .thenAnswer((_) async => <String, int>{});
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(
+      () => mockDb.getLabelUsageCounts(),
+    ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
@@ -216,15 +237,19 @@ void main() {
   });
   test('injects labels JSON with usage ordering and privacy filter', () async {
     // Privacy filtering happens at DB layer, so mock returns only public labels
-    when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => [
-          makeLabel(id: 'a', name: 'Alpha', private: false),
-          makeLabel(id: 'c', name: 'Charlie', private: false),
-          // 'b' (Beta, private) excluded by DB layer filtering
-        ]);
-    when(() => mockDb.getLabelUsageCounts())
-        .thenAnswer((_) async => {'c': 10, 'a': 3});
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
+      (_) async => [
+        makeLabel(id: 'a', name: 'Alpha', private: false),
+        makeLabel(id: 'c', name: 'Charlie', private: false),
+        // 'b' (Beta, private) excluded by DB layer filtering
+      ],
+    );
+    when(
+      () => mockDb.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {'c': 10, 'a': 3});
+    when(
+      () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
@@ -232,8 +257,10 @@ void main() {
     );
 
     expect(prompt, isNotNull);
-    final match =
-        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final match = RegExp(
+      r'Labels:```json\n(.*?)\n```',
+      dotAll: true,
+    ).firstMatch(prompt!);
     expect(match, isNotNull);
     final jsonPart = match!.group(1)!;
     final list = (jsonDecode(jsonPart) as List<dynamic>)
@@ -259,15 +286,18 @@ void main() {
       for (var i = 0; i < 60; i++) 'id$i': 100 - i, // descending usage
     };
     when(() => mockDb.getLabelUsageCounts()).thenAnswer((_) async => usage);
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(
+      () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
       entity: makeTask(),
     );
-    final match =
-        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final match = RegExp(
+      r'Labels:```json\n(.*?)\n```',
+      dotAll: true,
+    ).firstMatch(prompt!);
     final jsonPart = match!.group(1)!;
     final list = (jsonDecode(jsonPart) as List<dynamic>)
         .map((e) => e as Map<String, dynamic>)
@@ -276,39 +306,49 @@ void main() {
   });
 
   test('escapes special characters in label names', () async {
-    when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => [
-          makeLabel(id: '1', name: 'Quote " inside'),
-          makeLabel(id: '2', name: 'Bracket } ] combo'),
-          makeLabel(id: '3', name: 'New\nLine'),
-        ]);
-    when(() => mockDb.getLabelUsageCounts())
-        .thenAnswer((_) async => <String, int>{});
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
+      (_) async => [
+        makeLabel(id: '1', name: 'Quote " inside'),
+        makeLabel(id: '2', name: 'Bracket } ] combo'),
+        makeLabel(id: '3', name: 'New\nLine'),
+      ],
+    );
+    when(
+      () => mockDb.getLabelUsageCounts(),
+    ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
       entity: makeTask(),
     );
-    final match =
-        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final match = RegExp(
+      r'Labels:```json\n(.*?)\n```',
+      dotAll: true,
+    ).firstMatch(prompt!);
     final jsonPart = match!.group(1)!;
     expect(() => jsonDecode(jsonPart), returnsNormally);
   });
 
   test('returns empty list when feature disabled', () async {
     when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => []);
-    when(() => mockDb.getLabelUsageCounts())
-        .thenAnswer((_) async => <String, int>{});
-    when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(
+      () => mockDb.getLabelUsageCounts(),
+    ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
       entity: makeTask(),
     );
-    final match =
-        RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt!);
+    final match = RegExp(
+      r'Labels:```json\n(.*?)\n```',
+      dotAll: true,
+    ).firstMatch(prompt!);
     final jsonPart = match!.group(1)!;
     final list = jsonDecode(jsonPart) as List<dynamic>;
     expect(list, isEmpty);
@@ -328,10 +368,16 @@ void main() {
           private: private,
         );
 
-    LabelDefinition scoped(String id, String name, String cat,
-            {bool private = false}) =>
-        global(id, name, private: private)
-            .copyWith(applicableCategoryIds: [cat]);
+    LabelDefinition scoped(
+      String id,
+      String name,
+      String cat, {
+      bool private = false,
+    }) => global(
+      id,
+      name,
+      private: private,
+    ).copyWith(applicableCategoryIds: [cat]);
 
     Future<String?> buildPromptFor({
       required Task task,
@@ -345,13 +391,16 @@ void main() {
           : labels.where((l) => !(l.private ?? false)).toList();
 
       final mockLabelsRepo = MockLabelsRepository();
-      when(() => mockLabelsRepo.getAllLabels())
-          .thenAnswer((_) async => filteredLabels);
-      when(() => mockLabelsRepo.getLabelUsageCounts())
-          .thenAnswer((_) async => usage ?? <String, int>{});
+      when(
+        () => mockLabelsRepo.getAllLabels(),
+      ).thenAnswer((_) async => filteredLabels);
+      when(
+        () => mockLabelsRepo.getLabelUsageCounts(),
+      ).thenAnswer((_) async => usage ?? <String, int>{});
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{}');
       final localHelper = PromptBuilderHelper(
         aiInputRepository: mockAiInputRepo,
         checklistRepository: MockChecklistRepository(),
@@ -377,46 +426,53 @@ void main() {
     }
 
     List<Map<String, dynamic>> extractLabelsJson(String prompt) {
-      final match = RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true)
-          .firstMatch(prompt)!;
+      final match = RegExp(
+        r'Labels:```json\n(.*?)\n```',
+        dotAll: true,
+      ).firstMatch(prompt)!;
       final jsonPart = match.group(1)!;
       return (jsonDecode(jsonPart) as List<dynamic>)
           .map((e) => e as Map<String, dynamic>)
           .toList();
     }
 
-    test('includes only global and category-scoped labels for task category',
-        () async {
-      final task = Task(
-        meta: Metadata(
-          id: 't',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          categoryId: 'engineering',
-        ),
-        data: TaskData(
-          title: 'Task',
-          status:
-              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
-          statusHistory: const [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
-      final labels = [
-        global('g1', 'Global 1'),
-        global('g2', 'Global 2'),
-        scoped('e1', 'Engineering 1', 'engineering'),
-        scoped('d1', 'Design 1', 'design'),
-      ];
-      final prompt = await buildPromptFor(task: task, labels: labels);
-      final injected = extractLabelsJson(prompt!);
-      final ids = injected.map((e) => e['id']).toSet();
-      expect(ids, {'g1', 'g2', 'e1'});
-      expect(ids.contains('d1'), isFalse);
-    });
+    test(
+      'includes only global and category-scoped labels for task category',
+      () async {
+        final task = Task(
+          meta: Metadata(
+            id: 't',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            categoryId: 'engineering',
+          ),
+          data: TaskData(
+            title: 'Task',
+            status: TaskStatus.open(
+              id: 's',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+        final labels = [
+          global('g1', 'Global 1'),
+          global('g2', 'Global 2'),
+          scoped('e1', 'Engineering 1', 'engineering'),
+          scoped('d1', 'Design 1', 'design'),
+        ];
+        final prompt = await buildPromptFor(task: task, labels: labels);
+        final injected = extractLabelsJson(prompt!);
+        final ids = injected.map((e) => e['id']).toSet();
+        expect(ids, {'g1', 'g2', 'e1'});
+        expect(ids.contains('d1'), isFalse);
+      },
+    );
 
     test('includes only global labels when task has no category', () async {
       final task = Task(
@@ -430,8 +486,11 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status:
-              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status: TaskStatus.open(
+            id: 's',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -460,8 +519,11 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status:
-              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status: TaskStatus.open(
+            id: 's',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -502,8 +564,11 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status:
-              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status: TaskStatus.open(
+            id: 's',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -539,8 +604,11 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status:
-              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status: TaskStatus.open(
+            id: 's',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),

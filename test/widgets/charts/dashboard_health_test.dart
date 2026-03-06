@@ -28,8 +28,9 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('renders weight chart with title and line chart',
-        (tester) async {
+    testWidgets('renders weight chart with title and line chart', (
+      tester,
+    ) async {
       when(
         () => mockJournalDb.getQuantitativeByType(
           type: testWeightEntry.data.dataType,
@@ -39,8 +40,9 @@ void main() {
       ).thenAnswer((_) async => [testWeightEntry]);
 
       when(
-        () => mockHealthImport
-            .fetchHealthDataDelta(testWeightEntry.data.dataType),
+        () => mockHealthImport.fetchHealthDataDelta(
+          testWeightEntry.data.dataType,
+        ),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
@@ -63,8 +65,9 @@ void main() {
       expect(find.byType(HealthChartInfoWidget), findsOneWidget);
     });
 
-    testWidgets('renders blood pressure chart using BP-specific widget',
-        (tester) async {
+    testWidgets('renders blood pressure chart using BP-specific widget', (
+      tester,
+    ) async {
       when(
         () => mockJournalDb.getQuantitativeByType(
           type: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',

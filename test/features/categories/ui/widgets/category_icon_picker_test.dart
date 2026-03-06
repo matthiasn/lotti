@@ -30,12 +30,16 @@ void main() {
       // Test that we can find at least some of the initially visible icons
       // (This verifies the GridView is actually rendering items)
       final visibleIconCount = tester.widgetList(find.byType(Icon)).length;
-      expect(visibleIconCount, greaterThan(0),
-          reason: 'Should have at least some visible icons rendered');
+      expect(
+        visibleIconCount,
+        greaterThan(0),
+        reason: 'Should have at least some visible icons rendered',
+      );
     });
 
-    testWidgets('should be able to scroll through and access all icons',
-        (tester) async {
+    testWidgets('should be able to scroll through and access all icons', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -75,13 +79,19 @@ void main() {
 
       // We should have found most of the CategoryIcon values (allowing for lazy loading limitations)
       // This test ensures the scrolling mechanism works and icons are accessible
-      expect(foundIcons.length, greaterThanOrEqualTo(30),
-          reason:
-              'Should be able to access at least 30 different icons through scrolling, found ${foundIcons.length}');
+      expect(
+        foundIcons.length,
+        greaterThanOrEqualTo(30),
+        reason:
+            'Should be able to access at least 30 different icons through scrolling, found ${foundIcons.length}',
+      );
 
       // Verify we found the close button icon
-      expect(foundIcons.contains(Icons.close), isTrue,
-          reason: 'Should find the close button icon');
+      expect(
+        foundIcons.contains(Icons.close),
+        isTrue,
+        reason: 'Should find the close button icon',
+      );
     });
 
     testWidgets('should display correct title', (tester) async {
@@ -108,8 +118,9 @@ void main() {
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
 
-    testWidgets('should close dialog when close button is tapped',
-        (tester) async {
+    testWidgets('should close dialog when close button is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(
@@ -221,13 +232,16 @@ void main() {
       expect(textWidgets, findsWidgets);
 
       // Should find at least some of our known display names
-      final allText =
-          tester.widgetList<Text>(textWidgets).map((w) => w.data).toList();
+      final allText = tester
+          .widgetList<Text>(textWidgets)
+          .map((w) => w.data)
+          .toList();
       expect(
-          allText.contains('Fitness') ||
-              allText.contains('Running') ||
-              allText.contains('Home'),
-          isTrue);
+        allText.contains('Fitness') ||
+            allText.contains('Running') ||
+            allText.contains('Home'),
+        isTrue,
+      );
     });
 
     testWidgets('should use correct grid layout', (tester) async {
@@ -243,12 +257,18 @@ void main() {
       final delegate =
           gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
 
-      expect(delegate.crossAxisCount,
-          equals(CategoryIconConstants.pickerGridColumns));
-      expect(delegate.crossAxisSpacing,
-          equals(CategoryIconConstants.pickerGridSpacing));
-      expect(delegate.mainAxisSpacing,
-          equals(CategoryIconConstants.pickerGridSpacing));
+      expect(
+        delegate.crossAxisCount,
+        equals(CategoryIconConstants.pickerGridColumns),
+      );
+      expect(
+        delegate.crossAxisSpacing,
+        equals(CategoryIconConstants.pickerGridSpacing),
+      );
+      expect(
+        delegate.mainAxisSpacing,
+        equals(CategoryIconConstants.pickerGridSpacing),
+      );
     });
 
     testWidgets('should have correct dialog constraints', (tester) async {
@@ -265,7 +285,9 @@ void main() {
       final constraints = container.constraints!;
 
       expect(
-          constraints.maxWidth, equals(CategoryIconConstants.pickerMaxWidth));
+        constraints.maxWidth,
+        equals(CategoryIconConstants.pickerMaxWidth),
+      );
     });
 
     testWidgets('should handle null selectedIcon', (tester) async {

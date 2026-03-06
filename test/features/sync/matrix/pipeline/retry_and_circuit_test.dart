@@ -4,8 +4,10 @@ import 'package:lotti/features/sync/matrix/pipeline/retry_and_circuit.dart';
 void main() {
   group('RetryTracker', () {
     test('blocks until nextDue and schedules/clears/prunes', () {
-      final tracker =
-          RetryTracker(ttl: const Duration(seconds: 1), maxEntries: 2);
+      final tracker = RetryTracker(
+        ttl: const Duration(seconds: 1),
+        maxEntries: 2,
+      );
       final now = DateTime.fromMillisecondsSinceEpoch(0);
       final due = now.add(const Duration(milliseconds: 500));
 

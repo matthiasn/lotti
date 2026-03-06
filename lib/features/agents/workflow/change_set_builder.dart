@@ -10,8 +10,8 @@ import 'package:uuid/uuid.dart';
 /// Resolves a checklist item's current state from its ID.
 ///
 /// Returns `null` if the item cannot be found.
-typedef ChecklistItemStateResolver = Future<({String? title, bool? isChecked})?>
-    Function(String itemId);
+typedef ChecklistItemStateResolver =
+    Future<({String? title, bool? isChecked})?> Function(String itemId);
 
 /// Resolves the set of existing checklist item titles for the target task.
 ///
@@ -206,8 +206,9 @@ class ChangeSetBuilder {
         // Resolve state once per item to avoid redundant DB lookups and
         // duplicate error logging.
         final itemId = element['id'];
-        final resolvedState =
-            itemId is String ? await _resolveState(itemId) : null;
+        final resolvedState = itemId is String
+            ? await _resolveState(itemId)
+            : null;
 
         // Check for redundant update_checklist_item proposals.
         final redundancyDetail = _checkRedundancy(
@@ -345,17 +346,19 @@ class ChangeSetBuilder {
     }
 
     // No existing set — create a new one.
-    final entity = AgentDomainEntity.changeSet(
-      id: _uuid.v4(),
-      agentId: agentId,
-      taskId: taskId,
-      threadId: threadId,
-      runKey: runKey,
-      status: ChangeSetStatus.pending,
-      items: List.unmodifiable(deduped),
-      createdAt: clock.now(),
-      vectorClock: null,
-    ) as ChangeSetEntity;
+    final entity =
+        AgentDomainEntity.changeSet(
+              id: _uuid.v4(),
+              agentId: agentId,
+              taskId: taskId,
+              threadId: threadId,
+              runKey: runKey,
+              status: ChangeSetStatus.pending,
+              items: List.unmodifiable(deduped),
+              createdAt: clock.now(),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
 
     await syncService.upsertEntity(entity);
     return entity;
@@ -383,15 +386,15 @@ class ChangeSetBuilder {
 
   /// Convert batch tool name to a singular form for individual items.
   static String _singularize(String toolName) => switch (toolName) {
-        TaskAgentToolNames.addMultipleChecklistItems =>
-          TaskAgentToolNames.addChecklistItem,
-        TaskAgentToolNames.updateChecklistItems =>
-          TaskAgentToolNames.updateChecklistItem,
-        _ => throw ArgumentError(
-            'Unsupported batch tool for singularization: $toolName. '
-            'Add an explicit mapping.',
-          ),
-      };
+    TaskAgentToolNames.addMultipleChecklistItems =>
+      TaskAgentToolNames.addChecklistItem,
+    TaskAgentToolNames.updateChecklistItems =>
+      TaskAgentToolNames.updateChecklistItem,
+    _ => throw ArgumentError(
+      'Unsupported batch tool for singularization: $toolName. '
+      'Add an explicit mapping.',
+    ),
+  };
 
   /// Generate a human-readable summary for a single exploded item.
   ///
@@ -547,11 +550,13 @@ class ChangeSetBuilder {
     final proposedTitle = args['title'];
 
     // Determine whether each field represents an actual change.
-    final isCheckedChanging = proposedIsChecked is bool &&
+    final isCheckedChanging =
+        proposedIsChecked is bool &&
         (currentState.isChecked == null ||
             proposedIsChecked != currentState.isChecked);
 
-    final isTitleChanging = proposedTitle is String &&
+    final isTitleChanging =
+        proposedTitle is String &&
         proposedTitle.isNotEmpty &&
         proposedTitle != currentState.title;
 
@@ -561,7 +566,8 @@ class ChangeSetBuilder {
     }
 
     // Only suppress if the proposal contains at least one valid field.
-    final hasValidProposal = proposedIsChecked is bool ||
+    final hasValidProposal =
+        proposedIsChecked is bool ||
         (proposedTitle is String && proposedTitle.isNotEmpty);
     if (!hasValidProposal) {
       return null; // Malformed — keep it defensively.
@@ -569,8 +575,9 @@ class ChangeSetBuilder {
 
     // At this point the update is redundant.
     final displayTitle = currentState.title ?? _truncateId(itemId);
-    final checkedLabel =
-        currentState.isChecked == true ? 'checked' : 'unchecked';
+    final checkedLabel = currentState.isChecked == true
+        ? 'checked'
+        : 'unchecked';
     return '"$displayTitle" is already $checkedLabel';
   }
 

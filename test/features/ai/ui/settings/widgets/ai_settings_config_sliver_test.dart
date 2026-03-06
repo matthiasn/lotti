@@ -20,77 +20,83 @@ void main() {
 
       testProviders = [
         AiConfig.inferenceProvider(
-          id: 'provider-1',
-          name: 'Test Provider 1',
-          description: 'First test provider',
-          inferenceProviderType: InferenceProviderType.anthropic,
-          apiKey: 'key1',
-          baseUrl: 'https://api1.com',
-          createdAt: DateTime.now(),
-        ) as AiConfigInferenceProvider,
+              id: 'provider-1',
+              name: 'Test Provider 1',
+              description: 'First test provider',
+              inferenceProviderType: InferenceProviderType.anthropic,
+              apiKey: 'key1',
+              baseUrl: 'https://api1.com',
+              createdAt: DateTime.now(),
+            )
+            as AiConfigInferenceProvider,
         AiConfig.inferenceProvider(
-          id: 'provider-2',
-          name: 'Test Provider 2',
-          description: 'Second test provider',
-          inferenceProviderType: InferenceProviderType.openAi,
-          apiKey: 'key2',
-          baseUrl: 'https://api2.com',
-          createdAt: DateTime.now(),
-        ) as AiConfigInferenceProvider,
+              id: 'provider-2',
+              name: 'Test Provider 2',
+              description: 'Second test provider',
+              inferenceProviderType: InferenceProviderType.openAi,
+              apiKey: 'key2',
+              baseUrl: 'https://api2.com',
+              createdAt: DateTime.now(),
+            )
+            as AiConfigInferenceProvider,
       ];
 
       testModels = [
         AiConfig.model(
-          id: 'model-1',
-          name: 'Test Model 1',
-          description: 'First test model',
-          providerModelId: 'model-1-id',
-          inferenceProviderId: 'provider-1',
-          createdAt: DateTime.now(),
-          inputModalities: [Modality.text, Modality.image],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        ) as AiConfigModel,
+              id: 'model-1',
+              name: 'Test Model 1',
+              description: 'First test model',
+              providerModelId: 'model-1-id',
+              inferenceProviderId: 'provider-1',
+              createdAt: DateTime.now(),
+              inputModalities: [Modality.text, Modality.image],
+              outputModalities: [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel,
         AiConfig.model(
-          id: 'model-2',
-          name: 'Test Model 2',
-          description: 'Second test model',
-          providerModelId: 'model-2-id',
-          inferenceProviderId: 'provider-2',
-          createdAt: DateTime.now(),
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: true,
-        ) as AiConfigModel,
+              id: 'model-2',
+              name: 'Test Model 2',
+              description: 'Second test model',
+              providerModelId: 'model-2-id',
+              inferenceProviderId: 'provider-2',
+              createdAt: DateTime.now(),
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: true,
+            )
+            as AiConfigModel,
       ];
 
       testPrompts = [
         AiConfig.prompt(
-          id: 'prompt-1',
-          name: 'Test Prompt 1',
-          description: 'First test prompt',
-          systemMessage: 'System message 1',
-          userMessage: 'User message 1',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-        ) as AiConfigPrompt,
+              id: 'prompt-1',
+              name: 'Test Prompt 1',
+              description: 'First test prompt',
+              systemMessage: 'System message 1',
+              userMessage: 'User message 1',
+              defaultModelId: 'model-1',
+              modelIds: ['model-1'],
+              createdAt: DateTime.now(),
+              useReasoning: false,
+              requiredInputData: [InputDataType.task],
+              aiResponseType: AiResponseType.taskSummary,
+            )
+            as AiConfigPrompt,
         AiConfig.prompt(
-          id: 'prompt-2',
-          name: 'Test Prompt 2',
-          description: 'Second test prompt',
-          systemMessage: 'System message 2',
-          userMessage: 'User message 2',
-          defaultModelId: 'model-2',
-          modelIds: ['model-2'],
-          createdAt: DateTime.now(),
-          useReasoning: true,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        ) as AiConfigPrompt,
+              id: 'prompt-2',
+              name: 'Test Prompt 2',
+              description: 'Second test prompt',
+              systemMessage: 'System message 2',
+              userMessage: 'User message 2',
+              defaultModelId: 'model-2',
+              modelIds: ['model-2'],
+              createdAt: DateTime.now(),
+              useReasoning: true,
+              requiredInputData: [InputDataType.images],
+              aiResponseType: AiResponseType.imageAnalysis,
+            )
+            as AiConfigPrompt,
       ];
     });
 
@@ -126,7 +132,8 @@ void main() {
                   emptyMessage: emptyMessage,
                   emptyIcon: emptyIcon,
                   showCapabilities: showCapabilities,
-                  onConfigTap: onConfigTap ??
+                  onConfigTap:
+                      onConfigTap ??
                       (config) {
                         tappedConfigs.add(config);
                       },
@@ -141,23 +148,29 @@ void main() {
     }
 
     group('data states', () {
-      testWidgets('shows loading indicator when data is loading',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: const AsyncValue.loading(),
-          filteredConfigs: [],
-        ));
+      testWidgets('shows loading indicator when data is loading', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: const AsyncValue.loading(),
+            filteredConfigs: [],
+          ),
+        );
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('shows error message when data loading fails',
-          (WidgetTester tester) async {
+      testWidgets('shows error message when data loading fails', (
+        WidgetTester tester,
+      ) async {
         const error = 'Network connection failed';
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: const AsyncValue.error(error, StackTrace.empty),
-          filteredConfigs: [],
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: const AsyncValue.error(error, StackTrace.empty),
+            filteredConfigs: [],
+          ),
+        );
 
         expect(find.text('Error loading configurations'), findsOneWidget);
         expect(find.text(error), findsOneWidget);
@@ -165,62 +178,74 @@ void main() {
       });
 
       testWidgets(
-          'shows retry button when error occurs and onRetry is provided',
-          (WidgetTester tester) async {
-        var retryPressed = false;
-        const error = 'Network error';
+        'shows retry button when error occurs and onRetry is provided',
+        (WidgetTester tester) async {
+          var retryPressed = false;
+          const error = 'Network error';
 
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: const AsyncValue.error(error, StackTrace.empty),
-          filteredConfigs: [],
-          onRetry: () {
-            retryPressed = true;
-          },
-        ));
+          await tester.pumpWidget(
+            createWidget<AiConfigInferenceProvider>(
+              configsAsync: const AsyncValue.error(error, StackTrace.empty),
+              filteredConfigs: [],
+              onRetry: () {
+                retryPressed = true;
+              },
+            ),
+          );
 
-        expect(find.text('RETRY'), findsOneWidget);
-        expect(find.byIcon(Icons.refresh), findsOneWidget);
+          expect(find.text('RETRY'), findsOneWidget);
+          expect(find.byIcon(Icons.refresh), findsOneWidget);
 
-        await tester.tap(find.text('RETRY'));
-        await tester.pump();
+          await tester.tap(find.text('RETRY'));
+          await tester.pump();
 
-        expect(retryPressed, isTrue);
-      });
+          expect(retryPressed, isTrue);
+        },
+      );
 
-      testWidgets('shows empty state when no configurations exist',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: const AsyncValue.data([]),
-          filteredConfigs: [],
-          emptyMessage: 'No providers configured',
-          emptyIcon: Icons.hub,
-        ));
+      testWidgets('shows empty state when no configurations exist', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: const AsyncValue.data([]),
+            filteredConfigs: [],
+            emptyMessage: 'No providers configured',
+            emptyIcon: Icons.hub,
+          ),
+        );
 
         expect(find.text('No providers configured'), findsOneWidget);
         expect(find.text('Tap the + button to add one'), findsOneWidget);
         expect(find.byIcon(Icons.hub), findsOneWidget);
       });
 
-      testWidgets('shows empty state when all configurations are filtered out',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: [], // Empty after filtering
-          emptyMessage: 'No matching providers',
-          emptyIcon: Icons.search_off,
-        ));
+      testWidgets(
+        'shows empty state when all configurations are filtered out',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            createWidget<AiConfigInferenceProvider>(
+              configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+              filteredConfigs: [], // Empty after filtering
+              emptyMessage: 'No matching providers',
+              emptyIcon: Icons.search_off,
+            ),
+          );
 
-        expect(find.text('No matching providers'), findsOneWidget);
-        expect(find.byIcon(Icons.search_off), findsOneWidget);
-      });
+          expect(find.text('No matching providers'), findsOneWidget);
+          expect(find.byIcon(Icons.search_off), findsOneWidget);
+        },
+      );
     });
 
     group('configuration display', () {
       testWidgets('displays providers correctly', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         expect(find.text('Test Provider 1'), findsOneWidget);
         expect(find.text('Test Provider 2'), findsOneWidget);
@@ -230,10 +255,12 @@ void main() {
       });
 
       testWidgets('displays models correctly', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigModel>(
-          configsAsync: AsyncValue.data(testModels.cast<AiConfig>()),
-          filteredConfigs: testModels,
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigModel>(
+            configsAsync: AsyncValue.data(testModels.cast<AiConfig>()),
+            filteredConfigs: testModels,
+          ),
+        );
 
         expect(find.text('Test Model 1'), findsOneWidget);
         expect(find.text('Test Model 2'), findsOneWidget);
@@ -243,10 +270,12 @@ void main() {
       });
 
       testWidgets('displays prompts correctly', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigPrompt>(
-          configsAsync: AsyncValue.data(testPrompts.cast<AiConfig>()),
-          filteredConfigs: testPrompts,
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigPrompt>(
+            configsAsync: AsyncValue.data(testPrompts.cast<AiConfig>()),
+            filteredConfigs: testPrompts,
+          ),
+        );
 
         expect(find.text('Test Prompt 1'), findsOneWidget);
         expect(find.text('Test Prompt 2'), findsOneWidget);
@@ -257,13 +286,16 @@ void main() {
     });
 
     group('capabilities display', () {
-      testWidgets('shows capabilities when showCapabilities is true',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigModel>(
-          configsAsync: AsyncValue.data(testModels.cast<AiConfig>()),
-          filteredConfigs: testModels,
-          showCapabilities: true,
-        ));
+      testWidgets('shows capabilities when showCapabilities is true', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigModel>(
+            configsAsync: AsyncValue.data(testModels.cast<AiConfig>()),
+            filteredConfigs: testModels,
+            showCapabilities: true,
+          ),
+        );
 
         // Should show capability indicators for models
         expect(find.text('Test Model 1'), findsOneWidget);
@@ -284,12 +316,15 @@ void main() {
         expect(psychologyIcons, findsWidgets);
       });
 
-      testWidgets('hides capabilities when showCapabilities is false',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigModel>(
-          configsAsync: AsyncValue.data(testModels.cast<AiConfig>()),
-          filteredConfigs: testModels,
-        ));
+      testWidgets('hides capabilities when showCapabilities is false', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigModel>(
+            configsAsync: AsyncValue.data(testModels.cast<AiConfig>()),
+            filteredConfigs: testModels,
+          ),
+        );
 
         // Wait for provider data to load
         await tester.pumpAndSettle();
@@ -306,12 +341,15 @@ void main() {
     });
 
     group('interaction', () {
-      testWidgets('calls onConfigTap when configuration is tapped',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('calls onConfigTap when configuration is tapped', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         await tester.tap(find.text('Test Provider 1'));
         await tester.pump();
@@ -320,12 +358,15 @@ void main() {
         expect(tappedConfigs.first.id, 'provider-1');
       });
 
-      testWidgets('allows tapping multiple configurations',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('allows tapping multiple configurations', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         await tester.tap(find.text('Test Provider 1'));
         await tester.pump();
@@ -338,12 +379,15 @@ void main() {
     });
 
     group('swipe to delete', () {
-      testWidgets('shows delete background when swiping',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('shows delete background when swiping', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         // Start swipe gesture
         await tester.drag(find.text('Test Provider 1'), const Offset(-100, 0));
@@ -354,13 +398,16 @@ void main() {
         expect(find.text('Delete'), findsOneWidget);
       });
 
-      testWidgets('does not allow swipe when enableSwipeToDelete is false',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-          enableSwipeToDelete: false,
-        ));
+      testWidgets('does not allow swipe when enableSwipeToDelete is false', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+            enableSwipeToDelete: false,
+          ),
+        );
 
         // Try to swipe
         await tester.drag(find.text('Test Provider 1'), const Offset(-100, 0));
@@ -376,38 +423,46 @@ void main() {
     });
 
     group('scrolling and layout', () {
-      testWidgets('integrates properly with CustomScrollView',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('integrates properly with CustomScrollView', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         // Should be part of a sliver context
         expect(find.byType(CustomScrollView), findsOneWidget);
         expect(find.byType(SliverList), findsOneWidget);
       });
 
-      testWidgets('scrolls properly with many configurations',
-          (WidgetTester tester) async {
+      testWidgets('scrolls properly with many configurations', (
+        WidgetTester tester,
+      ) async {
         // Create many test providers
         final manyProviders = List.generate(
           20,
-          (index) => AiConfig.inferenceProvider(
-            id: 'provider-$index',
-            name: 'Provider $index',
-            description: 'Description $index',
-            inferenceProviderType: InferenceProviderType.anthropic,
-            apiKey: 'key$index',
-            baseUrl: 'https://api$index.com',
-            createdAt: DateTime.now(),
-          ) as AiConfigInferenceProvider,
+          (index) =>
+              AiConfig.inferenceProvider(
+                    id: 'provider-$index',
+                    name: 'Provider $index',
+                    description: 'Description $index',
+                    inferenceProviderType: InferenceProviderType.anthropic,
+                    apiKey: 'key$index',
+                    baseUrl: 'https://api$index.com',
+                    createdAt: DateTime.now(),
+                  )
+                  as AiConfigInferenceProvider,
         );
 
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(manyProviders.cast<AiConfig>()),
-          filteredConfigs: manyProviders,
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(manyProviders.cast<AiConfig>()),
+            filteredConfigs: manyProviders,
+          ),
+        );
 
         // First item should be visible
         expect(find.text('Provider 0'), findsOneWidget);
@@ -417,19 +472,25 @@ void main() {
 
         // Scroll to bottom
         await tester.fling(
-            find.byType(CustomScrollView), const Offset(0, -1000), 3000);
+          find.byType(CustomScrollView),
+          const Offset(0, -1000),
+          3000,
+        );
         await tester.pumpAndSettle();
 
         // Last item should now be visible
         expect(find.text('Provider 19'), findsOneWidget);
       });
 
-      testWidgets('maintains proper spacing between items',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('maintains proper spacing between items', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         // Should show both providers with proper cards
         expect(find.text('Test Provider 1'), findsOneWidget);
@@ -441,55 +502,68 @@ void main() {
     });
 
     group('edge cases', () {
-      testWidgets('handles empty configurations list gracefully',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: const AsyncValue.data([]),
-          filteredConfigs: const [],
-        ));
+      testWidgets('handles empty configurations list gracefully', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: const AsyncValue.data([]),
+            filteredConfigs: const [],
+          ),
+        );
 
         expect(find.text('No configurations'), findsOneWidget);
       });
 
-      testWidgets('handles null descriptions gracefully',
-          (WidgetTester tester) async {
-        final providerWithoutDescription = AiConfig.inferenceProvider(
-          id: 'provider-no-desc',
-          name: 'Provider Without Description',
-          inferenceProviderType: InferenceProviderType.anthropic,
-          apiKey: 'key',
-          baseUrl: 'https://api.com',
-          createdAt: DateTime.now(),
-        ) as AiConfigInferenceProvider;
+      testWidgets('handles null descriptions gracefully', (
+        WidgetTester tester,
+      ) async {
+        final providerWithoutDescription =
+            AiConfig.inferenceProvider(
+                  id: 'provider-no-desc',
+                  name: 'Provider Without Description',
+                  inferenceProviderType: InferenceProviderType.anthropic,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.com',
+                  createdAt: DateTime.now(),
+                )
+                as AiConfigInferenceProvider;
 
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data([providerWithoutDescription]),
-          filteredConfigs: [providerWithoutDescription],
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data([providerWithoutDescription]),
+            filteredConfigs: [providerWithoutDescription],
+          ),
+        );
 
         expect(find.text('Provider Without Description'), findsOneWidget);
         // Should not crash when description is null
       });
 
-      testWidgets('handles very long configuration names',
-          (WidgetTester tester) async {
+      testWidgets('handles very long configuration names', (
+        WidgetTester tester,
+      ) async {
         const longName =
             'This is a very long configuration name that might overflow the layout and cause issues with text wrapping or truncation';
 
-        final providerWithLongName = AiConfig.inferenceProvider(
-          id: 'long-name-provider',
-          name: longName,
-          description: 'Test description',
-          inferenceProviderType: InferenceProviderType.anthropic,
-          apiKey: 'key',
-          baseUrl: 'https://api.com',
-          createdAt: DateTime.now(),
-        ) as AiConfigInferenceProvider;
+        final providerWithLongName =
+            AiConfig.inferenceProvider(
+                  id: 'long-name-provider',
+                  name: longName,
+                  description: 'Test description',
+                  inferenceProviderType: InferenceProviderType.anthropic,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.com',
+                  createdAt: DateTime.now(),
+                )
+                as AiConfigInferenceProvider;
 
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data([providerWithLongName]),
-          filteredConfigs: [providerWithLongName],
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data([providerWithLongName]),
+            filteredConfigs: [providerWithLongName],
+          ),
+        );
 
         // Should handle long names without overflow
         expect(find.textContaining('This is a very long'), findsOneWidget);
@@ -497,12 +571,15 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('provides proper semantics for screen readers',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('provides proper semantics for screen readers', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         // Configuration items should be semantically accessible
         expect(find.text('Test Provider 1'), findsOneWidget);
@@ -512,12 +589,15 @@ void main() {
         expect(find.byType(InkWell), findsNWidgets(2));
       });
 
-      testWidgets('maintains focus after configuration tap',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('maintains focus after configuration tap', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         // Tap configuration
         await tester.tap(find.text('Test Provider 1'));
@@ -530,26 +610,31 @@ void main() {
     });
 
     group('performance', () {
-      testWidgets('efficiently handles large lists',
-          (WidgetTester tester) async {
+      testWidgets('efficiently handles large lists', (
+        WidgetTester tester,
+      ) async {
         // Create a large number of configurations
         final largeList = List.generate(
           100, // Reduced from 1000 for test performance
-          (index) => AiConfig.inferenceProvider(
-            id: 'provider-$index',
-            name: 'Provider $index',
-            description: 'Description $index',
-            inferenceProviderType: InferenceProviderType.anthropic,
-            apiKey: 'key$index',
-            baseUrl: 'https://api$index.com',
-            createdAt: DateTime.now(),
-          ) as AiConfigInferenceProvider,
+          (index) =>
+              AiConfig.inferenceProvider(
+                    id: 'provider-$index',
+                    name: 'Provider $index',
+                    description: 'Description $index',
+                    inferenceProviderType: InferenceProviderType.anthropic,
+                    apiKey: 'key$index',
+                    baseUrl: 'https://api$index.com',
+                    createdAt: DateTime.now(),
+                  )
+                  as AiConfigInferenceProvider,
         );
 
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(largeList.cast<AiConfig>()),
-          filteredConfigs: largeList,
-        ));
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(largeList.cast<AiConfig>()),
+            filteredConfigs: largeList,
+          ),
+        );
 
         // Should render without performance issues
         expect(find.byType(SliverList), findsOneWidget);
@@ -561,59 +646,69 @@ void main() {
     });
 
     group('sliver-specific behavior', () {
-      testWidgets('fills remaining space when empty',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: const AsyncValue.data([]),
-          filteredConfigs: const [],
-        ));
+      testWidgets('fills remaining space when empty', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: const AsyncValue.data([]),
+            filteredConfigs: const [],
+          ),
+        );
 
         // Should use SliverFillRemaining for empty state
         expect(find.byType(SliverFillRemaining), findsOneWidget);
       });
 
-      testWidgets('properly handles padding in sliver context',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget<AiConfigInferenceProvider>(
-          configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
-          filteredConfigs: testProviders,
-        ));
+      testWidgets('properly handles padding in sliver context', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget<AiConfigInferenceProvider>(
+            configsAsync: AsyncValue.data(testProviders.cast<AiConfig>()),
+            filteredConfigs: testProviders,
+          ),
+        );
 
         // Should have SliverPadding for proper spacing
         expect(find.byType(SliverPadding), findsOneWidget);
       });
 
-      testWidgets('works with other slivers in CustomScrollView',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: CustomScrollView(
-                slivers: [
-                  const SliverAppBar(
-                    title: Text('Test App Bar'),
-                  ),
-                  AiSettingsConfigSliver<AiConfigInferenceProvider>(
-                    configsAsync:
-                        AsyncValue.data(testProviders.cast<AiConfig>()),
-                    filteredConfigs: testProviders,
-                    emptyMessage: 'No providers',
-                    emptyIcon: Icons.hub,
-                    onConfigTap: (config) {
-                      tappedConfigs.add(config);
-                    },
-                  ),
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Footer Content'),
+      testWidgets('works with other slivers in CustomScrollView', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: CustomScrollView(
+                  slivers: [
+                    const SliverAppBar(
+                      title: Text('Test App Bar'),
                     ),
-                  ),
-                ],
+                    AiSettingsConfigSliver<AiConfigInferenceProvider>(
+                      configsAsync: AsyncValue.data(
+                        testProviders.cast<AiConfig>(),
+                      ),
+                      filteredConfigs: testProviders,
+                      emptyMessage: 'No providers',
+                      emptyIcon: Icons.hub,
+                      onConfigTap: (config) {
+                        tappedConfigs.add(config);
+                      },
+                    ),
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Footer Content'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ));
+        );
 
         // All components should be present
         expect(find.text('Test App Bar'), findsOneWidget);
@@ -673,12 +768,15 @@ void main() {
         );
       }
 
-      testWidgets('shows checkboxes when selection mode is enabled',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-        ));
+      testWidgets('shows checkboxes when selection mode is enabled', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selectionMode: true,
+          ),
+        );
 
         await tester.pumpAndSettle();
 
@@ -689,13 +787,16 @@ void main() {
         expect(find.text('Test Prompt 2'), findsOneWidget);
       });
 
-      testWidgets('shows check icon for selected items',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-          selected: {'prompt-1'}, // First prompt selected
-        ));
+      testWidgets('shows check icon for selected items', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selectionMode: true,
+            selected: {'prompt-1'}, // First prompt selected
+          ),
+        );
 
         await tester.pumpAndSettle();
 
@@ -703,13 +804,16 @@ void main() {
         expect(find.byIcon(Icons.check), findsOneWidget);
       });
 
-      testWidgets('shows check icons for all selected items',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-          selected: {'prompt-1', 'prompt-2'}, // Both selected
-        ));
+      testWidgets('shows check icons for all selected items', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selectionMode: true,
+            selected: {'prompt-1', 'prompt-2'}, // Both selected
+          ),
+        );
 
         await tester.pumpAndSettle();
 
@@ -718,27 +822,33 @@ void main() {
       });
 
       testWidgets(
-          'calls onSelectionChanged when card is tapped in selection mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-        ));
+        'calls onSelectionChanged when card is tapped in selection mode',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            createSelectionWidget(
+              prompts: testPrompts,
+              selectionMode: true,
+            ),
+          );
 
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Test Prompt 1'));
-        await tester.pump();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Test Prompt 1'));
+          await tester.pump();
 
-        expect(selectionChanges, ['prompt-1']);
-        // Should NOT call onConfigTap in selection mode
-        expect(tappedConfigs, isEmpty);
-      });
+          expect(selectionChanges, ['prompt-1']);
+          // Should NOT call onConfigTap in selection mode
+          expect(tappedConfigs, isEmpty);
+        },
+      );
 
-      testWidgets('calls onConfigTap when not in selection mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-        ));
+      testWidgets('calls onConfigTap when not in selection mode', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+          ),
+        );
 
         await tester.pumpAndSettle();
         await tester.tap(find.text('Test Prompt 1'));
@@ -749,12 +859,15 @@ void main() {
         expect(selectionChanges, isEmpty);
       });
 
-      testWidgets('does not show checkboxes when selection mode is disabled',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selected: {'prompt-1'}, // Even with selected IDs
-        ));
+      testWidgets('does not show checkboxes when selection mode is disabled', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selected: {'prompt-1'}, // Even with selected IDs
+          ),
+        );
 
         await tester.pumpAndSettle();
 
@@ -763,13 +876,16 @@ void main() {
         expect(find.byIcon(Icons.check), findsNothing);
       });
 
-      testWidgets('selected card has visual distinction',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-          selected: {'prompt-1'},
-        ));
+      testWidgets('selected card has visual distinction', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selectionMode: true,
+            selected: {'prompt-1'},
+          ),
+        );
 
         await tester.pumpAndSettle();
 
@@ -779,12 +895,15 @@ void main() {
         expect(animatedContainers, findsWidgets);
       });
 
-      testWidgets('multiple taps toggle selection correctly',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-        ));
+      testWidgets('multiple taps toggle selection correctly', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selectionMode: true,
+          ),
+        );
 
         await tester.pumpAndSettle();
 
@@ -803,12 +922,15 @@ void main() {
         expect(selectionChanges, ['prompt-1', 'prompt-2', 'prompt-1']);
       });
 
-      testWidgets('swipe to delete is disabled in selection mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createSelectionWidget(
-          prompts: testPrompts,
-          selectionMode: true,
-        ));
+      testWidgets('swipe to delete is disabled in selection mode', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createSelectionWidget(
+            prompts: testPrompts,
+            selectionMode: true,
+          ),
+        );
 
         await tester.pumpAndSettle();
 

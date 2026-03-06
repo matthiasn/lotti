@@ -22,21 +22,22 @@ void main() {
       getIt.unregister<Directory>();
     }
 
-    testDirectory =
-        Directory.systemTemp.createTempSync('lotti_linked_idx_mig_');
+    testDirectory = Directory.systemTemp.createTempSync(
+      'lotti_linked_idx_mig_',
+    );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getApplicationDocumentsDirectory' ||
-            methodCall.method == 'getApplicationSupportDirectory' ||
-            methodCall.method == 'getTemporaryDirectory') {
-          return testDirectory!.path;
-        }
-        return null;
-      },
-    );
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getApplicationDocumentsDirectory' ||
+                methodCall.method == 'getApplicationSupportDirectory' ||
+                methodCall.method == 'getTemporaryDirectory') {
+              return testDirectory!.path;
+            }
+            return null;
+          },
+        );
 
     getIt.registerSingleton<Directory>(testDirectory!);
   });
@@ -53,8 +54,9 @@ void main() {
 
   group('Linked Entries Index Migration v30', () {
     test('fixes idx_linked_entries_to_id_hidden to index to_id', () async {
-      final dbFile =
-          File(p.join(testDirectory!.path, 'test_v30_linked_idx.db'));
+      final dbFile = File(
+        p.join(testDirectory!.path, 'test_v30_linked_idx.db'),
+      );
       final sqlite = sqlite3.open(dbFile.path);
 
       createV29Schema(sqlite);
@@ -68,8 +70,9 @@ void main() {
       """);
       expect(preMigrationIdx, hasLength(1));
       final buggyIndexSql = preMigrationIdx.first['sql'] as String;
-      final buggyColumnPart =
-          buggyIndexSql.substring(buggyIndexSql.indexOf('ON '));
+      final buggyColumnPart = buggyIndexSql.substring(
+        buggyIndexSql.indexOf('ON '),
+      );
       expect(buggyColumnPart, contains('from_id'));
       expect(buggyColumnPart, isNot(contains('to_id')));
 
@@ -102,8 +105,9 @@ void main() {
           """).get();
       expect(postMigrationIdx, hasLength(1));
       final fixedIndexSql = postMigrationIdx.first.read<String>('sql');
-      final fixedColumnPart =
-          fixedIndexSql.substring(fixedIndexSql.indexOf('ON '));
+      final fixedColumnPart = fixedIndexSql.substring(
+        fixedIndexSql.indexOf('ON '),
+      );
       expect(fixedColumnPart, contains('to_id'));
       expect(fixedColumnPart, isNot(contains('from_id')));
 

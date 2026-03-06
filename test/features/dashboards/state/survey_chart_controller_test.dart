@@ -69,8 +69,9 @@ void main() {
 
     test('refreshes on surveyNotification', () async {
       final updateController = StreamController<Set<String>>.broadcast();
-      when(() => mocks.updateNotifications.updateStream)
-          .thenAnswer((_) => updateController.stream);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updateController.stream);
 
       final firstEntities = [
         makeSurveyEntry(
@@ -141,8 +142,9 @@ void main() {
 
     test('does not refresh on unrelated notification', () async {
       final updateController = StreamController<Set<String>>.broadcast();
-      when(() => mocks.updateNotifications.updateStream)
-          .thenAnswer((_) => updateController.stream);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updateController.stream);
 
       when(
         () => mocks.journalDb.getSurveyCompletionsByType(

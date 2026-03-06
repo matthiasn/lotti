@@ -68,7 +68,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
     final requestTimeout =
         timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
     final timeoutDisplay = _formatTimeout(requestTimeout);
-    final timeoutErrorMessage = 'Transcription request timed out after '
+    final timeoutErrorMessage =
+        'Transcription request timed out after '
         '$timeoutDisplay. '
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording.';
@@ -121,16 +122,18 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
             }
           }
 
-          final streamedResponse = await httpClient.send(request).timeout(
-            requestTimeout,
-            onTimeout: () {
-              throw TranscriptionException(
-                timeoutErrorMessage,
-                provider: _providerName,
-                statusCode: httpStatusRequestTimeout,
+          final streamedResponse = await httpClient
+              .send(request)
+              .timeout(
+                requestTimeout,
+                onTimeout: () {
+                  throw TranscriptionException(
+                    timeoutErrorMessage,
+                    provider: _providerName,
+                    statusCode: httpStatusRequestTimeout,
+                  );
+                },
               );
-            },
-          );
 
           final response = await http.Response.fromStream(streamedResponse);
 
@@ -152,7 +155,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           // Log response structure for diarization diagnostics
           final segments = result['segments'] as List<dynamic>?;
           final segmentCount = segments?.length ?? 0;
-          final speakerKeys = segments
+          final speakerKeys =
+              segments
                   ?.where(
                     (s) =>
                         s is Map<String, dynamic> &&
@@ -160,7 +164,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
                   )
                   .length ??
               0;
-          final uniqueSpeakers = segments
+          final uniqueSpeakers =
+              segments
                   ?.where(
                     (s) =>
                         s is Map<String, dynamic> &&
@@ -283,8 +288,9 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
     }
 
     // Only format with speaker labels when multiple speakers are present
-    final speakers =
-        segments.map((s) => (s as Map<String, dynamic>)['speaker_id']).toSet();
+    final speakers = segments
+        .map((s) => (s as Map<String, dynamic>)['speaker_id'])
+        .toSet();
     if (speakers.length <= 1) {
       return text;
     }

@@ -46,9 +46,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final dateFieldFinder = find.byType(DateTimeField);
-    final fields = dateFieldFinder
-        .evaluate()
-        .map((element) => element.widget as DateTimeField);
+    final fields = dateFieldFinder.evaluate().map(
+      (element) => element.widget as DateTimeField,
+    );
     final start = DateTime(2024, 1, 1, 8, 0);
     final end = DateTime(2024, 1, 2, 18, 30);
 
@@ -57,8 +57,10 @@ void main() {
 
     await tester.pump();
 
-    final startButtonFinder =
-        find.widgetWithText(LottiSecondaryButton, 'Start');
+    final startButtonFinder = find.widgetWithText(
+      LottiSecondaryButton,
+      'Start',
+    );
     expect(startButtonFinder, findsOneWidget);
 
     await tester.tap(startButtonFinder);
@@ -86,8 +88,10 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final startButtonFinder =
-        find.widgetWithText(LottiSecondaryButton, 'Start');
+    final startButtonFinder = find.widgetWithText(
+      LottiSecondaryButton,
+      'Start',
+    );
     expect(startButtonFinder, findsOneWidget);
 
     final startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);

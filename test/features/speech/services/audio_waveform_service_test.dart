@@ -126,8 +126,9 @@ void main() {
       entryText: const EntryText(plainText: 'Test'),
     );
 
-    final relativePath =
-        AudioUtils.getRelativeAudioPath(audio).replaceFirst(RegExp('^/'), '');
+    final relativePath = AudioUtils.getRelativeAudioPath(
+      audio,
+    ).replaceFirst(RegExp('^/'), '');
     final filePath = p.join(tempDir.path, relativePath);
     final file = File(filePath)
       ..createSync(recursive: true)
@@ -140,8 +141,9 @@ void main() {
   }
 
   File audioFileFor(JournalAudio audio) {
-    final relativePath =
-        AudioUtils.getRelativeAudioPath(audio).replaceFirst(RegExp('^/'), '');
+    final relativePath = AudioUtils.getRelativeAudioPath(
+      audio,
+    ).replaceFirst(RegExp('^/'), '');
     return File(p.join(tempDir.path, relativePath));
   }
 
@@ -175,7 +177,8 @@ void main() {
       'audioFileModifiedAt':
           (modifiedAt ?? stat.modified.toUtc()).millisecondsSinceEpoch,
       'audioDurationMs': durationMs ?? audio.data.duration.inMilliseconds,
-      'bucketDurationMicros': bucketDurationMicros ??
+      'bucketDurationMicros':
+          bucketDurationMicros ??
           const Duration(milliseconds: 20).inMicroseconds,
       'amplitudes': amplitudes ?? <double>[0.1, 0.2],
       'sampleCount': sampleCount ?? bucketCount,
@@ -188,9 +191,11 @@ void main() {
     Map<String, dynamic>? overrides,
   }) {
     final file = cacheFileFor(audio, bucketCount);
-    final payload =
-        buildPayload(audio, bucketCount: bucketCount, sampleCount: bucketCount)
-          ..addAll(overrides ?? <String, dynamic>{});
+    final payload = buildPayload(
+      audio,
+      bucketCount: bucketCount,
+      sampleCount: bucketCount,
+    )..addAll(overrides ?? <String, dynamic>{});
     file
       ..createSync(recursive: true)
       ..writeAsStringSync(
@@ -273,7 +278,11 @@ void main() {
     final prefix = sanitizedId.length >= 2 ? sanitizedId.substring(0, 2) : '00';
     final cacheFile = File(
       p.join(
-          tempDir.path, 'audio_waveforms', prefix, '${audio.meta.id}_2.json'),
+        tempDir.path,
+        'audio_waveforms',
+        prefix,
+        '${audio.meta.id}_2.json',
+      ),
     );
     expect(cacheFile.existsSync(), isTrue);
 
@@ -285,7 +294,9 @@ void main() {
     expect(cached!.amplitudes.first, closeTo(result.amplitudes.first, 1e-6));
     expect(cached.amplitudes.last, closeTo(result.amplitudes.last, 1e-6));
     expect(
-        extractor.callCount, 1); // Cache hit should not call extractor again.
+      extractor.callCount,
+      1,
+    ); // Cache hit should not call extractor again.
   });
 
   test('reuses cache when metadata matches request', () async {
@@ -390,8 +401,12 @@ void main() {
         audio: audio,
         bucketCount: 2,
         overrides: <String, dynamic>{
-          'audioFileModifiedAt':
-              DateTime.utc(2024, 1, 1, 8).millisecondsSinceEpoch,
+          'audioFileModifiedAt': DateTime.utc(
+            2024,
+            1,
+            1,
+            8,
+          ).millisecondsSinceEpoch,
         },
       );
 
@@ -474,57 +489,59 @@ void main() {
       expect(extractor.callCount, 1);
     });
 
-    test('stale cache is replaced with fresh extraction after metadata change',
-        () async {
-      final audio = createAudio(
-        duration: const Duration(seconds: 12),
-        modified: DateTime.utc(2024, 1, 6, 9),
-      );
-
-      extractor.waveform = buildWaveform();
-      await service.loadWaveform(audio, targetBuckets: 2);
-      expect(extractor.callCount, 1);
-
-      final audioFile = audioFileFor(audio)
-        ..writeAsBytesSync(List<int>.filled(64, 1))
-        ..setLastModifiedSync(DateTime.utc(2024, 1, 6, 10));
-
-      extractor
-        ..callCount = 0
-        ..waveform = Waveform(
-          version: 1,
-          flags: 0,
-          sampleRate: 48000,
-          samplesPerPixel: 480,
-          length: 4,
-          data: <int>[
-            -4096,
-            4096,
-            -2048,
-            2048,
-            -1024,
-            1024,
-            0,
-            0,
-          ],
+    test(
+      'stale cache is replaced with fresh extraction after metadata change',
+      () async {
+        final audio = createAudio(
+          duration: const Duration(seconds: 12),
+          modified: DateTime.utc(2024, 1, 6, 9),
         );
 
-      final result = await service.loadWaveform(audio, targetBuckets: 2);
+        extractor.waveform = buildWaveform();
+        await service.loadWaveform(audio, targetBuckets: 2);
+        expect(extractor.callCount, 1);
 
-      expect(result, isNotNull);
-      expect(extractor.callCount, 1);
+        final audioFile = audioFileFor(audio)
+          ..writeAsBytesSync(List<int>.filled(64, 1))
+          ..setLastModifiedSync(DateTime.utc(2024, 1, 6, 10));
 
-      final cacheFile = cacheFileFor(audio, 2);
-      final cachedPayload =
-          jsonDecode(cacheFile.readAsStringSync()) as Map<String, dynamic>;
-      expect(
-        cachedPayload['audioFileModifiedAt'],
-        audioFile.statSync().modified.toUtc().millisecondsSinceEpoch,
-      );
-      final cachedAmplitudes =
-          (cachedPayload['amplitudes'] as List<dynamic>).cast<double>();
-      expect(cachedAmplitudes, result!.amplitudes);
-    });
+        extractor
+          ..callCount = 0
+          ..waveform = Waveform(
+            version: 1,
+            flags: 0,
+            sampleRate: 48000,
+            samplesPerPixel: 480,
+            length: 4,
+            data: <int>[
+              -4096,
+              4096,
+              -2048,
+              2048,
+              -1024,
+              1024,
+              0,
+              0,
+            ],
+          );
+
+        final result = await service.loadWaveform(audio, targetBuckets: 2);
+
+        expect(result, isNotNull);
+        expect(extractor.callCount, 1);
+
+        final cacheFile = cacheFileFor(audio, 2);
+        final cachedPayload =
+            jsonDecode(cacheFile.readAsStringSync()) as Map<String, dynamic>;
+        expect(
+          cachedPayload['audioFileModifiedAt'],
+          audioFile.statSync().modified.toUtc().millisecondsSinceEpoch,
+        );
+        final cachedAmplitudes = (cachedPayload['amplitudes'] as List<dynamic>)
+            .cast<double>();
+        expect(cachedAmplitudes, result!.amplitudes);
+      },
+    );
   });
 
   group('normalization edge cases', () {
@@ -619,40 +636,42 @@ void main() {
       );
     });
 
-    test('does not downsample when target buckets exceed pixel count',
-        () async {
-      final audio = createAudio(
-        duration: const Duration(seconds: 6),
-        modified: DateTime.utc(2024, 1, 7, 12),
-      );
+    test(
+      'does not downsample when target buckets exceed pixel count',
+      () async {
+        final audio = createAudio(
+          duration: const Duration(seconds: 6),
+          modified: DateTime.utc(2024, 1, 7, 12),
+        );
 
-      extractor.waveform = Waveform(
-        version: 1,
-        flags: 0,
-        sampleRate: 48000,
-        samplesPerPixel: 480,
-        length: 3,
-        data: <int>[
-          -32768,
-          32767,
-          -16384,
-          16384,
-          -8192,
-          8192,
-        ],
-      );
+        extractor.waveform = Waveform(
+          version: 1,
+          flags: 0,
+          sampleRate: 48000,
+          samplesPerPixel: 480,
+          length: 3,
+          data: <int>[
+            -32768,
+            32767,
+            -16384,
+            16384,
+            -8192,
+            8192,
+          ],
+        );
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 10,
-      );
+        final result = await service.loadWaveform(
+          audio,
+          targetBuckets: 10,
+        );
 
-      expect(result, isNotNull);
-      expect(result!.amplitudes, hasLength(3));
-      expect(result.amplitudes[0], closeTo(1.0, 1e-6));
-      expect(result.amplitudes[1], closeTo(0.5, 1e-6));
-      expect(result.amplitudes[2], closeTo(0.25, 1e-6));
-    });
+        expect(result, isNotNull);
+        expect(result!.amplitudes, hasLength(3));
+        expect(result.amplitudes[0], closeTo(1.0, 1e-6));
+        expect(result.amplitudes[1], closeTo(0.5, 1e-6));
+        expect(result.amplitudes[2], closeTo(0.25, 1e-6));
+      },
+    );
 
     test('reduces to single bucket and blends peak with RMS', () async {
       final audio = createAudio(
@@ -832,8 +851,10 @@ void main() {
         modified: DateTime.utc(2024, 1, 8, 12),
       );
       final audioFile = audioFileFor(audio);
-      final removePermissions =
-          await Process.run('chmod', <String>['000', audioFile.path]);
+      final removePermissions = await Process.run('chmod', <String>[
+        '000',
+        audioFile.path,
+      ]);
       expect(removePermissions.exitCode, 0);
 
       extractor.errorToThrow = const FileSystemException('Permission denied');
@@ -849,8 +870,10 @@ void main() {
         ),
       ).called(1);
 
-      final restorePermissions =
-          await Process.run('chmod', <String>['600', audioFile.path]);
+      final restorePermissions = await Process.run('chmod', <String>[
+        '600',
+        audioFile.path,
+      ]);
       expect(restorePermissions.exitCode, 0);
     });
 
@@ -1065,12 +1088,14 @@ void main() {
 
       final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
       final prefix = sanitized.length >= 2 ? sanitized.substring(0, 2) : '00';
-      final targetDir =
-          Directory(p.join(tempDir.path, 'audio_waveforms', prefix))
-            ..createSync(recursive: true);
+      final targetDir = Directory(
+        p.join(tempDir.path, 'audio_waveforms', prefix),
+      )..createSync(recursive: true);
       final cacheFile = File(p.join(targetDir.path, '${sanitized}_3.json'));
-      final removeWrite =
-          await Process.run('chmod', <String>['-w', targetDir.path]);
+      final removeWrite = await Process.run('chmod', <String>[
+        '-w',
+        targetDir.path,
+      ]);
       expect(removeWrite.exitCode, 0);
 
       clearInteractions(loggingService);
@@ -1079,8 +1104,10 @@ void main() {
         final result = await service.loadWaveform(audio, targetBuckets: 3);
         expect(result, isNotNull);
       } finally {
-        final restore =
-            await Process.run('chmod', <String>['+w', targetDir.path]);
+        final restore = await Process.run('chmod', <String>[
+          '+w',
+          targetDir.path,
+        ]);
         expect(restore.exitCode, 0);
       }
 
@@ -1103,31 +1130,35 @@ void main() {
         fileName: 'parent.m4a',
       );
 
-      final sanitizedId =
-          audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
-      final prefix =
-          sanitizedId.length >= 2 ? sanitizedId.substring(0, 2) : '00';
+      final sanitizedId = audio.meta.id.replaceAll(
+        RegExp('[^a-zA-Z0-9_-]'),
+        '_',
+      );
+      final prefix = sanitizedId.length >= 2
+          ? sanitizedId.substring(0, 2)
+          : '00';
       final prefixPath = p.join(tempDir.path, 'audio_waveforms', prefix);
       Directory(prefixPath).createSync(recursive: true);
 
       service = AudioWaveformService(
-        extractor: ({
-          required File audioFile,
-          required File waveOutFile,
-          required WaveformZoom zoom,
-        }) async {
-          final waveform = await extractor.extract(
-            audioFile: audioFile,
-            waveOutFile: waveOutFile,
-            zoom: zoom,
-          );
-          final directory = Directory(prefixPath);
-          if (directory.existsSync()) {
-            directory.deleteSync(recursive: true);
-          }
-          File(prefixPath).createSync(recursive: true);
-          return waveform;
-        },
+        extractor:
+            ({
+              required File audioFile,
+              required File waveOutFile,
+              required WaveformZoom zoom,
+            }) async {
+              final waveform = await extractor.extract(
+                audioFile: audioFile,
+                waveOutFile: waveOutFile,
+                zoom: zoom,
+              );
+              final directory = Directory(prefixPath);
+              if (directory.existsSync()) {
+                directory.deleteSync(recursive: true);
+              }
+              File(prefixPath).createSync(recursive: true);
+              return waveform;
+            },
       );
 
       clearInteractions(loggingService);
@@ -1216,9 +1247,9 @@ void main() {
         ),
       );
       expect(
-          Directory(p.join(tempDir.path, 'audio_waveforms', prefix))
-              .existsSync(),
-          isTrue);
+        Directory(p.join(tempDir.path, 'audio_waveforms', prefix)).existsSync(),
+        isTrue,
+      );
 
       if (cacheFile.existsSync()) {
         expect(p.basename(cacheFile.path), '${sanitized}_3.json');
@@ -1315,10 +1346,9 @@ void main() {
       final result = await service.loadWaveform(audio, targetBuckets: 2);
       expect(result, isNotNull);
 
-      final allFiles = Directory(p.join(tempDir.path, 'audio_waveforms'))
-          .listSync(recursive: true)
-          .whereType<File>()
-          .toList();
+      final allFiles = Directory(
+        p.join(tempDir.path, 'audio_waveforms'),
+      ).listSync(recursive: true).whereType<File>().toList();
 
       expect(allFiles.length, 1000);
 
@@ -1350,10 +1380,9 @@ void main() {
 
       await service.loadWaveform(audio, targetBuckets: 2);
 
-      final allFiles = Directory(p.join(tempDir.path, 'audio_waveforms'))
-          .listSync(recursive: true)
-          .whereType<File>()
-          .toList();
+      final allFiles = Directory(
+        p.join(tempDir.path, 'audio_waveforms'),
+      ).listSync(recursive: true).whereType<File>().toList();
       expect(allFiles.length, 6);
       verifyNever(
         () => loggingService.captureEvent(
@@ -1394,8 +1423,10 @@ void main() {
       }
       final files = populateCacheEntries(1009);
       final targetDir = files.first.parent;
-      final removeWrite =
-          await Process.run('chmod', <String>['-w', targetDir.path]);
+      final removeWrite = await Process.run('chmod', <String>[
+        '-w',
+        targetDir.path,
+      ]);
       expect(removeWrite.exitCode, 0);
       clearInteractions(loggingService);
 
@@ -1408,8 +1439,10 @@ void main() {
       try {
         await service.loadWaveform(audio, targetBuckets: 2);
       } finally {
-        final restore =
-            await Process.run('chmod', <String>['+w', targetDir.path]);
+        final restore = await Process.run('chmod', <String>[
+          '+w',
+          targetDir.path,
+        ]);
         expect(restore.exitCode, 0);
       }
 

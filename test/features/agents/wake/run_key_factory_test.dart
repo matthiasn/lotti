@@ -28,8 +28,11 @@ void main() {
           timestamp: _fixedTime,
         );
 
-        expect(key1, equals(key2),
-            reason: 'Token order must not affect the key');
+        expect(
+          key1,
+          equals(key2),
+          reason: 'Token order must not affect the key',
+        );
       });
 
       test('differs when agentId changes', () {
@@ -283,8 +286,11 @@ void main() {
           targetRefs: ['ref-b', 'ref-a'],
         );
 
-        expect(id1, equals(id2),
-            reason: 'targetRefs order must not affect the key');
+        expect(
+          id1,
+          equals(id2),
+          reason: 'targetRefs order must not affect the key',
+        );
       });
 
       test('differs when toolName changes', () {
@@ -355,8 +361,11 @@ void main() {
           targetRefs: ['ref-a'],
         );
 
-        expect(id1, equals(id2),
-            reason: 'JSON key order must not affect the stable ID');
+        expect(
+          id1,
+          equals(id2),
+          reason: 'JSON key order must not affect the stable ID',
+        );
       });
     });
   });

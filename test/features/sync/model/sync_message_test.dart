@@ -49,13 +49,15 @@ void main() {
     });
 
     test('round-trip preserves all fields', () {
-      const original = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'light',
-        updatedAt: 9876543210,
-        status: SyncEntryStatus.initial,
-      ) as SyncThemingSelection;
+      const original =
+          SyncMessage.themingSelection(
+                lightThemeName: 'Indigo',
+                darkThemeName: 'Shark',
+                themeMode: 'light',
+                updatedAt: 9876543210,
+                status: SyncEntryStatus.initial,
+              )
+              as SyncThemingSelection;
 
       final json = original.toJson();
       final decoded = SyncMessage.fromJson(json) as SyncThemingSelection;
@@ -111,8 +113,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       expect(decoded, isA<SyncAgentEntity>());
       final decodedMsg = decoded as SyncAgentEntity;
@@ -146,8 +149,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       expect(decoded, isA<SyncAgentEntity>());
       final decodedMsg = decoded as SyncAgentEntity;
@@ -178,8 +182,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentEntity;
       final decodedEntity = decodedMsg.agentEntity!;
@@ -205,8 +210,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentEntity;
       final decodedEntity = decodedMsg.agentEntity!;
@@ -233,8 +239,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentEntity;
       final decodedEntity = decodedMsg.agentEntity!;
@@ -261,8 +268,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentEntity;
       final decodedEntity = decodedMsg.agentEntity!;
@@ -294,8 +302,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentEntity;
       final identity = decodedMsg.agentEntity! as AgentIdentityEntity;
@@ -323,8 +332,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       expect(decoded, isA<SyncAgentLink>());
       final decodedMsg = decoded as SyncAgentLink;
@@ -354,8 +364,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<AgentStateLink>());
@@ -377,8 +388,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<MessagePrevLink>());
@@ -400,8 +412,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<MessagePayloadLink>());
@@ -423,8 +436,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<ToolEffectLink>());
@@ -446,8 +460,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<AgentTaskLink>());
@@ -469,8 +484,9 @@ void main() {
       );
 
       final json = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(json) as Map<String, dynamic>,
+      );
 
       final decodedLink = (decoded as SyncAgentLink).agentLink;
       expect(decodedLink, isNotNull);
@@ -486,8 +502,9 @@ void main() {
       );
 
       final encoded = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+      );
 
       expect(decoded, isA<SyncAgentEntity>());
       final decodedMsg = decoded as SyncAgentEntity;
@@ -518,8 +535,9 @@ void main() {
       );
 
       final encoded = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentEntity;
       expect(decodedMsg.agentEntity, isNotNull);
@@ -535,8 +553,9 @@ void main() {
       );
 
       final encoded = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+      );
 
       expect(decoded, isA<SyncAgentLink>());
       final decodedMsg = decoded as SyncAgentLink;
@@ -561,8 +580,9 @@ void main() {
       );
 
       final encoded = jsonEncode(msg.toJson());
-      final decoded =
-          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+      );
 
       final decodedMsg = decoded as SyncAgentLink;
       expect(decodedMsg.agentLink, isNotNull);

@@ -63,15 +63,16 @@ class _NestedAiResponsesWidgetState
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    _rotationAnimation = Tween<double>(
-      begin: 0,
-      end: 0.5,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _rotationAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 0.5,
+        ).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     // Start expanded
     _animationController.value = 1.0;

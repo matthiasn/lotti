@@ -47,8 +47,9 @@ AudioProgressColors resolveAudioProgressColors(ThemeData theme) {
     alpha: isDark ? 0.22 : 0.18,
   );
 
-  final glow =
-      isDark ? Colors.transparent : progressBase.withValues(alpha: 0.3);
+  final glow = isDark
+      ? Colors.transparent
+      : progressBase.withValues(alpha: 0.3);
   final thumb = _resolveThumbColor(scheme, isDark);
 
   return AudioProgressColors(
@@ -126,12 +127,12 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
 
         final progressRatio = _hasTotal
             ? (widget.progress.inMilliseconds / widget.total.inMilliseconds)
-                .clamp(0.0, 1.0)
+                  .clamp(0.0, 1.0)
             : 0.0;
 
         final bufferedRatio = _hasTotal
             ? (widget.buffered.inMilliseconds / widget.total.inMilliseconds)
-                .clamp(0.0, 1.0)
+                  .clamp(0.0, 1.0)
             : 0.0;
 
         final colors = resolveAudioProgressColors(theme);
@@ -197,7 +198,8 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
 
         return Semantics(
           label: widget.semanticLabel ?? 'Audio timeline',
-          value: '${formatAudioDuration(widget.progress)} of '
+          value:
+              '${formatAudioDuration(widget.progress)} of '
               '${formatAudioDuration(widget.total)}',
           increasedValue: 'Seek forward',
           decreasedValue: 'Seek backward',

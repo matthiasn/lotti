@@ -32,17 +32,18 @@ class MatrixStreamCatchUpCoordinator {
       required int pageSize,
       required int maxPages,
       required LoggingService logging,
-    })? backfill,
-  })  : _sessionManager = sessionManager,
-        _roomManager = roomManager,
-        _loggingService = loggingService,
-        _metrics = metrics,
-        _collectMetrics = collectMetrics,
-        _skipSyncWait = skipSyncWait,
-        _processor = processor,
-        _flushDeferredLiveScan = flushDeferredLiveScan,
-        _withInstance = withInstance,
-        _backfill = backfill;
+    })?
+    backfill,
+  }) : _sessionManager = sessionManager,
+       _roomManager = roomManager,
+       _loggingService = loggingService,
+       _metrics = metrics,
+       _collectMetrics = collectMetrics,
+       _skipSyncWait = skipSyncWait,
+       _processor = processor,
+       _flushDeferredLiveScan = flushDeferredLiveScan,
+       _withInstance = withInstance,
+       _backfill = backfill;
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
@@ -59,7 +60,8 @@ class MatrixStreamCatchUpCoordinator {
     required int pageSize,
     required int maxPages,
     required LoggingService logging,
-  })? _backfill;
+  })?
+  _backfill;
 
   String? _startupLastProcessedEventId;
   num? _startupLastProcessedTs;
@@ -92,9 +94,9 @@ class MatrixStreamCatchUpCoordinator {
   bool get wakeCatchUpPending => _wakeCatchUpPending;
 
   ({String? eventId, num? timestamp}) get startupMarkers => (
-        eventId: _startupLastProcessedEventId,
-        timestamp: _startupLastProcessedTs,
-      );
+    eventId: _startupLastProcessedEventId,
+    timestamp: _startupLastProcessedTs,
+  );
 
   set startupMarkers(({String? eventId, num? timestamp}) markers) {
     _startupLastProcessedEventId = markers.eventId;
@@ -193,8 +195,10 @@ class MatrixStreamCatchUpCoordinator {
           _catchupDebounceTimer?.cancel();
           // Enforce a minimum idle gap before running the trailing catch-up to
           // give the UI time to settle under bursty conditions.
-          _catchupDebounceTimer =
-              Timer(_trailingCatchupDelay, _startCatchupNow);
+          _catchupDebounceTimer = Timer(
+            _trailingCatchupDelay,
+            _startCatchupNow,
+          );
         } else {
           // No trailing run scheduled: log 'done' once for this burst.
           if (!_catchupDoneLoggedThisBurst) {
@@ -252,29 +256,32 @@ class MatrixStreamCatchUpCoordinator {
         subDomain: 'catchup',
       );
       unawaited(
-        _attachCatchUp().whenComplete(() {
-          _catchUpInFlight = false;
-          _flushDeferredLiveScan('catchUpRetry');
-        }).then((_) {
-          if (!_initialCatchUpCompleted) {
-            _loggingService.captureEvent(
-              _withInstance('catchup.retry.reschedule (not completed)'),
-              domain: syncLoggingDomain,
-              subDomain: 'catchup',
-            );
-            _scheduleInitialCatchUpRetry();
-          }
-        }).catchError((Object error, StackTrace st) {
-          _loggingService.captureException(
-            error,
-            domain: syncLoggingDomain,
-            subDomain: 'catchup.retry',
-            stackTrace: st,
-          );
-          if (!_initialCatchUpCompleted) {
-            _scheduleInitialCatchUpRetry();
-          }
-        }),
+        _attachCatchUp()
+            .whenComplete(() {
+              _catchUpInFlight = false;
+              _flushDeferredLiveScan('catchUpRetry');
+            })
+            .then((_) {
+              if (!_initialCatchUpCompleted) {
+                _loggingService.captureEvent(
+                  _withInstance('catchup.retry.reschedule (not completed)'),
+                  domain: syncLoggingDomain,
+                  subDomain: 'catchup',
+                );
+                _scheduleInitialCatchUpRetry();
+              }
+            })
+            .catchError((Object error, StackTrace st) {
+              _loggingService.captureException(
+                error,
+                domain: syncLoggingDomain,
+                subDomain: 'catchup.retry',
+                stackTrace: st,
+              );
+              if (!_initialCatchUpCompleted) {
+                _scheduleInitialCatchUpRetry();
+              }
+            }),
       );
     });
   }
@@ -312,8 +319,9 @@ class MatrixStreamCatchUpCoordinator {
 
     final client = _sessionManager.client;
     // Use .first.asStream() to create a single-event stream that auto-cancels
-    _pendingSyncSubscription =
-        client.onSync.stream.first.asStream().listen((syncUpdate) {
+    _pendingSyncSubscription = client.onSync.stream.first.asStream().listen((
+      syncUpdate,
+    ) {
       _pendingSyncSubscription = null;
       _loggingService.captureEvent(
         'pendingSyncListener.triggered, scheduling follow-up catch-up',
@@ -400,8 +408,9 @@ class MatrixStreamCatchUpCoordinator {
         final counts = slice.fold(
           (payloads: 0, attachments: 0),
           (counts, event) {
-            final isPayload =
-                ec.MatrixEventClassifier.isSyncPayloadEvent(event);
+            final isPayload = ec.MatrixEventClassifier.isSyncPayloadEvent(
+              event,
+            );
             final isAttachment = ec.MatrixEventClassifier.isAttachment(event);
             return (
               payloads: counts.payloads + (isPayload ? 1 : 0),

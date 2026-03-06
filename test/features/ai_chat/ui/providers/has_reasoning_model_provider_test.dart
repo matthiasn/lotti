@@ -44,10 +44,12 @@ void main() {
         supportsFunctionCalling: true,
       );
 
-      when(() => mockRepo.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [reasoning]);
-      when(() => mockRepo.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [provider]);
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [reasoning]);
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [provider]);
 
       final result = await container.read(
         hasReasoningModelForCategoryProvider('cat').future,
@@ -76,10 +78,12 @@ void main() {
         supportsFunctionCalling: true,
       );
 
-      when(() => mockRepo.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [notReasoning]);
-      when(() => mockRepo.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [provider]);
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [notReasoning]);
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [provider]);
 
       final result = await container.read(
         hasReasoningModelForCategoryProvider('cat').future,

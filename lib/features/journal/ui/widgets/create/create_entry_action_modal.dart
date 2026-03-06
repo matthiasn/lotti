@@ -68,8 +68,9 @@ class _CreateEntryMenuList extends StatelessWidget {
               thickness: 0.5,
               indent: AppTheme.cardPadding,
               endIndent: AppTheme.cardPadding,
-              color: context.colorScheme.outline
-                  .withValues(alpha: AppTheme.alphaDivider),
+              color: context.colorScheme.outline.withValues(
+                alpha: AppTheme.alphaDivider,
+              ),
             ),
         ],
       ],

@@ -149,8 +149,9 @@ void main() {
       // Trigger a test event
       await host.send('emitTestEvent', payload: {'data': 'hello'});
 
-      final event =
-          await eventCompleter.future.timeout(const Duration(seconds: 2));
+      final event = await eventCompleter.future.timeout(
+        const Duration(seconds: 2),
+      );
       expect(event['event'], 'testEvent');
       expect(event['data'], 'hello');
 
@@ -170,8 +171,10 @@ void main() {
       final events = <Map<String, Object?>>[];
       final sub = host.events.listen(events.add);
 
-      await host
-          .send('emitRawEvent', payload: {'eventPort': host.eventSendPort});
+      await host.send(
+        'emitRawEvent',
+        payload: {'eventPort': host.eventSendPort},
+      );
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(events, isEmpty);
       await sub.cancel();

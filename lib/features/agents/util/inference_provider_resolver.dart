@@ -22,8 +22,8 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
   // Find the configured model matching the requested model ID.
   final matchingModel = models.whereType<AiConfigModel>().where(
-        (m) => m.providerModelId == modelId,
-      );
+    (m) => m.providerModelId == modelId,
+  );
 
   if (matchingModel.isEmpty) {
     developer.log(

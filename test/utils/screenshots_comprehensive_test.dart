@@ -65,18 +65,22 @@ void main() {
       when(() => mockWindowManager.minimize()).thenAnswer((_) async {});
       when(() => mockWindowManager.show()).thenAnswer((_) async {});
 
-      when(() => mockLoggingService.captureEvent(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureEvent(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
 
-      when(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
     });
 
     tearDown(getIt.reset);
@@ -88,7 +92,8 @@ void main() {
 
         // Verify consistency with shouldUsePortal
         if (Platform.isLinux) {
-          final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+          final hasFlatpakId =
+              Platform.environment['FLATPAK_ID'] != null &&
               Platform.environment['FLATPAK_ID']!.isNotEmpty;
           expect(isRunning, equals(hasFlatpakId));
         } else {
@@ -110,24 +115,32 @@ void main() {
 
         if (PortalService.shouldUsePortal) {
           // In Flatpak, should attempt to use portal
-          expect(() async {
-            await takeScreenshot();
-          },
-              throwsA(anyOf(
+          expect(
+            () async {
+              await takeScreenshot();
+            },
+            throwsA(
+              anyOf(
                 isA<MissingPluginException>(),
                 isA<UnsupportedError>(),
                 isA<Exception>(),
-              )));
+              ),
+            ),
+          );
         } else {
           // Outside Flatpak, should use traditional screenshot tools
-          expect(() async {
-            await takeScreenshot();
-          },
-              throwsA(anyOf(
+          expect(
+            () async {
+              await takeScreenshot();
+            },
+            throwsA(
+              anyOf(
                 isA<MissingPluginException>(),
                 isA<UnsupportedError>(),
                 isA<Exception>(),
-              )));
+              ),
+            ),
+          );
         }
       });
 
@@ -145,11 +158,13 @@ void main() {
         // When portal fails, should fall back to traditional screenshot methods
         // This is tested by the error handling in takeScreenshot
 
-        when(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'SCREENSHOTS',
-              subDomain: 'portal_fallback',
-            )).thenReturn(null);
+        when(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SCREENSHOTS',
+            subDomain: 'portal_fallback',
+          ),
+        ).thenReturn(null);
 
         // Attempt screenshot which should handle fallback
         expect(() async {
@@ -194,11 +209,13 @@ void main() {
       test('throws exception for unsupported tool', () async {
         await expectLater(
           takeLinuxScreenshot('unsupported_tool', 'test.jpg', testTempDir.path),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Unsupported screenshot tool'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Unsupported screenshot tool'),
+            ),
+          ),
         );
       });
 
@@ -234,11 +251,13 @@ void main() {
         );
 
         // Logging should be attempted
-        verify(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: screenshotDomain,
-              stackTrace: any<dynamic>(named: 'stackTrace'),
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: screenshotDomain,
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
       test('restores window even on error', () async {
@@ -327,11 +346,13 @@ void main() {
         );
 
         // Verify logging was attempted
-        verify(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: screenshotDomain,
-              stackTrace: any<dynamic>(named: 'stackTrace'),
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: screenshotDomain,
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
     });
 
@@ -348,13 +369,14 @@ void main() {
       test('has fallback tools for Linux', () {
         expect(linuxScreenshotTools.length, greaterThan(1));
         expect(
-            linuxScreenshotTools,
-            containsAll([
-              spectacleTool,
-              gnomeScreenshotTool,
-              scrotTool,
-              importTool,
-            ]));
+          linuxScreenshotTools,
+          containsAll([
+            spectacleTool,
+            gnomeScreenshotTool,
+            scrotTool,
+            importTool,
+          ]),
+        );
       });
     });
   });

@@ -11,7 +11,8 @@ import 'dart:io';
 void main(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln(
-        'Usage: dart run test/tool/analyze_test_timings.dart <jsonFile> [thresholdMs]');
+      'Usage: dart run test/tool/analyze_test_timings.dart <jsonFile> [thresholdMs]',
+    );
     exitCode = 64;
     return;
   }
@@ -30,8 +31,10 @@ void main(List<String> args) async {
   final suitePathById = <int, String>{}; // suiteID -> path
   final doneEvents = <Map<String, dynamic>>[]; // {id,time,hidden}
 
-  final stream =
-      file.openRead().transform(utf8.decoder).transform(const LineSplitter());
+  final stream = file
+      .openRead()
+      .transform(utf8.decoder)
+      .transform(const LineSplitter());
   await for (final line in stream) {
     if (line.trim().isEmpty) continue;
     dynamic json;
@@ -96,7 +99,8 @@ void main(List<String> args) async {
 
   if (doneEvents.isEmpty) {
     stdout.writeln(
-        'No test completion events found. Ensure reporter=json was used.');
+      'No test completion events found. Ensure reporter=json was used.',
+    );
     return;
   }
 
@@ -124,7 +128,8 @@ void main(List<String> args) async {
         final ss = ((t % 60000) ~/ 1000).toString().padLeft(2, '0');
         final gapSec = (gap / 1000).toStringAsFixed(2);
         stdout.writeln(
-            '- $mm:$ss  gap=${gapSec}s  name="$name"  file=$url${line == null ? '' : ':$line'}');
+          '- $mm:$ss  gap=${gapSec}s  name="$name"  file=$url${line == null ? '' : ':$line'}',
+        );
       }
     }
     prevTime = t;

@@ -47,7 +47,8 @@ class SyncRoomCandidate {
   }
 
   @override
-  String toString() => 'SyncRoomCandidate(roomId: $roomId, name: $roomName, '
+  String toString() =>
+      'SyncRoomCandidate(roomId: $roomId, name: $roomName, '
       'confidence: $confidence)';
 }
 

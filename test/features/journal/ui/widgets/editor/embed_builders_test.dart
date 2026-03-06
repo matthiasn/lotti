@@ -21,8 +21,9 @@ void main() {
       );
     });
 
-    testWidgets('renders divider embeds with DividerEmbedBuilder',
-        (tester) async {
+    testWidgets('renders divider embeds with DividerEmbedBuilder', (
+      tester,
+    ) async {
       final controller = QuillController(
         document: Document.fromDelta(
           Delta()
@@ -48,8 +49,9 @@ void main() {
       expect(find.byType(Divider), findsOneWidget);
     });
 
-    testWidgets('renders fallback widget for unknown embed types',
-        (tester) async {
+    testWidgets('renders fallback widget for unknown embed types', (
+      tester,
+    ) async {
       final controller = QuillController(
         document: Document.fromDelta(
           Delta()

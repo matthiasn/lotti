@@ -24,10 +24,13 @@ class ToolbarWidget extends ConsumerWidget {
     const curve = Curves.easeInOutQuint;
     const height = 45.0;
 
-    final baseButtonOptions = QuillToolbarBaseButtonOptions<dynamic,
-        QuillToolbarBaseButtonExtraOptions>(
-      afterButtonPressed: notifier.focusNode.requestFocus,
-    );
+    final baseButtonOptions =
+        QuillToolbarBaseButtonOptions<
+          dynamic,
+          QuillToolbarBaseButtonExtraOptions
+        >(
+          afterButtonPressed: notifier.focusNode.requestFocus,
+        );
 
     final toolbarConfig = QuillSimpleToolbarConfig(
       toolbarSize: height,

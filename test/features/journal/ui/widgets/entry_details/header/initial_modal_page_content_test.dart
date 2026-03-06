@@ -145,8 +145,9 @@ void main() {
   }
 
   group('InitialModalPageContent ModernLabelsItem integration', () {
-    testWidgets('shows Labels icon, text, and subtitle for non-task entries',
-        (tester) async {
+    testWidgets('shows Labels icon, text, and subtitle for non-task entries', (
+      tester,
+    ) async {
       final entry = textEntry();
 
       await tester.pumpWidget(buildWrapper(entry));
@@ -228,8 +229,9 @@ void main() {
       );
     }
 
-    testWidgets('shows transcription and share items for audio',
-        (tester) async {
+    testWidgets('shows transcription and share items for audio', (
+      tester,
+    ) async {
       final entry = audioEntry();
 
       await tester.pumpWidget(buildAudioWrapper(entry));
@@ -341,8 +343,9 @@ void main() {
       );
     }
 
-    testWidgets('shows set cover art item when image linked to a task',
-        (tester) async {
+    testWidgets('shows set cover art item when image linked to a task', (
+      tester,
+    ) async {
       final image = imageEntry();
       final task = taskEntry();
 
@@ -354,8 +357,9 @@ void main() {
       expect(find.text('Set cover'), findsOneWidget);
     });
 
-    testWidgets('hides set cover art item when image linked to a non-task',
-        (tester) async {
+    testWidgets('hides set cover art item when image linked to a non-task', (
+      tester,
+    ) async {
       final image = imageEntry();
       final parent = textEntry();
 
@@ -367,8 +371,9 @@ void main() {
       expect(find.text('Set cover'), findsNothing);
     });
 
-    testWidgets('hides set cover art item when image has no linkedFromId',
-        (tester) async {
+    testWidgets('hides set cover art item when image has no linkedFromId', (
+      tester,
+    ) async {
       final image = imageEntry();
 
       await tester.pumpWidget(
@@ -440,8 +445,9 @@ void main() {
       );
     }
 
-    testWidgets('shows map toggle item for entry with geolocation',
-        (tester) async {
+    testWidgets('shows map toggle item for entry with geolocation', (
+      tester,
+    ) async {
       final entry = entryWithGeolocation();
 
       await tester.pumpWidget(buildGeoWrapper(entry));
@@ -492,8 +498,9 @@ void main() {
       );
     }
 
-    testWidgets('shows unlink item when linkedFromId is provided',
-        (tester) async {
+    testWidgets('shows unlink item when linkedFromId is provided', (
+      tester,
+    ) async {
       final entry = textEntry();
 
       await tester.pumpWidget(
@@ -504,8 +511,9 @@ void main() {
       expect(find.byIcon(Icons.link_off_rounded), findsOneWidget);
     });
 
-    testWidgets('shows toggle hidden item when link is provided',
-        (tester) async {
+    testWidgets('shows toggle hidden item when link is provided', (
+      tester,
+    ) async {
       final entry = textEntry();
       final now = DateTime(2023);
       final link = EntryLink.basic(

@@ -21,15 +21,15 @@ final class BackfillConfigControllerProvider
   /// Controller for backfill configuration settings.
   /// Allows enabling/disabling automatic backfill sync (useful on metered/slow networks).
   BackfillConfigControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'backfillConfigControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'backfillConfigControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$backfillConfigControllerHash();
@@ -51,11 +51,14 @@ abstract class _$BackfillConfigController extends $AsyncNotifier<bool> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<bool>, bool>,
-        AsyncValue<bool>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool>, bool>,
+              AsyncValue<bool>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

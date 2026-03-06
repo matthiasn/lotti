@@ -129,10 +129,12 @@ void main() {
 
     // Default stubs
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(() => mockLabelsRepository.getLabelUsageCounts())
-        .thenAnswer((_) async => {});
-    when(() => mockLabelsRepository.buildLabelTuples(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockLabelsRepository.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockLabelsRepository.buildLabelTuples(any()),
+    ).thenAnswer((_) async => []);
     when(
       () => mockAiInputRepository.buildTaskDetailsJson(
         id: any<String>(named: 'id'),
@@ -167,9 +169,9 @@ void main() {
           dateFrom: DateTime(2025, 1, 2),
         );
 
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenAnswer((_) async => [summary1, summary2]);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+        ).thenAnswer((_) async => [summary1, summary2]);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -191,15 +193,17 @@ void main() {
 
         expect(result, isNotNull);
         expect(
-            result, contains('Latest summary with learnings and annoyances'));
+          result,
+          contains('Latest summary with learnings and annoyances'),
+        );
         expect(result, isNot(contains('Old summary from yesterday')));
         expect(result, isNot(contains('{{current_task_summary}}')));
       });
 
       test('returns fallback when no task summary exists', () async {
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+        ).thenAnswer((_) async => []);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -223,52 +227,56 @@ void main() {
         expect(result, contains('[No task summary available]'));
       });
 
-      test('finds linked task for audio entity and injects its summary',
-          () async {
-        final summary = buildTaskSummary(
-          id: 'summary-1',
-          response: 'Task summary for linked task',
-          dateFrom: DateTime(2025),
-        );
+      test(
+        'finds linked task for audio entity and injects its summary',
+        () async {
+          final summary = buildTaskSummary(
+            id: 'summary-1',
+            response: 'Task summary for linked task',
+            dateFrom: DateTime(2025),
+          );
 
-        // Audio links TO task-1 (via getLinkedEntities)
-        when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => [testTask]);
-        // Task-1 has linked summaries
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenAnswer((_) async => [summary]);
+          // Audio links TO task-1 (via getLinkedEntities)
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: 'audio-1'),
+          ).thenAnswer((_) async => [testTask]);
+          // Task-1 has linked summaries
+          when(
+            () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+          ).thenAnswer((_) async => [summary]);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Generate Image',
-          systemMessage: 'System message',
-          userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.imageGeneration,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Generate Image',
+            systemMessage: 'System message',
+            userMessage: 'Summary: {{current_task_summary}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.imageGeneration,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testAudio,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testAudio,
+          );
 
-        expect(result, isNotNull);
-        expect(result, contains('Task summary for linked task'));
-      });
+          expect(result, isNotNull);
+          expect(result, contains('Task summary for linked task'));
+        },
+      );
 
       test('returns fallback when audio not linked to any task', () async {
         // Audio doesn't link TO any task
-        when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepository.getLinkedEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => []);
         // Fallback: no tasks link TO audio either
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => []);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -292,43 +300,46 @@ void main() {
         expect(result, contains('[No task summary available]'));
       });
 
-      test('finds linked task for image entity and injects its summary',
-          () async {
-        final summary = buildTaskSummary(
-          id: 'summary-1',
-          response: 'Task summary via image',
-          dateFrom: DateTime(2025),
-        );
+      test(
+        'finds linked task for image entity and injects its summary',
+        () async {
+          final summary = buildTaskSummary(
+            id: 'summary-1',
+            response: 'Task summary via image',
+            dateFrom: DateTime(2025),
+          );
 
-        // Image links TO task-1 (via getLinkedEntities)
-        when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'image-1'))
-            .thenAnswer((_) async => [testTask]);
-        // Task-1 has linked summaries
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenAnswer((_) async => [summary]);
+          // Image links TO task-1 (via getLinkedEntities)
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: 'image-1'),
+          ).thenAnswer((_) async => [testTask]);
+          // Task-1 has linked summaries
+          when(
+            () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+          ).thenAnswer((_) async => [summary]);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Generate Image',
-          systemMessage: 'System message',
-          userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.imageGeneration,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Generate Image',
+            systemMessage: 'System message',
+            userMessage: 'Summary: {{current_task_summary}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.imageGeneration,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testImage,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testImage,
+          );
 
-        expect(result, isNotNull);
-        expect(result, contains('Task summary via image'));
-      });
+          expect(result, isNotNull);
+          expect(result, contains('Task summary via image'));
+        },
+      );
 
       test('ignores non-taskSummary AI responses', () async {
         // Create a different type of AI response
@@ -351,9 +362,9 @@ void main() {
           ),
         );
 
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenAnswer((_) async => [transcriptionResponse]);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+        ).thenAnswer((_) async => [transcriptionResponse]);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -396,9 +407,9 @@ void main() {
         );
 
         // Return in mixed order to test sorting
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenAnswer(
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+        ).thenAnswer(
           (_) async => [middleSummary, oldSummary, newestSummary],
         );
 
@@ -450,14 +461,15 @@ void main() {
         // Should not have called getLinkedToEntities since placeholder absent
         verifyNever(
           () => mockJournalRepository.getLinkedToEntities(
-              linkedTo: any(named: 'linkedTo')),
+            linkedTo: any(named: 'linkedTo'),
+          ),
         );
       });
 
       test('handles error gracefully and returns fallback', () async {
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'),
+        ).thenThrow(Exception('Database error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',

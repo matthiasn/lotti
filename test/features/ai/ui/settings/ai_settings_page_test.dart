@@ -71,17 +71,21 @@ void main() {
         ),
       ];
 
-      when(() =>
-              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) => Stream.value([testConfigs[0]]));
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([testConfigs[1]]));
-      when(() => mockRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value([testConfigs[2]]));
-      when(() => mockRepository.getConfigById('anthropic-provider'))
-          .thenAnswer((_) async => testConfigs[0] as AiConfigInferenceProvider);
-      when(() => mockRepository.watchProfiles())
-          .thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value([testConfigs[0]]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([testConfigs[1]]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value([testConfigs[2]]));
+      when(
+        () => mockRepository.getConfigById('anthropic-provider'),
+      ).thenAnswer((_) async => testConfigs[0] as AiConfigInferenceProvider);
+      when(
+        () => mockRepository.watchProfiles(),
+      ).thenAnswer((_) => Stream.value([]));
     });
 
     Widget createTestWidget() {
@@ -108,8 +112,9 @@ void main() {
       );
     }
 
-    testWidgets('should display title and search bar',
-        (WidgetTester tester) async {
+    testWidgets('should display title and search bar', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -118,8 +123,9 @@ void main() {
       expect(find.text('Search AI configurations...'), findsOneWidget);
     });
 
-    testWidgets('should display tab bar with four tabs',
-        (WidgetTester tester) async {
+    testWidgets('should display tab bar with four tabs', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -151,8 +157,9 @@ void main() {
       expect(find.text('Task Summary'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('should filter configs with search',
-        (WidgetTester tester) async {
+    testWidgets('should filter configs with search', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -180,8 +187,9 @@ void main() {
       expect(find.text('Anthropic Provider'), findsOneWidget);
     });
 
-    testWidgets('should display capability filters on Models tab',
-        (WidgetTester tester) async {
+    testWidgets('should display capability filters on Models tab', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -196,8 +204,9 @@ void main() {
       expect(find.text('Reasoning'), findsOneWidget);
     });
 
-    testWidgets('should display floating action button with correct label',
-        (WidgetTester tester) async {
+    testWidgets('should display floating action button with correct label', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -220,8 +229,9 @@ void main() {
       expect(find.text('Add Prompt'), findsOneWidget);
     });
 
-    testWidgets('should have tappable floating action button',
-        (WidgetTester tester) async {
+    testWidgets('should have tappable floating action button', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -239,9 +249,9 @@ void main() {
 
     testWidgets('should show loading state', (WidgetTester tester) async {
       // Mock repository to return loading stream
-      when(() =>
-              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
@@ -251,12 +261,13 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('should show error state with retry',
-        (WidgetTester tester) async {
+    testWidgets('should show error state with retry', (
+      WidgetTester tester,
+    ) async {
       // Mock repository to return error
-      when(() =>
-              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) => Stream.error('Test error'));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.error('Test error'));
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -266,8 +277,9 @@ void main() {
       expect(find.text('RETRY'), findsOneWidget);
     });
 
-    testWidgets('should clear search when clear button is tapped',
-        (WidgetTester tester) async {
+    testWidgets('should clear search when clear button is tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -287,8 +299,9 @@ void main() {
       expect(textField.controller?.text, '');
     });
 
-    testWidgets('should handle tab controller properly',
-        (WidgetTester tester) async {
+    testWidgets('should handle tab controller properly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -303,8 +316,9 @@ void main() {
       expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
     });
 
-    testWidgets('should show capability indicators on model cards',
-        (WidgetTester tester) async {
+    testWidgets('should show capability indicators on model cards', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -313,14 +327,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show capability icons for the model
-      expect(find.byIcon(Icons.text_fields),
-          findsAtLeastNWidgets(1)); // Text capability
-      expect(find.byIcon(Icons.visibility),
-          findsAtLeastNWidgets(1)); // Vision capability
+      expect(
+        find.byIcon(Icons.text_fields),
+        findsAtLeastNWidgets(1),
+      ); // Text capability
+      expect(
+        find.byIcon(Icons.visibility),
+        findsAtLeastNWidgets(1),
+      ); // Vision capability
     });
 
-    testWidgets('should handle theme correctly in light mode',
-        (WidgetTester tester) async {
+    testWidgets('should handle theme correctly in light mode', (
+      WidgetTester tester,
+    ) async {
       final widget = MediaQuery(
         data: const MediaQueryData(
           size: Size(390, 844),
@@ -351,8 +370,9 @@ void main() {
       expect(find.text('AI Settings'), findsOneWidget);
     });
 
-    testWidgets('should handle theme correctly in dark mode',
-        (WidgetTester tester) async {
+    testWidgets('should handle theme correctly in dark mode', (
+      WidgetTester tester,
+    ) async {
       final widget = MediaQuery(
         data: const MediaQueryData(
           size: Size(390, 844),
@@ -383,23 +403,27 @@ void main() {
       expect(find.text('AI Settings'), findsOneWidget);
     });
 
-    testWidgets('should properly dispose controllers',
-        (WidgetTester tester) async {
+    testWidgets('should properly dispose controllers', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
       // Navigate away to dispose the page
-      await tester.pumpWidget(const MaterialApp(
-        home: Scaffold(body: Text('Different Page')),
-      ));
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: Text('Different Page')),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Should have disposed without errors
       expect(find.text('Different Page'), findsOneWidget);
     });
 
-    testWidgets('should handle config tap navigation',
-        (WidgetTester tester) async {
+    testWidgets('should handle config tap navigation', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -410,8 +434,9 @@ void main() {
       // This test verifies that the tap handler is attached and doesn't crash
     });
 
-    testWidgets('should filter models by capability',
-        (WidgetTester tester) async {
+    testWidgets('should filter models by capability', (
+      WidgetTester tester,
+    ) async {
       // Add another model without vision capability
       final textOnlyModel = AiConfig.model(
         id: 'text-only-model',
@@ -424,8 +449,9 @@ void main() {
         isReasoningModel: false,
       );
 
-      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
-          .thenAnswer((_) => Stream.value([testConfigs[1], textOnlyModel]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([testConfigs[1], textOnlyModel]));
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -447,8 +473,9 @@ void main() {
       expect(find.text('Text Only Model'), findsNothing);
     });
 
-    testWidgets('should filter prompts with search',
-        (WidgetTester tester) async {
+    testWidgets('should filter prompts with search', (
+      WidgetTester tester,
+    ) async {
       // Add another prompt with different response type
       final imagePrompt = AiConfig.prompt(
         id: 'image-prompt',
@@ -463,8 +490,9 @@ void main() {
         aiResponseType: AiResponseType.imageAnalysis,
       );
 
-      when(() => mockRepository.watchConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) => Stream.value([testConfigs[2], imagePrompt]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value([testConfigs[2], imagePrompt]));
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -489,11 +517,14 @@ void main() {
       expect(find.text('Task Summary'), findsAtLeastNWidgets(1));
       // Image Analysis filter chip still visible, but prompt card should be gone
       expect(
-          find.text('Image Analysis'), findsOneWidget); // Just the filter chip
+        find.text('Image Analysis'),
+        findsOneWidget,
+      ); // Just the filter chip
     });
 
-    testWidgets('should filter providers with search',
-        (WidgetTester tester) async {
+    testWidgets('should filter providers with search', (
+      WidgetTester tester,
+    ) async {
       // Add another provider with different type
       final openAiProvider = AiConfig.inferenceProvider(
         id: 'openai-provider',
@@ -504,9 +535,9 @@ void main() {
         createdAt: DateTime.fromMillisecondsSinceEpoch(0),
       );
 
-      when(() =>
-              mockRepository.watchConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) => Stream.value([testConfigs[0], openAiProvider]));
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value([testConfigs[0], openAiProvider]));
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -538,8 +569,9 @@ void main() {
       // The back button functionality is tested in integration tests
     });
 
-    testWidgets('should show app bar title animation',
-        (WidgetTester tester) async {
+    testWidgets('should show app bar title animation', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -551,8 +583,9 @@ void main() {
     });
 
     group('selection mode', () {
-      testWidgets('should show Select chip on Prompts tab',
-          (WidgetTester tester) async {
+      testWidgets('should show Select chip on Prompts tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -564,8 +597,9 @@ void main() {
         expect(find.text('Select'), findsOneWidget);
       });
 
-      testWidgets('should not show Select chip on Models tab',
-          (WidgetTester tester) async {
+      testWidgets('should not show Select chip on Models tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -577,8 +611,9 @@ void main() {
         expect(find.text('Select'), findsNothing);
       });
 
-      testWidgets('should not show Select chip on Providers tab',
-          (WidgetTester tester) async {
+      testWidgets('should not show Select chip on Providers tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -587,8 +622,9 @@ void main() {
         expect(find.text('Select'), findsNothing);
       });
 
-      testWidgets('should enable selection mode when Select chip is tapped',
-          (WidgetTester tester) async {
+      testWidgets('should enable selection mode when Select chip is tapped', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -609,33 +645,35 @@ void main() {
       });
 
       testWidgets(
-          'should show checkbox indicators when selection mode is active',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        'should show checkbox indicators when selection mode is active',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        // Switch to Prompts tab
-        await tester.tap(find.text('Prompts'));
-        await tester.pumpAndSettle();
+          // Switch to Prompts tab
+          await tester.tap(find.text('Prompts'));
+          await tester.pumpAndSettle();
 
-        // Enable selection mode
-        final selectChip = find.ancestor(
-          of: find.text('Select'),
-          matching: find.byType(FilterChip),
-        );
-        await tester.tap(selectChip);
-        await tester.pump();
+          // Enable selection mode
+          final selectChip = find.ancestor(
+            of: find.text('Select'),
+            matching: find.byType(FilterChip),
+          );
+          await tester.tap(selectChip);
+          await tester.pump();
 
-        // The sliver uses AnimatedContainer as custom checkbox (not standard icon)
-        // When selection mode is on, the Select chip shows checked icon
-        expect(find.byIcon(Icons.check_box), findsOneWidget);
+          // The sliver uses AnimatedContainer as custom checkbox (not standard icon)
+          // When selection mode is on, the Select chip shows checked icon
+          expect(find.byIcon(Icons.check_box), findsOneWidget);
 
-        // And the prompt card should still be visible in compact mode
-        expect(find.text('Task Summary'), findsAtLeastNWidgets(1));
-      });
+          // And the prompt card should still be visible in compact mode
+          expect(find.text('Task Summary'), findsAtLeastNWidgets(1));
+        },
+      );
 
-      testWidgets('should show Add Prompt FAB when no items are selected',
-          (WidgetTester tester) async {
+      testWidgets('should show Add Prompt FAB when no items are selected', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -655,8 +693,9 @@ void main() {
         expect(find.text('Add Prompt'), findsOneWidget);
       });
 
-      testWidgets('should show delete FAB when items are selected',
-          (WidgetTester tester) async {
+      testWidgets('should show delete FAB when items are selected', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -693,91 +732,96 @@ void main() {
       });
 
       testWidgets(
-          'should show delete confirmation dialog when delete FAB is tapped',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        'should show delete confirmation dialog when delete FAB is tapped',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        // Switch to Prompts tab
-        await tester.tap(find.text('Prompts'));
-        await tester.pumpAndSettle();
+          // Switch to Prompts tab
+          await tester.tap(find.text('Prompts'));
+          await tester.pumpAndSettle();
 
-        // Enable selection mode
-        final selectChip = find.ancestor(
-          of: find.text('Select'),
-          matching: find.byType(FilterChip),
-        );
-        await tester.tap(selectChip);
-        await tester.pump();
+          // Enable selection mode
+          final selectChip = find.ancestor(
+            of: find.text('Select'),
+            matching: find.byType(FilterChip),
+          );
+          await tester.tap(selectChip);
+          await tester.pump();
 
-        // Select a prompt by tapping on the card text
-        final promptCardFinders = find.text('Task Summary');
-        // Assert the card exists before attempting to tap
-        expect(
-          promptCardFinders.evaluate().length,
-          greaterThan(1),
-          reason: 'Task Summary prompt card should be present',
-        );
-        await tester.tap(promptCardFinders.last);
-        await tester.pump();
+          // Select a prompt by tapping on the card text
+          final promptCardFinders = find.text('Task Summary');
+          // Assert the card exists before attempting to tap
+          expect(
+            promptCardFinders.evaluate().length,
+            greaterThan(1),
+            reason: 'Task Summary prompt card should be present',
+          );
+          await tester.tap(promptCardFinders.last);
+          await tester.pump();
 
-        // Tap delete FAB
-        final deleteFab = find.byType(FloatingActionButton);
-        await tester.tap(deleteFab);
-        await tester.pump();
+          // Tap delete FAB
+          final deleteFab = find.byType(FloatingActionButton);
+          await tester.tap(deleteFab);
+          await tester.pump();
 
-        // Should show confirmation dialog with correct title
-        expect(find.byType(AlertDialog), findsOneWidget);
-        expect(find.text('Delete Selected Prompts'), findsOneWidget);
-      });
+          // Should show confirmation dialog with correct title
+          expect(find.byType(AlertDialog), findsOneWidget);
+          expect(find.text('Delete Selected Prompts'), findsOneWidget);
+        },
+      );
 
-      testWidgets('should dismiss dialog and not delete when Cancel is tapped',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+      testWidgets(
+        'should dismiss dialog and not delete when Cancel is tapped',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        // Switch to Prompts tab
-        await tester.tap(find.text('Prompts'));
-        await tester.pumpAndSettle();
+          // Switch to Prompts tab
+          await tester.tap(find.text('Prompts'));
+          await tester.pumpAndSettle();
 
-        // Enable selection mode and select a prompt
-        final selectChip = find.ancestor(
-          of: find.text('Select'),
-          matching: find.byType(FilterChip),
-        );
-        await tester.tap(selectChip);
-        await tester.pump();
+          // Enable selection mode and select a prompt
+          final selectChip = find.ancestor(
+            of: find.text('Select'),
+            matching: find.byType(FilterChip),
+          );
+          await tester.tap(selectChip);
+          await tester.pump();
 
-        final promptCardFinders = find.text('Task Summary');
-        // Assert the card exists before attempting to tap
-        expect(
-          promptCardFinders.evaluate().length,
-          greaterThan(1),
-          reason: 'Task Summary prompt card should be present',
-        );
-        await tester.tap(promptCardFinders.last);
-        await tester.pump();
+          final promptCardFinders = find.text('Task Summary');
+          // Assert the card exists before attempting to tap
+          expect(
+            promptCardFinders.evaluate().length,
+            greaterThan(1),
+            reason: 'Task Summary prompt card should be present',
+          );
+          await tester.tap(promptCardFinders.last);
+          await tester.pump();
 
-        // Tap delete FAB
-        await tester.tap(find.byType(FloatingActionButton));
-        await tester.pump();
+          // Tap delete FAB
+          await tester.tap(find.byType(FloatingActionButton));
+          await tester.pump();
 
-        // Tap Cancel button
-        await tester.tap(find.text('Cancel'));
-        await tester.pump();
+          // Tap Cancel button
+          await tester.tap(find.text('Cancel'));
+          await tester.pump();
 
-        // Dialog should be dismissed
-        expect(find.byType(AlertDialog), findsNothing);
+          // Dialog should be dismissed
+          expect(find.byType(AlertDialog), findsNothing);
 
-        // Selection should still be active
-        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
-      });
+          // Selection should still be active
+          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        },
+      );
 
-      testWidgets('should delete selected prompts when Delete is confirmed',
-          (WidgetTester tester) async {
+      testWidgets('should delete selected prompts when Delete is confirmed', (
+        WidgetTester tester,
+      ) async {
         // Set up mock to handle delete
-        when(() => mockRepository.deleteConfig('test-prompt'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.deleteConfig('test-prompt'),
+        ).thenAnswer((_) async {});
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -819,47 +863,50 @@ void main() {
         expect(find.text('Add Prompt'), findsOneWidget);
       });
 
-      testWidgets('should exit selection mode when Select chip is toggled off',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+      testWidgets(
+        'should exit selection mode when Select chip is toggled off',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        // Switch to Prompts tab
-        await tester.tap(find.text('Prompts'));
-        await tester.pumpAndSettle();
+          // Switch to Prompts tab
+          await tester.tap(find.text('Prompts'));
+          await tester.pumpAndSettle();
 
-        // Enable selection mode
-        final selectChip = find.ancestor(
-          of: find.text('Select'),
-          matching: find.byType(FilterChip),
-        );
-        await tester.tap(selectChip);
-        await tester.pump();
+          // Enable selection mode
+          final selectChip = find.ancestor(
+            of: find.text('Select'),
+            matching: find.byType(FilterChip),
+          );
+          await tester.tap(selectChip);
+          await tester.pump();
 
-        // Select a prompt
-        final promptCardFinders = find.text('Task Summary');
-        // Assert the card exists before attempting to tap
-        expect(
-          promptCardFinders.evaluate().length,
-          greaterThan(1),
-          reason: 'Task Summary prompt card should be present',
-        );
-        await tester.tap(promptCardFinders.last);
-        await tester.pump();
+          // Select a prompt
+          final promptCardFinders = find.text('Task Summary');
+          // Assert the card exists before attempting to tap
+          expect(
+            promptCardFinders.evaluate().length,
+            greaterThan(1),
+            reason: 'Task Summary prompt card should be present',
+          );
+          await tester.tap(promptCardFinders.last);
+          await tester.pump();
 
-        // Should be in selection mode with items selected
-        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+          // Should be in selection mode with items selected
+          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
 
-        // Toggle off selection mode
-        await tester.tap(selectChip);
-        await tester.pump();
+          // Toggle off selection mode
+          await tester.tap(selectChip);
+          await tester.pump();
 
-        // Should exit selection mode and show Add Prompt FAB
-        expect(find.text('Add Prompt'), findsOneWidget);
-      });
+          // Should exit selection mode and show Add Prompt FAB
+          expect(find.text('Add Prompt'), findsOneWidget);
+        },
+      );
 
-      testWidgets('should maintain selection when switching tabs and back',
-          (WidgetTester tester) async {
+      testWidgets('should maintain selection when switching tabs and back', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -909,14 +956,16 @@ void main() {
     });
 
     group('profiles tab', () {
-      testWidgets('should show profile cards when profiles exist',
-          (WidgetTester tester) async {
+      testWidgets('should show profile cards when profiles exist', (
+        WidgetTester tester,
+      ) async {
         final profiles = [
           testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
           testInferenceProfile(id: 'p2', name: 'Local Ollama'),
         ];
-        when(() => mockRepository.watchProfiles())
-            .thenAnswer((_) => Stream.value(profiles));
+        when(
+          () => mockRepository.watchProfiles(),
+        ).thenAnswer((_) => Stream.value(profiles));
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -930,8 +979,9 @@ void main() {
         expect(find.byType(ProfileCard), findsNWidgets(2));
       });
 
-      testWidgets('should show empty state when no profiles exist',
-          (WidgetTester tester) async {
+      testWidgets('should show empty state when no profiles exist', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -943,14 +993,16 @@ void main() {
         expect(find.byIcon(Icons.tune), findsOneWidget);
       });
 
-      testWidgets('should filter profiles by search query',
-          (WidgetTester tester) async {
+      testWidgets('should filter profiles by search query', (
+        WidgetTester tester,
+      ) async {
         final profiles = [
           testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
           testInferenceProfile(id: 'p2', name: 'Local Ollama'),
         ];
-        when(() => mockRepository.watchProfiles())
-            .thenAnswer((_) => Stream.value(profiles));
+        when(
+          () => mockRepository.watchProfiles(),
+        ).thenAnswer((_) => Stream.value(profiles));
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -974,32 +1026,35 @@ void main() {
       });
 
       testWidgets(
-          'should show no-items-found message when search has no results',
-          (WidgetTester tester) async {
-        final profiles = [
-          testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
-        ];
-        when(() => mockRepository.watchProfiles())
-            .thenAnswer((_) => Stream.value(profiles));
+        'should show no-items-found message when search has no results',
+        (WidgetTester tester) async {
+          final profiles = [
+            testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
+          ];
+          when(
+            () => mockRepository.watchProfiles(),
+          ).thenAnswer((_) => Stream.value(profiles));
 
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        // Switch to Profiles tab
-        await tester.tap(find.text('Profiles'));
-        await tester.pumpAndSettle();
+          // Switch to Profiles tab
+          await tester.tap(find.text('Profiles'));
+          await tester.pumpAndSettle();
 
-        // Search for something that doesn't match
-        await tester.enterText(find.byType(TextField), 'zzzznonexistent');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+          // Search for something that doesn't match
+          await tester.enterText(find.byType(TextField), 'zzzznonexistent');
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
-        // Should show "No items found" (not "No inference profiles yet")
-        expect(find.text('No items found'), findsOneWidget);
-      });
+          // Should show "No items found" (not "No inference profiles yet")
+          expect(find.text('No items found'), findsOneWidget);
+        },
+      );
 
-      testWidgets('should show Add Profile FAB on profiles tab',
-          (WidgetTester tester) async {
+      testWidgets('should show Add Profile FAB on profiles tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
@@ -1011,10 +1066,12 @@ void main() {
         expect(find.byType(FloatingActionButton), findsOneWidget);
       });
 
-      testWidgets('should show loading state for profiles',
-          (WidgetTester tester) async {
-        when(() => mockRepository.watchProfiles())
-            .thenAnswer((_) => const Stream.empty());
+      testWidgets('should show loading state for profiles', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.watchProfiles(),
+        ).thenAnswer((_) => const Stream.empty());
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -1027,10 +1084,12 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('should show error state for profiles',
-          (WidgetTester tester) async {
-        when(() => mockRepository.watchProfiles())
-            .thenAnswer((_) => Stream.error('Profile error'));
+      testWidgets('should show error state for profiles', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.watchProfiles(),
+        ).thenAnswer((_) => Stream.error('Profile error'));
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -1043,8 +1102,9 @@ void main() {
         expect(find.text('RETRY'), findsOneWidget);
       });
 
-      testWidgets('should show desktop-only chip in profile card',
-          (WidgetTester tester) async {
+      testWidgets('should show desktop-only chip in profile card', (
+        WidgetTester tester,
+      ) async {
         final profiles = [
           testInferenceProfile(
             id: 'p1',
@@ -1052,8 +1112,9 @@ void main() {
             desktopOnly: true,
           ),
         ];
-        when(() => mockRepository.watchProfiles())
-            .thenAnswer((_) => Stream.value(profiles));
+        when(
+          () => mockRepository.watchProfiles(),
+        ).thenAnswer((_) => Stream.value(profiles));
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -1065,8 +1126,9 @@ void main() {
         expect(find.text('Desktop Only'), findsOneWidget);
       });
 
-      testWidgets('should not show Select chip on Profiles tab',
-          (WidgetTester tester) async {
+      testWidgets('should not show Select chip on Profiles tab', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 

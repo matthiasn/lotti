@@ -49,7 +49,8 @@ class MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature,
     ConversationStrategy? strategy,
-  })? sendMessageDelegate;
+  })?
+  sendMessageDelegate;
 
   @override
   void build() {
@@ -205,13 +206,13 @@ class TestDataFactory {
 }
 
 AiConfigInferenceProvider provider() => AiConfigInferenceProvider(
-      id: 'ollama',
-      name: 'Ollama',
-      inferenceProviderType: InferenceProviderType.ollama,
-      baseUrl: 'http://localhost:11434',
-      apiKey: '',
-      createdAt: DateTime(2024),
-    );
+  id: 'ollama',
+  name: 'Ollama',
+  inferenceProviderType: InferenceProviderType.ollama,
+  baseUrl: 'http://localhost:11434',
+  apiKey: '',
+  createdAt: DateTime(2024),
+);
 
 void main() {
   late ProviderContainer container;
@@ -224,19 +225,23 @@ void main() {
   late LottiConversationProcessor processor;
 
   setUpAll(() {
-    registerFallbackValue(const ChatCompletionMessage.user(
-      content: ChatCompletionUserMessageContent.string('u'),
-    ));
+    registerFallbackValue(
+      const ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string('u'),
+      ),
+    );
     registerFallbackValue(<ChatCompletionMessage>[]);
     registerFallbackValue(<ChatCompletionTool>[]);
-    registerFallbackValue(AiConfigInferenceProvider(
-      id: 'ollama',
-      name: 'Ollama',
-      inferenceProviderType: InferenceProviderType.ollama,
-      baseUrl: 'http://localhost:11434',
-      apiKey: '',
-      createdAt: DateTime(2024),
-    ));
+    registerFallbackValue(
+      AiConfigInferenceProvider(
+        id: 'ollama',
+        name: 'Ollama',
+        inferenceProviderType: InferenceProviderType.ollama,
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2024),
+      ),
+    );
     // Fallbacks for mocktail any<T>() usage
     registerFallbackValue(TestDataFactory.createTask());
     registerFallbackValue(MockInferenceRepo());
@@ -257,23 +262,24 @@ void main() {
     required ConversationManager manager,
     required List<ChatCompletionMessageToolCall> toolCalls,
   }) {
-    repo.sendMessageDelegate = ({
-      required String conversationId,
-      required String message,
-      required String model,
-      required AiConfigInferenceProvider provider,
-      required InferenceRepositoryInterface inferenceRepo,
-      List<ChatCompletionTool>? tools,
-      double temperature = 0.7,
-      ConversationStrategy? strategy,
-    }) async {
-      if (strategy != null) {
-        await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: manager,
-        );
-      }
-    };
+    repo.sendMessageDelegate =
+        ({
+          required String conversationId,
+          required String message,
+          required String model,
+          required AiConfigInferenceProvider provider,
+          required InferenceRepositoryInterface inferenceRepo,
+          List<ChatCompletionTool>? tools,
+          double temperature = 0.7,
+          ConversationStrategy? strategy,
+        }) async {
+          if (strategy != null) {
+            await strategy.processToolCalls(
+              toolCalls: toolCalls,
+              manager: manager,
+            );
+          }
+        };
   }
 
   setUp(() {
@@ -305,12 +311,15 @@ void main() {
 
     // Conversation wiring - only mock the manager methods now
     when(() => mockConversationManager.messages).thenReturn([]);
-    when(() => mockConversationManager.events)
-        .thenAnswer((_) => StreamController<ConversationEvent>().stream);
-    when(() => mockConversationManager.addToolResponse(
-          toolCallId: any(named: 'toolCallId'),
-          response: any(named: 'response'),
-        )).thenReturn(null);
+    when(
+      () => mockConversationManager.events,
+    ).thenAnswer((_) => StreamController<ConversationEvent>().stream);
+    when(
+      () => mockConversationManager.addToolResponse(
+        toolCallId: any(named: 'toolCallId'),
+        response: any(named: 'response'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(() {
@@ -340,11 +349,13 @@ void main() {
       );
 
       // Checklist creation: no existing checklist -> auto create
-      when(() => mockChecklistRepo.createChecklist(
-            taskId: any(named: 'taskId'),
-            items: any(named: 'items'),
-            title: any(named: 'title'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.createChecklist(
+          taskId: any(named: 'taskId'),
+          items: any(named: 'items'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer((invocation) async {
         final items = (invocation.namedArguments[#items] as List)
             .cast<ChecklistItemData>();
         final checklist = Checklist(
@@ -358,8 +369,10 @@ void main() {
           ),
           data: ChecklistData(
             title: 'TODOs',
-            linkedChecklistItems:
-                List.generate(items.length, (i) => 'id${i + 1}'),
+            linkedChecklistItems: List.generate(
+              items.length,
+              (i) => 'id${i + 1}',
+            ),
             linkedTasks: const [],
           ),
         );
@@ -368,14 +381,15 @@ void main() {
           created.add((
             id: 'id${i + 1}',
             title: items[i].title,
-            isChecked: items[i].isChecked
+            isChecked: items[i].isChecked,
           ));
         }
         return (checklist: checklist, createdItems: created);
       });
       var callsTaskLookup1 = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
+      when(() => mockJournalDb.journalEntityById(task.meta.id)).thenAnswer((
+        _,
+      ) async {
         callsTaskLookup1++;
         // Allow multiple reads before creation; switch after creation path
         if (callsTaskLookup1 > 2) {
@@ -386,47 +400,51 @@ void main() {
         }
         return task;
       });
-      when(() => mockJournalDb.journalEntityById('ck'))
-          .thenAnswer((_) async => Checklist(
-                meta: Metadata(
-                  id: 'ck',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  dateFrom: DateTime.now(),
-                  dateTo: DateTime.now(),
-                  categoryId: 'test-category',
-                ),
-                data: const ChecklistData(
-                  title: 'TODOs',
-                  linkedChecklistItems: [],
-                  linkedTasks: [],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('ck')).thenAnswer(
+        (_) async => Checklist(
+          meta: Metadata(
+            id: 'ck',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        ),
+      );
 
-      when(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+      when(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: any(named: 'checklistId'),
+          title: any(named: 'title'),
+          isChecked: any(named: 'isChecked'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
 
       // Auto create checklist with two items
-      when(() => mockJournalDb.journalEntityById('ck'))
-          .thenAnswer((_) async => Checklist(
-                meta: Metadata(
-                  id: 'ck',
-                  createdAt: DateTime(2024),
-                  updatedAt: DateTime(2024),
-                  dateFrom: DateTime(2024),
-                  dateTo: DateTime(2024),
-                  categoryId: 'test-category',
-                ),
-                data: const ChecklistData(
-                  title: 'TODOs',
-                  linkedChecklistItems: [],
-                  linkedTasks: [],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('ck')).thenAnswer(
+        (_) async => Checklist(
+          meta: Metadata(
+            id: 'ck',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        ),
+      );
 
       // Instead of autoChecklistService, the handlers construct via repo; we only need DB/Repo mocks
 
@@ -467,8 +485,9 @@ void main() {
 
       // No existing checklist -> auto create
       var callsTaskLookup2 = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
+      when(() => mockJournalDb.journalEntityById(task.meta.id)).thenAnswer((
+        _,
+      ) async {
         callsTaskLookup2++;
         if (callsTaskLookup2 > 2) {
           return TestDataFactory.createTask(
@@ -478,11 +497,13 @@ void main() {
         }
         return task;
       });
-      when(() => mockChecklistRepo.createChecklist(
-            taskId: any(named: 'taskId'),
-            items: any(named: 'items'),
-            title: any(named: 'title'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.createChecklist(
+          taskId: any(named: 'taskId'),
+          items: any(named: 'items'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer((invocation) async {
         final items = (invocation.namedArguments[#items] as List)
             .cast<ChecklistItemData>();
         final checklist = Checklist(
@@ -505,27 +526,28 @@ void main() {
             (
               id: 'id1',
               title: items.first.title,
-              isChecked: items.first.isChecked
+              isChecked: items.first.isChecked,
             ),
         ];
         return (checklist: checklist, createdItems: created);
       });
-      when(() => mockJournalDb.journalEntityById('new-ck'))
-          .thenAnswer((_) async => Checklist(
-                meta: Metadata(
-                  id: 'new-ck',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  dateFrom: DateTime.now(),
-                  dateTo: DateTime.now(),
-                  categoryId: 'test-category',
-                ),
-                data: const ChecklistData(
-                  title: 'TODOs',
-                  linkedChecklistItems: [],
-                  linkedTasks: [],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('new-ck')).thenAnswer(
+        (_) async => Checklist(
+          meta: Metadata(
+            id: 'new-ck',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        ),
+      );
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Add buy milk',
@@ -564,8 +586,9 @@ void main() {
       );
 
       var callsTaskLookup3 = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
+      when(() => mockJournalDb.journalEntityById(task.meta.id)).thenAnswer((
+        _,
+      ) async {
         callsTaskLookup3++;
         if (callsTaskLookup3 > 2) {
           return TestDataFactory.createTask(
@@ -575,11 +598,13 @@ void main() {
         }
         return task;
       });
-      when(() => mockChecklistRepo.createChecklist(
-            taskId: any(named: 'taskId'),
-            items: any(named: 'items'),
-            title: any(named: 'title'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.createChecklist(
+          taskId: any(named: 'taskId'),
+          items: any(named: 'items'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer((invocation) async {
         final items = (invocation.namedArguments[#items] as List)
             .cast<ChecklistItemData>();
         final checklist = Checklist(
@@ -604,22 +629,23 @@ void main() {
         ];
         return (checklist: checklist, createdItems: created);
       });
-      when(() => mockJournalDb.journalEntityById('ck-batch'))
-          .thenAnswer((_) async => Checklist(
-                meta: Metadata(
-                  id: 'ck-batch',
-                  createdAt: DateTime(2024),
-                  updatedAt: DateTime(2024),
-                  dateFrom: DateTime(2024),
-                  dateTo: DateTime(2024),
-                  categoryId: 'test-category',
-                ),
-                data: const ChecklistData(
-                  title: 'TODOs',
-                  linkedChecklistItems: [],
-                  linkedTasks: [],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('ck-batch')).thenAnswer(
+        (_) async => Checklist(
+          meta: Metadata(
+            id: 'ck-batch',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        ),
+      );
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Add pizza',
@@ -658,8 +684,9 @@ void main() {
       );
 
       var callsTaskLookup4 = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
+      when(() => mockJournalDb.journalEntityById(task.meta.id)).thenAnswer((
+        _,
+      ) async {
         callsTaskLookup4++;
         // After language + checklist creation
         if (callsTaskLookup4 > 2) {
@@ -671,11 +698,13 @@ void main() {
         }
         return task;
       });
-      when(() => mockChecklistRepo.createChecklist(
-            taskId: any(named: 'taskId'),
-            items: any(named: 'items'),
-            title: any(named: 'title'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.createChecklist(
+          taskId: any(named: 'taskId'),
+          items: any(named: 'items'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer((invocation) async {
         final items = (invocation.namedArguments[#items] as List)
             .cast<ChecklistItemData>();
         final checklist = Checklist(
@@ -700,22 +729,23 @@ void main() {
         ];
         return (checklist: checklist, createdItems: created);
       });
-      when(() => mockJournalDb.journalEntityById('ck'))
-          .thenAnswer((_) async => Checklist(
-                meta: Metadata(
-                  id: 'ck',
-                  createdAt: DateTime(2024),
-                  updatedAt: DateTime(2024),
-                  dateFrom: DateTime(2024),
-                  dateTo: DateTime(2024),
-                  categoryId: 'test-category',
-                ),
-                data: const ChecklistData(
-                  title: 'TODOs',
-                  linkedChecklistItems: [],
-                  linkedTasks: [],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('ck')).thenAnswer(
+        (_) async => Checklist(
+          meta: Metadata(
+            id: 'ck',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        ),
+      );
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Add shopping',
@@ -763,13 +793,15 @@ void main() {
       );
 
       // Journal repo update for language
-      when(() => mockJournalRepo.updateJournalEntity(any<Task>()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepo.updateJournalEntity(any<Task>()),
+      ).thenAnswer((_) async => true);
 
       // DB state: first returns task w/o checklist but later with checklist + language set
       var callsTaskLookupLang = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
+      when(() => mockJournalDb.journalEntityById(task.meta.id)).thenAnswer((
+        _,
+      ) async {
         callsTaskLookupLang++;
         if (callsTaskLookupLang > 2) {
           return TestDataFactory.createTask(
@@ -780,11 +812,13 @@ void main() {
         }
         return task;
       });
-      when(() => mockChecklistRepo.createChecklist(
-            taskId: any(named: 'taskId'),
-            items: any(named: 'items'),
-            title: any(named: 'title'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockChecklistRepo.createChecklist(
+          taskId: any(named: 'taskId'),
+          items: any(named: 'items'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer((invocation) async {
         final items = (invocation.namedArguments[#items] as List)
             .cast<ChecklistItemData>();
         final checklist = Checklist(
@@ -807,27 +841,28 @@ void main() {
             (
               id: 'id1',
               title: items.first.title,
-              isChecked: items.first.isChecked
+              isChecked: items.first.isChecked,
             ),
         ];
         return (checklist: checklist, createdItems: created);
       });
-      when(() => mockJournalDb.journalEntityById('ck-new'))
-          .thenAnswer((_) async => Checklist(
-                meta: Metadata(
-                  id: 'ck-new',
-                  createdAt: DateTime(2024),
-                  updatedAt: DateTime(2024),
-                  dateFrom: DateTime(2024),
-                  dateTo: DateTime(2024),
-                  categoryId: 'test-category',
-                ),
-                data: const ChecklistData(
-                  title: 'TODOs',
-                  linkedChecklistItems: [],
-                  linkedTasks: [],
-                ),
-              ));
+      when(() => mockJournalDb.journalEntityById('ck-new')).thenAnswer(
+        (_) async => Checklist(
+          meta: Metadata(
+            id: 'ck-new',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        ),
+      );
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Añadir comprar leche a mi lista',
@@ -878,15 +913,17 @@ void main() {
 
       // Mock DB to return existing checklist item
       final mockSelectable = MockSelectable<JournalDbEntity>();
-      when(() => mockJournalDb.entriesForIds([itemId]))
-          .thenReturn(mockSelectable);
+      when(
+        () => mockJournalDb.entriesForIds([itemId]),
+      ).thenReturn(mockSelectable);
       when(mockSelectable.get).thenAnswer(
         (_) async => [_createDbEntity(existingItem)],
       );
 
       // Mock task lookup for refresh after update
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
 
       // Mock updateChecklistItem to succeed
       when(
@@ -955,13 +992,15 @@ void main() {
       );
 
       final mockSelectable = MockSelectable<JournalDbEntity>();
-      when(() => mockJournalDb.entriesForIds([itemId]))
-          .thenReturn(mockSelectable);
+      when(
+        () => mockJournalDb.entriesForIds([itemId]),
+      ).thenReturn(mockSelectable);
       when(mockSelectable.get).thenAnswer(
         (_) async => [_createDbEntity(existingItem)],
       );
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockJournalDb.journalEntityById(task.meta.id),
+      ).thenAnswer((_) async => task);
       when(
         () => mockChecklistRepo.updateChecklistItem(
           checklistItemId: itemId,
@@ -998,8 +1037,7 @@ void main() {
       expect(result.hadErrors, false);
     });
 
-    test('update_checklist_items skips non-existent items gracefully',
-        () async {
+    test('update_checklist_items skips non-existent items gracefully', () async {
       const checklistId = 'checklist-1';
       final task = TestDataFactory.createTask(
         checklistIds: [checklistId],
@@ -1025,8 +1063,9 @@ void main() {
 
       // Mock DB to return empty (item not found)
       final mockSelectable = MockSelectable<JournalDbEntity>();
-      when(() => mockJournalDb.entriesForIds(['non-existent-id']))
-          .thenReturn(mockSelectable);
+      when(
+        () => mockJournalDb.entriesForIds(['non-existent-id']),
+      ).thenReturn(mockSelectable);
       when(mockSelectable.get).thenAnswer((_) async => []);
 
       final result = await processor.processPromptWithConversation(

@@ -38,19 +38,24 @@ class ModernBaseCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Determine background color or gradient
-    final effectiveGradient = gradient ??
+    final effectiveGradient =
+        gradient ??
         (backgroundColor == null ? GradientThemes.cardGradient(context) : null);
 
-    final effectiveBackgroundColor = backgroundColor ??
+    final effectiveBackgroundColor =
+        backgroundColor ??
         (effectiveGradient == null ? context.colorScheme.surface : null);
 
     // Determine border color - very subtle in light mode, slightly visible in dark mode
-    final effectiveBorderColor = borderColor ??
+    final effectiveBorderColor =
+        borderColor ??
         (isDark
-            ? context.colorScheme.outlineVariant
-                .withValues(alpha: AppTheme.alphaCardBorderDark)
-            : context.colorScheme.outline
-                .withValues(alpha: AppTheme.alphaCardBorderLight));
+            ? context.colorScheme.outlineVariant.withValues(
+                alpha: AppTheme.alphaCardBorderDark,
+              )
+            : context.colorScheme.outline.withValues(
+                alpha: AppTheme.alphaCardBorderLight,
+              ));
 
     return Container(
       margin: margin,
@@ -59,7 +64,8 @@ class ModernBaseCard extends StatelessWidget {
         gradient: effectiveGradient,
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(color: effectiveBorderColor),
-        boxShadow: customShadows ??
+        boxShadow:
+            customShadows ??
             (isEnhanced
                 ? [
                     BoxShadow(
@@ -75,13 +81,15 @@ class ModernBaseCard extends StatelessWidget {
                         alpha: isDark
                             ? GradientConstants.enhancedShadowSecondaryDarkAlpha
                             : GradientConstants
-                                .enhancedShadowSecondaryLightAlpha,
+                                  .enhancedShadowSecondaryLightAlpha,
                       ),
                       blurRadius: isDark
                           ? GradientConstants.enhancedShadowSecondaryBlurDark
                           : GradientConstants.enhancedShadowSecondaryBlurLight,
                       offset: const Offset(
-                          0, GradientConstants.enhancedShadowSecondaryOffsetY),
+                        0,
+                        GradientConstants.enhancedShadowSecondaryOffsetY,
+                      ),
                     ),
                   ]
                 : [
@@ -105,10 +113,12 @@ class ModernBaseCard extends StatelessWidget {
             ? InkWell(
                 onTap: onTap,
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-                splashColor: context.colorScheme.primary
-                    .withValues(alpha: AppTheme.alphaPrimary),
-                highlightColor: context.colorScheme.primary
-                    .withValues(alpha: AppTheme.alphaPrimaryHighlight),
+                splashColor: context.colorScheme.primary.withValues(
+                  alpha: AppTheme.alphaPrimary,
+                ),
+                highlightColor: context.colorScheme.primary.withValues(
+                  alpha: AppTheme.alphaPrimaryHighlight,
+                ),
                 child: Container(
                   padding:
                       padding ?? const EdgeInsets.all(AppTheme.cardPadding),

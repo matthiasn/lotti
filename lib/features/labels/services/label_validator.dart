@@ -11,7 +11,8 @@ class LabelValidator {
 
   /// Splits the requested IDs into valid and invalid buckets.
   Future<({List<String> valid, List<String> invalid})> validate(
-      List<String> requested) async {
+    List<String> requested,
+  ) async {
     final valid = <String>[];
     final invalid = <String>[];
     for (final id in requested) {
@@ -67,11 +68,13 @@ class LabelValidator {
   /// - invalid: unknown or deleted, or out of category scope
   /// - suppressed: explicitly suppressed for this task
   Future<
-      ({
-        List<String> valid,
-        List<String> invalid,
-        List<String> suppressed,
-      })> validateForTask(
+    ({
+      List<String> valid,
+      List<String> invalid,
+      List<String> suppressed,
+    })
+  >
+  validateForTask(
     List<String> requested, {
     String? categoryId,
     Set<String>? suppressedIds,

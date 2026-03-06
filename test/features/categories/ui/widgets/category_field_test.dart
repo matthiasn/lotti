@@ -47,8 +47,9 @@ void main() {
   }
 
   testWidgets('displays category name when category exists', (tester) async {
-    when(() => mockCacheService.getCategoryById('test-id'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('test-id'),
+    ).thenReturn(testCategory);
 
     await tester.pumpWidget(
       createTestWidget(
@@ -92,8 +93,9 @@ void main() {
 
   testWidgets('can clear selected category', (tester) async {
     bool? savedValue;
-    when(() => mockCacheService.getCategoryById('test-id'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('test-id'),
+    ).thenReturn(testCategory);
 
     await tester.pumpWidget(
       createTestWidget(
@@ -144,8 +146,9 @@ void main() {
     expect(selectedCategory, equals(testCategory));
   });
 
-  testWidgets('shows create category option when search has no matches',
-      (tester) async {
+  testWidgets('shows create category option when search has no matches', (
+    tester,
+  ) async {
     when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
     when(() => mockCacheService.sortedCategories).thenReturn([testCategory]);
 
@@ -172,8 +175,9 @@ void main() {
   });
 
   testWidgets('displays category icon with correct size', (tester) async {
-    when(() => mockCacheService.getCategoryById('test-id'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('test-id'),
+    ).thenReturn(testCategory);
 
     await tester.pumpWidget(
       createTestWidget(
@@ -182,8 +186,9 @@ void main() {
       ),
     );
 
-    final icon =
-        tester.widget<CategoryIconCompact>(find.byType(CategoryIconCompact));
+    final icon = tester.widget<CategoryIconCompact>(
+      find.byType(CategoryIconCompact),
+    );
     expect(icon.size, equals(CategoryIconConstants.iconSizeMedium));
   });
 }

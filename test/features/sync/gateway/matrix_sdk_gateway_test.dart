@@ -59,7 +59,7 @@ void main() {
   late MockClient client;
   late MatrixSdkGateway gateway;
   late StreamController<({String roomId, StrippedStateEvent state})>
-      roomStateController;
+  roomStateController;
   late StreamController<LoginState> loginStateController;
   late StreamController<KeyVerification> keyVerificationController;
   late bool disposed;
@@ -67,17 +67,22 @@ void main() {
 
   setUp(() {
     client = MockClient();
-    roomStateController = StreamController<
-        ({String roomId, StrippedStateEvent state})>.broadcast();
+    roomStateController =
+        StreamController<
+          ({String roomId, StrippedStateEvent state})
+        >.broadcast();
     loginStateController = StreamController<LoginState>.broadcast();
     keyVerificationController = StreamController<KeyVerification>.broadcast();
 
-    when(() => client.onRoomState.stream)
-        .thenAnswer((_) => roomStateController.stream);
-    when(() => client.onLoginStateChanged.stream)
-        .thenAnswer((_) => loginStateController.stream);
-    when(() => client.onKeyVerificationRequest.stream)
-        .thenAnswer((_) => keyVerificationController.stream);
+    when(
+      () => client.onRoomState.stream,
+    ).thenAnswer((_) => roomStateController.stream);
+    when(
+      () => client.onLoginStateChanged.stream,
+    ).thenAnswer((_) => loginStateController.stream);
+    when(
+      () => client.onKeyVerificationRequest.stream,
+    ).thenAnswer((_) => keyVerificationController.stream);
     when(() => client.dispose()).thenAnswer((_) async {});
     when(() => client.getRoomState(any())).thenAnswer(
       (_) async => [
@@ -143,8 +148,9 @@ void main() {
 
     await gateway.connect(config);
 
-    verify(() => client.checkHomeserver(Uri.parse(config.homeServer)))
-        .called(1);
+    verify(
+      () => client.checkHomeserver(Uri.parse(config.homeServer)),
+    ).called(1);
     verify(
       () => client.init(
         waitForFirstSync: false,
@@ -214,15 +220,17 @@ void main() {
     );
 
     expect(roomId, '!room:server');
-    final captured = verify(
-      () => client.createRoom(
-        visibility: Visibility.private,
-        name: 'Room',
-        invite: ['@bob:server'],
-        preset: CreateRoomPreset.trustedPrivateChat,
-        initialState: captureAny(named: 'initialState'),
-      ),
-    ).captured.single as List<StateEvent>;
+    final captured =
+        verify(
+              () => client.createRoom(
+                visibility: Visibility.private,
+                name: 'Room',
+                invite: ['@bob:server'],
+                preset: CreateRoomPreset.trustedPrivateChat,
+                initialState: captureAny(named: 'initialState'),
+              ),
+            ).captured.single
+            as List<StateEvent>;
 
     final types = captured.map((event) => event.type).toSet();
     expect(types, contains('m.room.encryption'));
@@ -244,8 +252,9 @@ void main() {
   });
 
   test('joinRoom and leaveRoom delegate to client', () async {
-    when(() => client.joinRoom('!room:server'))
-        .thenAnswer((_) async => '!room');
+    when(
+      () => client.joinRoom('!room:server'),
+    ).thenAnswer((_) async => '!room');
     when(() => client.leaveRoom('!room:server')).thenAnswer((_) async {});
 
     await gateway.joinRoom('!room:server');
@@ -481,8 +490,10 @@ void main() {
     when(() => client.getRoomById('!room:server')).thenReturn(room);
     when(() => room.sendEvent(any())).thenAnswer((_) async => 'event');
 
-    final eventId =
-        await gateway.sendText(roomId: '!room:server', message: 'hi');
+    final eventId = await gateway.sendText(
+      roomId: '!room:server',
+      message: 'hi',
+    );
 
     expect(eventId, 'event');
   });
@@ -518,9 +529,9 @@ void main() {
   test('sendFile supports extra content payloads', () async {
     final room = MockRoom();
     when(() => client.getRoomById('!room:server')).thenReturn(room);
-    when(() =>
-            room.sendFileEvent(any(), extraContent: any(named: 'extraContent')))
-        .thenAnswer((_) async => 'file');
+    when(
+      () => room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
+    ).thenAnswer((_) async => 'file');
 
     final eventId = await gateway.sendFile(
       roomId: '!room:server',
@@ -534,9 +545,9 @@ void main() {
   test('sendFile registers event ID in sent registry', () async {
     final room = MockRoom();
     when(() => client.getRoomById('!room:server')).thenReturn(room);
-    when(() =>
-            room.sendFileEvent(any(), extraContent: any(named: 'extraContent')))
-        .thenAnswer((_) async => r'$file-evt');
+    when(
+      () => room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
+    ).thenAnswer((_) async => r'$file-evt');
 
     await gateway.sendFile(
       roomId: '!room:server',
@@ -593,17 +604,19 @@ void main() {
     expect(devices, [unverifiedDevice]);
   });
 
-  test('dispose cancels subscription, closes invites, and disposes client',
-      () async {
-    final inviteCompletion = expectLater(gateway.invites, emitsDone);
-    when(() => client.dispose()).thenAnswer((_) async {});
+  test(
+    'dispose cancels subscription, closes invites, and disposes client',
+    () async {
+      final inviteCompletion = expectLater(gateway.invites, emitsDone);
+      when(() => client.dispose()).thenAnswer((_) async {});
 
-    await gateway.dispose();
-    disposed = true;
+      await gateway.dispose();
+      disposed = true;
 
-    verify(() => client.dispose()).called(1);
-    await inviteCompletion;
-  });
+      verify(() => client.dispose()).called(1);
+      await inviteCompletion;
+    },
+  );
 }
 
 class FakeKeyVerification extends Fake implements KeyVerification {}

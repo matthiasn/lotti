@@ -31,7 +31,8 @@ void main() {
         dateTo: now,
       ),
       data: TaskData(
-        status: status ??
+        status:
+            status ??
             TaskStatus.open(
               id: 'status-1',
               createdAt: now,
@@ -109,8 +110,9 @@ void main() {
       expect(find.text('Linked Tasks'), findsOneWidget);
     });
 
-    testWidgets('renders LinkedFromSection when there are incoming tasks',
-        (tester) async {
+    testWidgets('renders LinkedFromSection when there are incoming tasks', (
+      tester,
+    ) async {
       final task = buildTask(id: 'incoming-task', title: 'Incoming Task');
 
       await tester.pumpWidget(
@@ -139,10 +141,13 @@ void main() {
       expect(find.text('Incoming Task'), findsOneWidget);
     });
 
-    testWidgets('renders LinkedToSection when there are outgoing tasks',
-        (tester) async {
-      final outgoingTask =
-          buildTask(id: 'outgoing-task', title: 'Outgoing Task');
+    testWidgets('renders LinkedToSection when there are outgoing tasks', (
+      tester,
+    ) async {
+      final outgoingTask = buildTask(
+        id: 'outgoing-task',
+        title: 'Outgoing Task',
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -171,37 +176,38 @@ void main() {
     });
 
     testWidgets(
-        'renders both sections when there are both incoming and outgoing',
-        (tester) async {
-      final incomingTask = buildTask(id: 'incoming-task', title: 'Incoming');
-      final outgoingTask = buildTask(id: 'outgoing-task', title: 'Outgoing');
+      'renders both sections when there are both incoming and outgoing',
+      (tester) async {
+        final incomingTask = buildTask(id: 'incoming-task', title: 'Incoming');
+        final outgoingTask = buildTask(id: 'outgoing-task', title: 'Outgoing');
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
+                LinkedTasksController.new,
+              ),
+              outgoingLinkedTasksProvider('task-main').overrideWith(
+                (ref) => [outgoingTask],
+              ),
+              linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
+                () => _MockLinkedFromEntriesController([incomingTask]),
+              ),
+            ],
+            child: const WidgetTestBench(
+              child: LinkedTasksWidget(taskId: 'task-main'),
             ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [outgoingTask],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([incomingTask]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.byType(LinkedFromSection), findsOneWidget);
-      expect(find.byType(LinkedToSection), findsOneWidget);
-      expect(find.text('LINKED FROM'), findsOneWidget);
-      expect(find.text('LINKED TO'), findsOneWidget);
-    });
+        expect(find.byType(LinkedFromSection), findsOneWidget);
+        expect(find.byType(LinkedToSection), findsOneWidget);
+        expect(find.text('LINKED FROM'), findsOneWidget);
+        expect(find.text('LINKED TO'), findsOneWidget);
+      },
+    );
 
     testWidgets('filters incoming entries to only tasks', (tester) async {
       final task = buildTask(title: 'Real Task');

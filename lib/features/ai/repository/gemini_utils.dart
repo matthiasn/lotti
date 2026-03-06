@@ -23,26 +23,24 @@ class GeminiUtils {
     required String baseUrl,
     required String model,
     required String apiKey,
-  }) =>
-      _buildGeminiUri(
-        baseUrl: baseUrl,
-        model: model,
-        apiKey: apiKey,
-        endpoint: 'streamGenerateContent',
-      );
+  }) => _buildGeminiUri(
+    baseUrl: baseUrl,
+    model: model,
+    apiKey: apiKey,
+    endpoint: 'streamGenerateContent',
+  );
 
   /// Builds the non-streaming `:generateContent` URI (used for fallback).
   static Uri buildGenerateContentUri({
     required String baseUrl,
     required String model,
     required String apiKey,
-  }) =>
-      _buildGeminiUri(
-        baseUrl: baseUrl,
-        model: model,
-        apiKey: apiKey,
-        endpoint: 'generateContent',
-      );
+  }) => _buildGeminiUri(
+    baseUrl: baseUrl,
+    model: model,
+    apiKey: apiKey,
+    endpoint: 'generateContent',
+  );
 
   /// Internal helper to build Gemini API URIs with the specified endpoint.
   static Uri _buildGeminiUri({
@@ -61,8 +59,9 @@ class GeminiUtils {
     final trimmed = model.trim().endsWith('/')
         ? model.trim().substring(0, model.trim().length - 1)
         : model.trim();
-    final modelPath =
-        trimmed.startsWith('models/') ? trimmed : 'models/$trimmed';
+    final modelPath = trimmed.startsWith('models/')
+        ? trimmed
+        : 'models/$trimmed';
     final path = '/v1beta/$modelPath:$endpoint';
     return root.replace(
       path: path,

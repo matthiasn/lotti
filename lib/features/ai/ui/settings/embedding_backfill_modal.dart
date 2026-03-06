@@ -14,8 +14,9 @@ class EmbeddingBackfillModal {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
     final selectedIdsNotifier = ValueNotifier<Set<String>>({});
-    final allCategoryIds =
-        getIt<EntitiesCacheService>().sortedCategories.map((c) => c.id).toSet();
+    final allCategoryIds = getIt<EntitiesCacheService>().sortedCategories
+        .map((c) => c.id)
+        .toSet();
 
     try {
       await ConfirmationProgressModal.show(
@@ -62,14 +63,16 @@ class _MultiCategoryPicker extends StatelessWidget {
         ValueListenableBuilder<Set<String>>(
           valueListenable: selectedIdsNotifier,
           builder: (context, selectedIds, _) {
-            final allSelected = allCategoryIds.isNotEmpty &&
+            final allSelected =
+                allCategoryIds.isNotEmpty &&
                 allCategoryIds.every(selectedIds.contains);
             return Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {
-                  selectedIdsNotifier.value =
-                      allSelected ? {} : Set.of(allCategoryIds);
+                  selectedIdsNotifier.value = allSelected
+                      ? {}
+                      : Set.of(allCategoryIds);
                 },
                 child: Text(
                   allSelected
@@ -198,8 +201,9 @@ class _BackfillProgressContent extends ConsumerWidget {
                   height: 5,
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Theme.of(context).colorScheme.primary,
                     ),

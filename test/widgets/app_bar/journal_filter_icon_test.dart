@@ -44,8 +44,9 @@ void main() {
       selectedTaskStatuses: {'OPEN'},
     );
 
-    when(() => mockEntitiesCacheService.sortedCategories)
-        .thenReturn(mockCategories);
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn(mockCategories);
 
     getIt.allowReassignment = true;
     getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
@@ -60,8 +61,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(false),
-          journalPageControllerProvider(false)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            false,
+          ).overrideWith(() => fakeController),
         ],
         child: const Scaffold(
           body: JournalFilterIcon(),
@@ -125,32 +127,33 @@ void main() {
     });
 
     testWidgets(
-        'modal filter changes call controller (via UncontrolledProviderScope)',
-        (tester) async {
-      // This test verifies that filter changes in the modal use the same
-      // controller instance as the parent, proving UncontrolledProviderScope
-      // correctly shares state.
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      'modal filter changes call controller (via UncontrolledProviderScope)',
+      (tester) async {
+        // This test verifies that filter changes in the modal use the same
+        // controller instance as the parent, proving UncontrolledProviderScope
+        // correctly shares state.
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
 
-      // Open modal
-      await tester.tap(find.byIcon(MdiIcons.filterVariant));
-      await tester.pumpAndSettle();
+        // Open modal
+        await tester.tap(find.byIcon(MdiIcons.filterVariant));
+        await tester.pumpAndSettle();
 
-      // Verify modal is open with JournalFilter
-      expect(find.byType(JournalFilter), findsOneWidget);
+        // Verify modal is open with JournalFilter
+        expect(find.byType(JournalFilter), findsOneWidget);
 
-      // Tap on the starred filter icon in the modal
-      await tester.tap(find.byIcon(Icons.star_outline));
-      await tester.pump();
+        // Tap on the starred filter icon in the modal
+        await tester.tap(find.byIcon(Icons.star_outline));
+        await tester.pump();
 
-      // Verify the controller's setFilters was called
-      // This proves the modal is using the same controller instance
-      expect(fakeController.filtersCalls, isNotEmpty);
-      expect(
-        fakeController.filtersCalls.last,
-        contains(DisplayFilter.starredEntriesOnly),
-      );
-    });
+        // Verify the controller's setFilters was called
+        // This proves the modal is using the same controller instance
+        expect(fakeController.filtersCalls, isNotEmpty);
+        expect(
+          fakeController.filtersCalls.last,
+          contains(DisplayFilter.starredEntriesOnly),
+        );
+      },
+    );
   });
 }

@@ -45,23 +45,30 @@ void main() {
     inviteController = StreamController<RoomInviteEvent>.broadcast();
 
     when(() => gateway.invites).thenAnswer((_) => inviteController.stream);
-    when(() => loggingService.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-        )).thenReturn(null);
-    when(() => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        )).thenReturn(null);
-    when(() => settingsDb.saveSettingsItem(any<String>(), any<String>()))
-        .thenAnswer((_) async => 1);
-    when(() => settingsDb.removeSettingsItem(any<String>()))
-        .thenAnswer((_) async {});
-    when(() => settingsDb.itemByKey(any<String>()))
-        .thenAnswer((_) async => null);
+    when(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => loggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => settingsDb.removeSettingsItem(any<String>()),
+    ).thenAnswer((_) async {});
+    when(
+      () => settingsDb.itemByKey(any<String>()),
+    ).thenAnswer((_) async => null);
 
     manager = SyncRoomManager(
       gateway: gateway,
@@ -76,8 +83,9 @@ void main() {
   });
 
   test('initialize does nothing when no persisted room id', () async {
-    when(() => settingsDb.itemByKey(matrixRoomKey))
-        .thenAnswer((_) async => null);
+    when(
+      () => settingsDb.itemByKey(matrixRoomKey),
+    ).thenAnswer((_) async => null);
 
     await manager.initialize();
 
@@ -88,8 +96,9 @@ void main() {
 
   test('initialize hydrates persisted room snapshot', () async {
     final room = MockRoom();
-    when(() => settingsDb.itemByKey(matrixRoomKey))
-        .thenAnswer((_) async => '!room:server');
+    when(
+      () => settingsDb.itemByKey(matrixRoomKey),
+    ).thenAnswer((_) async => '!room:server');
     when(() => gateway.getRoomById('!room:server')).thenReturn(room);
 
     await manager.initialize();
@@ -102,10 +111,12 @@ void main() {
   test('hydrateRoomSnapshot syncs client and resolves room', () async {
     final room = MockRoom();
     final client = MockClient();
-    when(() => client.sync())
-        .thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
-    when(() => settingsDb.itemByKey(matrixRoomKey))
-        .thenAnswer((_) async => '!room:server');
+    when(
+      () => client.sync(),
+    ).thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+    when(
+      () => settingsDb.itemByKey(matrixRoomKey),
+    ).thenAnswer((_) async => '!room:server');
     when(() => gateway.getRoomById('!room:server')).thenReturn(room);
 
     await manager.hydrateRoomSnapshot(client: client);
@@ -127,8 +138,9 @@ void main() {
     final room = MockRoom();
     when(() => room.invite(any<String>())).thenAnswer((_) async {});
     when(() => gateway.getRoomById('!room:server')).thenReturn(room);
-    when(() => settingsDb.itemByKey(matrixRoomKey))
-        .thenAnswer((_) async => '!room:server');
+    when(
+      () => settingsDb.itemByKey(matrixRoomKey),
+    ).thenAnswer((_) async => '!room:server');
 
     await manager.initialize();
     await manager.inviteUser('@user:server');
@@ -178,8 +190,11 @@ void main() {
         isA<SyncRoomInvite>()
             .having((invite) => invite.roomId, 'roomId', '!existing:server')
             .having((invite) => invite.senderId, 'senderId', '@alice:server')
-            .having((invite) => invite.matchesExistingRoom,
-                'matchesExistingRoom', isTrue),
+            .having(
+              (invite) => invite.matchesExistingRoom,
+              'matchesExistingRoom',
+              isTrue,
+            ),
       ),
     );
 
@@ -190,10 +205,12 @@ void main() {
   test('leaveCurrentRoom clears state and notifies gateway', () async {
     final room = MockRoom();
     when(() => gateway.getRoomById('!room:server')).thenReturn(room);
-    when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!room:server'))
-        .thenAnswer((_) async => 1);
-    when(() => settingsDb.removeSettingsItem(matrixRoomKey))
-        .thenAnswer((_) async {});
+    when(
+      () => settingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => settingsDb.removeSettingsItem(matrixRoomKey),
+    ).thenAnswer((_) async {});
     when(() => gateway.leaveRoom('!room:server')).thenAnswer((_) async {});
 
     await manager.saveRoomId('!room:server');
@@ -208,8 +225,9 @@ void main() {
   });
 
   test('leaveCurrentRoom clears state when server says not in room', () async {
-    when(() => settingsDb.itemByKey(matrixRoomKey))
-        .thenAnswer((_) async => '!room:server');
+    when(
+      () => settingsDb.itemByKey(matrixRoomKey),
+    ).thenAnswer((_) async => '!room:server');
     // Throw a MatrixException with M_NOT_FOUND
     final mex = MockMatrixException();
     when(() => mex.errcode).thenReturn('M_NOT_FOUND');
@@ -224,8 +242,9 @@ void main() {
 
   test('acceptInvite delegates to joinRoom and logs', () async {
     when(() => gateway.joinRoom('!inv:server')).thenAnswer((_) async {});
-    when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'))
-        .thenAnswer((_) async => 1);
+    when(
+      () => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'),
+    ).thenAnswer((_) async => 1);
     final invite = SyncRoomInvite(
       roomId: '!inv:server',
       senderId: '@alice:server',
@@ -235,16 +254,19 @@ void main() {
     await manager.acceptInvite(invite);
 
     verify(() => gateway.joinRoom('!inv:server')).called(1);
-    verify(() => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'))
-        .called(1);
+    verify(
+      () => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'),
+    ).called(1);
   });
 
   test('clearPersistedRoom clears state and logs', () async {
-    when(() => settingsDb.removeSettingsItem(matrixRoomKey))
-        .thenAnswer((_) async {});
+    when(
+      () => settingsDb.removeSettingsItem(matrixRoomKey),
+    ).thenAnswer((_) async {});
     // prime a current room id
-    when(() => settingsDb.itemByKey(matrixRoomKey))
-        .thenAnswer((_) async => '!room:server');
+    when(
+      () => settingsDb.itemByKey(matrixRoomKey),
+    ).thenAnswer((_) async => '!room:server');
     await manager.initialize();
     expect(manager.currentRoomId, '!room:server');
 
@@ -278,12 +300,14 @@ void main() {
       await inviteController2.close();
     });
 
-    test('discoverExistingSyncRooms returns empty when no discovery service',
-        () async {
-      // manager without discovery service
-      final rooms = await manager.discoverExistingSyncRooms();
-      expect(rooms, isEmpty);
-    });
+    test(
+      'discoverExistingSyncRooms returns empty when no discovery service',
+      () async {
+        // manager without discovery service
+        final rooms = await manager.discoverExistingSyncRooms();
+        expect(rooms, isEmpty);
+      },
+    );
 
     test('discoverExistingSyncRooms delegates to discovery service', () async {
       final client = MockClient();
@@ -299,8 +323,9 @@ void main() {
       ];
 
       when(() => gateway.client).thenReturn(client);
-      when(() => discoveryService.discoverSyncRooms(client))
-          .thenAnswer((_) async => candidates);
+      when(
+        () => discoveryService.discoverSyncRooms(client),
+      ).thenAnswer((_) async => candidates);
 
       final rooms = await managerWithDiscovery.discoverExistingSyncRooms();
 
@@ -308,66 +333,82 @@ void main() {
       verify(() => discoveryService.discoverSyncRooms(client)).called(1);
     });
 
-    test('createRoom marks room with Lotti state when discovery service exists',
-        () async {
-      final room = MockRoom();
-      final client = MockClient();
-      when(() => gateway.client).thenReturn(client);
-      when(() => client.userID).thenReturn('@lotti_user:example.com');
-      when(() => gateway.createRoom(
+    test(
+      'createRoom marks room with Lotti state when discovery service exists',
+      () async {
+        final room = MockRoom();
+        final client = MockClient();
+        when(() => gateway.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@lotti_user:example.com');
+        when(
+          () => gateway.createRoom(
             name: any(named: 'name'),
             inviteUserIds: any(named: 'inviteUserIds'),
-          )).thenAnswer((_) async => '!newroom:server');
-      when(() => gateway.getRoomById('!newroom:server')).thenReturn(room);
-      when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'))
-          .thenAnswer((_) async => 1);
-      when(() => discoveryService.markRoomAsLottiSync(room))
-          .thenAnswer((_) async {});
+          ),
+        ).thenAnswer((_) async => '!newroom:server');
+        when(() => gateway.getRoomById('!newroom:server')).thenReturn(room);
+        when(
+          () => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => discoveryService.markRoomAsLottiSync(room),
+        ).thenAnswer((_) async {});
 
-      await managerWithDiscovery.createRoom();
+        await managerWithDiscovery.createRoom();
 
-      verify(() => discoveryService.markRoomAsLottiSync(room)).called(1);
-    });
+        verify(() => discoveryService.markRoomAsLottiSync(room)).called(1);
+      },
+    );
 
     test('createRoom includes the creator username in room name', () async {
       final client = MockClient();
       when(() => gateway.client).thenReturn(client);
       when(() => client.userID).thenReturn('@lotti_user:example.com');
-      when(() => gateway.createRoom(
-            name: any(named: 'name'),
-            inviteUserIds: any(named: 'inviteUserIds'),
-          )).thenAnswer((_) async => '!newroom:server');
-      when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'))
-          .thenAnswer((_) async => 1);
+      when(
+        () => gateway.createRoom(
+          name: any(named: 'name'),
+          inviteUserIds: any(named: 'inviteUserIds'),
+        ),
+      ).thenAnswer((_) async => '!newroom:server');
+      when(
+        () => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'),
+      ).thenAnswer((_) async => 1);
       when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
 
       await managerWithDiscovery.createRoom();
 
-      final name = verify(
-        () => gateway.createRoom(
-          name: captureAny(named: 'name'),
-          inviteUserIds: any(named: 'inviteUserIds'),
-        ),
-      ).captured.single as String;
+      final name =
+          verify(
+                () => gateway.createRoom(
+                  name: captureAny(named: 'name'),
+                  inviteUserIds: any(named: 'inviteUserIds'),
+                ),
+              ).captured.single
+              as String;
       expect(name, contains('Lotti Sync (lotti_user)'));
     });
 
-    test('createRoom does not mark room when gateway returns null room',
-        () async {
-      final client = MockClient();
-      when(() => gateway.client).thenReturn(client);
-      when(() => client.userID).thenReturn('@lotti_user:example.com');
-      when(() => gateway.createRoom(
+    test(
+      'createRoom does not mark room when gateway returns null room',
+      () async {
+        final client = MockClient();
+        when(() => gateway.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@lotti_user:example.com');
+        when(
+          () => gateway.createRoom(
             name: any(named: 'name'),
             inviteUserIds: any(named: 'inviteUserIds'),
-          )).thenAnswer((_) async => '!newroom:server');
-      when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
-      when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'))
-          .thenAnswer((_) async => 1);
+          ),
+        ).thenAnswer((_) async => '!newroom:server');
+        when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
+        when(
+          () => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'),
+        ).thenAnswer((_) async => 1);
 
-      await managerWithDiscovery.createRoom();
+        await managerWithDiscovery.createRoom();
 
-      verifyNever(() => discoveryService.markRoomAsLottiSync(any()));
-    });
+        verifyNever(() => discoveryService.markRoomAsLottiSync(any()));
+      },
+    );
   });
 }

@@ -45,17 +45,21 @@ void main() {
         // Arrange
         const transcribedText = 'This is the transcribed text from audio.';
 
-        when(() => mockHttpClient.post(
-              Uri.parse('$baseUrl/v1/audio/transcriptions'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'model': model,
-                'audio': audioBase64,
-              }),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': transcribedText}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            Uri.parse('$baseUrl/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -76,14 +80,16 @@ void main() {
         expect(response.created, isA<int>());
 
         // Verify HTTP call
-        verify(() => mockHttpClient.post(
-              Uri.parse('$baseUrl/v1/audio/transcriptions'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'model': model,
-                'audio': audioBase64,
-              }),
-            )).called(1);
+        verify(
+          () => mockHttpClient.post(
+            Uri.parse('$baseUrl/v1/audio/transcriptions'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'model': model,
+              'audio': audioBase64,
+            }),
+          ),
+        ).called(1);
       });
 
       test('handles empty audio data gracefully', () async {
@@ -91,14 +97,18 @@ void main() {
         const emptyAudioBase64 = '';
         const transcribedText = ''; // Empty transcription for empty audio
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': transcribedText}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -116,14 +126,18 @@ void main() {
 
       test('throws TranscriptionException on HTTP error', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Internal Server Error',
-              500,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Internal Server Error',
+            500,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -138,8 +152,11 @@ void main() {
           stream.first,
           throwsA(
             isA<TranscriptionException>()
-                .having((e) => e.message, 'message',
-                    contains('Failed to transcribe audio (HTTP 500)'))
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('Failed to transcribe audio (HTTP 500)'),
+                )
                 .having((e) => e.statusCode, 'statusCode', 500),
           ),
         );
@@ -147,14 +164,18 @@ void main() {
 
       test('throws TranscriptionException on invalid JSON response', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Not valid JSON',
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Not valid JSON',
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -169,43 +190,58 @@ void main() {
           stream.first,
           throwsA(
             isA<TranscriptionException>()
-                .having((e) => e.message, 'message',
-                    contains('Invalid response format'))
-                .having((e) => e.originalError, 'originalError',
-                    isA<FormatException>()),
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('Invalid response format'),
+                )
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<FormatException>(),
+                ),
           ),
         );
       });
 
-      test('throws TranscriptionException when text field is missing',
-          () async {
-        // Arrange
-        when(() => mockHttpClient.post(
+      test(
+        'throws TranscriptionException when text field is missing',
+        () async {
+          // Arrange
+          when(
+            () => mockHttpClient.post(
               any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
               jsonEncode({'result': 'some value'}), // Missing 'text' field
               200,
-            ));
+            ),
+          );
 
-        // Act
-        final stream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-          prompt: prompt,
-        );
+          // Act
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            prompt: prompt,
+          );
 
-        // Assert
-        await expectLater(
-          stream.first,
-          throwsA(
-            isA<TranscriptionException>().having(
-                (e) => e.message, 'message', contains('missing text field')),
-          ),
-        );
-      });
+          // Assert
+          await expectLater(
+            stream.first,
+            throwsA(
+              isA<TranscriptionException>().having(
+                (e) => e.message,
+                'message',
+                contains('missing text field'),
+              ),
+            ),
+          );
+        },
+      );
 
       test('throws ArgumentError for empty model', () {
         // Act & Assert
@@ -216,8 +252,13 @@ void main() {
             audioBase64: audioBase64,
             baseUrl: baseUrl,
           ),
-          throwsA(isA<ArgumentError>().having((e) => e.message, 'message',
-              contains('Model name cannot be empty'))),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('Model name cannot be empty'),
+            ),
+          ),
         );
       });
 
@@ -230,8 +271,13 @@ void main() {
             audioBase64: audioBase64,
             baseUrl: '',
           ),
-          throwsA(isA<ArgumentError>().having((e) => e.message, 'message',
-              contains('Base URL cannot be empty'))),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('Base URL cannot be empty'),
+            ),
+          ),
         );
       });
 
@@ -240,14 +286,18 @@ void main() {
         const transcribedText = 'Transcribed text';
         const maxCompletionTokens = 1000;
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': transcribedText}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -267,11 +317,13 @@ void main() {
 
       test('handles network errors gracefully', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenThrow(Exception('Network error'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(Exception('Network error'));
 
         // Act
         final stream = repository.transcribeAudio(
@@ -286,10 +338,16 @@ void main() {
           stream.first,
           throwsA(
             isA<TranscriptionException>()
-                .having((e) => e.message, 'message',
-                    contains('Failed to transcribe audio'))
                 .having(
-                    (e) => e.originalError, 'originalError', isA<Exception>()),
+                  (e) => e.message,
+                  'message',
+                  contains('Failed to transcribe audio'),
+                )
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<Exception>(),
+                ),
           ),
         );
       });
@@ -298,11 +356,13 @@ void main() {
         // Arrange
         const transcribedText = 'Test transcription';
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
           // Add a small delay to simulate network latency
           await Future<void>.delayed(const Duration(milliseconds: 1));
           return http.Response(
@@ -343,14 +403,18 @@ void main() {
         const transcribedText =
             'Special chars: @#\$%^&*()_+ "quotes" \'apostrophe\' \n newline';
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': transcribedText}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -370,14 +434,18 @@ void main() {
         // Arrange
         final longText = 'A' * 10000; // 10,000 character transcription
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': longText}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': longText}),
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -398,14 +466,18 @@ void main() {
         // Arrange
         const transcribedText = 'Test';
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': transcribedText}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': transcribedText}),
+            200,
+          ),
+        );
 
         // Act
         await repository
@@ -418,11 +490,13 @@ void main() {
             .first;
 
         // Assert
-        final captured = verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
+        final captured = verify(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured;
 
         final requestBody =
             jsonDecode(captured[0] as String) as Map<String, dynamic>;
@@ -432,14 +506,18 @@ void main() {
 
       test('handles HTTP 400 Bad Request', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Bad Request: Invalid audio format',
-              400,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Bad Request: Invalid audio format',
+            400,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -453,22 +531,29 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<TranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', 400),
+            isA<TranscriptionException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              400,
+            ),
           ),
         );
       });
 
       test('handles HTTP 401 Unauthorized', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Unauthorized',
-              401,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Unauthorized',
+            401,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -482,22 +567,29 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<TranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', 401),
+            isA<TranscriptionException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              401,
+            ),
           ),
         );
       });
 
       test('handles HTTP 429 Too Many Requests', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Too Many Requests',
-              429,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Too Many Requests',
+            429,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -511,8 +603,11 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<TranscriptionException>()
-                .having((e) => e.statusCode, 'statusCode', 429),
+            isA<TranscriptionException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              429,
+            ),
           ),
         );
       });
@@ -520,11 +615,13 @@ void main() {
       test('handles timeout with custom duration', () async {
         // Arrange - mock a timeout by throwing TimeoutException
         const customTimeout = Duration(minutes: 1);
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenThrow(TimeoutException('Test timeout', customTimeout));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(TimeoutException('Test timeout', customTimeout));
 
         // Act
         final stream = repository.transcribeAudio(
@@ -541,7 +638,10 @@ void main() {
           throwsA(
             isA<TranscriptionException>()
                 .having(
-                    (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
+                  (e) => e.statusCode,
+                  'statusCode',
+                  httpStatusRequestTimeout,
+                )
                 .having((e) => e.message, 'message', contains('1 minute')),
           ),
         );
@@ -551,11 +651,13 @@ void main() {
         fakeAsync((async) {
           // Arrange - mock a request that never completes to trigger onTimeout
           const customTimeout = Duration(milliseconds: 100);
-          when(() => mockHttpClient.post(
-                any(),
-                headers: any(named: 'headers'),
-                body: any(named: 'body'),
-              )).thenAnswer((_) => Completer<http.Response>().future);
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) => Completer<http.Response>().future);
 
           // Act
           Object? error;
@@ -568,12 +670,15 @@ void main() {
             timeout: customTimeout,
           );
 
-          stream.first.then((_) {
-            completed = true;
-          }, onError: (Object e) {
-            error = e;
-            completed = true;
-          });
+          stream.first.then(
+            (_) {
+              completed = true;
+            },
+            onError: (Object e) {
+              error = e;
+              completed = true;
+            },
+          );
 
           // Drive time to trigger timeout deterministically
           final plan = buildRetryBackoffPlan(
@@ -588,24 +693,32 @@ void main() {
           expect(completed, isTrue);
           final err = error;
           expect(
-              err,
-              isA<TranscriptionException>()
-                  .having((e) => e.statusCode, 'statusCode',
-                      httpStatusRequestTimeout)
-                  .having((e) => e.message, 'message', contains('0 seconds')));
+            err,
+            isA<TranscriptionException>()
+                .having(
+                  (e) => e.statusCode,
+                  'statusCode',
+                  httpStatusRequestTimeout,
+                )
+                .having((e) => e.message, 'message', contains('0 seconds')),
+          );
         });
       });
 
       test('uses default timeout when no custom timeout provided', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'text': 'Test transcription'}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'text': 'Test transcription'}),
+            200,
+          ),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -618,40 +731,50 @@ void main() {
 
         // Assert
         final response = await stream.first;
-        expect(response.choices?.first.delta?.content,
-            equals('Test transcription'));
+        expect(
+          response.choices?.first.delta?.content,
+          equals('Test transcription'),
+        );
       });
 
-      test('handles timeout with default duration and status code 408',
-          () async {
-        // Arrange - mock a timeout by throwing TimeoutException
-        const defaultTimeout =
-            Duration(seconds: whisperTranscriptionTimeoutSeconds);
-        when(() => mockHttpClient.post(
+      test(
+        'handles timeout with default duration and status code 408',
+        () async {
+          // Arrange - mock a timeout by throwing TimeoutException
+          const defaultTimeout = Duration(
+            seconds: whisperTranscriptionTimeoutSeconds,
+          );
+          when(
+            () => mockHttpClient.post(
               any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'),
-            )).thenThrow(TimeoutException('Test timeout', defaultTimeout));
+            ),
+          ).thenThrow(TimeoutException('Test timeout', defaultTimeout));
 
-        // Act
-        final stream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-          prompt: prompt,
-        );
+          // Act
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            prompt: prompt,
+          );
 
-        // Assert
-        await expectLater(
-          stream.first,
-          throwsA(
-            isA<TranscriptionException>()
-                .having(
-                    (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
-                .having((e) => e.message, 'message', contains('10 minutes')),
-          ),
-        );
-      });
+          // Assert
+          await expectLater(
+            stream.first,
+            throwsA(
+              isA<TranscriptionException>()
+                  .having(
+                    (e) => e.statusCode,
+                    'statusCode',
+                    httpStatusRequestTimeout,
+                  )
+                  .having((e) => e.message, 'message', contains('10 minutes')),
+            ),
+          );
+        },
+      );
     });
 
     group('TranscriptionException', () {

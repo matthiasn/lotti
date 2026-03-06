@@ -82,19 +82,25 @@ void _registerLazyServiceSafely<T extends Object>(
     // GetIt's global allowReassignment flag, to keep semantics strict
     // and predictable across optimized test runners.
     if (getIt.isRegistered<T>()) {
-      _safeLog('Failed to register lazy $serviceName: already registered',
-          isError: true);
+      _safeLog(
+        'Failed to register lazy $serviceName: already registered',
+        isError: true,
+      );
       return;
     }
     getIt.registerLazySingleton<T>(() {
       try {
         final instance = factory();
-        _safeLog('Successfully created lazy instance of $serviceName',
-            isError: false);
+        _safeLog(
+          'Successfully created lazy instance of $serviceName',
+          isError: false,
+        );
         return instance;
       } catch (e) {
-        _safeLog('Failed to create lazy instance of $serviceName: $e',
-            isError: true);
+        _safeLog(
+          'Failed to create lazy instance of $serviceName: $e',
+          isError: true,
+        );
         rethrow; // Let GetIt handle the failure appropriately
       }
     });
@@ -148,8 +154,7 @@ void _safeLog(String message, {required bool isError}) {
 void registerLazyServiceForTesting<T extends Object>(
   T Function() factory,
   String serviceName,
-) =>
-    _registerLazyServiceSafely(factory, serviceName);
+) => _registerLazyServiceSafely(factory, serviceName);
 
 @visibleForTesting
 void safeLogForTesting(String message, {required bool isError}) =>

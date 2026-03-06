@@ -81,8 +81,9 @@ class LottiAnimatedCheckbox extends StatelessWidget {
                 Icon(
                   disabledIcon,
                   size: 20,
-                  color:
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
                 ),
               ],
               const SizedBox(width: 10),
@@ -97,8 +98,9 @@ class LottiAnimatedCheckbox extends StatelessWidget {
                       style: TextStyle(
                         color: enabled
                             ? theme.colorScheme.onSurface
-                            : theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.6),
+                            : theme.colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.6,
+                              ),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         height: 1.25,
@@ -109,8 +111,9 @@ class LottiAnimatedCheckbox extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.45),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.45,
+                          ),
                           fontSize: 11,
                           height: 1.2,
                         ),

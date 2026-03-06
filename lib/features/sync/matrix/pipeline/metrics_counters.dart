@@ -167,41 +167,47 @@ class MetricsCounters {
     required int retryStateSize,
     required bool circuitIsOpen,
   }) {
-    final base = MetricsUtils.buildSnapshot(
-      processed: processed,
-      skipped: skipped,
-      failures: failures,
-      flushes: flushes,
-      catchupBatches: catchupBatches,
-      skippedByRetryLimit: skippedByRetryLimit,
-      retriesScheduled: retriesScheduled,
-      circuitOpens: circuitOpens,
-      processedByType: processedByType,
-      droppedByType: droppedByType,
-      dbApplied: dbApplied,
-      dbIgnoredByVectorClock: dbIgnoredByVectorClock,
-      conflictsCreated: conflictsCreated,
-      lastIgnored: lastIgnored,
-      retryStateSize: retryStateSize,
-      circuitOpen: circuitIsOpen,
-    )
-      ..putIfAbsent('dbMissingBase', () => dbMissingBase)
-      ..putIfAbsent('dbEntryLinkNoop', () => dbEntryLinkNoop)
-      ..putIfAbsent('staleAttachmentPurges', () => staleAttachmentPurges)
-      ..putIfAbsent('selfEventsSuppressed', () => selfEventsSuppressed)
-      // Signal ingestion metrics
-      ..putIfAbsent('signalClientStream', () => signalClientStream)
-      ..putIfAbsent('signalTimelineCallbacks', () => signalTimelineCallbacks)
-      ..putIfAbsent('signalConnectivity', () => signalConnectivity)
-      ..putIfAbsent('signalLatencyLastMs', () => signalLatencyLastMs)
-      ..putIfAbsent('signalLatencyMinMs', () => signalLatencyMinMs)
-      ..putIfAbsent('signalLatencyMaxMs', () => signalLatencyMaxMs)
-      // Coalescing/trailing
-      ..putIfAbsent('trailingCatchups', () => trailingCatchups)
-      ..putIfAbsent('liveScanDeferredCount', () => liveScanDeferredCount)
-      ..putIfAbsent('liveScanCoalesceCount', () => liveScanCoalesceCount)
-      ..putIfAbsent(
-          'liveScanTrailingScheduled', () => liveScanTrailingScheduled);
+    final base =
+        MetricsUtils.buildSnapshot(
+            processed: processed,
+            skipped: skipped,
+            failures: failures,
+            flushes: flushes,
+            catchupBatches: catchupBatches,
+            skippedByRetryLimit: skippedByRetryLimit,
+            retriesScheduled: retriesScheduled,
+            circuitOpens: circuitOpens,
+            processedByType: processedByType,
+            droppedByType: droppedByType,
+            dbApplied: dbApplied,
+            dbIgnoredByVectorClock: dbIgnoredByVectorClock,
+            conflictsCreated: conflictsCreated,
+            lastIgnored: lastIgnored,
+            retryStateSize: retryStateSize,
+            circuitOpen: circuitIsOpen,
+          )
+          ..putIfAbsent('dbMissingBase', () => dbMissingBase)
+          ..putIfAbsent('dbEntryLinkNoop', () => dbEntryLinkNoop)
+          ..putIfAbsent('staleAttachmentPurges', () => staleAttachmentPurges)
+          ..putIfAbsent('selfEventsSuppressed', () => selfEventsSuppressed)
+          // Signal ingestion metrics
+          ..putIfAbsent('signalClientStream', () => signalClientStream)
+          ..putIfAbsent(
+            'signalTimelineCallbacks',
+            () => signalTimelineCallbacks,
+          )
+          ..putIfAbsent('signalConnectivity', () => signalConnectivity)
+          ..putIfAbsent('signalLatencyLastMs', () => signalLatencyLastMs)
+          ..putIfAbsent('signalLatencyMinMs', () => signalLatencyMinMs)
+          ..putIfAbsent('signalLatencyMaxMs', () => signalLatencyMaxMs)
+          // Coalescing/trailing
+          ..putIfAbsent('trailingCatchups', () => trailingCatchups)
+          ..putIfAbsent('liveScanDeferredCount', () => liveScanDeferredCount)
+          ..putIfAbsent('liveScanCoalesceCount', () => liveScanCoalesceCount)
+          ..putIfAbsent(
+            'liveScanTrailingScheduled',
+            () => liveScanTrailingScheduled,
+          );
     return base;
   }
 }

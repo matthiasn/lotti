@@ -30,31 +30,31 @@ abstract class HabitSettingsState with _$HabitSettingsState {
   }) = _HabitSettingsState;
 
   factory HabitSettingsState.initial(String habitId) => HabitSettingsState(
-        habitDefinition: _createEmptyHabitDefinition(habitId),
-        dirty: false,
-        formKey: GlobalKey<FormBuilderState>(),
-        storyTags: const [],
-        autoCompleteRule: null,
-      );
+    habitDefinition: _createEmptyHabitDefinition(habitId),
+    dirty: false,
+    formKey: GlobalKey<FormBuilderState>(),
+    storyTags: const [],
+    autoCompleteRule: null,
+  );
 }
 
 /// Stream provider for watching a habit by ID.
 /// Uses the repository for data access.
-final habitByIdProvider =
-    StreamProvider.autoDispose.family<HabitDefinition?, String>(
-  (ref, habitId) {
-    final repository = ref.watch(habitsRepositoryProvider);
-    return repository.watchHabitById(habitId);
-  },
-);
+final habitByIdProvider = StreamProvider.autoDispose
+    .family<HabitDefinition?, String>(
+      (ref, habitId) {
+        final repository = ref.watch(habitsRepositoryProvider);
+        return repository.watchHabitById(habitId);
+      },
+    );
 
 /// Stream provider for dashboards used in habit settings.
 /// Uses the repository for data access.
 final habitDashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
-  final repository = ref.watch(habitsRepositoryProvider);
-  return repository.watchDashboards();
-});
+      final repository = ref.watch(habitsRepositoryProvider);
+      return repository.watchDashboards();
+    });
 
 /// Creates a new empty HabitDefinition for the create flow.
 HabitDefinition _createEmptyHabitDefinition(String habitId) {
@@ -75,12 +75,13 @@ HabitDefinition _createEmptyHabitDefinition(String habitId) {
 /// Provider for the habit settings controller, using habitId as family key.
 final habitSettingsControllerProvider = NotifierProvider.autoDispose
     .family<HabitSettingsController, HabitSettingsState, String>(
-  HabitSettingsController.new,
-);
+      HabitSettingsController.new,
+    );
 
 /// Stream provider for story tags.
-final storyTagsStreamProvider =
-    StreamProvider.autoDispose<List<TagEntity>>((ref) {
+final storyTagsStreamProvider = StreamProvider.autoDispose<List<TagEntity>>((
+  ref,
+) {
   return getIt<TagsService>().watchTags();
 });
 
@@ -196,8 +197,9 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
 
     state = state.copyWith(
       dirty: true,
-      habitDefinition:
-          state.habitDefinition.copyWith(habitSchedule: newSchedule),
+      habitDefinition: state.habitDefinition.copyWith(
+        habitSchedule: newSchedule,
+      ),
     );
   }
 
@@ -219,8 +221,9 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
 
     state = state.copyWith(
       dirty: true,
-      habitDefinition:
-          state.habitDefinition.copyWith(habitSchedule: newSchedule),
+      habitDefinition: state.habitDefinition.copyWith(
+        habitSchedule: newSchedule,
+      ),
     );
   }
 
@@ -240,8 +243,9 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
 
     state = state.copyWith(
       dirty: true,
-      habitDefinition:
-          state.habitDefinition.copyWith(habitSchedule: newSchedule),
+      habitDefinition: state.habitDefinition.copyWith(
+        habitSchedule: newSchedule,
+      ),
     );
   }
 

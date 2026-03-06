@@ -27,7 +27,7 @@ void main() {
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)? sessionsOverride,
     FutureOr<WakeRunTimeSeries> Function(Ref, String)? timeSeriesOverride,
     FutureOr<TaskResolutionTimeSeries> Function(Ref, String)?
-        resolutionOverride,
+    resolutionOverride,
   }) {
     return makeTestableWidgetWithScaffold(
       const EvolutionHistoryDashboard(templateId: kTestTemplateId),
@@ -35,11 +35,11 @@ void main() {
         evolutionSessionStatsProvider.overrideWith(
           statsOverride ??
               (ref, id) async => const EvolutionSessionStats(
-                    totalSessions: 0,
-                    completedCount: 0,
-                    abandonedCount: 0,
-                    approvalRate: 0,
-                  ),
+                totalSessions: 0,
+                completedCount: 0,
+                abandonedCount: 0,
+                approvalRate: 0,
+              ),
         ),
         evolutionSessionsProvider.overrideWith(
           sessionsOverride ?? (ref, id) async => [],
@@ -47,9 +47,9 @@ void main() {
         templateWakeRunTimeSeriesProvider.overrideWith(
           timeSeriesOverride ??
               (ref, id) async => const WakeRunTimeSeries(
-                    dailyBuckets: [],
-                    versionBuckets: [],
-                  ),
+                dailyBuckets: [],
+                versionBuckets: [],
+              ),
         ),
         templateTaskResolutionTimeSeriesProvider.overrideWith(
           resolutionOverride ??
@@ -153,8 +153,9 @@ void main() {
       );
     });
 
-    testWidgets('stats row shows formatted approval rate percentage',
-        (tester) async {
+    testWidgets('stats row shows formatted approval rate percentage', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
@@ -171,8 +172,9 @@ void main() {
       expect(find.text('50%'), findsOneWidget);
     });
 
-    testWidgets('stats row rounds approval rate to nearest integer percent',
-        (tester) async {
+    testWidgets('stats row rounds approval rate to nearest integer percent', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
@@ -189,8 +191,9 @@ void main() {
       expect(find.text('67%'), findsOneWidget);
     });
 
-    testWidgets('shows empty SizedBox (no crash) while stats loading',
-        (tester) async {
+    testWidgets('shows empty SizedBox (no crash) while stats loading', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           statsOverride: (ref, id) => Completer<EvolutionSessionStats>().future,
@@ -208,8 +211,9 @@ void main() {
       expect(find.text('0'), findsNothing);
     });
 
-    testWidgets('shows session timeline with sessions from provider',
-        (tester) async {
+    testWidgets('shows session timeline with sessions from provider', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',
@@ -249,8 +253,7 @@ void main() {
       );
     });
 
-    testWidgets(
-        'stats row hides on error (renders SizedBox.shrink), '
+    testWidgets('stats row hides on error (renders SizedBox.shrink), '
         'rest of dashboard still visible', (tester) async {
       await tester.pumpWidget(
         buildSubject(

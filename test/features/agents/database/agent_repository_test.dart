@@ -32,19 +32,20 @@ void main() {
     String agentId = testAgentId,
   }) {
     return AgentDomainEntity.agent(
-      id: id,
-      agentId: agentId,
-      kind: 'task_agent',
-      displayName: 'Test Agent',
-      lifecycle: AgentLifecycle.active,
-      mode: AgentInteractionMode.autonomous,
-      allowedCategoryIds: const {'cat-1', 'cat-2'},
-      currentStateId: 'state-001',
-      config: const AgentConfig(),
-      createdAt: testDate,
-      updatedAt: testDate,
-      vectorClock: const VectorClock({'node-1': 1}),
-    ) as AgentIdentityEntity;
+          id: id,
+          agentId: agentId,
+          kind: 'task_agent',
+          displayName: 'Test Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {'cat-1', 'cat-2'},
+          currentStateId: 'state-001',
+          config: const AgentConfig(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: const VectorClock({'node-1': 1}),
+        )
+        as AgentIdentityEntity;
   }
 
   AgentStateEntity makeAgentState({
@@ -53,13 +54,14 @@ void main() {
     int revision = 1,
   }) {
     return AgentDomainEntity.agentState(
-      id: id,
-      agentId: agentId,
-      revision: revision,
-      slots: const AgentSlots(activeTaskId: 'task-1'),
-      updatedAt: testDate,
-      vectorClock: const VectorClock({'node-1': 2}),
-    ) as AgentStateEntity;
+          id: id,
+          agentId: agentId,
+          revision: revision,
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+          updatedAt: testDate,
+          vectorClock: const VectorClock({'node-1': 2}),
+        )
+        as AgentStateEntity;
   }
 
   AgentMessageEntity makeMessage({
@@ -69,14 +71,15 @@ void main() {
     AgentMessageKind kind = AgentMessageKind.thought,
   }) {
     return AgentDomainEntity.agentMessage(
-      id: id,
-      agentId: agentId,
-      threadId: threadId,
-      kind: kind,
-      createdAt: testDate,
-      vectorClock: const VectorClock({'node-1': 3}),
-      metadata: const AgentMessageMetadata(runKey: 'run-001'),
-    ) as AgentMessageEntity;
+          id: id,
+          agentId: agentId,
+          threadId: threadId,
+          kind: kind,
+          createdAt: testDate,
+          vectorClock: const VectorClock({'node-1': 3}),
+          metadata: const AgentMessageMetadata(runKey: 'run-001'),
+        )
+        as AgentMessageEntity;
   }
 
   AgentReportEntity makeReport({
@@ -85,14 +88,15 @@ void main() {
     String scope = 'daily',
   }) {
     return AgentDomainEntity.agentReport(
-      id: id,
-      agentId: agentId,
-      scope: scope,
-      createdAt: testDate,
-      vectorClock: const VectorClock({'node-1': 4}),
-      content: 'All good',
-      confidence: 0.95,
-    ) as AgentReportEntity;
+          id: id,
+          agentId: agentId,
+          scope: scope,
+          createdAt: testDate,
+          vectorClock: const VectorClock({'node-1': 4}),
+          content: 'All good',
+          confidence: 0.95,
+        )
+        as AgentReportEntity;
   }
 
   AgentReportHeadEntity makeReportHead({
@@ -102,13 +106,14 @@ void main() {
     String reportId = 'entity-report-001',
   }) {
     return AgentDomainEntity.agentReportHead(
-      id: id,
-      agentId: agentId,
-      scope: scope,
-      reportId: reportId,
-      updatedAt: testDate,
-      vectorClock: const VectorClock({'node-1': 5}),
-    ) as AgentReportHeadEntity;
+          id: id,
+          agentId: agentId,
+          scope: scope,
+          reportId: reportId,
+          updatedAt: testDate,
+          vectorClock: const VectorClock({'node-1': 5}),
+        )
+        as AgentReportHeadEntity;
   }
 
   model.AgentLink makeBasicLink({
@@ -211,25 +216,27 @@ void main() {
         expect(msg.metadata.runKey, 'run-001');
       });
 
-      test('agentMessagePayload variant persists and restores correctly',
-          () async {
-        final entity = AgentDomainEntity.agentMessagePayload(
-          id: 'payload-001',
-          agentId: testAgentId,
-          createdAt: testDate,
-          vectorClock: const VectorClock({'node-1': 1}),
-          content: const {'text': 'hello world', 'tokens': 5},
-        );
-        await repo.upsertEntity(entity);
+      test(
+        'agentMessagePayload variant persists and restores correctly',
+        () async {
+          final entity = AgentDomainEntity.agentMessagePayload(
+            id: 'payload-001',
+            agentId: testAgentId,
+            createdAt: testDate,
+            vectorClock: const VectorClock({'node-1': 1}),
+            content: const {'text': 'hello world', 'tokens': 5},
+          );
+          await repo.upsertEntity(entity);
 
-        final result = await repo.getEntity('payload-001');
+          final result = await repo.getEntity('payload-001');
 
-        expect(result, isNotNull);
-        final payload = result! as AgentMessagePayloadEntity;
-        expect(payload.id, 'payload-001');
-        expect(payload.content['text'], 'hello world');
-        expect(payload.contentType, 'application/json');
-      });
+          expect(result, isNotNull);
+          final payload = result! as AgentMessagePayloadEntity;
+          expect(payload.id, 'payload-001');
+          expect(payload.content['text'], 'hello world');
+          expect(payload.contentType, 'application/json');
+        },
+      );
 
       test('agentReport variant persists and restores correctly', () async {
         final entity = makeReport();
@@ -303,9 +310,13 @@ void main() {
 
         expect(results.length, 3);
         expect(
-            results.map((e) => e.id),
-            containsAll(
-                ['entity-agent-001', 'entity-state-001', 'entity-msg-001']));
+          results.map((e) => e.id),
+          containsAll([
+            'entity-agent-001',
+            'entity-state-001',
+            'entity-msg-001',
+          ]),
+        );
       });
 
       test('does not return entities for a different agent', () async {
@@ -323,8 +334,10 @@ void main() {
         await repo.upsertEntity(makeAgentState());
         await repo.upsertEntity(makeMessage());
 
-        final results =
-            await repo.getEntitiesByAgentId(testAgentId, type: 'agentState');
+        final results = await repo.getEntitiesByAgentId(
+          testAgentId,
+          type: 'agentState',
+        );
 
         expect(results.length, 1);
         expect(results.first.id, 'entity-state-001');
@@ -333,8 +346,10 @@ void main() {
       test('with type filter returns empty list when no match', () async {
         await repo.upsertEntity(makeAgent());
 
-        final results =
-            await repo.getEntitiesByAgentId(testAgentId, type: 'agentMessage');
+        final results = await repo.getEntitiesByAgentId(
+          testAgentId,
+          type: 'agentMessage',
+        );
 
         expect(results, isEmpty);
       });
@@ -402,35 +417,49 @@ void main() {
 
     group('getMessagesByKind', () {
       test('filters messages by kind correctly', () async {
-        await repo.upsertEntity(makeMessage(
-          id: 'msg-thought-1',
-        ));
-        await repo.upsertEntity(makeMessage(
-          id: 'msg-user-1',
-          kind: AgentMessageKind.user,
-        ));
-        await repo.upsertEntity(makeMessage(
-          id: 'msg-thought-2',
-        ));
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'msg-thought-1',
+          ),
+        );
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'msg-user-1',
+            kind: AgentMessageKind.user,
+          ),
+        );
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'msg-thought-2',
+          ),
+        );
 
-        final thoughts =
-            await repo.getMessagesByKind(testAgentId, AgentMessageKind.thought);
-        final userMsgs =
-            await repo.getMessagesByKind(testAgentId, AgentMessageKind.user);
+        final thoughts = await repo.getMessagesByKind(
+          testAgentId,
+          AgentMessageKind.thought,
+        );
+        final userMsgs = await repo.getMessagesByKind(
+          testAgentId,
+          AgentMessageKind.user,
+        );
 
         expect(thoughts.length, 2);
-        expect(thoughts.map((m) => m.id),
-            containsAll(['msg-thought-1', 'msg-thought-2']));
+        expect(
+          thoughts.map((m) => m.id),
+          containsAll(['msg-thought-1', 'msg-thought-2']),
+        );
         expect(userMsgs.length, 1);
         expect(userMsgs.first.id, 'msg-user-1');
       });
 
       test('respects the limit parameter', () async {
         for (var i = 0; i < 5; i++) {
-          await repo.upsertEntity(makeMessage(
-            id: 'msg-obs-$i',
-            kind: AgentMessageKind.observation,
-          ));
+          await repo.upsertEntity(
+            makeMessage(
+              id: 'msg-obs-$i',
+              kind: AgentMessageKind.observation,
+            ),
+          );
         }
 
         final results = await repo.getMessagesByKind(
@@ -445,31 +474,43 @@ void main() {
       test('returns empty list when kind has no messages', () async {
         await repo.upsertEntity(makeMessage());
 
-        final results =
-            await repo.getMessagesByKind(testAgentId, AgentMessageKind.action);
+        final results = await repo.getMessagesByKind(
+          testAgentId,
+          AgentMessageKind.action,
+        );
         expect(results, isEmpty);
       });
     });
 
     group('getMessagesForThread', () {
       test('filters messages by threadId', () async {
-        await repo.upsertEntity(makeMessage(
-          id: 'msg-t1-1',
-          threadId: 'thread-A',
-        ));
-        await repo.upsertEntity(makeMessage(
-          id: 'msg-t2-1',
-          threadId: 'thread-B',
-        ));
-        await repo.upsertEntity(makeMessage(
-          id: 'msg-t1-2',
-          threadId: 'thread-A',
-        ));
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'msg-t1-1',
+            threadId: 'thread-A',
+          ),
+        );
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'msg-t2-1',
+            threadId: 'thread-B',
+          ),
+        );
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'msg-t1-2',
+            threadId: 'thread-A',
+          ),
+        );
 
-        final threadA =
-            await repo.getMessagesForThread(testAgentId, 'thread-A');
-        final threadB =
-            await repo.getMessagesForThread(testAgentId, 'thread-B');
+        final threadA = await repo.getMessagesForThread(
+          testAgentId,
+          'thread-A',
+        );
+        final threadB = await repo.getMessagesForThread(
+          testAgentId,
+          'thread-B',
+        );
 
         expect(threadA.length, 2);
         expect(threadA.map((m) => m.id), containsAll(['msg-t1-1', 'msg-t1-2']));
@@ -479,10 +520,12 @@ void main() {
 
       test('respects the limit parameter', () async {
         for (var i = 0; i < 4; i++) {
-          await repo.upsertEntity(makeMessage(
-            id: 'msg-thread-$i',
-            threadId: 'thread-X',
-          ));
+          await repo.upsertEntity(
+            makeMessage(
+              id: 'msg-thread-$i',
+              threadId: 'thread-X',
+            ),
+          );
         }
 
         final results = await repo.getMessagesForThread(
@@ -497,8 +540,10 @@ void main() {
       test('returns empty list when thread has no messages', () async {
         await repo.upsertEntity(makeMessage(threadId: 'thread-A'));
 
-        final results =
-            await repo.getMessagesForThread(testAgentId, 'thread-Z');
+        final results = await repo.getMessagesForThread(
+          testAgentId,
+          'thread-Z',
+        );
         expect(results, isEmpty);
       });
     });
@@ -583,20 +628,26 @@ void main() {
       });
 
       test('returns correct head when multiple scopes exist', () async {
-        await repo.upsertEntity(makeReportHead(
-          id: 'head-daily',
-          reportId: 'report-daily',
-        ));
-        await repo.upsertEntity(makeReportHead(
-          id: 'head-weekly',
-          scope: 'weekly',
-          reportId: 'report-weekly',
-        ));
-        await repo.upsertEntity(makeReportHead(
-          id: 'head-monthly',
-          scope: 'monthly',
-          reportId: 'report-monthly',
-        ));
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'head-daily',
+            reportId: 'report-daily',
+          ),
+        );
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'head-weekly',
+            scope: 'weekly',
+            reportId: 'report-weekly',
+          ),
+        );
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'head-monthly',
+            scope: 'monthly',
+            reportId: 'report-monthly',
+          ),
+        );
 
         final daily = await repo.getReportHead(testAgentId, 'daily');
         final weekly = await repo.getReportHead(testAgentId, 'weekly');
@@ -611,10 +662,12 @@ void main() {
       });
 
       test('does not return head from a different agent', () async {
-        await repo.upsertEntity(makeReportHead(
-          id: 'head-agent-1',
-          reportId: 'report-1',
-        ));
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'head-agent-1',
+            reportId: 'report-1',
+          ),
+        );
         await repo.upsertEntity(
           AgentDomainEntity.agentReportHead(
             id: 'head-agent-2',
@@ -729,8 +782,10 @@ void main() {
         );
 
         final basics = await repo.getLinksFrom(testAgentId, type: 'basic');
-        final states =
-            await repo.getLinksFrom(testAgentId, type: 'agent_state');
+        final states = await repo.getLinksFrom(
+          testAgentId,
+          type: 'agent_state',
+        );
 
         expect(basics.length, 1);
         expect(basics.first.id, 'link-basic-1');
@@ -741,13 +796,17 @@ void main() {
 
     group('getLinksTo', () {
       test('returns links pointing to a given toId', () async {
-        await repo.upsertLink(makeBasicLink(
-          id: 'link-to-state',
-        ));
-        await repo.upsertLink(makeBasicLink(
-          id: 'link-to-other',
-          toId: 'entity-other-001',
-        ));
+        await repo.upsertLink(
+          makeBasicLink(
+            id: 'link-to-state',
+          ),
+        );
+        await repo.upsertLink(
+          makeBasicLink(
+            id: 'link-to-other',
+            toId: 'entity-other-001',
+          ),
+        );
 
         final results = await repo.getLinksTo('entity-state-001');
 
@@ -756,9 +815,11 @@ void main() {
       });
 
       test('with type filter returns only matching type', () async {
-        await repo.upsertLink(makeBasicLink(
-          id: 'link-basic-to',
-        ));
+        await repo.upsertLink(
+          makeBasicLink(
+            id: 'link-basic-to',
+          ),
+        );
         await repo.upsertLink(
           model.AgentLink.messagePrev(
             id: 'link-prev-to',
@@ -771,8 +832,10 @@ void main() {
         );
 
         final basics = await repo.getLinksTo('entity-state-001', type: 'basic');
-        final prevs =
-            await repo.getLinksTo('entity-state-001', type: 'message_prev');
+        final prevs = await repo.getLinksTo(
+          'entity-state-001',
+          type: 'message_prev',
+        );
 
         expect(basics.length, 1);
         expect(basics.first.id, 'link-basic-to');
@@ -806,54 +869,59 @@ void main() {
       });
     });
 
-    test('multiple link types for the same agent are stored independently',
-        () async {
-      await repo.upsertLink(makeBasicLink(
-        id: 'link-basic',
-        toId: 'target-1',
-      ));
-      await repo.upsertLink(
-        model.AgentLink.agentState(
-          id: 'link-agent-state',
-          fromId: testAgentId,
-          toId: 'target-2',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertLink(
-        model.AgentLink.toolEffect(
-          id: 'link-tool-effect',
-          fromId: testAgentId,
-          toId: 'target-3',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertLink(
-        model.AgentLink.agentTask(
-          id: 'link-agent-task',
-          fromId: testAgentId,
-          toId: 'target-4',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
+    test(
+      'multiple link types for the same agent are stored independently',
+      () async {
+        await repo.upsertLink(
+          makeBasicLink(
+            id: 'link-basic',
+            toId: 'target-1',
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.agentState(
+            id: 'link-agent-state',
+            fromId: testAgentId,
+            toId: 'target-2',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.toolEffect(
+            id: 'link-tool-effect',
+            fromId: testAgentId,
+            toId: 'target-3',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'link-agent-task',
+            fromId: testAgentId,
+            toId: 'target-4',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
 
-      final allLinks = await repo.getLinksFrom(testAgentId);
-      expect(allLinks.length, 4);
-      expect(
+        final allLinks = await repo.getLinksFrom(testAgentId);
+        expect(allLinks.length, 4);
+        expect(
           allLinks.map((l) => l.id),
           containsAll([
             'link-basic',
             'link-agent-state',
             'link-tool-effect',
             'link-agent-task',
-          ]));
-    });
+          ]),
+        );
+      },
+    );
 
     test('upsertLink overwrites existing link with same id', () async {
       const linkId = 'link-stable-id';
@@ -884,17 +952,19 @@ void main() {
       expect(results.first.updatedAt, DateTime(2026, 2, 21));
     });
 
-    test('upsertLink with new id but duplicate (from, to, type) throws',
-        () async {
-      await repo.upsertLink(makeBasicLink(id: 'link-original'));
+    test(
+      'upsertLink with new id but duplicate (from, to, type) throws',
+      () async {
+        await repo.upsertLink(makeBasicLink(id: 'link-original'));
 
-      // Same (fromId, toId, type) but a different id — violates the UNIQUE
-      // constraint on (from_id, to_id, type).
-      await expectLater(
-        repo.upsertLink(makeBasicLink(id: 'link-duplicate-triplet')),
-        throwsA(isException),
-      );
-    });
+        // Same (fromId, toId, type) but a different id — violates the UNIQUE
+        // constraint on (from_id, to_id, type).
+        await expectLater(
+          repo.upsertLink(makeBasicLink(id: 'link-duplicate-triplet')),
+          throwsA(isException),
+        );
+      },
+    );
 
     group('insertLinkExclusive', () {
       test('inserts a link successfully when no conflict', () async {
@@ -916,8 +986,7 @@ void main() {
         expect(results.first.fromId, 'agent-imp-1');
       });
 
-      test(
-          'throws DuplicateInsertException when partial unique index '
+      test('throws DuplicateInsertException when partial unique index '
           'is violated', () async {
         // First improverTarget link to tpl-target-2 succeeds.
         await repo.insertLinkExclusive(
@@ -1140,19 +1209,21 @@ void main() {
       expect(pending.first.operationId, 'op-pending');
     });
 
-    test('updateSagaStatus transitions status so pending list shrinks',
-        () async {
-      await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-A'));
-      await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-B'));
+    test(
+      'updateSagaStatus transitions status so pending list shrinks',
+      () async {
+        await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-A'));
+        await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-B'));
 
-      expect((await repo.getPendingSagaOps()).length, 2);
+        expect((await repo.getPendingSagaOps()).length, 2);
 
-      await repo.updateSagaStatus('op-A', 'done');
+        await repo.updateSagaStatus('op-A', 'done');
 
-      final pending = await repo.getPendingSagaOps();
-      expect(pending.length, 1);
-      expect(pending.first.operationId, 'op-B');
-    });
+        final pending = await repo.getPendingSagaOps();
+        expect(pending.length, 1);
+        expect(pending.first.operationId, 'op-B');
+      },
+    );
 
     test('updateSagaStatus sets lastError when provided', () async {
       await repo.insertSagaOp(entry: makeSagaOp());
@@ -1170,39 +1241,41 @@ void main() {
       expect(op.lastError, 'Network timeout');
     });
 
-    test('getPendingSagaOps returns ops ordered by createdAt ascending',
-        () async {
-      await repo.insertSagaOp(
-        entry: SagaLogData(
-          operationId: 'op-late',
-          agentId: testAgentId,
-          runKey: 'run-key-001',
-          phase: 'execution',
-          status: 'pending',
-          toolName: 'tool_b',
-          createdAt: DateTime(2026, 2, 20, 10),
-          updatedAt: testDate,
-        ),
-      );
-      await repo.insertSagaOp(
-        entry: SagaLogData(
-          operationId: 'op-early',
-          agentId: testAgentId,
-          runKey: 'run-key-001',
-          phase: 'execution',
-          status: 'pending',
-          toolName: 'tool_a',
-          createdAt: DateTime(2026, 2, 20, 8),
-          updatedAt: testDate,
-        ),
-      );
+    test(
+      'getPendingSagaOps returns ops ordered by createdAt ascending',
+      () async {
+        await repo.insertSagaOp(
+          entry: SagaLogData(
+            operationId: 'op-late',
+            agentId: testAgentId,
+            runKey: 'run-key-001',
+            phase: 'execution',
+            status: 'pending',
+            toolName: 'tool_b',
+            createdAt: DateTime(2026, 2, 20, 10),
+            updatedAt: testDate,
+          ),
+        );
+        await repo.insertSagaOp(
+          entry: SagaLogData(
+            operationId: 'op-early',
+            agentId: testAgentId,
+            runKey: 'run-key-001',
+            phase: 'execution',
+            status: 'pending',
+            toolName: 'tool_a',
+            createdAt: DateTime(2026, 2, 20, 8),
+            updatedAt: testDate,
+          ),
+        );
 
-      final pending = await repo.getPendingSagaOps();
+        final pending = await repo.getPendingSagaOps();
 
-      expect(pending.length, 2);
-      expect(pending.first.operationId, 'op-early');
-      expect(pending.last.operationId, 'op-late');
-    });
+        expect(pending.length, 2);
+        expect(pending.first.operationId, 'op-early');
+        expect(pending.last.operationId, 'op-late');
+      },
+    );
   });
 
   // ── hardDeleteAgent ─────────────────────────────────────────────────────────
@@ -1283,11 +1356,13 @@ void main() {
 
     test('deletes all links for the target agent', () async {
       await repo.upsertLink(makeBasicLink(id: 'link-from-agent'));
-      await repo.upsertLink(makeBasicLink(
-        id: 'link-to-agent',
-        fromId: 'some-other-entity',
-        toId: testAgentId,
-      ));
+      await repo.upsertLink(
+        makeBasicLink(
+          id: 'link-to-agent',
+          fromId: 'some-other-entity',
+          toId: testAgentId,
+        ),
+      );
 
       expect(await repo.getLinksFrom(testAgentId), hasLength(1));
       expect(await repo.getLinksTo(testAgentId), hasLength(1));
@@ -1314,22 +1389,26 @@ void main() {
 
       // Create entity-to-entity links (from_id and to_id are entity IDs,
       // not the agentId itself).
-      await repo.upsertLink(model.AgentLink.messagePrev(
-        id: 'link-prev',
-        fromId: 'msg-B',
-        toId: 'msg-A',
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
-      await repo.upsertLink(model.AgentLink.messagePayload(
-        id: 'link-payload',
-        fromId: 'msg-A',
-        toId: 'payload-A',
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
+      await repo.upsertLink(
+        model.AgentLink.messagePrev(
+          id: 'link-prev',
+          fromId: 'msg-B',
+          toId: 'msg-A',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        model.AgentLink.messagePayload(
+          id: 'link-payload',
+          fromId: 'msg-A',
+          toId: 'payload-A',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
 
       expect(await repo.getLinksFrom('msg-B'), hasLength(1));
       expect(await repo.getLinksFrom('msg-A'), hasLength(1));
@@ -1400,8 +1479,9 @@ void main() {
 
     test('does not delete entities belonging to other agents', () async {
       await repo.upsertEntity(makeAgent(id: 'entity-target'));
-      await repo
-          .upsertEntity(makeAgent(id: 'entity-other', agentId: otherAgentId));
+      await repo.upsertEntity(
+        makeAgent(id: 'entity-other', agentId: otherAgentId),
+      );
       await repo.upsertEntity(
         makeAgentState(id: 'state-other', agentId: otherAgentId),
       );
@@ -1418,15 +1498,19 @@ void main() {
     });
 
     test('does not delete links belonging to other agents', () async {
-      await repo.upsertLink(makeBasicLink(
-        id: 'link-target-agent',
-        toId: 'some-target',
-      ));
-      await repo.upsertLink(makeBasicLink(
-        id: 'link-other-agent',
-        fromId: otherAgentId,
-        toId: 'some-other-target',
-      ));
+      await repo.upsertLink(
+        makeBasicLink(
+          id: 'link-target-agent',
+          toId: 'some-target',
+        ),
+      );
+      await repo.upsertLink(
+        makeBasicLink(
+          id: 'link-other-agent',
+          fromId: otherAgentId,
+          toId: 'some-other-target',
+        ),
+      );
 
       await repo.hardDeleteAgent(testAgentId);
 
@@ -1501,12 +1585,15 @@ void main() {
 
       // Other agent data that must survive.
       await repo.upsertEntity(
-          makeAgent(id: 'other-agent-entity', agentId: otherAgentId));
-      await repo.upsertLink(makeBasicLink(
-        id: 'other-agent-link',
-        fromId: otherAgentId,
-        toId: 'other-target',
-      ));
+        makeAgent(id: 'other-agent-entity', agentId: otherAgentId),
+      );
+      await repo.upsertLink(
+        makeBasicLink(
+          id: 'other-agent-link',
+          fromId: otherAgentId,
+          toId: 'other-target',
+        ),
+      );
       await repo.insertWakeRun(
         entry: WakeRunLogData(
           runKey: 'other-run',
@@ -1561,16 +1648,17 @@ void main() {
       String agentId = 'tpl-001',
     }) {
       return AgentDomainEntity.agentTemplate(
-        id: id,
-        agentId: agentId,
-        displayName: 'Test Template',
-        kind: AgentTemplateKind.taskAgent,
-        modelId: 'models/gemini-3.1-pro-preview',
-        categoryIds: const {'cat-1'},
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: const VectorClock({'node-1': 1}),
-      ) as AgentTemplateEntity;
+            id: id,
+            agentId: agentId,
+            displayName: 'Test Template',
+            kind: AgentTemplateKind.taskAgent,
+            modelId: 'models/gemini-3.1-pro-preview',
+            categoryIds: const {'cat-1'},
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: const VectorClock({'node-1': 1}),
+          )
+          as AgentTemplateEntity;
     }
 
     AgentTemplateVersionEntity makeTemplateVersion({
@@ -1580,15 +1668,16 @@ void main() {
       AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
     }) {
       return AgentDomainEntity.agentTemplateVersion(
-        id: id,
-        agentId: agentId,
-        version: version,
-        status: status,
-        directives: 'Be helpful.',
-        authoredBy: 'user',
-        createdAt: testDate,
-        vectorClock: const VectorClock({'node-1': 1}),
-      ) as AgentTemplateVersionEntity;
+            id: id,
+            agentId: agentId,
+            version: version,
+            status: status,
+            directives: 'Be helpful.',
+            authoredBy: 'user',
+            createdAt: testDate,
+            vectorClock: const VectorClock({'node-1': 1}),
+          )
+          as AgentTemplateVersionEntity;
     }
 
     AgentTemplateHeadEntity makeTemplateHead({
@@ -1597,12 +1686,13 @@ void main() {
       String versionId = 'ver-001',
     }) {
       return AgentDomainEntity.agentTemplateHead(
-        id: id,
-        agentId: agentId,
-        versionId: versionId,
-        updatedAt: testDate,
-        vectorClock: const VectorClock({'node-1': 1}),
-      ) as AgentTemplateHeadEntity;
+            id: id,
+            agentId: agentId,
+            versionId: versionId,
+            updatedAt: testDate,
+            vectorClock: const VectorClock({'node-1': 1}),
+          )
+          as AgentTemplateHeadEntity;
     }
 
     group('upsertEntity + getEntity roundtrip', () {
@@ -1620,33 +1710,37 @@ void main() {
         expect(tpl.categoryIds, contains('cat-1'));
       });
 
-      test('agentTemplateVersion variant persists and restores correctly',
-          () async {
-        final entity = makeTemplateVersion();
-        await repo.upsertEntity(entity);
+      test(
+        'agentTemplateVersion variant persists and restores correctly',
+        () async {
+          final entity = makeTemplateVersion();
+          await repo.upsertEntity(entity);
 
-        final result = await repo.getEntity(entity.id);
+          final result = await repo.getEntity(entity.id);
 
-        expect(result, isNotNull);
-        final ver = result! as AgentTemplateVersionEntity;
-        expect(ver.version, 1);
-        expect(ver.status, AgentTemplateVersionStatus.active);
-        expect(ver.directives, 'Be helpful.');
-        expect(ver.authoredBy, 'user');
-      });
+          expect(result, isNotNull);
+          final ver = result! as AgentTemplateVersionEntity;
+          expect(ver.version, 1);
+          expect(ver.status, AgentTemplateVersionStatus.active);
+          expect(ver.directives, 'Be helpful.');
+          expect(ver.authoredBy, 'user');
+        },
+      );
 
-      test('agentTemplateHead variant persists and restores correctly',
-          () async {
-        final entity = makeTemplateHead();
-        await repo.upsertEntity(entity);
+      test(
+        'agentTemplateHead variant persists and restores correctly',
+        () async {
+          final entity = makeTemplateHead();
+          await repo.upsertEntity(entity);
 
-        final result = await repo.getEntity(entity.id);
+          final result = await repo.getEntity(entity.id);
 
-        expect(result, isNotNull);
-        final head = result! as AgentTemplateHeadEntity;
-        expect(head.versionId, 'ver-001');
-        expect(head.agentId, 'tpl-001');
-      });
+          expect(result, isNotNull);
+          final head = result! as AgentTemplateHeadEntity;
+          expect(head.versionId, 'ver-001');
+          expect(head.agentId, 'tpl-001');
+        },
+      );
     });
 
     group('getAllTemplates', () {
@@ -1982,22 +2076,26 @@ void main() {
         makeAgent(id: agentB, agentId: agentB),
       );
       // Template assignment links
-      await repo.upsertLink(model.AgentLink.templateAssignment(
-        id: 'link-ta-A',
-        fromId: templateId,
-        toId: agentA,
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
-      await repo.upsertLink(model.AgentLink.templateAssignment(
-        id: 'link-ta-B',
-        fromId: templateId,
-        toId: agentB,
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-ta-A',
+          fromId: templateId,
+          toId: agentA,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-ta-B',
+          fromId: templateId,
+          toId: agentB,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
     }
 
     test('returns token usage from all instances via JOIN', () async {
@@ -2116,14 +2214,16 @@ void main() {
       await repo.upsertEntity(
         makeAgent(id: agentA, agentId: agentA),
       );
-      await repo.upsertLink(model.AgentLink.templateAssignment(
-        id: 'link-ta-A',
-        fromId: templateId,
-        toId: agentA,
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-ta-A',
+          fromId: templateId,
+          toId: agentA,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
     }
 
     test('returns reports from template instances', () async {
@@ -2195,16 +2295,19 @@ void main() {
 
     test('getEntitiesInInterval returns entities within range', () async {
       // Entity inside interval (March 3)
-      final inside =
-          makeAgent(id: 'ent-inside').copyWith(updatedAt: DateTime(2026, 3, 3));
+      final inside = makeAgent(
+        id: 'ent-inside',
+      ).copyWith(updatedAt: DateTime(2026, 3, 3));
       await repo.upsertEntity(inside);
 
       // Entity outside interval (Feb 20 — default testDate)
       await repo.upsertEntity(makeAgent(id: 'ent-outside', agentId: 'a2'));
 
       // Entity at boundary start (March 1) — inclusive, should be included
-      final atStart = makeAgent(id: 'ent-start', agentId: 'a3')
-          .copyWith(updatedAt: intervalStart);
+      final atStart = makeAgent(
+        id: 'ent-start',
+        agentId: 'a3',
+      ).copyWith(updatedAt: intervalStart);
       await repo.upsertEntity(atStart);
 
       final count = await repo.countEntitiesInInterval(
@@ -2266,8 +2369,9 @@ void main() {
     });
 
     test('getEntitiesInInterval includes soft-deleted entities', () async {
-      final entity = makeAgent(id: 'ent-deleted')
-          .copyWith(updatedAt: DateTime(2026, 3, 3));
+      final entity = makeAgent(
+        id: 'ent-deleted',
+      ).copyWith(updatedAt: DateTime(2026, 3, 3));
       await repo.upsertEntity(entity);
 
       // Soft-delete by upserting with deletedAt set

@@ -27,8 +27,9 @@ class AgentCreationModal {
     // If only one template, skip page 1.
     final singleTemplate = templates.length == 1 ? templates.first : null;
 
-    final pageIndexNotifier =
-        ValueNotifier<int>(singleTemplate != null ? 1 : 0);
+    final pageIndexNotifier = ValueNotifier<int>(
+      singleTemplate != null ? 1 : 0,
+    );
     var selectedTemplate = singleTemplate;
     String? selectedProfileId;
 
@@ -52,8 +53,9 @@ class AgentCreationModal {
         ModalUtils.modalSheetPage(
           context: modalContext,
           title: modalContext.messages.inferenceProfilesTitle,
-          onTapBack:
-              singleTemplate != null ? null : () => pageIndexNotifier.value = 0,
+          onTapBack: singleTemplate != null
+              ? null
+              : () => pageIndexNotifier.value = 0,
           child: _ProfileSelectionPage(
             onProfileSelected: (profileId) {
               selectedProfileId = profileId;
@@ -135,8 +137,9 @@ class _ProfileSelectionPage extends ConsumerWidget {
   Widget _buildProfileList(BuildContext context, List<AiConfig> configs) {
     final profiles = configs.whereType<AiConfigInferenceProfile>().toList();
     // Filter desktop-only on mobile.
-    final filtered =
-        isDesktop ? profiles : profiles.where((p) => !p.desktopOnly).toList();
+    final filtered = isDesktop
+        ? profiles
+        : profiles.where((p) => !p.desktopOnly).toList();
 
     if (filtered.isEmpty) {
       return Center(

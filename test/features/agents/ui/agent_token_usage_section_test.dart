@@ -14,7 +14,7 @@ const _testAgentId = 'test-agent-id';
 
 Widget _buildSubject({
   FutureOr<List<AgentTokenUsageSummary>> Function(Ref, String)?
-      summariesOverride,
+  summariesOverride,
 }) {
   return makeTestableWidget(
     const AgentTokenUsageSection(agentId: _testAgentId),
@@ -135,8 +135,9 @@ void main() {
       );
     });
 
-    testWidgets('displays model name as-is when no slash present',
-        (tester) async {
+    testWidgets('displays model name as-is when no slash present', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSubject(
           summariesOverride: (ref, agentId) async => [
@@ -154,8 +155,9 @@ void main() {
   });
 
   group('TokenUsageTable - wide layout', () {
-    testWidgets('renders Table widget with header row at wide width',
-        (tester) async {
+    testWidgets('renders Table widget with header row at wide width', (
+      tester,
+    ) async {
       tester.view
         ..physicalSize = const Size(800, 844)
         ..devicePixelRatio = 1.0;
@@ -221,8 +223,9 @@ void main() {
       );
     });
 
-    testWidgets('shows grand total row when multiple models in wide layout',
-        (tester) async {
+    testWidgets('shows grand total row when multiple models in wide layout', (
+      tester,
+    ) async {
       tester.view
         ..physicalSize = const Size(800, 844)
         ..devicePixelRatio = 1.0;
@@ -258,8 +261,9 @@ void main() {
   });
 
   group('TokenUsageTable - narrow layout', () {
-    testWidgets('renders card layout instead of Table at narrow width',
-        (tester) async {
+    testWidgets('renders card layout instead of Table at narrow width', (
+      tester,
+    ) async {
       tester.view
         ..physicalSize = const Size(390, 844)
         ..devicePixelRatio = 1.0;
@@ -291,39 +295,41 @@ void main() {
     });
 
     testWidgets(
-        'shows label:value pairs with localized labels in narrow layout',
-        (tester) async {
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1.0;
-      addTearDown(() {
+      'shows label:value pairs with localized labels in narrow layout',
+      (tester) async {
         tester.view
-          ..resetPhysicalSize()
-          ..resetDevicePixelRatio();
-      });
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view
+            ..resetPhysicalSize()
+            ..resetDevicePixelRatio();
+        });
 
-      await tester.pumpWidget(
-        _buildSubject(
-          summariesOverride: (ref, agentId) async => _singleModelSummaries,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          _buildSubject(
+            summariesOverride: (ref, agentId) async => _singleModelSummaries,
+          ),
+        );
+        await tester.pump();
 
-      final context = tester.element(find.byType(AgentTokenUsageSection));
+        final context = tester.element(find.byType(AgentTokenUsageSection));
 
-      // Labels are present as "Label: " prefix text
-      expect(
-        find.textContaining(context.messages.agentTokenUsageInputTokens),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining(context.messages.agentTokenUsageOutputTokens),
-        findsOneWidget,
-      );
-    });
+        // Labels are present as "Label: " prefix text
+        expect(
+          find.textContaining(context.messages.agentTokenUsageInputTokens),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(context.messages.agentTokenUsageOutputTokens),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('shows total card with divider for multiple models in narrow',
-        (tester) async {
+    testWidgets('shows total card with divider for multiple models in narrow', (
+      tester,
+    ) async {
       tester.view
         ..physicalSize = const Size(390, 844)
         ..devicePixelRatio = 1.0;
@@ -356,8 +362,9 @@ void main() {
       expect(find.byType(Divider), findsOneWidget);
     });
 
-    testWidgets('no total card for single model in narrow layout',
-        (tester) async {
+    testWidgets('no total card for single model in narrow layout', (
+      tester,
+    ) async {
       tester.view
         ..physicalSize = const Size(390, 844)
         ..devicePixelRatio = 1.0;

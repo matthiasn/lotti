@@ -20,7 +20,7 @@ import '../test_utils.dart';
 /// Returns both the strategy and the builder so tests can inspect builder
 /// state after processing tool calls.
 ({TaskAgentStrategy strategy, ChangeSetBuilder builder})
-    _createStrategyWithMetadata({
+_createStrategyWithMetadata({
   required MockAgentToolExecutor executor,
   required MockAgentSyncService syncService,
   ResolveTaskMetadata? resolveTaskMetadata,
@@ -50,10 +50,10 @@ import '../test_utils.dart';
     readVectorClock: (_) async => null,
     executeToolHandler: (toolName, args, manager) async =>
         const ToolExecutionResult(
-      success: true,
-      output: 'done',
-      mutatedEntityId: taskId,
-    ),
+          success: true,
+          output: 'done',
+          mutatedEntityId: taskId,
+        ),
     changeSetBuilder: builder,
     resolveTaskMetadata: resolveTaskMetadata,
   );
@@ -98,70 +98,72 @@ void main() {
       readVectorClock: (_) async => null,
       executeToolHandler: (toolName, args, manager) async =>
           const ToolExecutionResult(
-        success: true,
-        output: 'Tool executed successfully',
-        mutatedEntityId: taskId,
-      ),
+            success: true,
+            output: 'Tool executed successfully',
+            mutatedEntityId: taskId,
+          ),
     );
   });
 
   group('TaskAgentStrategy', () {
     group('processToolCalls', () {
-      test('parses arguments, delegates to executor, feeds results back',
-          () async {
-        final toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'set_task_title',
-              arguments: jsonEncode({'title': 'New Title'}),
+      test(
+        'parses arguments, delegates to executor, feeds results back',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'set_task_title',
+                arguments: jsonEncode({'title': 'New Title'}),
+              ),
             ),
-          ),
-        ];
+          ];
 
-        when(
-          () => mockExecutor.execute(
-            toolName: any(named: 'toolName'),
-            args: any(named: 'args'),
-            targetEntityId: any(named: 'targetEntityId'),
-            resolveCategoryId: any(named: 'resolveCategoryId'),
-            executeHandler: any(named: 'executeHandler'),
-            readVectorClock: any(named: 'readVectorClock'),
-          ),
-        ).thenAnswer(
-          (_) async => const ToolExecutionResult(
-            success: true,
-            output: 'Title updated',
-            mutatedEntityId: taskId,
-          ),
-        );
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Title updated',
+              mutatedEntityId: taskId,
+            ),
+          );
 
-        final action = await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
-        );
+          final action = await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
 
-        expect(action, ConversationAction.continueConversation);
+          expect(action, ConversationAction.continueConversation);
 
-        verify(
-          () => mockExecutor.execute(
-            toolName: 'set_task_title',
-            args: {'title': 'New Title'},
-            targetEntityId: taskId,
-            resolveCategoryId: any(named: 'resolveCategoryId'),
-            executeHandler: any(named: 'executeHandler'),
-            readVectorClock: any(named: 'readVectorClock'),
-          ),
-        ).called(1);
+          verify(
+            () => mockExecutor.execute(
+              toolName: 'set_task_title',
+              args: {'title': 'New Title'},
+              targetEntityId: taskId,
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).called(1);
 
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call-1',
-            response: 'Title updated',
-          ),
-        ).called(1);
-      });
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-1',
+              response: 'Title updated',
+            ),
+          ).called(1);
+        },
+      );
 
       test('processes multiple tool calls sequentially', () async {
         final toolCalls = [
@@ -288,8 +290,9 @@ void main() {
         ).called(1);
 
         // Persists a tool result message for the error
-        verify(() => mockSyncService.upsertEntity(any()))
-            .called(greaterThanOrEqualTo(2));
+        verify(
+          () => mockSyncService.upsertEntity(any()),
+        ).called(greaterThanOrEqualTo(2));
       });
 
       test('persists assistant message before processing tool calls', () async {
@@ -326,8 +329,9 @@ void main() {
         );
 
         // At least one upsertEntity call for the assistant message
-        verify(() => mockSyncService.upsertEntity(any()))
-            .called(greaterThanOrEqualTo(1));
+        verify(
+          () => mockSyncService.upsertEntity(any()),
+        ).called(greaterThanOrEqualTo(1));
       });
     });
 
@@ -870,8 +874,8 @@ void main() {
       test('returns unmodifiable list', () {
         expect(
           () => strategy.extractObservations().add(
-                const ObservationRecord(text: 'should fail'),
-              ),
+            const ObservationRecord(text: 'should fail'),
+          ),
           throwsA(isA<UnsupportedError>()),
         );
       });
@@ -1068,10 +1072,10 @@ void main() {
           readVectorClock: (_) async => null,
           executeToolHandler: (toolName, args, manager) async =>
               const ToolExecutionResult(
-            success: true,
-            output: 'Tool executed successfully',
-            mutatedEntityId: taskId,
-          ),
+                success: true,
+                output: 'Tool executed successfully',
+                mutatedEntityId: taskId,
+              ),
           changeSetBuilder: csBuilder,
         );
       });
@@ -1329,79 +1333,85 @@ void main() {
           ),
         ).captured;
         expect(
-            captured.last as String, contains('2 malformed item(s) skipped'));
+          captured.last as String,
+          contains('2 malformed item(s) skipped'),
+        );
         expect(
           captured.last as String,
           contains('1 item(s) queued'),
         );
       });
 
-      test('suppresses redundant non-batch tool and feeds back to LLM',
-          () async {
-        final (:strategy, :builder) = _createStrategyWithMetadata(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
-        );
+      test(
+        'suppresses redundant non-batch tool and feeds back to LLM',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+          );
 
-        final toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'call-redundant',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_estimate',
-              arguments: jsonEncode({'minutes': 120}),
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-redundant',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_task_estimate',
+                arguments: jsonEncode({'minutes': 120}),
+              ),
             ),
-          ),
-        ];
+          ];
 
-        await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
-        );
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
 
-        expect(builder.hasItems, isFalse);
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call-redundant',
-            response: 'Skipped: estimate is already 120 minutes.',
-          ),
-        ).called(1);
-      });
-
-      test('keeps non-redundant non-batch tool when metadata differs',
-          () async {
-        final (:strategy, :builder) = _createStrategyWithMetadata(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
-        );
-
-        final toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'call-actual',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_priority',
-              arguments: jsonEncode({'priority': 'P0'}),
+          expect(builder.hasItems, isFalse);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-redundant',
+              response: 'Skipped: estimate is already 120 minutes.',
             ),
-          ),
-        ];
+          ).called(1);
+        },
+      );
 
-        await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
-        );
+      test(
+        'keeps non-redundant non-batch tool when metadata differs',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+          );
 
-        expect(builder.hasItems, isTrue);
-        expect(builder.items.first.toolName, 'update_task_priority');
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call-actual',
-            response: 'Proposal queued for user review.',
-          ),
-        ).called(1);
-      });
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-actual',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_task_priority',
+                arguments: jsonEncode({'priority': 'P0'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          expect(builder.items.first.toolName, 'update_task_priority');
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-actual',
+              response: 'Proposal queued for user review.',
+            ),
+          ).called(1);
+        },
+      );
 
       test('keeps tool when resolver throws (conservative)', () async {
         final (:strategy, :builder) = _createStrategyWithMetadata(
@@ -1435,52 +1445,54 @@ void main() {
         ).called(1);
       });
 
-      test('redundant batch items include redundancy info in response',
-          () async {
-        final (:strategy, :builder) = _createStrategyWithMetadata(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          checklistItemStateResolver: (id) async =>
-              (title: 'Buy groceries', isChecked: true),
-        );
+      test(
+        'redundant batch items include redundancy info in response',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            checklistItemStateResolver: (id) async =>
+                (title: 'Buy groceries', isChecked: true),
+          );
 
-        final toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'call-batch-redundant',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_checklist_items',
-              arguments: jsonEncode({
-                'items': [
-                  {'id': 'item-1', 'isChecked': true},
-                ],
-              }),
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-batch-redundant',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_checklist_items',
+                arguments: jsonEncode({
+                  'items': [
+                    {'id': 'item-1', 'isChecked': true},
+                  ],
+                }),
+              ),
             ),
-          ),
-        ];
+          ];
 
-        await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
-        );
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
 
-        expect(builder.hasItems, isFalse);
+          expect(builder.hasItems, isFalse);
 
-        final captured = verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call-batch-redundant',
-            response: captureAny(named: 'response'),
-          ),
-        ).captured;
-        expect(
-          captured.last as String,
-          contains('Skipped 1 redundant update(s)'),
-        );
-        expect(
-          captured.last as String,
-          contains('"Buy groceries" is already checked'),
-        );
-      });
+          final captured = verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-batch-redundant',
+              response: captureAny(named: 'response'),
+            ),
+          ).captured;
+          expect(
+            captured.last as String,
+            contains('Skipped 1 redundant update(s)'),
+          );
+          expect(
+            captured.last as String,
+            contains('"Buy groceries" is already checked'),
+          );
+        },
+      );
     });
   });
 }

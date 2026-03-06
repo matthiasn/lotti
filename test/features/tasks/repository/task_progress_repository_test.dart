@@ -27,8 +27,9 @@ void main() {
     test('returns null when entity is not a Task', () async {
       // Arrange
       const nonTaskId = 'non-task-id';
-      when(() => mockJournalDb.journalEntityById(nonTaskId))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(nonTaskId),
+      ).thenAnswer((_) async => testTextEntry);
 
       // Act
       final result = await repository.getTaskProgressData(id: nonTaskId);
@@ -41,10 +42,12 @@ void main() {
     test('returns task progress data with no linked entities', () async {
       // Arrange
       final taskId = testTask.id;
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
-      when(() => mockJournalDb.getLinkedEntities(taskId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.getLinkedEntities(taskId),
+      ).thenAnswer((_) async => []);
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -62,10 +65,12 @@ void main() {
       final taskId = testTask.id;
       final linkedEntry = testTextEntry;
 
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
-      when(() => mockJournalDb.getLinkedEntities(taskId))
-          .thenAnswer((_) async => [linkedEntry]);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.getLinkedEntities(taskId),
+      ).thenAnswer((_) async => [linkedEntry]);
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -96,10 +101,12 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
-      when(() => mockJournalDb.getLinkedEntities(taskId))
-          .thenAnswer((_) async => [linkedTask, testTextEntry]);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.getLinkedEntities(taskId),
+      ).thenAnswer((_) async => [linkedTask, testTextEntry]);
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -113,46 +120,49 @@ void main() {
     });
 
     test(
-        'ignores audio entries when calculating duration to prevent double-counting',
-        () async {
-      // Arrange
-      final taskId = testTask.id;
-      // Create audio entry with unique ID (testAudioEntry shares ID with testTextEntry)
-      final audioEntry = JournalAudio(
-        meta: Metadata(
-          id: 'unique-audio-entry-id',
-          createdAt: DateTime(2022, 7, 7, 13),
-          dateFrom: DateTime(2022, 7, 7, 13),
-          dateTo: DateTime(2022, 7, 7, 14),
-          updatedAt: DateTime(2022, 7, 7, 13),
-        ),
-        entryText: const EntryText(plainText: 'audio entry text'),
-        data: AudioData(
-          dateFrom: DateTime(2022, 7, 7, 13),
-          dateTo: DateTime(2022, 7, 7, 14),
-          duration: const Duration(hours: 1),
-          audioFile: '',
-          audioDirectory: '',
-        ),
-      );
+      'ignores audio entries when calculating duration to prevent double-counting',
+      () async {
+        // Arrange
+        final taskId = testTask.id;
+        // Create audio entry with unique ID (testAudioEntry shares ID with testTextEntry)
+        final audioEntry = JournalAudio(
+          meta: Metadata(
+            id: 'unique-audio-entry-id',
+            createdAt: DateTime(2022, 7, 7, 13),
+            dateFrom: DateTime(2022, 7, 7, 13),
+            dateTo: DateTime(2022, 7, 7, 14),
+            updatedAt: DateTime(2022, 7, 7, 13),
+          ),
+          entryText: const EntryText(plainText: 'audio entry text'),
+          data: AudioData(
+            dateFrom: DateTime(2022, 7, 7, 13),
+            dateTo: DateTime(2022, 7, 7, 14),
+            duration: const Duration(hours: 1),
+            audioFile: '',
+            audioDirectory: '',
+          ),
+        );
 
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
-      when(() => mockJournalDb.getLinkedEntities(taskId))
-          .thenAnswer((_) async => [audioEntry, testTextEntry]);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [audioEntry, testTextEntry]);
 
-      // Act
-      final result = await repository.getTaskProgressData(id: taskId);
+        // Act
+        final result = await repository.getTaskProgressData(id: taskId);
 
-      // Assert
-      expect(result, isNotNull);
-      // Audio entry should be excluded (to prevent double-counting meeting time)
-      expect(result?.$2.containsKey(audioEntry.id), isFalse);
-      // Text entry should still be included
-      expect(result?.$2.containsKey(testTextEntry.id), isTrue);
-      verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
-      verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
-    });
+        // Assert
+        expect(result, isNotNull);
+        // Audio entry should be excluded (to prevent double-counting meeting time)
+        expect(result?.$2.containsKey(audioEntry.id), isFalse);
+        // Text entry should still be included
+        expect(result?.$2.containsKey(testTextEntry.id), isTrue);
+        verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      },
+    );
   });
 
   group('sumTimeSpentFromEntities', () {

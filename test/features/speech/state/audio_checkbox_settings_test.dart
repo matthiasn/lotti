@@ -61,23 +61,28 @@ void main() {
     when(() => mockPlayer.state).thenReturn(mockPlayerState);
     when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
     when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
-    when(() => mockPlayerStream.position)
-        .thenAnswer((_) => positionController.stream);
-    when(() => mockPlayerStream.buffer)
-        .thenAnswer((_) => bufferController.stream);
-    when(() => mockPlayerStream.completed)
-        .thenAnswer((_) => completedController.stream);
+    when(
+      () => mockPlayerStream.position,
+    ).thenAnswer((_) => positionController.stream);
+    when(
+      () => mockPlayerStream.buffer,
+    ).thenAnswer((_) => bufferController.stream);
+    when(
+      () => mockPlayerStream.completed,
+    ).thenAnswer((_) => completedController.stream);
     when(() => mockPlayer.dispose()).thenAnswer((_) async {});
-    when(() => mockPlayer.open(any(), play: any(named: 'play')))
-        .thenAnswer((_) async {});
+    when(
+      () => mockPlayer.open(any(), play: any(named: 'play')),
+    ).thenAnswer((_) async {});
     when(() => mockPlayer.play()).thenAnswer((_) async {});
     when(() => mockPlayer.pause()).thenAnswer((_) async {});
     when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
     when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
 
     // Set up default mock behavior
-    when(() => mockRecorderRepo.amplitudeStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockRecorderRepo.amplitudeStream,
+    ).thenAnswer((_) => const Stream.empty());
 
     container = ProviderContainer(
       overrides: [
@@ -102,8 +107,9 @@ void main() {
     });
 
     test('setEnableSpeechRecognition updates state correctly', () {
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
+      final controller = container.read(
+        audioRecorderControllerProvider.notifier,
+      );
 
       // Enable speech recognition
       // ignore_for_file: cascade_invocations
@@ -123,8 +129,9 @@ void main() {
     });
 
     test('checkbox state is preserved on stop', () async {
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
+      final controller = container.read(
+        audioRecorderControllerProvider.notifier,
+      );
 
       // Set checkbox state
       controller.setEnableSpeechRecognition(enable: true);
@@ -143,8 +150,9 @@ void main() {
     });
 
     test('checkbox state persists when starting new recording', () async {
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
+      final controller = container.read(
+        audioRecorderControllerProvider.notifier,
+      );
 
       // Set checkbox state
       controller.setEnableSpeechRecognition(enable: true);
@@ -153,17 +161,19 @@ void main() {
       expect(state.enableSpeechRecognition, true);
 
       // Mock start recording behavior
-      when(() => mockRecorderRepo.hasPermission())
-          .thenAnswer((_) async => true);
+      when(
+        () => mockRecorderRepo.hasPermission(),
+      ).thenAnswer((_) async => true);
       when(() => mockRecorderRepo.isRecording()).thenAnswer((_) async => false);
       when(() => mockRecorderRepo.isPaused()).thenAnswer((_) async => false);
-      when(() => mockRecorderRepo.startRecording())
-          .thenAnswer((_) async => AudioNote(
-                createdAt: DateTime(2024, 3, 15),
-                audioFile: 'test.aac',
-                audioDirectory: '/test',
-                duration: Duration.zero,
-              ));
+      when(() => mockRecorderRepo.startRecording()).thenAnswer(
+        (_) async => AudioNote(
+          createdAt: DateTime(2024, 3, 15),
+          audioFile: 'test.aac',
+          audioDirectory: '/test',
+          duration: Duration.zero,
+        ),
+      );
 
       // Start new recording (checkbox state should remain as set)
       await controller.record();
@@ -173,8 +183,9 @@ void main() {
     });
 
     test('state preserves other fields when updating checkbox', () {
-      final controller =
-          container.read(audioRecorderControllerProvider.notifier);
+      final controller = container.read(
+        audioRecorderControllerProvider.notifier,
+      );
 
       var state = container.read(audioRecorderControllerProvider);
 

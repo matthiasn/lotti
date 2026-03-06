@@ -65,15 +65,16 @@ class _GameyFabImageState extends State<_GameyFabImage>
       duration: const Duration(milliseconds: 100),
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1,
-      end: 0.9,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _scaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: 0.9,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeInOut,
+          ),
+        );
   }
 
   @override

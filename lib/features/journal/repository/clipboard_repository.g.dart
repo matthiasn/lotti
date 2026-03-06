@@ -12,20 +12,24 @@ part of 'clipboard_repository.dart';
 @ProviderFor(clipboardRepository)
 final clipboardRepositoryProvider = ClipboardRepositoryProvider._();
 
-final class ClipboardRepositoryProvider extends $FunctionalProvider<
-    SystemClipboard?,
-    SystemClipboard?,
-    SystemClipboard?> with $Provider<SystemClipboard?> {
+final class ClipboardRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SystemClipboard?,
+          SystemClipboard?,
+          SystemClipboard?
+        >
+    with $Provider<SystemClipboard?> {
   ClipboardRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'clipboardRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'clipboardRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$clipboardRepositoryHash();

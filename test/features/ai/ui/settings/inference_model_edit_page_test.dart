@@ -58,12 +58,15 @@ void main() {
 
     // Default mock responses
     when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-    when(() => mockRepository.getConfigById('test-model-id'))
-        .thenAnswer((_) async => testModel);
-    when(() => mockRepository.getConfigById('provider-1'))
-        .thenAnswer((_) async => testProvider);
-    when(() => mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-        .thenAnswer((_) async => [testProvider]);
+    when(
+      () => mockRepository.getConfigById('test-model-id'),
+    ).thenAnswer((_) async => testModel);
+    when(
+      () => mockRepository.getConfigById('provider-1'),
+    ).thenAnswer((_) async => testProvider);
+    when(
+      () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer((_) async => [testProvider]);
   });
 
   Widget buildTestWidget({String? configId}) {
@@ -85,8 +88,9 @@ void main() {
   }
 
   group('InferenceModelEditPage', () {
-    testWidgets('displays correct title for new model',
-        (WidgetTester tester) async {
+    testWidgets('displays correct title for new model', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -96,8 +100,9 @@ void main() {
       expect(find.text('Add Model'), findsOneWidget);
     });
 
-    testWidgets('displays correct title for existing model',
-        (WidgetTester tester) async {
+    testWidgets('displays correct title for existing model', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -107,8 +112,9 @@ void main() {
       expect(find.text('Edit Model'), findsOneWidget);
     });
 
-    testWidgets('loads and displays existing model data',
-        (WidgetTester tester) async {
+    testWidgets('loads and displays existing model data', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -121,8 +127,9 @@ void main() {
       expect(find.text('Test Provider'), findsOneWidget);
     });
 
-    testWidgets('shows form sections with proper labels',
-        (WidgetTester tester) async {
+    testWidgets('shows form sections with proper labels', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -139,8 +146,9 @@ void main() {
       expect(find.text('Provider Model ID'), findsOneWidget);
     });
 
-    testWidgets('shows save button and form fields',
-        (WidgetTester tester) async {
+    testWidgets('shows save button and form fields', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -169,9 +177,10 @@ void main() {
       final selectProviderText = find.text('Select a provider');
       final providerNameText = find.text('Test Provider');
       expect(
-          selectProviderText.evaluate().length +
-              providerNameText.evaluate().length,
-          greaterThan(0));
+        selectProviderText.evaluate().length +
+            providerNameText.evaluate().length,
+        greaterThan(0),
+      );
     });
 
     testWidgets('shows modality fields in form', (WidgetTester tester) async {
@@ -206,8 +215,9 @@ void main() {
       }
     });
 
-    testWidgets('displays reasoning model and function calling toggles',
-        (WidgetTester tester) async {
+    testWidgets('displays reasoning model and function calling toggles', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -216,14 +226,18 @@ void main() {
 
       // Check for reasoning model toggle
       expect(find.text('Reasoning Model'), findsOneWidget);
-      expect(find.text('This model has advanced reasoning capabilities'),
-          findsOneWidget);
+      expect(
+        find.text('This model has advanced reasoning capabilities'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.psychology_alt_rounded), findsOneWidget);
 
       // Check for function calling toggle
       expect(find.text('Function Calling'), findsOneWidget);
-      expect(find.text('This model supports function/tool calling'),
-          findsOneWidget);
+      expect(
+        find.text('This model supports function/tool calling'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.functions_rounded), findsOneWidget);
 
       // Should have at least 2 switches
@@ -246,14 +260,16 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
-    testWidgets('shows error state when loading fails',
-        (WidgetTester tester) async {
+    testWidgets('shows error state when loading fails', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       // Setup repository to throw error
-      when(() => mockRepository.getConfigById('error-id'))
-          .thenThrow(Exception('Failed to load'));
+      when(
+        () => mockRepository.getConfigById('error-id'),
+      ).thenThrow(Exception('Failed to load'));
 
       await tester.pumpWidget(buildTestWidget(configId: 'error-id'));
       await tester.pumpAndSettle();
@@ -264,8 +280,9 @@ void main() {
       expect(find.text('Go Back'), findsOneWidget);
     });
 
-    testWidgets('validates form has required fields',
-        (WidgetTester tester) async {
+    testWidgets('validates form has required fields', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 

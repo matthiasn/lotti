@@ -51,12 +51,14 @@ void main() {
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
-    when(() => mockEntitiesCacheService.sortedCategories)
-        .thenReturn(testCategories);
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn(testCategories);
     // Mock getCategoryById for all test categories
     for (final category in testCategories) {
-      when(() => mockEntitiesCacheService.getCategoryById(category.id))
-          .thenReturn(category);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(category.id),
+      ).thenReturn(category);
     }
     getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
   });
@@ -121,8 +123,9 @@ void main() {
     expect(selectedCategories.first?.id, 'cat2');
   });
 
-  testWidgets('displays "clear" option when initialCategoryId is provided',
-      (tester) async {
+  testWidgets('displays "clear" option when initialCategoryId is provided', (
+    tester,
+  ) async {
     final selectedCategories = <CategoryDefinition?>[];
 
     await tester.pumpWidget(
@@ -146,8 +149,9 @@ void main() {
     expect(selectedCategories.first, isNull);
   });
 
-  testWidgets('shows "create category" option when search has no matches',
-      (tester) async {
+  testWidgets('shows "create category" option when search has no matches', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       WidgetTestBench(
         child: CategorySelectionModalContent(
@@ -182,8 +186,9 @@ void main() {
     expect(categoryCards, findsNWidgets(3));
 
     // Get the first CategoryTypeCard widget
-    final firstCardWidget =
-        tester.widget<CategoryTypeCard>(categoryCards.first);
+    final firstCardWidget = tester.widget<CategoryTypeCard>(
+      categoryCards.first,
+    );
     expect(firstCardWidget.categoryDefinition.favorite, isTrue);
   });
 
@@ -224,15 +229,15 @@ void main() {
                   onPressed: () async {
                     result = await Navigator.of(context)
                         .push<List<CategoryDefinition>>(
-                      MaterialPageRoute(
-                        builder: (_) => Material(
-                          child: CategorySelectionModalContent(
-                            onCategorySelected: (_) {},
-                            multiSelect: true,
+                          MaterialPageRoute(
+                            builder: (_) => Material(
+                              child: CategorySelectionModalContent(
+                                onCategorySelected: (_) {},
+                                multiSelect: true,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
+                        );
                   },
                   child: const Text('open'),
                 ),
@@ -276,8 +281,9 @@ void main() {
       expect(find.text('Category 2'), findsOneWidget);
     });
 
-    testWidgets('selected categories show visual selection state',
-        (tester) async {
+    testWidgets('selected categories show visual selection state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Material(
@@ -322,8 +328,9 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn(many);
       // Mock getCategoryById for all generated categories
       for (final category in many) {
-        when(() => mockEntitiesCacheService.getCategoryById(category.id))
-            .thenReturn(category);
+        when(
+          () => mockEntitiesCacheService.getCategoryById(category.id),
+        ).thenReturn(category);
       }
 
       List<CategoryDefinition>? result;
@@ -336,15 +343,15 @@ void main() {
                   onPressed: () async {
                     result = await Navigator.of(context)
                         .push<List<CategoryDefinition>>(
-                      MaterialPageRoute(
-                        builder: (_) => Material(
-                          child: CategorySelectionModalContent(
-                            onCategorySelected: (_) {},
-                            multiSelect: true,
+                          MaterialPageRoute(
+                            builder: (_) => Material(
+                              child: CategorySelectionModalContent(
+                                onCategorySelected: (_) {},
+                                multiSelect: true,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
+                        );
                   },
                   child: const Text('open'),
                 ),
@@ -383,15 +390,15 @@ void main() {
                   onPressed: () async {
                     result = await Navigator.of(context)
                         .push<List<CategoryDefinition>>(
-                      MaterialPageRoute(
-                        builder: (_) => Material(
-                          child: CategorySelectionModalContent(
-                            onCategorySelected: (_) {},
-                            multiSelect: true,
+                          MaterialPageRoute(
+                            builder: (_) => Material(
+                              child: CategorySelectionModalContent(
+                                onCategorySelected: (_) {},
+                                multiSelect: true,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
+                        );
                   },
                   child: const Text('open'),
                 ),
@@ -412,8 +419,9 @@ void main() {
       expect(result, isEmpty);
     });
 
-    testWidgets('deselecting a category removes it from selection',
-        (tester) async {
+    testWidgets('deselecting a category removes it from selection', (
+      tester,
+    ) async {
       List<CategoryDefinition>? result;
 
       await tester.pumpWidget(
@@ -425,15 +433,15 @@ void main() {
                   onPressed: () async {
                     result = await Navigator.of(context)
                         .push<List<CategoryDefinition>>(
-                      MaterialPageRoute(
-                        builder: (_) => Material(
-                          child: CategorySelectionModalContent(
-                            onCategorySelected: (_) {},
-                            multiSelect: true,
+                          MaterialPageRoute(
+                            builder: (_) => Material(
+                              child: CategorySelectionModalContent(
+                                onCategorySelected: (_) {},
+                                multiSelect: true,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
+                        );
                   },
                   child: const Text('open'),
                 ),
@@ -493,8 +501,9 @@ void main() {
       expect(selectionChanges, hasLength(3));
     });
 
-    testWidgets('showDoneButton false hides Done button in multiSelect mode',
-        (tester) async {
+    testWidgets('showDoneButton false hides Done button in multiSelect mode', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Material(
@@ -510,8 +519,9 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Done'), findsNothing);
     });
 
-    testWidgets('showDoneButton true shows Done button in multiSelect mode',
-        (tester) async {
+    testWidgets('showDoneButton true shows Done button in multiSelect mode', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Material(
@@ -545,8 +555,9 @@ void main() {
       });
     }
 
-    testWidgets('results list scrolls when many categories present',
-        (tester) async {
+    testWidgets('results list scrolls when many categories present', (
+      tester,
+    ) async {
       // Many categories to force overflow into scrollable list
       final many = generateCategories(60);
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn(many);
@@ -575,10 +586,12 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('search field remains visible while scrolling results',
-        (tester) async {
-      when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(generateCategories(50));
+    testWidgets('search field remains visible while scrolling results', (
+      tester,
+    ) async {
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(generateCategories(50));
 
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(1200, 600);
@@ -608,8 +621,9 @@ void main() {
     });
 
     testWidgets('adapts to small screens without overflow', (tester) async {
-      when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(generateCategories(100));
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(generateCategories(100));
 
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(1200, 400);
@@ -641,8 +655,9 @@ void main() {
     });
 
     testWidgets('respects 640px max height on large screens', (tester) async {
-      when(() => mockEntitiesCacheService.sortedCategories)
-          .thenReturn(generateCategories(200));
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn(generateCategories(200));
 
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(1600, 3000);

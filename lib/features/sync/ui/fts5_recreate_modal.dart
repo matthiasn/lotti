@@ -63,9 +63,9 @@ class Fts5RecreateModal {
                           height: 5,
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Theme.of(context).colorScheme.primary,
                             ),
@@ -99,8 +99,8 @@ class Fts5RecreateModal {
                   Text(
                     context.messages.maintenanceRecreateFts5,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
               ],
             );

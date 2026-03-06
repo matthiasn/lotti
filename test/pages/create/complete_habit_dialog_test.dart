@@ -149,8 +149,9 @@ void main() {
       expect(completion.completionType, HabitCompletionType.skip);
     });
 
-    testWidgets('Shows dashboard preview when habit has dashboard id',
-        (tester) async {
+    testWidgets('Shows dashboard preview when habit has dashboard id', (
+      tester,
+    ) async {
       final habitWithDashboard = habitFlossing.copyWith(dashboardId: 'dash-1');
 
       when(

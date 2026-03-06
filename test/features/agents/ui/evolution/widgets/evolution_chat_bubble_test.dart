@@ -110,8 +110,9 @@ void main() {
         expect(find.text('Hide reasoning'), findsNothing);
       });
 
-      testWidgets('renders plain message without ThinkingDisclosure',
-          (tester) async {
+      testWidgets('renders plain message without ThinkingDisclosure', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildSubject(text: 'Plain message', role: 'assistant'),
         );

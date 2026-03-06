@@ -159,41 +159,46 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
   Widget build(BuildContext context) {
     return StreamBuilder<Set<ConfigFlag>>(
       stream: getIt<JournalDb>().watchConfigFlags(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<Set<ConfigFlag>> snapshot,
-      ) {
-        final flagLookup = <String, ConfigFlag>{
-          for (final ConfigFlag flag in snapshot.data ?? {}) flag.name: flag,
-        };
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<Set<ConfigFlag>> snapshot,
+          ) {
+            final flagLookup = <String, ConfigFlag>{
+              for (final ConfigFlag flag in snapshot.data ?? {})
+                flag.name: flag,
+            };
 
-        final orderedFlags =
-            displayedItems.map((name) => flagLookup[name]).nonNulls.toList();
+            final orderedFlags = displayedItems
+                .map((name) => flagLookup[name])
+                .nonNulls
+                .toList();
 
-        return SliverBoxAdapterPage(
-          title: context.messages.settingsFlagsTitle,
-          showBackButton: true,
-          child: Column(
-            children: [
-              ...orderedFlags.map(
-                (flag) => AdaptiveSettingsCard(
-                  title: _titleForFlag(context, flag),
-                  subtitle: _subtitleForFlag(context, flag),
-                  icon: _iconForFlag(flag.name),
-                  showChevron: false,
-                  trailing: Switch.adaptive(
-                    value: flag.status,
-                    onChanged: (bool status) {
-                      getIt<PersistenceLogic>()
-                          .setConfigFlag(flag.copyWith(status: status));
-                    },
+            return SliverBoxAdapterPage(
+              title: context.messages.settingsFlagsTitle,
+              showBackButton: true,
+              child: Column(
+                children: [
+                  ...orderedFlags.map(
+                    (flag) => AdaptiveSettingsCard(
+                      title: _titleForFlag(context, flag),
+                      subtitle: _subtitleForFlag(context, flag),
+                      icon: _iconForFlag(flag.name),
+                      showChevron: false,
+                      trailing: Switch.adaptive(
+                        value: flag.status,
+                        onChanged: (bool status) {
+                          getIt<PersistenceLogic>().setConfigFlag(
+                            flag.copyWith(status: status),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
+            );
+          },
     );
   }
 }

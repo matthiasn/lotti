@@ -119,8 +119,9 @@ void main() {
     expect(row.children[4], isA<CategoryIconCompact>());
   });
 
-  testWidgets('no leading ModernIconContainer remains in ModernCardContent',
-      (tester) async {
+  testWidgets('no leading ModernIconContainer remains in ModernCardContent', (
+    tester,
+  ) async {
     final task = buildTask();
 
     await tester.pumpWidget(
@@ -227,8 +228,9 @@ void main() {
     expect(find.byType(LabelChip), findsNWidgets(2));
   });
 
-  testWidgets('hides private labels when showPrivateEntries is false',
-      (tester) async {
+  testWidgets('hides private labels when showPrivateEntries is false', (
+    tester,
+  ) async {
     // Arrange labels in the cache with one private label
     final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
     final now = DateTime(2025, 11, 3, 12);
@@ -274,8 +276,9 @@ void main() {
     expect(find.text('Private Label'), findsNothing);
   });
 
-  testWidgets('status chip + icon reflect task status variants',
-      (tester) async {
+  testWidgets('status chip + icon reflect task status variants', (
+    tester,
+  ) async {
     Future<void> pumpWithStatus(TaskStatus status) async {
       final meta = buildTask().meta;
       final data = buildTask().data.copyWith(status: status);
@@ -292,65 +295,78 @@ void main() {
     }
 
     // Open
-    await pumpWithStatus(TaskStatus.open(
-      id: 's-open',
-      createdAt: DateTime(2025),
-      utcOffset: 0,
-    ));
+    await pumpWithStatus(
+      TaskStatus.open(
+        id: 's-open',
+        createdAt: DateTime(2025),
+        utcOffset: 0,
+      ),
+    );
     expect(find.text('Open'), findsOneWidget);
     expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
 
     // In Progress
-    await pumpWithStatus(TaskStatus.inProgress(
-      id: 's-ip',
-      createdAt: DateTime(2025),
-      utcOffset: 0,
-    ));
+    await pumpWithStatus(
+      TaskStatus.inProgress(
+        id: 's-ip',
+        createdAt: DateTime(2025),
+        utcOffset: 0,
+      ),
+    );
     expect(find.text('In Progress'), findsOneWidget);
     expect(find.byIcon(Icons.play_circle_outline_rounded), findsOneWidget);
 
     // Blocked
-    await pumpWithStatus(TaskStatus.blocked(
-      id: 's-bl',
-      createdAt: DateTime(2025),
-      utcOffset: 0,
-      reason: 'x',
-    ));
+    await pumpWithStatus(
+      TaskStatus.blocked(
+        id: 's-bl',
+        createdAt: DateTime(2025),
+        utcOffset: 0,
+        reason: 'x',
+      ),
+    );
     expect(find.text('Blocked'), findsOneWidget);
     expect(find.byIcon(Icons.block_rounded), findsOneWidget);
 
     // On Hold
-    await pumpWithStatus(TaskStatus.onHold(
-      id: 's-oh',
-      createdAt: DateTime(2025),
-      utcOffset: 0,
-      reason: 'x',
-    ));
+    await pumpWithStatus(
+      TaskStatus.onHold(
+        id: 's-oh',
+        createdAt: DateTime(2025),
+        utcOffset: 0,
+        reason: 'x',
+      ),
+    );
     expect(find.text('On Hold'), findsOneWidget);
     expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
 
     // Done
-    await pumpWithStatus(TaskStatus.done(
-      id: 's-done',
-      createdAt: DateTime(2025),
-      utcOffset: 0,
-    ));
+    await pumpWithStatus(
+      TaskStatus.done(
+        id: 's-done',
+        createdAt: DateTime(2025),
+        utcOffset: 0,
+      ),
+    );
     expect(find.text('Done'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
     // Rejected
-    await pumpWithStatus(TaskStatus.rejected(
-      id: 's-rej',
-      createdAt: DateTime(2025),
-      utcOffset: 0,
-    ));
+    await pumpWithStatus(
+      TaskStatus.rejected(
+        id: 's-rej',
+        createdAt: DateTime(2025),
+        utcOffset: 0,
+      ),
+    );
     expect(find.text('Rejected'), findsOneWidget);
     expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
   });
 
   group('priority chip uses urgency color palette', () {
-    testWidgets('priority chip color uses status tokens (light mode)',
-        (tester) async {
+    testWidgets('priority chip color uses status tokens (light mode)', (
+      tester,
+    ) async {
       // buildTask() uses p3Low and groomed status, default MaterialApp is light
       final task = buildTask();
 
@@ -378,8 +394,9 @@ void main() {
       expect(statusChip.color, equals(taskStatusDarkGreen));
     });
 
-    testWidgets('each priority level uses distinct urgency color',
-        (tester) async {
+    testWidgets('each priority level uses distinct urgency color', (
+      tester,
+    ) async {
       final expectedLightColors = {
         TaskPriority.p0Urgent: taskStatusDarkRed,
         TaskPriority.p1High: taskStatusDarkOrange,
@@ -419,8 +436,9 @@ void main() {
     // Arrange NavService
     final nav = MockNavService();
     getIt.registerSingleton<NavService>(nav);
-    when(() => nav.beamToNamed(any(), data: any(named: 'data')))
-        .thenAnswer((_) {});
+    when(
+      () => nav.beamToNamed(any(), data: any(named: 'data')),
+    ).thenAnswer((_) {});
 
     final task = buildTask();
 
@@ -439,19 +457,21 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    verify(() => nav.beamToNamed('/tasks/task-1', data: any(named: 'data')))
-        .called(1);
+    verify(
+      () => nav.beamToNamed('/tasks/task-1', data: any(named: 'data')),
+    ).called(1);
   });
 
-  testWidgets('ModernTaskCard hides progress time text on mobile list cards',
-      (tester) async {
+  testWidgets('ModernTaskCard hides progress time text on mobile list cards', (
+    tester,
+  ) async {
     platform.isDesktop = false;
     platform.isMobile = true;
 
     final task = buildTask().copyWith(
       data: buildTask().data.copyWith(
-            estimate: const Duration(hours: 1),
-          ),
+        estimate: const Duration(hours: 1),
+      ),
     );
 
     await tester.pumpWidget(
@@ -488,8 +508,9 @@ void main() {
     final taskDate = DateTime(2025, 11, 3, 12);
     final expectedTaskDateString = DateFormat.yMMMd().format(taskDate);
 
-    testWidgets('does not show creation date when showCreationDate is false',
-        (tester) async {
+    testWidgets('does not show creation date when showCreationDate is false', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -509,8 +530,9 @@ void main() {
       expect(find.text(expectedTaskDateString), findsNothing);
     });
 
-    testWidgets('shows creation date when showCreationDate is true',
-        (tester) async {
+    testWidgets('shows creation date when showCreationDate is true', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -577,8 +599,9 @@ void main() {
       expect(find.text(expectedTaskDateString), findsNothing);
     });
 
-    testWidgets('creation date uses correct date format (yMMMd)',
-        (tester) async {
+    testWidgets('creation date uses correct date format (yMMMd)', (
+      tester,
+    ) async {
       // Create a task with a specific date to verify format
       final testDate = DateTime(2024, 12, 25, 10);
       final expectedDateString = DateFormat.yMMMd().format(testDate);
@@ -622,33 +645,36 @@ void main() {
   });
 
   group('showDueDate', () {
-    testWidgets('does not show due date in date row when showDueDate is false',
-        (tester) async {
-      final dueDate = DateTime(2025, 11, 10);
-      final task = buildTask().copyWith(
-        data: buildTask().data.copyWith(due: dueDate),
-      );
+    testWidgets(
+      'does not show due date in date row when showDueDate is false',
+      (tester) async {
+        final dueDate = DateTime(2025, 11, 10);
+        final task = buildTask().copyWith(
+          data: buildTask().data.copyWith(due: dueDate),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-                showDueDate: false,
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: ModernTaskCard(
+                  task: task,
+                  showDueDate: false,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Due date should not be shown in date row when showDueDate is false
-      expect(find.text(DateFormat.MMMd().format(dueDate)), findsNothing);
-    });
+        // Due date should not be shown in date row when showDueDate is false
+        expect(find.text(DateFormat.MMMd().format(dueDate)), findsNothing);
+      },
+    );
 
-    testWidgets('shows due date in date row when showDueDate is true',
-        (tester) async {
+    testWidgets('shows due date in date row when showDueDate is true', (
+      tester,
+    ) async {
       final dueDate = DateTime(2025, 11, 10);
       final task = buildTask().copyWith(
         data: buildTask().data.copyWith(due: dueDate),
@@ -723,8 +749,9 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsNothing);
     });
 
-    testWidgets('shows creation date on LEFT and due date on RIGHT',
-        (tester) async {
+    testWidgets('shows creation date on LEFT and due date on RIGHT', (
+      tester,
+    ) async {
       final creationDate = DateTime(2025, 11, 3, 12);
       final dueDate = DateTime(2025, 11, 10);
 
@@ -827,8 +854,11 @@ void main() {
         dateTo: now,
       );
       final data = TaskData(
-        status:
-            TaskStatus.rejected(id: 's-rejected', createdAt: now, utcOffset: 0),
+        status: TaskStatus.rejected(
+          id: 's-rejected',
+          createdAt: now,
+          utcOffset: 0,
+        ),
         dateFrom: now,
         dateTo: now,
         statusHistory: const [],
@@ -858,8 +888,9 @@ void main() {
       );
     });
 
-    testWidgets('shows due date for non-completed task statuses',
-        (tester) async {
+    testWidgets('shows due date for non-completed task statuses', (
+      tester,
+    ) async {
       final dueDate = DateTime(2025, 11, 10);
       final now = DateTime(2025, 11, 3, 12);
 
@@ -903,49 +934,50 @@ void main() {
     });
 
     testWidgets(
-        'tapping due date toggles between absolute and relative display',
-        (tester) async {
-      // Use a date 5 days in the future for testing relative display
-      final now = DateTime.now();
-      final dueDate = DateTime(now.year, now.month, now.day).add(
-        const Duration(days: 5),
-      );
-      final task = buildTask().copyWith(
-        data: buildTask().data.copyWith(due: dueDate),
-      );
+      'tapping due date toggles between absolute and relative display',
+      (tester) async {
+        // Use a date 5 days in the future for testing relative display
+        final now = DateTime.now();
+        final dueDate = DateTime(now.year, now.month, now.day).add(
+          const Duration(days: 5),
+        );
+        final task = buildTask().copyWith(
+          data: buildTask().data.copyWith(due: dueDate),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ModernTaskCard(task: task),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Initially shows absolute date
-      final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-      expect(find.text(absoluteText), findsOneWidget);
+        // Initially shows absolute date
+        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        expect(find.text(absoluteText), findsOneWidget);
 
-      // Tap to toggle to relative display
-      await tester.tap(find.byIcon(Icons.event_rounded));
-      await tester.pump();
+        // Tap to toggle to relative display
+        await tester.tap(find.byIcon(Icons.event_rounded));
+        await tester.pump();
 
-      // Now shows relative date ("Due in 5 days")
-      expect(find.text(absoluteText), findsNothing);
-      expect(find.textContaining('5'), findsOneWidget);
+        // Now shows relative date ("Due in 5 days")
+        expect(find.text(absoluteText), findsNothing);
+        expect(find.textContaining('5'), findsOneWidget);
 
-      // Tap again to toggle back to absolute
-      await tester.tap(find.byIcon(Icons.event_rounded));
-      await tester.pump();
+        // Tap again to toggle back to absolute
+        await tester.tap(find.byIcon(Icons.event_rounded));
+        await tester.pump();
 
-      // Back to absolute
-      expect(find.text(absoluteText), findsOneWidget);
-    });
+        // Back to absolute
+        expect(find.text(absoluteText), findsOneWidget);
+      },
+    );
   });
 
   group('showCoverArt', () {
@@ -967,8 +999,9 @@ void main() {
       expect(find.text('Test Task Title'), findsOneWidget);
     });
 
-    testWidgets('renders without thumbnail when task has no coverArtId',
-        (tester) async {
+    testWidgets('renders without thumbnail when task has no coverArtId', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -987,8 +1020,9 @@ void main() {
       expect(find.byType(CoverArtThumbnail), findsNothing);
     });
 
-    testWidgets('showCoverArt=false hides thumbnail even with coverArtId',
-        (tester) async {
+    testWidgets('showCoverArt=false hides thumbnail even with coverArtId', (
+      tester,
+    ) async {
       final task = buildTask().copyWith(
         data: buildTask().data.copyWith(coverArtId: 'image-123'),
       );
@@ -1022,49 +1056,50 @@ void main() {
     });
 
     testWidgets(
-        'renders CoverArtThumbnail when showCoverArt=true with coverArtId',
-        (tester) async {
-      final task = buildTask().copyWith(
-        data: buildTask().data.copyWith(coverArtId: 'image-123'),
-      );
+      'renders CoverArtThumbnail when showCoverArt=true with coverArtId',
+      (tester) async {
+        final task = buildTask().copyWith(
+          data: buildTask().data.copyWith(coverArtId: 'image-123'),
+        );
 
-      // Create a fake image entry for the thumbnail
-      final now = DateTime(2025, 11, 3, 12);
-      final image = JournalImage(
-        meta: Metadata(
-          id: 'image-123',
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-        ),
-        data: ImageData(
-          imageId: 'img-uuid',
-          imageFile: 'test.jpg',
-          imageDirectory: '/test/dir',
-          capturedAt: now,
-        ),
-      );
+        // Create a fake image entry for the thumbnail
+        final now = DateTime(2025, 11, 3, 12);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'image-123',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: ImageData(
+            imageId: 'img-uuid',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test/dir',
+            capturedAt: now,
+          ),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
-              () => _FakeImageController(image),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(id: 'image-123').overrideWith(
+                () => _FakeImageController(image),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: ModernTaskCard(task: task),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Should have CoverArtThumbnail since showCoverArt defaults to true
-      expect(find.byType(CoverArtThumbnail), findsOneWidget);
-    });
+        // Should have CoverArtThumbnail since showCoverArt defaults to true
+        expect(find.byType(CoverArtThumbnail), findsOneWidget);
+      },
+    );
 
     testWidgets('cover art layout has correct structure', (tester) async {
       final task = buildTask().copyWith(
@@ -1111,13 +1146,14 @@ void main() {
       expect(find.byType(ClipRRect), findsWidgets);
     });
 
-    testWidgets('cover art layout shows progress on separate row',
-        (tester) async {
+    testWidgets('cover art layout shows progress on separate row', (
+      tester,
+    ) async {
       final task = buildTask().copyWith(
         data: buildTask().data.copyWith(
-              coverArtId: 'image-123',
-              estimate: const Duration(hours: 1),
-            ),
+          coverArtId: 'image-123',
+          estimate: const Duration(hours: 1),
+        ),
       );
 
       final now = DateTime(2025, 11, 3, 12);
@@ -1167,8 +1203,9 @@ void main() {
       expect(find.byKey(const Key('task_status_row')), findsOneWidget);
     });
 
-    testWidgets('cover art layout includes labels when present',
-        (tester) async {
+    testWidgets('cover art layout includes labels when present', (
+      tester,
+    ) async {
       // Arrange labels in the cache
       final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
       final now = DateTime(2025, 11, 3, 12);
@@ -1228,9 +1265,9 @@ void main() {
       // Create task with custom cropX
       final task = buildTask().copyWith(
         data: buildTask().data.copyWith(
-              coverArtId: 'image-123',
-              coverArtCropX: 0.3, // Custom crop position
-            ),
+          coverArtId: 'image-123',
+          coverArtCropX: 0.3, // Custom crop position
+        ),
       );
 
       final now = DateTime(2025, 11, 3, 12);

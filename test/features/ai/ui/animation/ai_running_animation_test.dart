@@ -11,8 +11,9 @@ import '../../../../test_helper.dart';
 
 void main() {
   group('AiRunningAnimation', () {
-    testWidgets('should render SiriWaveform with correct height',
-        (tester) async {
+    testWidgets('should render SiriWaveform with correct height', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const WidgetTestBench(
           child: AiRunningAnimation(height: 100),
@@ -23,8 +24,9 @@ void main() {
       expect(find.byType(SiriWaveform), findsOneWidget);
 
       // Verify it uses the correct controller type
-      final waveformWidget =
-          tester.widget<SiriWaveform>(find.byType(SiriWaveform));
+      final waveformWidget = tester.widget<SiriWaveform>(
+        find.byType(SiriWaveform),
+      );
       expect(waveformWidget.controller, isA<IOS9SiriWaveformController>());
 
       // Verify the height is set correctly
@@ -38,8 +40,9 @@ void main() {
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
-    testWidgets('should render nothing when isRunning is false',
-        (tester) async {
+    testWidgets('should render nothing when isRunning is false', (
+      tester,
+    ) async {
       // The default state for inference is idle, so we don't need any overrides
       await tester.pumpWidget(
         ProviderScope(
@@ -58,8 +61,9 @@ void main() {
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
-    testWidgets('should render animation when isRunning is true',
-        (tester) async {
+    testWidgets('should render animation when isRunning is true', (
+      tester,
+    ) async {
       // Create a provider container to manage state
       final container = ProviderContainer();
 
@@ -95,8 +99,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('should wrap with GestureDetector when isInteractive is true',
-        (tester) async {
+    testWidgets('should wrap with GestureDetector when isInteractive is true', (
+      tester,
+    ) async {
       // Create a provider container to manage state
       final container = ProviderContainer();
 
@@ -135,46 +140,48 @@ void main() {
     });
 
     testWidgets(
-        'should not wrap with GestureDetector when isInteractive is false',
-        (tester) async {
-      // Create a provider container to manage state
-      final container = ProviderContainer();
+      'should not wrap with GestureDetector when isInteractive is false',
+      (tester) async {
+        // Create a provider container to manage state
+        final container = ProviderContainer();
 
-      // Set the inference status to running
-      container
-          .read(
-            inferenceStatusControllerProvider(
-              id: testId,
-              aiResponseType: testType,
-            ).notifier,
-          )
-          .setStatus(InferenceStatus.running);
+        // Set the inference status to running
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.running);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: WidgetTestBench(
-            child: AiRunningAnimationWrapper(
-              entryId: testId,
-              height: 100,
-              responseTypes: testSet,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: WidgetTestBench(
+              child: AiRunningAnimationWrapper(
+                entryId: testId,
+                height: 100,
+                responseTypes: testSet,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Allow widget to build
-      await tester.pump();
+        // Allow widget to build
+        await tester.pump();
 
-      // Should render the animation without GestureDetector
-      expect(find.byType(AiRunningAnimation), findsOneWidget);
-      expect(find.byType(GestureDetector), findsNothing);
+        // Should render the animation without GestureDetector
+        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(find.byType(GestureDetector), findsNothing);
 
-      container.dispose();
-    });
+        container.dispose();
+      },
+    );
 
-    testWidgets('should handle tap when interactive with active inference',
-        (tester) async {
+    testWidgets('should handle tap when interactive with active inference', (
+      tester,
+    ) async {
       // This test verifies the _handleTap method executes without error
       // Full modal display testing would require more complex setup
 
@@ -272,8 +279,9 @@ void main() {
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
-    testWidgets('should render nothing when isRunning is false',
-        (tester) async {
+    testWidgets('should render nothing when isRunning is false', (
+      tester,
+    ) async {
       // The default state for inference is idle, so we don't need any overrides
       await tester.pumpWidget(
         ProviderScope(
@@ -293,44 +301,45 @@ void main() {
     });
 
     testWidgets(
-        'should render glass container with animation when isRunning is true',
-        (tester) async {
-      // Create a provider container to manage state
-      final container = ProviderContainer();
+      'should render glass container with animation when isRunning is true',
+      (tester) async {
+        // Create a provider container to manage state
+        final container = ProviderContainer();
 
-      // Set the inference status to running
-      container
-          .read(
-            inferenceStatusControllerProvider(
-              id: testId,
-              aiResponseType: testType,
-            ).notifier,
-          )
-          .setStatus(InferenceStatus.running);
+        // Set the inference status to running
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.running);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: WidgetTestBench(
-            child: AiRunningAnimationWrapperCard(
-              entryId: testId,
-              height: 100,
-              responseTypes: testSet,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: WidgetTestBench(
+              child: AiRunningAnimationWrapperCard(
+                entryId: testId,
+                height: 100,
+                responseTypes: testSet,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Allow widget to build
-      await tester.pump();
+        // Allow widget to build
+        await tester.pump();
 
-      // Should render the glass container with animation
-      expect(find.byType(AiRunningAnimation), findsOneWidget);
-      expect(find.byType(GlassContainer), findsOneWidget);
-      expect(find.byType(Center), findsOneWidget);
+        // Should render the glass container with animation
+        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(find.byType(GlassContainer), findsOneWidget);
+        expect(find.byType(Center), findsOneWidget);
 
-      container.dispose();
-    });
+        container.dispose();
+      },
+    );
 
     testWidgets('should render with isInteractive parameter', (tester) async {
       // Create a provider container to manage state
@@ -376,8 +385,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('should handle multiple response types in card',
-        (tester) async {
+    testWidgets('should handle multiple response types in card', (
+      tester,
+    ) async {
       // Test with multiple response types
       final multipleTypes = {
         AiResponseType.taskSummary,
@@ -420,8 +430,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('should properly set height for glass container',
-        (tester) async {
+    testWidgets('should properly set height for glass container', (
+      tester,
+    ) async {
       // Create a provider container to manage state
       final container = ProviderContainer();
       const testHeight = 150.0;

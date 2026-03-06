@@ -110,7 +110,7 @@ void main() {
     test('updates state when categories change', () {
       fakeAsync((async) {
         final categories1 = [
-          CategoryTestUtils.createTestCategory(name: 'Category 1')
+          CategoryTestUtils.createTestCategory(name: 'Category 1'),
         ];
         final categories2 = [
           CategoryTestUtils.createTestCategory(name: 'Category 1'),
@@ -181,8 +181,9 @@ void main() {
       // Yield once for initial load (no real wait)
       await Future<void>.delayed(Duration.zero);
 
-      final controller =
-          container.read(categoriesListControllerProvider.notifier);
+      final controller = container.read(
+        categoriesListControllerProvider.notifier,
+      );
       await controller.deleteCategory(categoryId);
 
       verify(() => mockRepository.deleteCategory(categoryId)).called(1);
@@ -226,8 +227,9 @@ void main() {
       // Yield once for initial load (no real wait)
       await Future<void>.delayed(Duration.zero);
 
-      final controller =
-          container.read(categoriesListControllerProvider.notifier);
+      final controller = container.read(
+        categoriesListControllerProvider.notifier,
+      );
       await controller.deleteCategory(categoryId);
 
       // Wait for error state (short guard)

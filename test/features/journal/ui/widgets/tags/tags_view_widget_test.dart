@@ -21,7 +21,7 @@ void main() {
           testTag1,
           testStoryTag1,
           testPersonTag1,
-        ]
+        ],
       ]),
     );
 

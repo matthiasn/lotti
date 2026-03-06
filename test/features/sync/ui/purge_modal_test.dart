@@ -64,8 +64,9 @@ void main() {
 
     final confirmButtonFinder = find.byType(LottiPrimaryButton);
     expect(confirmButtonFinder, findsOneWidget);
-    final confirmButton =
-        tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+    final confirmButton = tester.widget<LottiPrimaryButton>(
+      confirmButtonFinder,
+    );
     confirmButton.onPressed?.call();
     await tester.pump();
   }

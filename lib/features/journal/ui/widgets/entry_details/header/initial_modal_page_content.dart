@@ -39,7 +39,8 @@ class InitialModalPageContent extends ConsumerWidget {
     final isAudio = entry is JournalAudio;
     final isImage = entry is JournalImage;
     final hasGeolocation = entry?.geolocation != null && !isTask;
-    final hasText = entryState != null &&
+    final hasText =
+        entryState != null &&
         ref
             .read(entryControllerProvider(id: entryId).notifier)
             .controller
@@ -54,7 +55,8 @@ class InitialModalPageContent extends ConsumerWidget {
         : null;
     final linkedIsTask = linkedEntryState?.entry is Task;
 
-    final enableRatings = ref
+    final enableRatings =
+        ref
             .watch(configFlagProvider(enableSessionRatingsFlag))
             .unwrapPrevious()
             .whenData((value) => value)
@@ -158,8 +160,9 @@ class _ActionMenuList extends StatelessWidget {
               thickness: 0.5,
               indent: AppTheme.cardPadding,
               endIndent: AppTheme.cardPadding,
-              color: context.colorScheme.outline
-                  .withValues(alpha: AppTheme.alphaDivider),
+              color: context.colorScheme.outline.withValues(
+                alpha: AppTheme.alphaDivider,
+              ),
             ),
         ],
       ],

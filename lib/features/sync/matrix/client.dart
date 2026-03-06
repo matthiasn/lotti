@@ -50,8 +50,9 @@ Future<Client> createMatrixClient({
   );
 }
 
-Future<String> createMatrixDeviceName(
-    {DeviceInfoPlugin? deviceInfoPlugin}) async {
+Future<String> createMatrixDeviceName({
+  DeviceInfoPlugin? deviceInfoPlugin,
+}) async {
   final operatingSystem = Platform.operatingSystem;
   var deviceName = operatingSystem;
 

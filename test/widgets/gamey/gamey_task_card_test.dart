@@ -191,24 +191,26 @@ void main() {
   }
 
   group('GameyTaskCard', () {
-    testWidgets('renders card with title, status badge, and correct structure',
-        (tester) async {
-      await tester.pumpWidget(buildCard(testTask));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders card with title, status badge, and correct structure',
+      (tester) async {
+        await tester.pumpWidget(buildCard(testTask));
+        await tester.pumpAndSettle();
 
-      // Card structure
-      expect(find.byType(GameySubtleCard), findsOneWidget);
-      expect(find.byType(GameyIconBadge), findsOneWidget);
+        // Card structure
+        expect(find.byType(GameySubtleCard), findsOneWidget);
+        expect(find.byType(GameyIconBadge), findsOneWidget);
 
-      // Title text content
-      expect(find.text('Test Task Title'), findsOneWidget);
+        // Title text content
+        expect(find.text('Test Task Title'), findsOneWidget);
 
-      // Status chip shows "Open" for the default open status
-      expect(find.text('Open'), findsOneWidget);
+        // Status chip shows "Open" for the default open status
+        expect(find.text('Open'), findsOneWidget);
 
-      // Priority chip shows default priority
-      expect(find.text('P2'), findsOneWidget);
-    });
+        // Priority chip shows default priority
+        expect(find.text('P2'), findsOneWidget);
+      },
+    );
 
     testWidgets('navigates to task details on tap', (tester) async {
       await tester.pumpWidget(buildCard(testTask));
@@ -223,8 +225,9 @@ void main() {
       );
     });
 
-    testWidgets('renders correct status label for each status type',
-        (tester) async {
+    testWidgets('renders correct status label for each status type', (
+      tester,
+    ) async {
       final statusCases = [
         (
           TaskStatus.inProgress(
@@ -315,8 +318,9 @@ void main() {
         return null;
       }
 
-      testWidgets('priority chip uses urgency palette (not unified blue)',
-          (tester) async {
+      testWidgets('priority chip uses urgency palette (not unified blue)', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildCard(testTask));
         await tester.pumpAndSettle();
 
@@ -326,13 +330,16 @@ void main() {
         final decoration = container!.decoration! as BoxDecoration;
         final gradient = decoration.gradient! as LinearGradient;
 
-        expect(gradient.colors.first,
-            equals(GameyColors.priorityColor(TaskPriority.p2Medium)));
+        expect(
+          gradient.colors.first,
+          equals(GameyColors.priorityColor(TaskPriority.p2Medium)),
+        );
         expect(gradient.colors.first, isNot(equals(GameyColors.gameyAccent)));
       });
 
-      testWidgets('status chip uses semantic orange for open status',
-          (tester) async {
+      testWidgets('status chip uses semantic orange for open status', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildCard(testTask));
         await tester.pumpAndSettle();
 
@@ -345,8 +352,9 @@ void main() {
         expect(gradient.colors.first, equals(GameyColors.primaryOrange));
       });
 
-      testWidgets('priority and status chips have different colors',
-          (tester) async {
+      testWidgets('priority and status chips have different colors', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildCard(testTask));
         await tester.pumpAndSettle();
 
@@ -359,8 +367,9 @@ void main() {
         final priorityGradient =
             (priorityContainer!.decoration! as BoxDecoration).gradient!
                 as LinearGradient;
-        final statusGradient = (statusContainer!.decoration! as BoxDecoration)
-            .gradient! as LinearGradient;
+        final statusGradient =
+            (statusContainer!.decoration! as BoxDecoration).gradient!
+                as LinearGradient;
 
         expect(
           priorityGradient.colors.first,
@@ -392,8 +401,9 @@ void main() {
         expect(gradient.colors.first, equals(GameyColors.primaryRed));
       });
 
-      testWidgets('each priority level uses distinct urgency palette color',
-          (tester) async {
+      testWidgets('each priority level uses distinct urgency palette color', (
+        tester,
+      ) async {
         for (final priority in TaskPriority.values) {
           final task = Task(
             meta: testTask.meta,
@@ -412,8 +422,11 @@ void main() {
           await tester.pumpAndSettle();
 
           final container = findGradientChipContainer(tester, priority.short);
-          expect(container, isNotNull,
-              reason: 'Container not found for ${priority.short}');
+          expect(
+            container,
+            isNotNull,
+            reason: 'Container not found for ${priority.short}',
+          );
 
           final decoration = container!.decoration! as BoxDecoration;
           final gradient = decoration.gradient! as LinearGradient;

@@ -19,8 +19,9 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockLocationData extends Mock implements LocationData {}
 
-Future<Geolocation?> fakeIpGeolocationProvider(
-    {http.Client? httpClient}) async {
+Future<Geolocation?> fakeIpGeolocationProvider({
+  http.Client? httpClient,
+}) async {
   return Geolocation(
     createdAt: DateTime.now(),
     latitude: 40.7128,
@@ -63,11 +64,13 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService);
 
     // Stub captureException to prevent errors in tests
-    when(() => mockLoggingService.captureException(
-          any<Exception>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<Exception>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(getIt.reset);
@@ -75,8 +78,9 @@ void main() {
   group('DeviceLocation', () {
     group('getCurrentGeoLocation', () {
       test('returns null when location recording is disabled', () async {
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => false);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
@@ -95,13 +99,15 @@ void main() {
           return;
         }
 
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.granted);
 
         final mockLocationData = MockLocationData();
         when(() => mockLocationData.latitude).thenReturn(37.7749);
@@ -112,8 +118,9 @@ void main() {
         when(() => mockLocationData.heading).thenReturn(180);
         when(() => mockLocationData.speedAccuracy).thenReturn(1);
 
-        when(() => mockLocation.getLocation())
-            .thenAnswer((_) async => mockLocationData);
+        when(
+          () => mockLocation.getLocation(),
+        ).thenAnswer((_) async => mockLocationData);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
@@ -134,16 +141,19 @@ void main() {
       });
 
       test('falls back to IP geolocation when permission is denied', () async {
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.denied);
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.denied);
 
-        when(() => mockLocation.requestPermission())
-            .thenAnswer((_) async => PermissionStatus.denied);
+        when(
+          () => mockLocation.requestPermission(),
+        ).thenAnswer((_) async => PermissionStatus.denied);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
@@ -167,16 +177,19 @@ void main() {
           return;
         }
 
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.granted);
 
-        when(() => mockLocation.getLocation())
-            .thenThrow(Exception('Location service failed'));
+        when(
+          () => mockLocation.getLocation(),
+        ).thenThrow(Exception('Location service failed'));
 
         // The result should fall back to IP geolocation
         deviceLocation = DeviceLocation(
@@ -186,11 +199,13 @@ void main() {
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Verify that the exception was logged
-        verify(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'LOCATION_SERVICE',
-              subDomain: 'native_location_fallback',
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'LOCATION_SERVICE',
+            subDomain: 'native_location_fallback',
+          ),
+        ).called(1);
 
         expect(result, isNotNull);
         expect(result!.latitude, 40.7128);
@@ -200,72 +215,57 @@ void main() {
         expect(result.accuracy, 50000);
       });
 
-      test('falls back to IP when location data has null coordinates',
-          () async {
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+      test(
+        'falls back to IP when location data has null coordinates',
+        () async {
+          when(
+            () => mockJournalDb.getConfigFlag(recordLocationFlag),
+          ).thenAnswer((_) async => true);
 
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
+          when(
+            () => mockLocation.serviceEnabled(),
+          ).thenAnswer((_) async => true);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.granted);
+          when(
+            () => mockLocation.hasPermission(),
+          ).thenAnswer((_) async => PermissionStatus.granted);
 
-        final mockLocationData = MockLocationData();
-        when(() => mockLocationData.latitude).thenReturn(null);
-        when(() => mockLocationData.longitude).thenReturn(null);
+          final mockLocationData = MockLocationData();
+          when(() => mockLocationData.latitude).thenReturn(null);
+          when(() => mockLocationData.longitude).thenReturn(null);
 
-        when(() => mockLocation.getLocation())
-            .thenAnswer((_) async => mockLocationData);
+          when(
+            () => mockLocation.getLocation(),
+          ).thenAnswer((_) async => mockLocationData);
 
-        // Should fall back to IP geolocation
-        final result = await deviceLocation.getCurrentGeoLocation();
+          // Should fall back to IP geolocation
+          final result = await deviceLocation.getCurrentGeoLocation();
 
-        // The actual result depends on the IP geolocation service
-        expect(result, anyOf(isNull, isA<Geolocation>()));
-      });
+          // The actual result depends on the IP geolocation service
+          expect(result, anyOf(isNull, isA<Geolocation>()));
+        },
+      );
 
       test('handles service not enabled by falling back to IP', () async {
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
-        when(() => mockLocation.serviceEnabled())
-            .thenAnswer((_) async => false);
+        when(
+          () => mockLocation.serviceEnabled(),
+        ).thenAnswer((_) async => false);
 
-        when(() => mockLocation.requestService())
-            .thenAnswer((_) async => false);
+        when(
+          () => mockLocation.requestService(),
+        ).thenAnswer((_) async => false);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.denied);
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.denied);
 
-        when(() => mockLocation.requestPermission())
-            .thenAnswer((_) async => PermissionStatus.denied);
-
-        // Should fall back to IP geolocation
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        expect(result, isNotNull);
-        expect(result!.latitude, 40.7128);
-        expect(result.longitude, -74.0060);
-        expect(result.timezone, 'America/New_York');
-        expect(result.utcOffset, -300);
-        expect(result.accuracy, 50000);
-
-        verifyNever(() => mockLocation.getLocation());
-      });
-
-      test('handles permission permanently denied by falling back to IP',
-          () async {
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
-
-        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
-
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.deniedForever);
+        when(
+          () => mockLocation.requestPermission(),
+        ).thenAnswer((_) async => PermissionStatus.denied);
 
         // Should fall back to IP geolocation
         deviceLocation = DeviceLocation(
@@ -283,6 +283,39 @@ void main() {
 
         verifyNever(() => mockLocation.getLocation());
       });
+
+      test(
+        'handles permission permanently denied by falling back to IP',
+        () async {
+          when(
+            () => mockJournalDb.getConfigFlag(recordLocationFlag),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockLocation.serviceEnabled(),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockLocation.hasPermission(),
+          ).thenAnswer((_) async => PermissionStatus.deniedForever);
+
+          // Should fall back to IP geolocation
+          deviceLocation = DeviceLocation(
+            locationService: mockLocation,
+            ipGeolocationProvider: fakeIpGeolocationProvider,
+          );
+          final result = await deviceLocation.getCurrentGeoLocation();
+
+          expect(result, isNotNull);
+          expect(result!.latitude, 40.7128);
+          expect(result.longitude, -74.0060);
+          expect(result.timezone, 'America/New_York');
+          expect(result.utcOffset, -300);
+          expect(result.accuracy, 50000);
+
+          verifyNever(() => mockLocation.getLocation());
+        },
+      );
     });
 
     group('Linux-specific location handling', () {
@@ -292,8 +325,9 @@ void main() {
           return;
         }
 
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
@@ -316,15 +350,18 @@ void main() {
           return;
         }
 
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         // Mock GeoClue failure by making it throw
-        when(() => mockLoggingService.captureException(
-              any<Exception>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-            )).thenReturn(null);
+        when(
+          () => mockLoggingService.captureException(
+            any<Exception>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
@@ -349,13 +386,15 @@ void main() {
           return;
         }
 
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.granted);
 
         final mockLocationData = MockLocationData();
         when(() => mockLocationData.latitude).thenReturn(52.205);
@@ -366,8 +405,9 @@ void main() {
         when(() => mockLocationData.heading).thenReturn(null);
         when(() => mockLocationData.speedAccuracy).thenReturn(null);
 
-        when(() => mockLocation.getLocation())
-            .thenAnswer((_) async => mockLocationData);
+        when(
+          () => mockLocation.getLocation(),
+        ).thenAnswer((_) async => mockLocationData);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
@@ -387,13 +427,15 @@ void main() {
           return;
         }
 
-        when(() => mockJournalDb.getConfigFlag(recordLocationFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
-        when(() => mockLocation.hasPermission())
-            .thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.granted);
 
         final mockLocationData = MockLocationData();
         when(() => mockLocationData.latitude).thenReturn(0);
@@ -404,8 +446,9 @@ void main() {
         when(() => mockLocationData.heading).thenReturn(null);
         when(() => mockLocationData.speedAccuracy).thenReturn(null);
 
-        when(() => mockLocation.getLocation())
-            .thenAnswer((_) async => mockLocationData);
+        when(
+          () => mockLocation.getLocation(),
+        ).thenAnswer((_) async => mockLocationData);
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,

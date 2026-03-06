@@ -46,7 +46,8 @@ const List<String> screencaptureArguments = ['-tjpg'];
 // Error messages
 const String noScreenshotToolAvailableMessage =
     'No screenshot tool available. Please install one of: ';
-const String installInstructionsMessage = 'You can install them with:\n'
+const String installInstructionsMessage =
+    'You can install them with:\n'
     '  sudo apt install spectacle (KDE)\n'
     '  sudo apt install gnome-screenshot (GNOME)\n'
     '  sudo apt install scrot (lightweight)\n'
@@ -83,8 +84,9 @@ class ScreenshotToolConfig {
 /// Configuration for each screenshot tool
 const Map<String, ScreenshotToolConfig> screenshotToolConfigs = {
   spectacleTool: ScreenshotToolConfig(arguments: spectacleArguments),
-  gnomeScreenshotTool:
-      ScreenshotToolConfig(arguments: gnomeScreenshotArguments),
+  gnomeScreenshotTool: ScreenshotToolConfig(
+    arguments: gnomeScreenshotArguments,
+  ),
   scrotTool: ScreenshotToolConfig(arguments: scrotArguments),
   importTool: ScreenshotToolConfig(arguments: importArguments),
 };

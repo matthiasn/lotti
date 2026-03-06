@@ -74,7 +74,8 @@ class _LoggingPageState extends State<LoggingPage> {
       } else {
         // Show error for overly long queries
         _showSearchError(
-            'Search query too long (max $_maxSearchLength characters)');
+          'Search query too long (max $_maxSearchLength characters)',
+        );
       }
     });
   }
@@ -141,8 +142,9 @@ class _LoggingPageState extends State<LoggingPage> {
       }
 
       // Get total count for pagination info
-      final totalCount =
-          await getIt<LoggingDb>().getSearchLogEntriesCount(_searchQuery);
+      final totalCount = await getIt<LoggingDb>().getSearchLogEntriesCount(
+        _searchQuery,
+      );
 
       // Load first page of search results
       final firstPage = await getIt<LoggingDb>()
@@ -479,84 +481,85 @@ class LogDetailPage extends StatelessWidget {
       appBar: TitleAppBar(title: context.messages.settingsLogsTitle),
       body: StreamBuilder(
         stream: _db.watchLogEntryById(logEntryId),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<LogEntry>> snapshot,
-        ) {
-          LogEntry? logEntry;
-          final data = snapshot.data ?? [];
-          if (data.isNotEmpty) {
-            logEntry = data.first;
-          }
+        builder:
+            (
+              BuildContext context,
+              AsyncSnapshot<List<LogEntry>> snapshot,
+            ) {
+              LogEntry? logEntry;
+              final data = snapshot.data ?? [];
+              if (data.isNotEmpty) {
+                logEntry = data.first;
+              }
 
-          if (logEntry == null) {
-            return const EmptyScaffoldWithTitle('');
-          }
+              if (logEntry == null) {
+                return const EmptyScaffoldWithTitle('');
+              }
 
-          final timestamp = logEntry.createdAt.substring(0, 23);
-          final domain = logEntry.domain;
-          final level = logEntry.level;
-          final subDomain = logEntry.subDomain;
-          final message = logEntry.message;
-          final stacktrace = logEntry.stacktrace;
+              final timestamp = logEntry.createdAt.substring(0, 23);
+              final domain = logEntry.domain;
+              final level = logEntry.level;
+              final subDomain = logEntry.subDomain;
+              final message = logEntry.message;
+              final stacktrace = logEntry.stacktrace;
 
-          final clipboardText =
-              '$timestamp $level $domain $subDomain\n\n$message\n\n$stacktrace';
+              final clipboardText =
+                  '$timestamp $level $domain $subDomain\n\n$message\n\n$stacktrace';
 
-          final headerStyle = level == 'ERROR'
-              ? monoTabularStyle(
-                  fontSize: fontSizeMedium,
-                  color: context.colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                )
-              : monoTabularStyle(fontSize: fontSizeMedium);
+              final headerStyle = level == 'ERROR'
+                  ? monoTabularStyle(
+                      fontSize: fontSizeMedium,
+                      color: context.colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                    )
+                  : monoTabularStyle(fontSize: fontSizeMedium);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                Wrap(
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(8),
+                child: Column(
                   children: [
-                    Text(timestamp, style: headerStyle),
-                    const SizedBox(width: 10),
-                    Text(level, style: headerStyle),
-                    const SizedBox(width: 10),
-                    Text(domain, style: headerStyle),
-                    if (subDomain != null) ...[
-                      const SizedBox(width: 10),
-                      Text(subDomain, style: headerStyle),
+                    Wrap(
+                      children: [
+                        Text(timestamp, style: headerStyle),
+                        const SizedBox(width: 10),
+                        Text(level, style: headerStyle),
+                        const SizedBox(width: 10),
+                        Text(domain, style: headerStyle),
+                        if (subDomain != null) ...[
+                          const SizedBox(width: 10),
+                          Text(subDomain, style: headerStyle),
+                        ],
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Text('Message:'),
+                    ),
+                    SelectableText(
+                      message,
+                      style: monoTabularStyle(fontSize: fontSizeMedium),
+                    ),
+                    if (stacktrace != null) ...[
+                      const Padding(
+                        padding: EdgeInsets.only(top: 16),
+                        child: Text('Stack Trace:'),
+                      ),
+                      SelectableText(
+                        stacktrace,
+                        style: monoTabularStyle(fontSize: fontSizeMedium),
+                      ),
                     ],
+                    IconButton(
+                      icon: Icon(MdiIcons.clipboardOutline),
+                      iconSize: 48,
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: clipboardText));
+                      },
+                    ),
                   ],
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: Text('Message:'),
-                ),
-                SelectableText(
-                  message,
-                  style: monoTabularStyle(fontSize: fontSizeMedium),
-                ),
-                if (stacktrace != null) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16),
-                    child: Text('Stack Trace:'),
-                  ),
-                  SelectableText(
-                    stacktrace,
-                    style: monoTabularStyle(fontSize: fontSizeMedium),
-                  ),
-                ],
-                IconButton(
-                  icon: Icon(MdiIcons.clipboardOutline),
-                  iconSize: 48,
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: clipboardText));
-                  },
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
       ),
     );
   }

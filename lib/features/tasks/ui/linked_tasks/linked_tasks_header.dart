@@ -26,8 +26,9 @@ class LinkedTasksHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final color = context.colorScheme.outline;
     final uiState = ref.watch(linkedTasksControllerProvider(taskId: taskId));
-    final notifier =
-        ref.read(linkedTasksControllerProvider(taskId: taskId).notifier);
+    final notifier = ref.read(
+      linkedTasksControllerProvider(taskId: taskId).notifier,
+    );
 
     return Row(
       children: [
@@ -46,8 +47,9 @@ class LinkedTasksHeader extends ConsumerWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color:
-                      context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: 0.3,
+                  ),
                   width: 0.8,
                 ),
               ),

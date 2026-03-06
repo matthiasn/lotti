@@ -18,24 +18,27 @@ void main() {
 
     test('isSyncPayloadEvent detects by msgtype == syncMessageType', () {
       final e = MockEvent();
-      when(() => e.content)
-          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(
+        () => e.content,
+      ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
       // text is unused in this branch
       when(() => e.text).thenReturn('');
       expect(MatrixEventClassifier.isSyncPayloadEvent(e), isTrue);
     });
 
     test(
-        'isSyncPayloadEvent detects valid fallback base64 JSON with runtimeType',
-        () {
-      final e = MockEvent();
-      // no msgtype
-      when(() => e.content).thenReturn(<String, dynamic>{});
-      final payload =
-          base64.encode(utf8.encode('{"runtimeType":"journalEntity"}'));
-      when(() => e.text).thenReturn(payload);
-      expect(MatrixEventClassifier.isSyncPayloadEvent(e), isTrue);
-    });
+      'isSyncPayloadEvent detects valid fallback base64 JSON with runtimeType',
+      () {
+        final e = MockEvent();
+        // no msgtype
+        when(() => e.content).thenReturn(<String, dynamic>{});
+        final payload = base64.encode(
+          utf8.encode('{"runtimeType":"journalEntity"}'),
+        );
+        when(() => e.text).thenReturn(payload);
+        expect(MatrixEventClassifier.isSyncPayloadEvent(e), isTrue);
+      },
+    );
 
     test('isSyncPayloadEvent false when neither msgtype nor valid payload', () {
       final e = MockEvent();

@@ -20,25 +20,25 @@ enum AiProviderOption {
 /// Extension to get display properties for AI provider options
 extension AiProviderOptionExtension on AiProviderOption {
   String get displayName => switch (this) {
-        AiProviderOption.gemini => 'Google Gemini',
-        AiProviderOption.openAi => 'OpenAI',
-        AiProviderOption.mistral => 'Mistral AI',
-      };
+    AiProviderOption.gemini => 'Google Gemini',
+    AiProviderOption.openAi => 'OpenAI',
+    AiProviderOption.mistral => 'Mistral AI',
+  };
 
   String get description => switch (this) {
-        AiProviderOption.gemini =>
-          'Free tier available. Best for multimodal tasks including audio transcription.',
-        AiProviderOption.openAi =>
-          'Powerful reasoning models. Requires API key with credits.',
-        AiProviderOption.mistral =>
-          'European AI with strong reasoning (Magistral) and audio (Voxtral) models.',
-      };
+    AiProviderOption.gemini =>
+      'Free tier available. Best for multimodal tasks including audio transcription.',
+    AiProviderOption.openAi =>
+      'Powerful reasoning models. Requires API key with credits.',
+    AiProviderOption.mistral =>
+      'European AI with strong reasoning (Magistral) and audio (Voxtral) models.',
+  };
 
   InferenceProviderType get inferenceProviderType => switch (this) {
-        AiProviderOption.gemini => InferenceProviderType.gemini,
-        AiProviderOption.openAi => InferenceProviderType.openAi,
-        AiProviderOption.mistral => InferenceProviderType.mistral,
-      };
+    AiProviderOption.gemini => InferenceProviderType.gemini,
+    AiProviderOption.openAi => InferenceProviderType.openAi,
+    AiProviderOption.mistral => InferenceProviderType.mistral,
+  };
 }
 
 /// Service that manages the automatic AI setup prompt for new users.
@@ -103,9 +103,9 @@ class AiSetupPromptService extends _$AiSetupPromptService {
       InferenceProviderType.mistral,
     };
 
-    return providers
-        .whereType<AiConfigInferenceProvider>()
-        .any((p) => supportedProviders.contains(p.inferenceProviderType));
+    return providers.whereType<AiConfigInferenceProvider>().any(
+      (p) => supportedProviders.contains(p.inferenceProviderType),
+    );
   }
 
   /// Checks if the prompt was previously dismissed.

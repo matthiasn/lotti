@@ -43,45 +43,44 @@ final _testProfile = AiConfig.inferenceProfile(
 /// Shared overrides for the inference profile provider used by ProfileSelector.
 List<Override> _profileOverrides({
   List<AiConfig> profiles = const [],
-}) =>
-    [
-      inferenceProfileControllerProvider.overrideWithBuild(
-        (ref, notifier) => Stream.value(profiles),
-      ),
-    ];
+}) => [
+  inferenceProfileControllerProvider.overrideWithBuild(
+    (ref, notifier) => Stream.value(profiles),
+  ),
+];
 
 /// Common overrides for template stats/reports providers (empty data).
 List<Override> _templateStatsOverrides() => [
-      templateTokenUsageSummariesProvider.overrideWith(
-        (ref, id) async => <AgentTokenUsageSummary>[],
-      ),
-      templateInstanceTokenBreakdownProvider.overrideWith(
-        (ref, id) async => <InstanceTokenBreakdown>[],
-      ),
-      templateRecentReportsProvider.overrideWith(
-        (ref, id) async => <AgentDomainEntity>[],
-      ),
-      evolutionSessionsProvider.overrideWith(
-        (ref, id) async => <AgentDomainEntity>[],
-      ),
-      evolutionSessionStatsProvider.overrideWith(
-        (ref, id) async => const EvolutionSessionStats(
-          totalSessions: 0,
-          completedCount: 0,
-          abandonedCount: 0,
-          approvalRate: 0,
-        ),
-      ),
-      templateWakeRunTimeSeriesProvider.overrideWith(
-        (ref, id) async => const WakeRunTimeSeries(
-          dailyBuckets: [],
-          versionBuckets: [],
-        ),
-      ),
-      templateTaskResolutionTimeSeriesProvider.overrideWith(
-        (ref, id) async => const TaskResolutionTimeSeries(dailyBuckets: []),
-      ),
-    ];
+  templateTokenUsageSummariesProvider.overrideWith(
+    (ref, id) async => <AgentTokenUsageSummary>[],
+  ),
+  templateInstanceTokenBreakdownProvider.overrideWith(
+    (ref, id) async => <InstanceTokenBreakdown>[],
+  ),
+  templateRecentReportsProvider.overrideWith(
+    (ref, id) async => <AgentDomainEntity>[],
+  ),
+  evolutionSessionsProvider.overrideWith(
+    (ref, id) async => <AgentDomainEntity>[],
+  ),
+  evolutionSessionStatsProvider.overrideWith(
+    (ref, id) async => const EvolutionSessionStats(
+      totalSessions: 0,
+      completedCount: 0,
+      abandonedCount: 0,
+      approvalRate: 0,
+    ),
+  ),
+  templateWakeRunTimeSeriesProvider.overrideWith(
+    (ref, id) async => const WakeRunTimeSeries(
+      dailyBuckets: [],
+      versionBuckets: [],
+    ),
+  ),
+  templateTaskResolutionTimeSeriesProvider.overrideWith(
+    (ref, id) async => const TaskResolutionTimeSeries(dailyBuckets: []),
+  ),
+];
 
 void main() {
   late MockAgentTemplateService mockTemplateService;
@@ -125,7 +124,8 @@ void main() {
     List<AgentTemplateVersionEntity> versionHistory = const [],
     List<Override> extraOverrides = const [],
   }) {
-    final tpl = template ??
+    final tpl =
+        template ??
         makeTestTemplate(
           id: templateId,
           agentId: templateId,
@@ -256,8 +256,9 @@ void main() {
     const templateId = 'tpl-edit-001';
 
     testWidgets('populates form fields from template', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(
@@ -283,8 +284,9 @@ void main() {
     });
 
     testWidgets('shows edit title and populated form fields', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -312,10 +314,12 @@ void main() {
       );
     });
 
-    testWidgets('uses generalDirective over legacy directives when non-empty',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('uses generalDirective over legacy directives when non-empty', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(
@@ -335,8 +339,9 @@ void main() {
     });
 
     testWidgets('save calls updateTemplate and createVersion', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.updateTemplate(
           templateId: any(named: 'templateId'),
@@ -393,8 +398,9 @@ void main() {
     });
 
     testWidgets('version history shows versions', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final v1 = makeTestTemplateVersion(
         id: 'v1',
@@ -452,8 +458,9 @@ void main() {
     });
 
     testWidgets('rollback calls rollbackToVersion', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.rollbackToVersion(
           templateId: any(named: 'templateId'),
@@ -512,10 +519,12 @@ void main() {
     });
 
     testWidgets('delete calls deleteTemplate', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
-      when(() => mockTemplateService.deleteTemplate(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.deleteTemplate(any()),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -549,10 +558,12 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('shows error when deleting template with instances',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('shows error when deleting template with instances', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
       when(() => mockTemplateService.deleteTemplate(any())).thenThrow(
         const TemplateInUseException(
           templateId: 'test',
@@ -593,8 +604,9 @@ void main() {
       );
     });
 
-    testWidgets('shows loading indicator when template is loading',
-        (tester) async {
+    testWidgets('shows loading indicator when template is loading', (
+      tester,
+    ) async {
       final completer = Completer<AgentDomainEntity?>();
 
       await tester.pumpWidget(
@@ -660,8 +672,9 @@ void main() {
       );
     });
 
-    testWidgets('shows template not found when template is null',
-        (tester) async {
+    testWidgets('shows template not found when template is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AgentTemplateDetailPage(templateId: 'tpl-missing'),
@@ -693,8 +706,9 @@ void main() {
     });
 
     testWidgets('shows commonError snackbar when save fails', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.updateTemplate(
           templateId: any(named: 'templateId'),
@@ -724,12 +738,15 @@ void main() {
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
-    testWidgets('shows commonError snackbar on generic delete error',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
-      when(() => mockTemplateService.deleteTemplate(any()))
-          .thenThrow(Exception('unexpected delete error'));
+    testWidgets('shows commonError snackbar on generic delete error', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.deleteTemplate(any()),
+      ).thenThrow(Exception('unexpected delete error'));
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -762,8 +779,9 @@ void main() {
     });
 
     testWidgets('shows commonError snackbar on rollback error', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.rollbackToVersion(
           templateId: any(named: 'templateId'),
@@ -816,10 +834,12 @@ void main() {
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
-    testWidgets('shows no versions text when version list is empty',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('shows no versions text when version list is empty', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final tpl = makeTestTemplate(id: templateId, agentId: templateId);
       final ver = makeTestTemplateVersion(agentId: templateId);
@@ -868,10 +888,12 @@ void main() {
       );
     });
 
-    testWidgets('shows loading indicator in version history section',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('shows loading indicator in version history section', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final tpl = makeTestTemplate(id: templateId, agentId: templateId);
       final ver = makeTestTemplateVersion(agentId: templateId);
@@ -926,8 +948,9 @@ void main() {
     });
 
     testWidgets('shows error text in version history section', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final tpl = makeTestTemplate(id: templateId, agentId: templateId);
       final ver = makeTestTemplateVersion(agentId: templateId);
@@ -976,10 +999,12 @@ void main() {
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
-    testWidgets('reseeds directives when active version changes',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('reseeds directives when active version changes', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final v1 = makeTestTemplateVersion(
         id: 'v1',
@@ -1064,10 +1089,12 @@ void main() {
       expect(find.text('Version 1 directives'), findsNothing);
     });
 
-    testWidgets('shows 1-on-1 review button when form is clean',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('shows 1-on-1 review button when form is clean', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1102,8 +1129,9 @@ void main() {
     });
 
     testWidgets('shows Cancel and Save when form is dirty', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1140,8 +1168,9 @@ void main() {
     });
 
     testWidgets('delete button visible on Stats tab', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1177,8 +1206,9 @@ void main() {
     });
 
     testWidgets('shows three tabs in edit mode', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1202,8 +1232,9 @@ void main() {
     });
 
     testWidgets('bottom bar hidden on Stats and Reports tabs', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1236,8 +1267,9 @@ void main() {
     });
 
     testWidgets('Stats tab shows token usage section', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1257,10 +1289,12 @@ void main() {
       );
     });
 
-    testWidgets('Reports tab shows empty state when no reports',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('Reports tab shows empty state when no reports', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1280,8 +1314,9 @@ void main() {
     });
 
     testWidgets('Reports tab shows report cards with content', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final report1 = makeTestReport(
         id: 'r1',
@@ -1351,8 +1386,9 @@ void main() {
     });
 
     testWidgets('Reports tab renders report with tldr field', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final report = makeTestReport(
         id: 'r1',
@@ -1412,10 +1448,12 @@ void main() {
       expect(find.byType(AgentReportSection), findsOneWidget);
     });
 
-    testWidgets('Reports tab skips non-AgentReportEntity items',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('Reports tab skips non-AgentReportEntity items', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       final report = makeTestReport(
         id: 'r1',
@@ -1483,8 +1521,9 @@ void main() {
     });
 
     testWidgets('Reports tab shows loading indicator', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -1538,8 +1577,9 @@ void main() {
     });
 
     testWidgets('Reports tab shows error state', (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -1599,10 +1639,12 @@ void main() {
   group('AgentTemplateDetailPage - back navigation', () {
     const templateId = 'tpl-nav-001';
 
-    testWidgets('back chevron calls beamBack when in settings path',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('back chevron calls beamBack when in settings path', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1615,11 +1657,13 @@ void main() {
       verify(() => _mockNavService.beamBack()).called(1);
     });
 
-    testWidgets('back chevron calls Navigator.pop when not in settings path',
-        (tester) async {
+    testWidgets('back chevron calls Navigator.pop when not in settings path', (
+      tester,
+    ) async {
       when(() => _mockNavService.currentPath).thenReturn('/tasks');
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
@@ -1702,10 +1746,12 @@ void main() {
       verify(() => _mockNavService.beamBack()).called(1);
     });
 
-    testWidgets('cancel button navigates back when form is dirty',
-        (tester) async {
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => []);
+    testWidgets('cancel button navigates back when form is dirty', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),

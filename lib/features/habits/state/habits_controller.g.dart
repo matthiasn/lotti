@@ -21,15 +21,15 @@ final class HabitsControllerProvider
   /// Notifier managing the complete habits page state.
   /// Marked as keepAlive since habits state should persist across navigation.
   HabitsControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'habitsControllerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'habitsControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$habitsControllerHash();
@@ -58,8 +58,14 @@ abstract class _$HabitsController extends $Notifier<HabitsState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<HabitsState, HabitsState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<HabitsState, HabitsState>, HabitsState, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<HabitsState, HabitsState>,
+              HabitsState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

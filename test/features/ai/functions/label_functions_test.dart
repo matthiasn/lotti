@@ -28,8 +28,10 @@ void main() {
     expect((itemProps['id'] as Map<String, dynamic>)['type'], 'string');
     final confidence = itemProps['confidence'] as Map<String, dynamic>;
     expect(confidence['type'], 'string');
-    expect(confidence['enum'],
-        containsAll(['low', 'medium', 'high', 'very_high']));
+    expect(
+      confidence['enum'],
+      containsAll(['low', 'medium', 'high', 'very_high']),
+    );
 
     // oneOf accepts either new or legacy
     final oneOf = params['oneOf'] as List<dynamic>;

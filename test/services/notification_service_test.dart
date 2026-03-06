@@ -16,8 +16,10 @@ void main() {
         expect(NotificationConstants.taskPlural, 'tasks');
         expect(NotificationConstants.inProgressSuffix, ' in progress');
         expect(NotificationConstants.encouragementLow, 'Nice');
-        expect(NotificationConstants.encouragementHigh,
-            "Let's get that number down");
+        expect(
+          NotificationConstants.encouragementHigh,
+          "Let's get that number down",
+        );
       });
     });
 

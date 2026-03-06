@@ -523,8 +523,9 @@ void main() {
     });
 
     group('sliverModalSheetPage', () {
-      testWidgets('creates sliver page with minimal configuration',
-          (tester) async {
+      testWidgets('creates sliver page with minimal configuration', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Builder(
@@ -690,8 +691,9 @@ void main() {
         );
       });
 
-      testWidgets('creates sliver page with custom navBarHeight',
-          (tester) async {
+      testWidgets('creates sliver page with custom navBarHeight', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Builder(
@@ -715,8 +717,9 @@ void main() {
     });
 
     group('showSingleSliverPageModal', () {
-      testWidgets('shows sliver modal with basic configuration',
-          (tester) async {
+      testWidgets('shows sliver modal with basic configuration', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -788,8 +791,9 @@ void main() {
         expect(find.text('Dismissible Sliver'), findsNothing);
       });
 
-      testWidgets('respects barrierDismissible for sliver modal',
-          (tester) async {
+      testWidgets('respects barrierDismissible for sliver modal', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(

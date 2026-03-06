@@ -43,14 +43,15 @@ void main() {
 
   test('prune evicts expired entries and enforces size cap', () {
     final clock = _MutableClock(DateTime.utc(2024));
-    final registry = SentEventRegistry(
-      ttl: const Duration(seconds: 5),
-      maxEntries: 2,
-      clockSource: clock,
-    )
-      ..register(r'$evt-a')
-      ..register(r'$evt-b')
-      ..register(r'$evt-c'); // exceeds cap, oldest should drop
+    final registry =
+        SentEventRegistry(
+            ttl: const Duration(seconds: 5),
+            maxEntries: 2,
+            clockSource: clock,
+          )
+          ..register(r'$evt-a')
+          ..register(r'$evt-b')
+          ..register(r'$evt-c'); // exceeds cap, oldest should drop
     expect(registry.length, 2);
     expect(
       registry.consume(r'$evt-a'),
@@ -77,13 +78,14 @@ void main() {
 
   test('re-registering id refreshes expiry and order', () {
     final clock = _MutableClock(DateTime.utc(2024));
-    final registry = SentEventRegistry(
-      ttl: const Duration(seconds: 5),
-      maxEntries: 3,
-      clockSource: clock,
-    )
-      ..register(r'$evt-a')
-      ..register(r'$evt-b');
+    final registry =
+        SentEventRegistry(
+            ttl: const Duration(seconds: 5),
+            maxEntries: 3,
+            clockSource: clock,
+          )
+          ..register(r'$evt-a')
+          ..register(r'$evt-b');
 
     clock.advance(const Duration(seconds: 3));
     registry

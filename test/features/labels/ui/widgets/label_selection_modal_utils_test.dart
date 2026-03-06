@@ -22,8 +22,9 @@ void main() {
       applyController.dispose();
     });
 
-    testWidgets('apply button is disabled when applyController is null',
-        (tester) async {
+    testWidgets('apply button is disabled when applyController is null', (
+      tester,
+    ) async {
       final applyController = ValueNotifier<Future<bool> Function()?>(null);
 
       await tester.pumpWidget(
@@ -41,8 +42,9 @@ void main() {
       applyController.dispose();
     });
 
-    testWidgets('apply button is enabled when applyController has function',
-        (tester) async {
+    testWidgets('apply button is enabled when applyController has function', (
+      tester,
+    ) async {
       final applyController = ValueNotifier<Future<bool> Function()?>(
         () async => true,
       );
@@ -116,8 +118,9 @@ void main() {
       applyController.dispose();
     });
 
-    testWidgets('button state updates when controller value changes',
-        (tester) async {
+    testWidgets('button state updates when controller value changes', (
+      tester,
+    ) async {
       final applyController = ValueNotifier<Future<bool> Function()?>(null);
 
       await tester.pumpWidget(
@@ -192,8 +195,9 @@ void main() {
       applyController.dispose();
     });
 
-    testWidgets('does not crash when context is unmounted during apply',
-        (tester) async {
+    testWidgets('does not crash when context is unmounted during apply', (
+      tester,
+    ) async {
       // This tests the `if (!context.mounted) return;` line
       final applyController = ValueNotifier<Future<bool> Function()?>(
         () async {

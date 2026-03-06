@@ -45,7 +45,8 @@ class CorrectionExamplesBuilder {
     if (examples == null || examples.isEmpty) return '';
 
     // Sort by capturedAt descending (most recent first), cap at limit.
-    final sorted = [...examples]..sort((a, b) {
+    final sorted = [...examples]
+      ..sort((a, b) {
         final aTime = a.capturedAt ?? DateTime(2000);
         final bTime = b.capturedAt ?? DateTime(2000);
         return bTime.compareTo(aTime);

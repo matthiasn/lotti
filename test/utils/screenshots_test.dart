@@ -92,11 +92,13 @@ void main() {
       test('throws exception for unsupported tool', () async {
         expect(
           () => takeLinuxScreenshot('unsupported', 'test.jpg', '/test/dir'),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Unsupported screenshot tool'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Unsupported screenshot tool'),
+            ),
+          ),
         );
       });
 
@@ -104,8 +106,11 @@ void main() {
         // Test that all supported tools have valid configurations
         for (final tool in linuxScreenshotTools) {
           final config = screenshotToolConfigs[tool];
-          expect(config, isNotNull,
-              reason: 'Tool $tool should have configuration');
+          expect(
+            config,
+            isNotNull,
+            reason: 'Tool $tool should have configuration',
+          );
           expect(config!.arguments, isA<List<String>>());
         }
       });
@@ -134,25 +139,28 @@ void main() {
     });
 
     group('takeScreenshot', () {
-      test('creates ImageData with correct properties on supported platform',
-          () async {
-        // Mock the directory creation
-        when(() => mockDirectory.create(recursive: any(named: 'recursive')))
-            .thenAnswer((_) async => mockDirectory);
+      test(
+        'creates ImageData with correct properties on supported platform',
+        () async {
+          // Mock the directory creation
+          when(
+            () => mockDirectory.create(recursive: any(named: 'recursive')),
+          ).thenAnswer((_) async => mockDirectory);
 
-        // This test will fail on unsupported platforms, which is expected
-        // We're testing the structure and error handling
-        try {
-          final result = await takeScreenshot();
-          expect(result, isA<ImageData>());
-          expect(result.imageFile, endsWith(screenshotFileExtension));
-          expect(result.imageDirectory, startsWith(screenshotDirectoryPath));
-          expect(result.capturedAt, isA<DateTime>());
-        } catch (e) {
-          // On unsupported platforms, we expect an exception
-          expect(e, anyOf(isA<Exception>(), isA<UnsupportedError>()));
-        }
-      });
+          // This test will fail on unsupported platforms, which is expected
+          // We're testing the structure and error handling
+          try {
+            final result = await takeScreenshot();
+            expect(result, isA<ImageData>());
+            expect(result.imageFile, endsWith(screenshotFileExtension));
+            expect(result.imageDirectory, startsWith(screenshotDirectoryPath));
+            expect(result.capturedAt, isA<DateTime>());
+          } catch (e) {
+            // On unsupported platforms, we expect an exception
+            expect(e, anyOf(isA<Exception>(), isA<UnsupportedError>()));
+          }
+        },
+      );
     });
 
     group('Screenshot Constants', () {
@@ -184,8 +192,10 @@ void main() {
 
     group('Error Messages', () {
       test('provides helpful error message for missing tools', () {
-        expect(noScreenshotToolAvailableMessage,
-            contains('No screenshot tool available'));
+        expect(
+          noScreenshotToolAvailableMessage,
+          contains('No screenshot tool available'),
+        );
         expect(installInstructionsMessage, contains('sudo apt install'));
         expect(installInstructionsMessage, contains('spectacle'));
         expect(installInstructionsMessage, contains('gnome-screenshot'));
@@ -198,9 +208,13 @@ void main() {
         expect(toolFailedMessage, contains('Screenshot tool'));
         expect(failedWithExitCodeMessage, contains('failed with exit code'));
         expect(
-            screencaptureFailedMessage, contains('macOS screencapture failed'));
-        expect(unsupportedPlatformMessage,
-            contains('Screenshot functionality is not supported'));
+          screencaptureFailedMessage,
+          contains('macOS screencapture failed'),
+        );
+        expect(
+          unsupportedPlatformMessage,
+          contains('Screenshot functionality is not supported'),
+        );
       });
     });
 

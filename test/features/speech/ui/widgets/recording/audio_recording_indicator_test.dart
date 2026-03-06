@@ -81,23 +81,28 @@ void main() {
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-    when(() => mockJournalDb.getConfigFlag(any()))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalDb.getConfigFlag(any()),
+    ).thenAnswer((_) async => false);
     when(() => mockNavService.beamBack()).thenReturn(null);
-    when(() => mockRecorderRepository.amplitudeStream)
-        .thenAnswer((_) => const Stream<Amplitude>.empty());
+    when(
+      () => mockRecorderRepository.amplitudeStream,
+    ).thenAnswer((_) => const Stream<Amplitude>.empty());
     when(() => mockRecorderRepository.dispose()).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);
 
-  Widget makeTestableWidget(AudioRecorderState state,
-      {JournalEntity? linkedEntry}) {
+  Widget makeTestableWidget(
+    AudioRecorderState state, {
+    JournalEntity? linkedEntry,
+  }) {
     return makeTestableWidgetWithScaffold(
       const AudioRecordingIndicator(),
       overrides: [
-        audioRecorderRepositoryProvider
-            .overrideWithValue(mockRecorderRepository),
+        audioRecorderRepositoryProvider.overrideWithValue(
+          mockRecorderRepository,
+        ),
         audioRecorderControllerProvider.overrideWith(() {
           return TestAudioRecorderController(state);
         }),
@@ -142,8 +147,9 @@ void main() {
       expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
     });
 
-    testWidgets('shows indicator when recording and modal not visible',
-        (tester) async {
+    testWidgets('shows indicator when recording and modal not visible', (
+      tester,
+    ) async {
       final state = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         dBFS: -160,
@@ -157,7 +163,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+        find.byKey(const Key('audio_recording_indicator')),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
 
       // FittedBox might be scaling the text, so let's find it within the widget tree
@@ -219,11 +227,14 @@ void main() {
 
       // Verify the indicator exists
       expect(
-          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+        find.byKey(const Key('audio_recording_indicator')),
+        findsOneWidget,
+      );
 
       // The indicator uses a GestureDetector with the key, verify it exists
-      final indicatorWidget =
-          tester.widget(find.byKey(const Key('audio_recording_indicator')));
+      final indicatorWidget = tester.widget(
+        find.byKey(const Key('audio_recording_indicator')),
+      );
       expect(indicatorWidget, isA<GestureDetector>());
 
       // Find MouseRegion in the widget tree that has the click cursor
@@ -299,8 +310,9 @@ void main() {
       );
     });
 
-    testWidgets('indicator width remains stable across durations',
-        (tester) async {
+    testWidgets('indicator width remains stable across durations', (
+      tester,
+    ) async {
       const durations = [
         Duration(seconds: 5),
         Duration(seconds: 18),
@@ -364,13 +376,16 @@ void main() {
         ),
       );
 
-      await tester
-          .pumpWidget(makeTestableWidget(state, linkedEntry: mockEntry));
+      await tester.pumpWidget(
+        makeTestableWidget(state, linkedEntry: mockEntry),
+      );
       await tester.pumpAndSettle();
 
       // Verify indicator exists
       expect(
-          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+        find.byKey(const Key('audio_recording_indicator')),
+        findsOneWidget,
+      );
 
       // Verify it has a GestureDetector with an onTap handler
       final gestureDetector = tester.widget<GestureDetector>(
@@ -379,30 +394,34 @@ void main() {
       expect(gestureDetector.onTap, isNotNull);
     });
 
-    testWidgets('indicator has onTap callback configured without linked entry',
-        (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        dBFS: -160,
-        vu: -20,
-        progress: const Duration(seconds: 10),
-        showIndicator: true,
-        modalVisible: false,
-      );
+    testWidgets(
+      'indicator has onTap callback configured without linked entry',
+      (tester) async {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          dBFS: -160,
+          vu: -20,
+          progress: const Duration(seconds: 10),
+          showIndicator: true,
+          modalVisible: false,
+        );
 
-      await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(makeTestableWidget(state));
+        await tester.pumpAndSettle();
 
-      // Verify indicator exists
-      expect(
-          find.byKey(const Key('audio_recording_indicator')), findsOneWidget);
+        // Verify indicator exists
+        expect(
+          find.byKey(const Key('audio_recording_indicator')),
+          findsOneWidget,
+        );
 
-      // Verify it has a GestureDetector with an onTap handler
-      final gestureDetector = tester.widget<GestureDetector>(
-        find.byKey(const Key('audio_recording_indicator')),
-      );
-      expect(gestureDetector.onTap, isNotNull);
-    });
+        // Verify it has a GestureDetector with an onTap handler
+        final gestureDetector = tester.widget<GestureDetector>(
+          find.byKey(const Key('audio_recording_indicator')),
+        );
+        expect(gestureDetector.onTap, isNotNull);
+      },
+    );
 
     testWidgets('handles exceptions gracefully', (tester) async {
       // Create a controller that throws an exception
@@ -414,8 +433,9 @@ void main() {
         makeTestableWidgetWithScaffold(
           const AudioRecordingIndicator(),
           overrides: [
-            audioRecorderRepositoryProvider
-                .overrideWithValue(mockRecorderRepository),
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockRecorderRepository,
+            ),
             badController,
           ],
         ),

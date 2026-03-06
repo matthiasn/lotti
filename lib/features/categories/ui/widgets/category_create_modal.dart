@@ -54,7 +54,8 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height *
+        maxHeight:
+            MediaQuery.of(context).size.height *
             CategoryIconConstants.modalMaxHeightRatio,
       ),
       padding: const EdgeInsets.all(CategoryIconConstants.sectionSpacing),
@@ -87,7 +88,8 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                       });
                     },
                     pickerAreaBorderRadius: BorderRadius.circular(
-                        CategoryIconConstants.colorPickerBorderRadius),
+                      CategoryIconConstants.colorPickerBorderRadius,
+                    ),
                   ),
                   const SizedBox(height: CategoryIconConstants.sectionSpacing),
                   _buildIconPicker(),
@@ -173,14 +175,16 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
         const SizedBox(height: CategoryIconConstants.smallSectionSpacing),
         InkWell(
           onTap: _showIconPicker,
-          borderRadius:
-              BorderRadius.circular(CategoryIconConstants.borderRadius),
+          borderRadius: BorderRadius.circular(
+            CategoryIconConstants.borderRadius,
+          ),
           child: Container(
             padding: const EdgeInsets.all(CategoryIconConstants.sectionSpacing),
             decoration: BoxDecoration(
               border: Border.all(color: Theme.of(context).colorScheme.outline),
-              borderRadius:
-                  BorderRadius.circular(CategoryIconConstants.borderRadius),
+              borderRadius: BorderRadius.circular(
+                CategoryIconConstants.borderRadius,
+              ),
             ),
             child: Row(
               children: [
@@ -220,8 +224,10 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios,
-                    size: CategoryIconConstants.arrowIconSize),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: CategoryIconConstants.arrowIconSize,
+                ),
               ],
             ),
           ),

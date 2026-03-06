@@ -21,9 +21,9 @@ void main() {
       final types = [HealthDataType.STEPS, HealthDataType.HEART_RATE];
       final permissions = [HealthDataAccess.READ, HealthDataAccess.READ];
 
-      when(() =>
-              mockHealth.requestAuthorization(types, permissions: permissions))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockHealth.requestAuthorization(types, permissions: permissions),
+      ).thenAnswer((_) async => true);
 
       final result = await healthService.requestAuthorization(
         types,
@@ -31,16 +31,17 @@ void main() {
       );
 
       expect(result, true);
-      verify(() =>
-              mockHealth.requestAuthorization(types, permissions: permissions))
-          .called(1);
+      verify(
+        () => mockHealth.requestAuthorization(types, permissions: permissions),
+      ).called(1);
     });
 
     test('requestAuthorization without permissions', () async {
       final types = [HealthDataType.STEPS];
 
-      when(() => mockHealth.requestAuthorization(types))
-          .thenAnswer((_) async => false);
+      when(
+        () => mockHealth.requestAuthorization(types),
+      ).thenAnswer((_) async => false);
 
       final result = await healthService.requestAuthorization(types);
 
@@ -53,26 +54,33 @@ void main() {
       final endTime = DateTime(2025, 1, 1, 23, 59);
       const expectedSteps = 10000;
 
-      when(() => mockHealth.getTotalStepsInInterval(startTime, endTime))
-          .thenAnswer((_) async => expectedSteps);
+      when(
+        () => mockHealth.getTotalStepsInInterval(startTime, endTime),
+      ).thenAnswer((_) async => expectedSteps);
 
-      final result =
-          await healthService.getTotalStepsInInterval(startTime, endTime);
+      final result = await healthService.getTotalStepsInInterval(
+        startTime,
+        endTime,
+      );
 
       expect(result, expectedSteps);
-      verify(() => mockHealth.getTotalStepsInInterval(startTime, endTime))
-          .called(1);
+      verify(
+        () => mockHealth.getTotalStepsInInterval(startTime, endTime),
+      ).called(1);
     });
 
     test('getTotalStepsInInterval returns null when no data', () async {
       final startTime = DateTime(2025);
       final endTime = DateTime(2025, 1, 1, 23, 59);
 
-      when(() => mockHealth.getTotalStepsInInterval(startTime, endTime))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockHealth.getTotalStepsInInterval(startTime, endTime),
+      ).thenAnswer((_) async => null);
 
-      final result =
-          await healthService.getTotalStepsInInterval(startTime, endTime);
+      final result = await healthService.getTotalStepsInInterval(
+        startTime,
+        endTime,
+      );
 
       expect(result, isNull);
     });

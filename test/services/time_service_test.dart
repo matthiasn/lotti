@@ -79,8 +79,10 @@ void main() {
           ..elapse(const Duration(seconds: 2))
           ..flushMicrotasks();
 
-        final filteredEmissions =
-            emissions!.where((e) => e != null).cast<JournalEntity>().toList();
+        final filteredEmissions = emissions!
+            .where((e) => e != null)
+            .cast<JournalEntity>()
+            .toList();
         expect(filteredEmissions.length, greaterThan(0));
         for (final emission in filteredEmissions) {
           final dateTo = emission.meta.dateTo;

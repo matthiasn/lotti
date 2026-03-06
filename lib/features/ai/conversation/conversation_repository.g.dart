@@ -45,15 +45,15 @@ final class ConversationRepositoryProvider
   ///   `ChatCompletionMessageToolCall` objects. This preserves the strategy/handler execution path
   ///   while avoiding brittle mock setups.
   ConversationRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'conversationRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'conversationRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$conversationRepositoryHash();
@@ -91,8 +91,14 @@ abstract class _$ConversationRepository extends $Notifier<void> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<void, void>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<void, void>, void, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<void, void>,
+              void,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -104,24 +110,27 @@ final conversationEventsProvider = ConversationEventsFamily._();
 
 /// Provider for accessing conversation events
 
-final class ConversationEventsProvider extends $FunctionalProvider<
-        AsyncValue<ConversationEvent>,
-        ConversationEvent,
-        Stream<ConversationEvent>>
+final class ConversationEventsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ConversationEvent>,
+          ConversationEvent,
+          Stream<ConversationEvent>
+        >
     with
         $FutureModifier<ConversationEvent>,
         $StreamProvider<ConversationEvent> {
   /// Provider for accessing conversation events
-  ConversationEventsProvider._(
-      {required ConversationEventsFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'conversationEventsProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ConversationEventsProvider._({
+    required ConversationEventsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'conversationEventsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$conversationEventsHash();
@@ -136,8 +145,8 @@ final class ConversationEventsProvider extends $FunctionalProvider<
   @$internal
   @override
   $StreamProviderElement<ConversationEvent> $createElement(
-          $ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
 
   @override
   Stream<ConversationEvent> create(Ref ref) {
@@ -167,20 +176,19 @@ String _$conversationEventsHash() =>
 final class ConversationEventsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<ConversationEvent>, String> {
   ConversationEventsFamily._()
-      : super(
-          retry: null,
-          name: r'conversationEventsProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'conversationEventsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Provider for accessing conversation events
 
   ConversationEventsProvider call(
     String conversationId,
-  ) =>
-      ConversationEventsProvider._(argument: conversationId, from: this);
+  ) => ConversationEventsProvider._(argument: conversationId, from: this);
 
   @override
   String toString() => r'conversationEventsProvider';
@@ -193,21 +201,25 @@ final conversationMessagesProvider = ConversationMessagesFamily._();
 
 /// Provider for conversation messages
 
-final class ConversationMessagesProvider extends $FunctionalProvider<
-    List<ChatCompletionMessage>,
-    List<ChatCompletionMessage>,
-    List<ChatCompletionMessage>> with $Provider<List<ChatCompletionMessage>> {
+final class ConversationMessagesProvider
+    extends
+        $FunctionalProvider<
+          List<ChatCompletionMessage>,
+          List<ChatCompletionMessage>,
+          List<ChatCompletionMessage>
+        >
+    with $Provider<List<ChatCompletionMessage>> {
   /// Provider for conversation messages
-  ConversationMessagesProvider._(
-      {required ConversationMessagesFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'conversationMessagesProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ConversationMessagesProvider._({
+    required ConversationMessagesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'conversationMessagesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$conversationMessagesHash();
@@ -222,8 +234,8 @@ final class ConversationMessagesProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<List<ChatCompletionMessage>> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   List<ChatCompletionMessage> create(Ref ref) {
@@ -261,20 +273,19 @@ String _$conversationMessagesHash() =>
 final class ConversationMessagesFamily extends $Family
     with $FunctionalFamilyOverride<List<ChatCompletionMessage>, String> {
   ConversationMessagesFamily._()
-      : super(
-          retry: null,
-          name: r'conversationMessagesProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'conversationMessagesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Provider for conversation messages
 
   ConversationMessagesProvider call(
     String conversationId,
-  ) =>
-      ConversationMessagesProvider._(argument: conversationId, from: this);
+  ) => ConversationMessagesProvider._(argument: conversationId, from: this);
 
   @override
   String toString() => r'conversationMessagesProvider';

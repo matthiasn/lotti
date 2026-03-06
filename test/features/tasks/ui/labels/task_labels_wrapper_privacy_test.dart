@@ -62,46 +62,49 @@ JournalEntity _taskNoLabels() {
 
 void main() {
   testWidgets(
-      'shows wrapper but no label chips when only private labels and showPrivate=false',
-      (tester) async {
-    final cacheService = MockEntitiesCacheService();
-    final editorStateService = MockEditorStateService();
-    final journalDb = MockJournalDb();
-    final updateNotifications = MockUpdateNotifications();
-    await getIt.reset();
-    getIt
-      ..registerSingleton<EntitiesCacheService>(cacheService)
-      ..registerSingleton<EditorStateService>(editorStateService)
-      ..registerSingleton<JournalDb>(journalDb)
-      ..registerSingleton<UpdateNotifications>(updateNotifications);
+    'shows wrapper but no label chips when only private labels and showPrivate=false',
+    (tester) async {
+      final cacheService = MockEntitiesCacheService();
+      final editorStateService = MockEditorStateService();
+      final journalDb = MockJournalDb();
+      final updateNotifications = MockUpdateNotifications();
+      await getIt.reset();
+      getIt
+        ..registerSingleton<EntitiesCacheService>(cacheService)
+        ..registerSingleton<EditorStateService>(editorStateService)
+        ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<UpdateNotifications>(updateNotifications);
 
-    // Only private labels available in cache
-    final privateLabel = testLabelDefinition1.copyWith(private: true);
-    when(() => cacheService.showPrivateEntries).thenReturn(false);
-    // When private is hidden, sortedLabels should be empty.
-    when(() => cacheService.sortedLabels).thenReturn(const <LabelDefinition>[]);
+      // Only private labels available in cache
+      final privateLabel = testLabelDefinition1.copyWith(private: true);
+      when(() => cacheService.showPrivateEntries).thenReturn(false);
+      // When private is hidden, sortedLabels should be empty.
+      when(
+        () => cacheService.sortedLabels,
+      ).thenReturn(const <LabelDefinition>[]);
 
-    final task = _taskNoLabels();
-    final widget = ProviderScope(
-      overrides: [
-        entryControllerProvider(id: task.meta.id).overrideWith(
-          () => _TestEntryController(task),
+      final task = _taskNoLabels();
+      final widget = ProviderScope(
+        overrides: [
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value([privateLabel]),
+          ),
+        ],
+        child: makeTestableWidgetWithScaffold(
+          TaskLabelsWrapper(taskId: task.meta.id),
         ),
-        labelsStreamProvider.overrideWith(
-          (ref) => Stream<List<LabelDefinition>>.value([privateLabel]),
-        ),
-      ],
-      child: makeTestableWidgetWithScaffold(
-        TaskLabelsWrapper(taskId: task.meta.id),
-      ),
-    );
+      );
 
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
 
-    // Wrapper should show to allow adding labels and setting estimates,
-    // but no label chips should be displayed when only private labels exist
-    // and showPrivate is false
-    expect(find.text('Add Label'), findsOneWidget);
-  });
+      // Wrapper should show to allow adding labels and setting estimates,
+      // but no label chips should be displayed when only private labels exist
+      // and showPrivate is false
+      expect(find.text('Add Label'), findsOneWidget);
+    },
+  );
 }

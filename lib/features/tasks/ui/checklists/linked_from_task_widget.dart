@@ -33,8 +33,10 @@ class LinkedFromTaskWidget extends ConsumerWidget {
         ),
         ...linkedTasks.map(
           (id) {
-            final task =
-                ref.watch(entryControllerProvider(id: id)).value?.entry;
+            final task = ref
+                .watch(entryControllerProvider(id: id))
+                .value
+                ?.entry;
 
             if (task == null) {
               return const SizedBox.shrink();

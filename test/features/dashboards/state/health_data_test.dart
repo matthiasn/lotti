@@ -41,8 +41,10 @@ void main() {
         ),
       ];
 
-      final result =
-          aggregateNone(entities, 'HealthDataType.BODY_FAT_PERCENTAGE');
+      final result = aggregateNone(
+        entities,
+        'HealthDataType.BODY_FAT_PERCENTAGE',
+      );
 
       expect(result, hasLength(1));
       expect(result[0].value, 25.0);

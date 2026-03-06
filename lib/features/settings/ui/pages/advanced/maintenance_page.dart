@@ -26,132 +26,143 @@ class MaintenancePage extends ConsumerWidget {
 
     return FutureBuilder<int>(
       future: db.getTaggedCount(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<int> snapshot,
-      ) {
-        return SliverBoxAdapterPage(
-          title: context.messages.settingsMaintenanceTitle,
-          showBackButton: true,
-          child: Column(
-            children: [
-              AdaptiveSettingsCard(
-                title: context.messages.settingsResetHintsTitle,
-                subtitle: context.messages.settingsResetHintsSubtitle,
-                icon: Icons.tips_and_updates_outlined,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages.settingsResetHintsConfirmQuestion,
-                    confirmLabel: context.messages.settingsResetHintsConfirm,
-                  );
-                  if (!confirmed) return;
-                  final removed = await clearPrefsByPrefix('seen_');
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          context.messages.settingsResetHintsResult(removed),
-                        ),
-                      ),
-                    );
-                  }
-                },
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<int> snapshot,
+          ) {
+            return SliverBoxAdapterPage(
+              title: context.messages.settingsMaintenanceTitle,
+              showBackButton: true,
+              child: Column(
+                children: [
+                  AdaptiveSettingsCard(
+                    title: context.messages.settingsResetHintsTitle,
+                    subtitle: context.messages.settingsResetHintsSubtitle,
+                    icon: Icons.tips_and_updates_outlined,
+                    onTap: () async {
+                      final confirmed = await showConfirmationModal(
+                        context: context,
+                        message:
+                            context.messages.settingsResetHintsConfirmQuestion,
+                        confirmLabel:
+                            context.messages.settingsResetHintsConfirm,
+                      );
+                      if (!confirmed) return;
+                      final removed = await clearPrefsByPrefix('seen_');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.messages.settingsResetHintsResult(
+                                removed,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  AdaptiveSettingsCard(
+                    title: context.messages.settingsResetGeminiTitle,
+                    subtitle: context.messages.settingsResetGeminiSubtitle,
+                    icon: Icons.auto_awesome,
+                    onTap: () async {
+                      final confirmed = await showConfirmationModal(
+                        context: context,
+                        message:
+                            context.messages.settingsResetGeminiConfirmQuestion,
+                        confirmLabel:
+                            context.messages.settingsResetGeminiConfirm,
+                      );
+                      if (!confirmed) return;
+                      await ref
+                          .read(geminiSetupPromptServiceProvider.notifier)
+                          .resetDismissal();
+                    },
+                  ),
+                  AdaptiveSettingsCard(
+                    title: context.messages.maintenanceDeleteEditorDb,
+                    subtitle:
+                        context.messages.maintenanceDeleteEditorDbDescription,
+                    icon: Icons.edit_note_rounded,
+                    onTap: () async {
+                      final confirmed = await showConfirmationModal(
+                        context: context,
+                        message: context.messages
+                            .maintenanceDeleteDatabaseQuestion('Editor'),
+                        confirmLabel:
+                            context.messages.maintenanceDeleteDatabaseConfirm,
+                      );
+                      if (confirmed && context.mounted) {
+                        await maintenance.deleteEditorDb();
+                      }
+                    },
+                  ),
+                  AdaptiveSettingsCard(
+                    title: context.messages.maintenanceDeleteLoggingDb,
+                    subtitle:
+                        context.messages.maintenanceDeleteLoggingDbDescription,
+                    icon: Icons.article_rounded,
+                    onTap: () async {
+                      final confirmed = await showConfirmationModal(
+                        context: context,
+                        message: context.messages
+                            .maintenanceDeleteDatabaseQuestion('Logging'),
+                        confirmLabel:
+                            context.messages.maintenanceDeleteDatabaseConfirm,
+                      );
+                      if (confirmed && context.mounted) {
+                        await maintenance.deleteLoggingDb();
+                      }
+                    },
+                  ),
+                  AdaptiveSettingsCard(
+                    title: context.messages.maintenanceDeleteAgentDb,
+                    subtitle:
+                        context.messages.maintenanceDeleteAgentDbDescription,
+                    icon: Icons.smart_toy_outlined,
+                    onTap: () async {
+                      final confirmed = await showConfirmationModal(
+                        context: context,
+                        message: context.messages
+                            .maintenanceDeleteDatabaseQuestion('Agents'),
+                        confirmLabel:
+                            context.messages.maintenanceDeleteDatabaseConfirm,
+                      );
+                      if (confirmed && context.mounted) {
+                        await maintenance.deleteAgentDb();
+                        exit(0);
+                      }
+                    },
+                  ),
+                  AdaptiveSettingsCard(
+                    title: context.messages.maintenancePurgeDeleted,
+                    subtitle:
+                        context.messages.maintenancePurgeDeletedDescription,
+                    icon: Icons.delete_forever_rounded,
+                    onTap: () => PurgeModal.show(context),
+                  ),
+                  AdaptiveSettingsCard(
+                    title: context.messages.maintenanceRecreateFts5,
+                    subtitle:
+                        context.messages.maintenanceRecreateFts5Description,
+                    icon: Icons.search_rounded,
+                    onTap: () => Fts5RecreateModal.show(context),
+                  ),
+                  if (getIt.isRegistered<EmbeddingsDb>())
+                    AdaptiveSettingsCard(
+                      title: context.messages.maintenanceGenerateEmbeddings,
+                      subtitle: context
+                          .messages
+                          .maintenanceGenerateEmbeddingsDescription,
+                      icon: Icons.hub_outlined,
+                      onTap: () => EmbeddingBackfillModal.show(context),
+                    ),
+                ],
               ),
-              AdaptiveSettingsCard(
-                title: context.messages.settingsResetGeminiTitle,
-                subtitle: context.messages.settingsResetGeminiSubtitle,
-                icon: Icons.auto_awesome,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message:
-                        context.messages.settingsResetGeminiConfirmQuestion,
-                    confirmLabel: context.messages.settingsResetGeminiConfirm,
-                  );
-                  if (!confirmed) return;
-                  await ref
-                      .read(geminiSetupPromptServiceProvider.notifier)
-                      .resetDismissal();
-                },
-              ),
-              AdaptiveSettingsCard(
-                title: context.messages.maintenanceDeleteEditorDb,
-                subtitle: context.messages.maintenanceDeleteEditorDbDescription,
-                icon: Icons.edit_note_rounded,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Editor'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteEditorDb();
-                  }
-                },
-              ),
-              AdaptiveSettingsCard(
-                title: context.messages.maintenanceDeleteLoggingDb,
-                subtitle:
-                    context.messages.maintenanceDeleteLoggingDbDescription,
-                icon: Icons.article_rounded,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Logging'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteLoggingDb();
-                  }
-                },
-              ),
-              AdaptiveSettingsCard(
-                title: context.messages.maintenanceDeleteAgentDb,
-                subtitle: context.messages.maintenanceDeleteAgentDbDescription,
-                icon: Icons.smart_toy_outlined,
-                onTap: () async {
-                  final confirmed = await showConfirmationModal(
-                    context: context,
-                    message: context.messages
-                        .maintenanceDeleteDatabaseQuestion('Agents'),
-                    confirmLabel:
-                        context.messages.maintenanceDeleteDatabaseConfirm,
-                  );
-                  if (confirmed && context.mounted) {
-                    await maintenance.deleteAgentDb();
-                    exit(0);
-                  }
-                },
-              ),
-              AdaptiveSettingsCard(
-                title: context.messages.maintenancePurgeDeleted,
-                subtitle: context.messages.maintenancePurgeDeletedDescription,
-                icon: Icons.delete_forever_rounded,
-                onTap: () => PurgeModal.show(context),
-              ),
-              AdaptiveSettingsCard(
-                title: context.messages.maintenanceRecreateFts5,
-                subtitle: context.messages.maintenanceRecreateFts5Description,
-                icon: Icons.search_rounded,
-                onTap: () => Fts5RecreateModal.show(context),
-              ),
-              if (getIt.isRegistered<EmbeddingsDb>())
-                AdaptiveSettingsCard(
-                  title: context.messages.maintenanceGenerateEmbeddings,
-                  subtitle:
-                      context.messages.maintenanceGenerateEmbeddingsDescription,
-                  icon: Icons.hub_outlined,
-                  onTap: () => EmbeddingBackfillModal.show(context),
-                ),
-            ],
-          ),
-        );
-      },
+            );
+          },
     );
   }
 }

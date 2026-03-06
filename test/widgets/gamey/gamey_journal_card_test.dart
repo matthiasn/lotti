@@ -275,8 +275,9 @@ void main() {
       expect(find.byType(GameySubtleCard), findsOneWidget);
     });
 
-    testWidgets('renders without horizontal margin when specified',
-        (tester) async {
+    testWidgets('renders without horizontal margin when specified', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: GameyJournalCard(
@@ -288,8 +289,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final subtleCard =
-          tester.widget<GameySubtleCard>(find.byType(GameySubtleCard));
+      final subtleCard = tester.widget<GameySubtleCard>(
+        find.byType(GameySubtleCard),
+      );
       // Verify margin is applied (horizontal should be 0)
       expect(subtleCard.margin?.horizontal, equals(0));
     });
@@ -350,8 +352,9 @@ void main() {
       expect(find.byType(GameySubtleCard), findsOneWidget);
     });
 
-    testWidgets('renders with category when entry has category',
-        (tester) async {
+    testWidgets('renders with category when entry has category', (
+      tester,
+    ) async {
       final entryWithCategory = JournalEntry(
         meta: Metadata(
           id: 'test-journal-id',

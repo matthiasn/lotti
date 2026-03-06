@@ -24,16 +24,16 @@ class MatrixStreamLiveScanController {
     required bool Function() isWakeCatchUpPending,
     required void Function() startWakeCatchUp,
     required String Function(String message) withInstance,
-  })  : _loggingService = loggingService,
-        _metrics = metrics,
-        _collectMetrics = collectMetrics,
-        _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
-        _processor = processor,
-        _isInitialCatchUpCompleted = isInitialCatchUpCompleted,
-        _isCatchUpInFlight = isCatchUpInFlight,
-        _isWakeCatchUpPending = isWakeCatchUpPending,
-        _startWakeCatchUp = startWakeCatchUp,
-        _withInstance = withInstance;
+  }) : _loggingService = loggingService,
+       _metrics = metrics,
+       _collectMetrics = collectMetrics,
+       _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
+       _processor = processor,
+       _isInitialCatchUpCompleted = isInitialCatchUpCompleted,
+       _isCatchUpInFlight = isCatchUpInFlight,
+       _isWakeCatchUpPending = isWakeCatchUpPending,
+       _startWakeCatchUp = startWakeCatchUp,
+       _withInstance = withInstance;
 
   final LoggingService _loggingService;
   final MetricsCounters _metrics;

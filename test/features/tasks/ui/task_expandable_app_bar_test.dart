@@ -28,8 +28,9 @@ void main() {
     await getIt.reset();
     getIt.allowReassignment = true;
 
-    mockDocumentsDirectory =
-        Directory.systemTemp.createTempSync('task_expandable_app_bar_test_');
+    mockDocumentsDirectory = Directory.systemTemp.createTempSync(
+      'task_expandable_app_bar_test_',
+    );
     getIt.registerSingleton<Directory>(mockDocumentsDirectory);
 
     final mockEditorStateService = MockEditorStateService();
@@ -37,8 +38,9 @@ void main() {
     final mockJournalDb = MockJournalDb();
     final mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<EditorStateService>(mockEditorStateService)
@@ -123,8 +125,9 @@ void main() {
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
-    testWidgets('renders GlassActionButtons for back and more menu',
-        (tester) async {
+    testWidgets('renders GlassActionButtons for back and more menu', (
+      tester,
+    ) async {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task, 'image-1'));

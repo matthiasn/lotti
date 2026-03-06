@@ -27,10 +27,12 @@ void main() {
       LabelAssignmentEventService(),
     );
     when(() => mockLimiter.isRateLimited(any())).thenReturn(false);
-    when(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    ).thenAnswer((_) async => true);
     processor = LabelAssignmentProcessor(
       db: mockDb,
       repository: mockRepo,
@@ -59,16 +61,20 @@ void main() {
 
   test('assigns valid and filters invalid', () async {
     // existing contains p0 (ignored for exclusivity)
-    when(() => mockDb.getLabelDefinitionById('p0'))
-        .thenAnswer((_) async => makeLabel('p0'));
+    when(
+      () => mockDb.getLabelDefinitionById('p0'),
+    ).thenAnswer((_) async => makeLabel('p0'));
 
     // proposed: p1 (same group) -> now allowed, bug (no group) -> assigned, del (deleted) -> invalid
-    when(() => mockDb.getLabelDefinitionById('p1'))
-        .thenAnswer((_) async => makeLabel('p1'));
-    when(() => mockDb.getLabelDefinitionById('bug'))
-        .thenAnswer((_) async => makeLabel('bug'));
-    when(() => mockDb.getLabelDefinitionById('del'))
-        .thenAnswer((_) async => makeLabel('del', deleted: true));
+    when(
+      () => mockDb.getLabelDefinitionById('p1'),
+    ).thenAnswer((_) async => makeLabel('p1'));
+    when(
+      () => mockDb.getLabelDefinitionById('bug'),
+    ).thenAnswer((_) async => makeLabel('bug'));
+    when(
+      () => mockDb.getLabelDefinitionById('del'),
+    ).thenAnswer((_) async => makeLabel('del', deleted: true));
 
     final result = await processor.processAssignment(
       taskId: 't1',
@@ -78,10 +84,12 @@ void main() {
 
     expect(result.assigned, containsAll(['bug', 'p1']));
     expect(result.invalid, contains('del'));
-    verify(() => mockRepo.addLabels(
-          journalEntityId: 't1',
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).called(1);
+    verify(
+      () => mockRepo.addLabels(
+        journalEntityId: 't1',
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    ).called(1);
     verify(() => mockLimiter.recordAssignment('t1')).called(1);
   });
 
@@ -89,8 +97,9 @@ void main() {
     when(() => mockLimiter.isRateLimited('t1')).thenReturn(true);
 
     // Valid label but should not be persisted due to rate limit
-    when(() => mockDb.getLabelDefinitionById('ok'))
-        .thenAnswer((_) async => makeLabel('ok'));
+    when(
+      () => mockDb.getLabelDefinitionById('ok'),
+    ).thenAnswer((_) async => makeLabel('ok'));
 
     final result = await processor.processAssignment(
       taskId: 't1',
@@ -99,18 +108,21 @@ void main() {
     );
 
     expect(result.rateLimited, isTrue);
-    verifyNever(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ));
+    verifyNever(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    );
     verifyNever(() => mockLimiter.recordAssignment(any()));
   });
 
   test('caps at maximum labels per assignment', () async {
     // Prepare 7 valid labels; only first 5 should be considered
     for (final id in const ['a', 'b', 'c', 'd', 'e', 'f', 'g']) {
-      when(() => mockDb.getLabelDefinitionById(id))
-          .thenAnswer((_) async => makeLabel(id));
+      when(
+        () => mockDb.getLabelDefinitionById(id),
+      ).thenAnswer((_) async => makeLabel(id));
     }
 
     final result = await processor.processAssignment(
@@ -120,10 +132,12 @@ void main() {
     );
 
     expect(result.assigned.length, lessThanOrEqualTo(5));
-    verify(() => mockRepo.addLabels(
-          journalEntityId: 't1',
-          addedLabelIds: any(named: 'addedLabelIds'),
-        )).called(1);
+    verify(
+      () => mockRepo.addLabels(
+        journalEntityId: 't1',
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    ).called(1);
   });
 
   test('returns early for empty proposed list', () async {
@@ -134,9 +148,11 @@ void main() {
     );
 
     expect(result.assigned, isEmpty);
-    verifyNever(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ));
+    verifyNever(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    );
   });
 }

@@ -30,15 +30,15 @@ final class RatingPromptControllerProvider
   /// or null when no rating is pending. The UI layer listens to this
   /// and shows the modal when it becomes non-null.
   RatingPromptControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'ratingPromptControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ratingPromptControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$ratingPromptControllerHash();
@@ -71,11 +71,14 @@ abstract class _$RatingPromptController extends $Notifier<RatingPrompt?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<RatingPrompt?, RatingPrompt?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<RatingPrompt?, RatingPrompt?>,
-        RatingPrompt?,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<RatingPrompt?, RatingPrompt?>,
+              RatingPrompt?,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

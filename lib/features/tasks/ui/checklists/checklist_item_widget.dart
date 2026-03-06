@@ -187,9 +187,10 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
 
                           final strikethroughStyle = TextStyle(
                             decoration: TextDecoration.lineThrough,
-                            color: (baseStyle?.color ??
-                                    context.colorScheme.onSurface)
-                                .withValues(alpha: 0.6),
+                            color:
+                                (baseStyle?.color ??
+                                        context.colorScheme.onSurface)
+                                    .withValues(alpha: 0.6),
                           );
                           return baseStyle?.merge(strikethroughStyle) ??
                               strikethroughStyle;

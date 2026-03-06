@@ -17,8 +17,9 @@ class SurveyChartDataController extends _$SurveyChartDataController {
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   void listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(surveyNotification)) {
         final latest = await _fetch();
         if (latest != state.value) {

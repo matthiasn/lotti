@@ -14,16 +14,16 @@ final entryControllerProvider = EntryControllerFamily._();
 
 final class EntryControllerProvider
     extends $AsyncNotifierProvider<EntryController, EntryState?> {
-  EntryControllerProvider._(
-      {required EntryControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'entryControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  EntryControllerProvider._({
+    required EntryControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'entryControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$entryControllerHash();
@@ -54,21 +54,25 @@ String _$entryControllerHash() => r'ef919cd794050433d08c0d743394c970e5e82b62';
 
 final class EntryControllerFamily extends $Family
     with
-        $ClassFamilyOverride<EntryController, AsyncValue<EntryState?>,
-            EntryState?, FutureOr<EntryState?>, String> {
+        $ClassFamilyOverride<
+          EntryController,
+          AsyncValue<EntryState?>,
+          EntryState?,
+          FutureOr<EntryState?>,
+          String
+        > {
   EntryControllerFamily._()
-      : super(
-          retry: null,
-          name: r'entryControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'entryControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   EntryControllerProvider call({
     required String id,
-  }) =>
-      EntryControllerProvider._(argument: id, from: this);
+  }) => EntryControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'entryControllerProvider';
@@ -85,15 +89,19 @@ abstract class _$EntryController extends $AsyncNotifier<EntryState?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<EntryState?>, EntryState?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<EntryState?>, EntryState?>,
-        AsyncValue<EntryState?>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<EntryState?>, EntryState?>,
+              AsyncValue<EntryState?>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+      ref,
+      () => build(
+        id: _$args,
+      ),
+    );
   }
 }

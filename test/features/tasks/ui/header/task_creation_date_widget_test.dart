@@ -59,8 +59,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<EditorStateService>(mockEditorStateService)
@@ -95,7 +96,9 @@ void main() {
 
       // Verify date is displayed in yMMMd format (without time)
       expect(
-          find.text(DateFormat.yMMMd().format(creationDate)), findsOneWidget);
+        find.text(DateFormat.yMMMd().format(creationDate)),
+        findsOneWidget,
+      );
 
       // Verify time is NOT displayed (using same format used by the widget)
       final timeStr = DateFormat.Hm().format(creationDate);

@@ -36,27 +36,31 @@ void main() {
     getIt.registerSingleton<OutboxService>(mockOutboxService);
 
     // Setup default mocks
-    when(() => mockOutboxService.enqueueMessage(any()))
-        .thenAnswer((_) async => {});
+    when(
+      () => mockOutboxService.enqueueMessage(any()),
+    ).thenAnswer((_) async => {});
 
     // Setup default transaction mock to execute the callback
-    when(() => mockDb.transaction<CascadeDeletionResult>(any()))
-        .thenAnswer((invocation) async {
-      final callback = invocation.positionalArguments[0]
-          as Future<CascadeDeletionResult> Function();
+    when(() => mockDb.transaction<CascadeDeletionResult>(any())).thenAnswer((
+      invocation,
+    ) async {
+      final callback =
+          invocation.positionalArguments[0]
+              as Future<CascadeDeletionResult> Function();
       return callback();
     });
 
     // Setup default getConfigById mock to return a mock provider
-    when(() => mockDb.getConfigById(any()))
-        .thenAnswer((_) async => AiConfigInferenceProvider(
-              id: 'test-provider',
-              name: 'Test Provider',
-              baseUrl: 'https://test.com',
-              apiKey: 'test-key',
-              createdAt: DateTime.now(),
-              inferenceProviderType: InferenceProviderType.genericOpenAi,
-            ));
+    when(() => mockDb.getConfigById(any())).thenAnswer(
+      (_) async => AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'https://test.com',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      ),
+    );
   });
 
   tearDown(() {
@@ -105,42 +109,46 @@ void main() {
       );
 
       // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenAnswer((_) async => [
-                AiConfigDbEntity(
-                  id: model1.id,
-                  type: 'AiConfigModel',
-                  name: model1.name,
-                  serialized: jsonEncode(model1.toJson()),
-                  createdAt: model1.createdAt,
-                ),
-                AiConfigDbEntity(
-                  id: model2.id,
-                  type: 'AiConfigModel',
-                  name: model2.name,
-                  serialized: jsonEncode(model2.toJson()),
-                  createdAt: model2.createdAt,
-                ),
-                AiConfigDbEntity(
-                  id: otherModel.id,
-                  type: 'AiConfigModel',
-                  name: otherModel.name,
-                  serialized: jsonEncode(otherModel.toJson()),
-                  createdAt: otherModel.createdAt,
-                ),
-              ]);
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
+        (_) async => [
+          AiConfigDbEntity(
+            id: model1.id,
+            type: 'AiConfigModel',
+            name: model1.name,
+            serialized: jsonEncode(model1.toJson()),
+            createdAt: model1.createdAt,
+          ),
+          AiConfigDbEntity(
+            id: model2.id,
+            type: 'AiConfigModel',
+            name: model2.name,
+            serialized: jsonEncode(model2.toJson()),
+            createdAt: model2.createdAt,
+          ),
+          AiConfigDbEntity(
+            id: otherModel.id,
+            type: 'AiConfigModel',
+            name: otherModel.name,
+            serialized: jsonEncode(otherModel.toJson()),
+            createdAt: otherModel.createdAt,
+          ),
+        ],
+      );
 
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final result =
-          await repository.deleteInferenceProviderWithModels(providerId);
+      final result = await repository.deleteInferenceProviderWithModels(
+        providerId,
+      );
 
       // Assert
       expect(result.deletedModels.length, equals(2));
       expect(result.deletedModels.length, equals(2));
-      expect(result.deletedModels.map((m) => m.id),
-          containsAll(['model-1', 'model-2']));
+      expect(
+        result.deletedModels.map((m) => m.id),
+        containsAll(['model-1', 'model-2']),
+      );
       expect(result.providerName, isNotEmpty);
 
       // Verify models were deleted
@@ -161,14 +169,16 @@ void main() {
       // Arrange
       const providerId = 'provider-with-no-models';
 
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.model.name),
+      ).thenAnswer((_) async => []);
 
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final result =
-          await repository.deleteInferenceProviderWithModels(providerId);
+      final result = await repository.deleteInferenceProviderWithModels(
+        providerId,
+      );
 
       // Assert
       expect(result.deletedModels.length, equals(0));
@@ -196,16 +206,17 @@ void main() {
         isReasoningModel: false,
       );
 
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenAnswer((_) async => [
-                AiConfigDbEntity(
-                  id: model.id,
-                  type: 'AiConfigModel',
-                  name: model.name,
-                  serialized: jsonEncode(model.toJson()),
-                  createdAt: model.createdAt,
-                ),
-              ]);
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
+        (_) async => [
+          AiConfigDbEntity(
+            id: model.id,
+            type: 'AiConfigModel',
+            name: model.name,
+            serialized: jsonEncode(model.toJson()),
+            createdAt: model.createdAt,
+          ),
+        ],
+      );
 
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
@@ -219,7 +230,9 @@ void main() {
       expect(result.deletedModels.length, equals(1));
       expect(result.deletedModels.length, equals(1));
       expect(
-          result.deletedModels.map((m) => m.id), containsAll(['model-sync']));
+        result.deletedModels.map((m) => m.id),
+        containsAll(['model-sync']),
+      );
       expect(result.providerName, isNotEmpty);
 
       // Verify deletions happened
@@ -234,17 +247,20 @@ void main() {
       // Arrange
       const providerId = 'provider-error';
 
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenThrow(Exception('Database error'));
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.model.name),
+      ).thenThrow(Exception('Database error'));
 
       // Act & Assert
       expect(
         () => repository.deleteInferenceProviderWithModels(providerId),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('Database error'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Database error'),
+          ),
+        ),
       );
     });
 
@@ -267,27 +283,32 @@ void main() {
 
       when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
         (_) async => models
-            .map((m) => AiConfigDbEntity(
-                  id: m.id,
-                  type: 'AiConfigModel',
-                  name: m.name,
-                  serialized: jsonEncode(m.toJson()),
-                  createdAt: m.createdAt,
-                ))
+            .map(
+              (m) => AiConfigDbEntity(
+                id: m.id,
+                type: 'AiConfigModel',
+                name: m.name,
+                serialized: jsonEncode(m.toJson()),
+                createdAt: m.createdAt,
+              ),
+            )
             .toList(),
       );
 
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final result =
-          await repository.deleteInferenceProviderWithModels(providerId);
+      final result = await repository.deleteInferenceProviderWithModels(
+        providerId,
+      );
 
       // Assert
       expect(result.deletedModels.length, equals(5));
       expect(result.deletedModels.length, equals(5));
-      expect(result.deletedModels.map((m) => m.id),
-          containsAll(['model-0', 'model-1', 'model-2', 'model-3', 'model-4']));
+      expect(
+        result.deletedModels.map((m) => m.id),
+        containsAll(['model-0', 'model-1', 'model-2', 'model-3', 'model-4']),
+      );
       expect(result.providerName, isNotEmpty);
 
       // Verify all models were deleted
@@ -326,37 +347,41 @@ void main() {
       );
 
       // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenAnswer((_) async => [
-                AiConfigDbEntity(
-                  id: model1.id,
-                  type: 'AiConfigModel',
-                  name: model1.name,
-                  serialized: jsonEncode(model1.toJson()),
-                  createdAt: model1.createdAt,
-                ),
-                AiConfigDbEntity(
-                  id: model2.id,
-                  type: 'AiConfigModel',
-                  name: model2.name,
-                  serialized: jsonEncode(model2.toJson()),
-                  createdAt: model2.createdAt,
-                ),
-              ]);
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
+        (_) async => [
+          AiConfigDbEntity(
+            id: model1.id,
+            type: 'AiConfigModel',
+            name: model1.name,
+            serialized: jsonEncode(model1.toJson()),
+            createdAt: model1.createdAt,
+          ),
+          AiConfigDbEntity(
+            id: model2.id,
+            type: 'AiConfigModel',
+            name: model2.name,
+            serialized: jsonEncode(model2.toJson()),
+            createdAt: model2.createdAt,
+          ),
+        ],
+      );
 
       // Mock first model deletion to succeed, second to fail
       when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
-      when(() => mockDb.deleteConfig('model-2'))
-          .thenThrow(Exception('Model deletion failed'));
+      when(
+        () => mockDb.deleteConfig('model-2'),
+      ).thenThrow(Exception('Model deletion failed'));
 
       // Act & Assert
       expect(
         () => repository.deleteInferenceProviderWithModels(providerId),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('Model deletion failed'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Model deletion failed'),
+          ),
+        ),
       );
 
       // Verify that the transaction was attempted
@@ -379,30 +404,34 @@ void main() {
       );
 
       // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenAnswer((_) async => [
-                AiConfigDbEntity(
-                  id: model.id,
-                  type: 'AiConfigModel',
-                  name: model.name,
-                  serialized: jsonEncode(model.toJson()),
-                  createdAt: model.createdAt,
-                ),
-              ]);
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
+        (_) async => [
+          AiConfigDbEntity(
+            id: model.id,
+            type: 'AiConfigModel',
+            name: model.name,
+            serialized: jsonEncode(model.toJson()),
+            createdAt: model.createdAt,
+          ),
+        ],
+      );
 
       // Mock model deletion to succeed, provider deletion to fail
       when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
-      when(() => mockDb.deleteConfig(providerId))
-          .thenThrow(Exception('Provider deletion failed'));
+      when(
+        () => mockDb.deleteConfig(providerId),
+      ).thenThrow(Exception('Provider deletion failed'));
 
       // Act & Assert
       expect(
         () => repository.deleteInferenceProviderWithModels(providerId),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('Failed to delete provider $providerId'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Failed to delete provider $providerId'),
+          ),
+        ),
       );
 
       // Verify that the transaction was attempted
@@ -425,22 +454,24 @@ void main() {
       );
 
       // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name))
-          .thenAnswer((_) async => [
-                AiConfigDbEntity(
-                  id: model.id,
-                  type: 'AiConfigModel',
-                  name: model.name,
-                  serialized: jsonEncode(model.toJson()),
-                  createdAt: model.createdAt,
-                ),
-              ]);
+      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
+        (_) async => [
+          AiConfigDbEntity(
+            id: model.id,
+            type: 'AiConfigModel',
+            name: model.name,
+            serialized: jsonEncode(model.toJson()),
+            createdAt: model.createdAt,
+          ),
+        ],
+      );
 
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
 
       // Act
-      final result =
-          await repository.deleteInferenceProviderWithModels(providerId);
+      final result = await repository.deleteInferenceProviderWithModels(
+        providerId,
+      );
 
       // Assert
       expect(result.deletedModels.length, equals(1));

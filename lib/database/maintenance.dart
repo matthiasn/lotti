@@ -237,8 +237,9 @@ class Maintenance {
     var lastReportedProgress = 0;
 
     for (var page = 0; page <= pages; page++) {
-      final dbEntities =
-          await _db.orderedJournal(pageSize, page * pageSize).get();
+      final dbEntities = await _db
+          .orderedJournal(pageSize, page * pageSize)
+          .get();
 
       final entries = entityStreamMapper(dbEntities);
 

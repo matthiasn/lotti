@@ -67,8 +67,9 @@ void main() {
     });
 
     test('pathPatterns are correct', () {
-      final location =
-          SettingsLocation(RouteInformation(uri: Uri.parse('/settings')));
+      final location = SettingsLocation(
+        RouteInformation(uri: Uri.parse('/settings')),
+      );
       expect(location.pathPatterns, [
         '/settings',
         '/settings/ai',
@@ -130,8 +131,9 @@ void main() {
     });
 
     test('buildPages builds TagsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/tags'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/tags'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -146,8 +148,9 @@ void main() {
     });
 
     test('buildPages builds LabelsListPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/labels'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/labels'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -160,8 +163,9 @@ void main() {
     });
 
     test('buildPages builds LabelDetailsPage for create', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/labels/create'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/labels/create'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -175,8 +179,9 @@ void main() {
     });
 
     test('buildPages builds LabelDetailsPage with labelId', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/labels/test-id'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/labels/test-id'),
+      );
       var beamState = BeamState.fromRouteInformation(routeInformation);
       final location = SettingsLocation(routeInformation);
       beamState = beamState.copyWith(
@@ -208,8 +213,9 @@ void main() {
     });
 
     test('buildPages builds InferenceProfilePage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/ai/profiles'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/ai/profiles'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -222,8 +228,9 @@ void main() {
     });
 
     test('buildPages builds SyncSettingsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/sync'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/sync'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -252,8 +259,9 @@ void main() {
     });
 
     test('buildPages builds CategoriesListPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/categories'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/categories'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -266,8 +274,9 @@ void main() {
     });
 
     test('buildPages builds CategoryDetailsPage for create', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/categories/create'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/categories/create'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -281,8 +290,9 @@ void main() {
     });
 
     test('buildPages builds CategoryDetailsPage with categoryId', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/categories/test-id'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/categories/test-id'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -301,8 +311,9 @@ void main() {
     });
 
     test('buildPages builds EditExistingTagPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/tags/tag-123'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/tags/tag-123'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -319,8 +330,9 @@ void main() {
     });
 
     test('buildPages builds CreateTagPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/tags/create/person'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/tags/create/person'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -337,8 +349,9 @@ void main() {
     });
 
     test('buildPages builds DashboardSettingsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/dashboards'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/dashboards'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -351,8 +364,9 @@ void main() {
     });
 
     test('buildPages builds EditDashboardPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/dashboards/dash-123'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/dashboards/dash-123'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -369,8 +383,9 @@ void main() {
     });
 
     test('buildPages builds CreateDashboardPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/dashboards/create'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/dashboards/create'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -384,8 +399,9 @@ void main() {
     });
 
     test('buildPages builds MeasurablesPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/measurables'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/measurables'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -398,8 +414,9 @@ void main() {
     });
 
     test('buildPages builds EditMeasurablePage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/measurables/meas-123'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/measurables/meas-123'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -416,8 +433,9 @@ void main() {
     });
 
     test('buildPages builds CreateMeasurablePage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/measurables/create'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/measurables/create'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -431,8 +449,9 @@ void main() {
     });
 
     test('buildPages builds HabitsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/habits'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/habits'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -445,8 +464,9 @@ void main() {
     });
 
     test('buildPages builds HabitsPage with search term', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/habits/search/test'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/habits/search/test'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -464,8 +484,9 @@ void main() {
     });
 
     test('buildPages builds EditHabitPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/habits/by_id/habit-123'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/habits/by_id/habit-123'),
+      );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
       beamState = beamState.copyWith(
@@ -482,8 +503,9 @@ void main() {
     });
 
     test('buildPages builds CreateHabitPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/habits/create'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/habits/create'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -497,8 +519,9 @@ void main() {
     });
 
     test('buildPages builds AgentSettingsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/agents'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/agents'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -569,8 +592,9 @@ void main() {
     });
 
     test('buildPages builds FlagsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/flags'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/flags'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -583,8 +607,9 @@ void main() {
     });
 
     test('buildPages builds ThemingPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/theming'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/theming'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -597,8 +622,9 @@ void main() {
     });
 
     test('buildPages builds HealthImportPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/health_import'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/health_import'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -611,8 +637,9 @@ void main() {
     });
 
     test('buildPages builds AdvancedSettingsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/advanced'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -625,8 +652,9 @@ void main() {
     });
 
     test('buildPages builds OutboxMonitorPage under /settings/sync/outbox', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/sync/outbox'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/sync/outbox'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -640,8 +668,9 @@ void main() {
     });
 
     test('buildPages builds SyncStatsPage under /settings/sync/stats', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/sync/stats'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/sync/stats'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -671,8 +700,9 @@ void main() {
     });
 
     test('buildPages builds LoggingPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/advanced/logging'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/logging'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -706,8 +736,9 @@ void main() {
     });
 
     test('buildPages builds AboutPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/advanced/about'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/about'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -721,8 +752,9 @@ void main() {
     });
 
     test('buildPages builds ConflictsPage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/advanced/conflicts'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/conflicts'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -777,8 +809,9 @@ void main() {
     });
 
     test('buildPages builds MaintenancePage', () {
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/settings/advanced/maintenance'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/maintenance'),
+      );
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(
@@ -793,8 +826,9 @@ void main() {
 
     test('categories navigation stack matches tags/dashboards pattern', () {
       // Test categories
-      final categoriesRoute =
-          RouteInformation(uri: Uri.parse('/settings/categories/cat-id'));
+      final categoriesRoute = RouteInformation(
+        uri: Uri.parse('/settings/categories/cat-id'),
+      );
       final categoriesLocation = SettingsLocation(categoriesRoute);
       var categoriesState = BeamState.fromRouteInformation(categoriesRoute);
       categoriesState = categoriesState.copyWith(
@@ -806,8 +840,9 @@ void main() {
       );
 
       // Test tags
-      final tagsRoute =
-          RouteInformation(uri: Uri.parse('/settings/tags/tag-id'));
+      final tagsRoute = RouteInformation(
+        uri: Uri.parse('/settings/tags/tag-id'),
+      );
       final tagsLocation = SettingsLocation(tagsRoute);
       var tagsState = BeamState.fromRouteInformation(tagsRoute);
       tagsState = tagsState.copyWith(

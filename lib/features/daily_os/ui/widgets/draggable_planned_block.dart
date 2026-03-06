@@ -73,10 +73,10 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
 
   /// Check if drag is disabled (block overlaps compressed region).
   bool get _dragDisabled => blockOverlapsCompressedRegion(
-        block: widget.slot.block,
-        foldingState: widget.foldingState,
-        expandedRegions: widget.expandedRegions,
-      );
+    block: widget.slot.block,
+    foldingState: widget.foldingState,
+    expandedRegions: widget.expandedRegions,
+  );
 
   /// Check if block is too small for resize (move-only mode).
   bool get _isMoveOnly => _blockHeight < kMinimumBlockHeightForResize;
@@ -93,9 +93,11 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
   @override
   Widget build(BuildContext context) {
     // Calculate position - use drag state if active, otherwise use slot values
-    final effectiveStartMinutes = _dragState?.currentStartMinutes ??
+    final effectiveStartMinutes =
+        _dragState?.currentStartMinutes ??
         minutesFromDate(widget.date, widget.slot.startTime);
-    final effectiveEndMinutes = _dragState?.currentEndMinutes ??
+    final effectiveEndMinutes =
+        _dragState?.currentEndMinutes ??
         minutesFromDate(widget.date, widget.slot.endTime);
 
     final startMinutesFromSection =
@@ -151,8 +153,9 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
                     ]
                   : null,
             ),
-            transform:
-                isDragging ? Matrix4.diagonal3Values(1.02, 1.02, 1) : null,
+            transform: isDragging
+                ? Matrix4.diagonal3Values(1.02, 1.02, 1)
+                : null,
             transformAlignment: Alignment.center,
             padding: const EdgeInsets.all(4),
             child: Stack(
@@ -162,8 +165,9 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
                   category?.name ?? context.messages.dailyOsPlanned,
                   style: context.textTheme.labelSmall?.copyWith(
                     color: categoryColor.withValues(alpha: 0.9),
-                    fontWeight:
-                        isHighlighted ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isHighlighted
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -373,7 +377,8 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
     final newEndMinutes = newStartMinutes + duration;
 
     // Detect if at boundary (only show hint if hitting a collapsed region)
-    final atBoundary = newStartMinutes == boundsStartMinutes ||
+    final atBoundary =
+        newStartMinutes == boundsStartMinutes ||
         newEndMinutes == boundsEndMinutes;
 
     setState(() {

@@ -55,10 +55,14 @@ typedef UnifiedAiParams = ({String entityId, String promptId});
 /// Controller for running unified AI inference with configurable prompts
 /// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
 /// ensuring error state persists until the widget can read it.
-final unifiedAiControllerProvider = NotifierProvider.family<UnifiedAiController,
-    UnifiedAiState, UnifiedAiParams>(
-  UnifiedAiController.new,
-);
+final unifiedAiControllerProvider =
+    NotifierProvider.family<
+      UnifiedAiController,
+      UnifiedAiState,
+      UnifiedAiParams
+    >(
+      UnifiedAiController.new,
+    );
 
 class UnifiedAiController extends Notifier<UnifiedAiState> {
   UnifiedAiController(this._params);
@@ -293,8 +297,10 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
       );
     } catch (e, stackTrace) {
       // Categorize the error for better user feedback
-      final inferenceError =
-          AiErrorUtils.categorizeError(e, stackTrace: stackTrace);
+      final inferenceError = AiErrorUtils.categorizeError(
+        e,
+        stackTrace: stackTrace,
+      );
 
       developer.log(
         'Controller caught exception: ${e.runtimeType}, isException: ${e is Exception}',
@@ -352,47 +358,51 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
 
 /// Provider to get available prompts for a given entity.
 /// Uses entityId as key for stable provider identity across entity updates.
-final availablePromptsProvider =
-    FutureProvider.autoDispose.family<List<AiConfigPrompt>, String>(
-  (ref, entityId) async {
-    // Watch the entry controller to get the entity and react to updates
-    final entryState = ref.watch(entryControllerProvider(id: entityId)).value;
-    final entity = entryState?.entry;
+final availablePromptsProvider = FutureProvider.autoDispose
+    .family<List<AiConfigPrompt>, String>(
+      (ref, entityId) async {
+        // Watch the entry controller to get the entity and react to updates
+        final entryState = ref
+            .watch(entryControllerProvider(id: entityId))
+            .value;
+        final entity = entryState?.entry;
 
-    // Return empty list if entity not available yet
-    if (entity == null) {
-      return [];
-    }
+        // Return empty list if entity not available yet
+        if (entity == null) {
+          return [];
+        }
 
-    // Watch for changes in AI prompt configurations
-    // This will trigger a rebuild when any prompt configuration changes
-    await ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.prompt).future,
+        // Watch for changes in AI prompt configurations
+        // This will trigger a rebuild when any prompt configuration changes
+        await ref.watch(
+          aiConfigByTypeControllerProvider(
+            configType: AiConfigType.prompt,
+          ).future,
+        );
+
+        // If the entity has a category, watch for changes to that specific category
+        final categoryId = entity.meta.categoryId;
+        if (categoryId != null) {
+          // Watch the category - this will trigger rebuilds when the category changes
+          await ref.watch(categoryChangesProvider(categoryId).future);
+        }
+
+        final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
+        return repository.getActivePromptsForContext(entity: entity);
+      },
     );
-
-    // If the entity has a category, watch for changes to that specific category
-    final categoryId = entity.meta.categoryId;
-    if (categoryId != null) {
-      // Watch the category - this will trigger rebuilds when the category changes
-      await ref.watch(categoryChangesProvider(categoryId).future);
-    }
-
-    final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
-    return repository.getActivePromptsForContext(entity: entity);
-  },
-);
 
 /// Provider to check if there are any prompts available for an entity.
 /// Uses entityId as key for stable provider identity across entity updates.
-final hasAvailablePromptsProvider =
-    FutureProvider.autoDispose.family<bool, String>(
-  (ref, entityId) async {
-    final prompts = await ref.watch(
-      availablePromptsProvider(entityId).future,
+final hasAvailablePromptsProvider = FutureProvider.autoDispose
+    .family<bool, String>(
+      (ref, entityId) async {
+        final prompts = await ref.watch(
+          availablePromptsProvider(entityId).future,
+        );
+        return prompts.isNotEmpty;
+      },
     );
-    return prompts.isNotEmpty;
-  },
-);
 
 /// Provider to watch category changes
 final categoryChangesProvider = StreamProvider.autoDispose.family<void, String>(
@@ -410,22 +420,22 @@ typedef TriggerNewInferenceParams = ({
 });
 
 /// Provider to trigger a new inference run
-final triggerNewInferenceProvider =
-    FutureProvider.autoDispose.family<void, TriggerNewInferenceParams>(
-  (ref, params) async {
-    developer.log(
-      'triggerNewInference called: entityId=${params.entityId}, promptId=${params.promptId}, linkedEntityId=${params.linkedEntityId}',
-      name: 'UnifiedAiController',
-    );
-    // Get the controller instance (this will create it if it doesn't exist)
-    final controller = ref.read(
-      unifiedAiControllerProvider((
-        entityId: params.entityId,
-        promptId: params.promptId,
-      )).notifier,
-    );
+final triggerNewInferenceProvider = FutureProvider.autoDispose
+    .family<void, TriggerNewInferenceParams>(
+      (ref, params) async {
+        developer.log(
+          'triggerNewInference called: entityId=${params.entityId}, promptId=${params.promptId}, linkedEntityId=${params.linkedEntityId}',
+          name: 'UnifiedAiController',
+        );
+        // Get the controller instance (this will create it if it doesn't exist)
+        final controller = ref.read(
+          unifiedAiControllerProvider((
+            entityId: params.entityId,
+            promptId: params.promptId,
+          )).notifier,
+        );
 
-    // Wait for the inference to complete, passing the linked entity ID
-    await controller.runInference(linkedEntityId: params.linkedEntityId);
-  },
-);
+        // Wait for the inference to complete, passing the linked entity ID
+        await controller.runInference(linkedEntityId: params.linkedEntityId);
+      },
+    );

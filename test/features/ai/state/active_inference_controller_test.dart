@@ -110,15 +110,15 @@ void main() {
       const promptId = 'test-prompt-id';
       const responseType = AiResponseType.taskSummary;
 
-      final controller = container.read(
-        activeInferenceControllerProvider(
-          entityId: entityId,
-          aiResponseType: responseType,
-        ).notifier,
-      )
-
-        // Start inference
-        ..startInference(promptId: promptId);
+      final controller =
+          container.read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                aiResponseType: responseType,
+              ).notifier,
+            )
+            // Start inference
+            ..startInference(promptId: promptId);
 
       // Verify it exists
       var state = container.read(

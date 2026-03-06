@@ -35,19 +35,23 @@ void main() {
   });
 
   group('LoggingDb Search Tests', () {
-    test('watchSearchLogEntries returns empty stream for empty query',
-        () async {
-      final stream = db.watchSearchLogEntries('');
-      final result = await stream.first;
-      expect(result, isEmpty);
-    });
+    test(
+      'watchSearchLogEntries returns empty stream for empty query',
+      () async {
+        final stream = db.watchSearchLogEntries('');
+        final result = await stream.first;
+        expect(result, isEmpty);
+      },
+    );
 
-    test('watchSearchLogEntries returns empty stream for whitespace query',
-        () async {
-      final stream = db.watchSearchLogEntries('   ');
-      final result = await stream.first;
-      expect(result, isEmpty);
-    });
+    test(
+      'watchSearchLogEntries returns empty stream for whitespace query',
+      () async {
+        final stream = db.watchSearchLogEntries('   ');
+        final result = await stream.first;
+        expect(result, isEmpty);
+      },
+    );
 
     test('watchSearchLogEntries handles basic search correctly', () async {
       // Insert test data
@@ -97,94 +101,101 @@ void main() {
       expect(camelResult, hasLength(1));
     });
 
-    test('watchSearchLogEntries searches across message, domain, and subdomain',
-        () async {
-      // Insert test data
-      final logEntries = [
-        LogEntry(
-          id: 'test3',
-          createdAt: DateTime.now().toIso8601String(),
-          domain: 'authentication',
-          subDomain: 'login',
-          type: 'log',
-          level: 'INFO',
-          message: 'User logged in successfully',
-        ),
-        LogEntry(
-          id: 'test4',
-          createdAt: DateTime.now().toIso8601String(),
-          domain: 'database',
-          subDomain: 'authentication',
-          type: 'log',
-          level: 'ERROR',
-          message: 'Connection failed',
-        ),
-        LogEntry(
-          id: 'test5',
-          createdAt: DateTime.now().toIso8601String(),
-          domain: 'api',
-          subDomain: 'sync',
-          type: 'log',
-          level: 'INFO',
-          message: 'Data contains authentication token',
-        ),
-      ];
+    test(
+      'watchSearchLogEntries searches across message, domain, and subdomain',
+      () async {
+        // Insert test data
+        final logEntries = [
+          LogEntry(
+            id: 'test3',
+            createdAt: DateTime.now().toIso8601String(),
+            domain: 'authentication',
+            subDomain: 'login',
+            type: 'log',
+            level: 'INFO',
+            message: 'User logged in successfully',
+          ),
+          LogEntry(
+            id: 'test4',
+            createdAt: DateTime.now().toIso8601String(),
+            domain: 'database',
+            subDomain: 'authentication',
+            type: 'log',
+            level: 'ERROR',
+            message: 'Connection failed',
+          ),
+          LogEntry(
+            id: 'test5',
+            createdAt: DateTime.now().toIso8601String(),
+            domain: 'api',
+            subDomain: 'sync',
+            type: 'log',
+            level: 'INFO',
+            message: 'Data contains authentication token',
+          ),
+        ];
 
-      for (final entry in logEntries) {
-        await db.log(entry);
-      }
+        for (final entry in logEntries) {
+          await db.log(entry);
+        }
 
-      // Search for 'authentication' which appears in domain, subdomain, and message
-      final stream = db.watchSearchLogEntries('authentication');
-      final result = await stream.first;
+        // Search for 'authentication' which appears in domain, subdomain, and message
+        final stream = db.watchSearchLogEntries('authentication');
+        final result = await stream.first;
 
-      expect(result, hasLength(3));
-      expect(result.map((e) => e.id), containsAll(['test3', 'test4', 'test5']));
-    });
+        expect(result, hasLength(3));
+        expect(
+          result.map((e) => e.id),
+          containsAll(['test3', 'test4', 'test5']),
+        );
+      },
+    );
 
-    test('watchSearchLogEntries returns results ordered by created_at DESC',
-        () async {
-      final now = DateTime.now().toUtc();
-      final logEntries = [
-        LogEntry(
-          id: 'old',
-          createdAt: now.subtract(const Duration(hours: 2)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Old search result',
-        ),
-        LogEntry(
-          id: 'new',
-          createdAt: now.toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'New search result',
-        ),
-        LogEntry(
-          id: 'middle',
-          createdAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Middle search result',
-        ),
-      ];
+    test(
+      'watchSearchLogEntries returns results ordered by created_at DESC',
+      () async {
+        final now = DateTime.now().toUtc();
+        final logEntries = [
+          LogEntry(
+            id: 'old',
+            createdAt: now.subtract(const Duration(hours: 2)).toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Old search result',
+          ),
+          LogEntry(
+            id: 'new',
+            createdAt: now.toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'New search result',
+          ),
+          LogEntry(
+            id: 'middle',
+            createdAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Middle search result',
+          ),
+        ];
 
-      for (final entry in logEntries) {
-        await db.log(entry);
-      }
+        for (final entry in logEntries) {
+          await db.log(entry);
+        }
 
-      // Search for results
-      final stream = db.watchSearchLogEntries('search result');
-      final result = await stream.first;
+        // Search for results
+        final stream = db.watchSearchLogEntries('search result');
+        final result = await stream.first;
 
-      expect(result, hasLength(3));
-      expect(result[0].id, equals('new')); // Most recent first
-      expect(result[1].id, equals('middle'));
-      expect(result[2].id, equals('old'));
-    });
+        expect(result, hasLength(3));
+        expect(result[0].id, equals('new')); // Most recent first
+        expect(result[1].id, equals('middle'));
+        expect(result[2].id, equals('old'));
+      },
+    );
 
     test('watchSearchLogEntries handles null subdomain correctly', () async {
       // Insert log entries with and without subdomain
@@ -377,14 +388,18 @@ void main() {
     test('watchLogEntries respects limit parameter', () async {
       // Insert multiple entries
       for (var i = 0; i < 5; i++) {
-        await db.log(LogEntry(
-          id: 'limit_test_$i',
-          createdAt: DateTime.now().add(Duration(seconds: i)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Message $i',
-        ));
+        await db.log(
+          LogEntry(
+            id: 'limit_test_$i',
+            createdAt: DateTime.now()
+                .add(Duration(seconds: i))
+                .toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Message $i',
+          ),
+        );
       }
 
       // Test limit
@@ -425,12 +440,20 @@ void main() {
         db.watchLogEntryById('replace'),
         emitsInOrder([
           isA<List<LogEntry>>().having(
-              (entries) => entries.single.message, 'message', 'initial'),
+            (entries) => entries.single.message,
+            'message',
+            'initial',
+          ),
           isA<List<LogEntry>>().having(
-              (entries) => entries.single.message, 'message', 'updated'),
+            (entries) => entries.single.message,
+            'message',
+            'updated',
+          ),
         ]),
       );
-      await db.into(db.logEntries).insert(
+      await db
+          .into(db.logEntries)
+          .insert(
             entry.copyWith(
               message: 'updated',
               createdAt: DateTime(2024, 1, 2).toIso8601String(),
@@ -447,31 +470,39 @@ void main() {
   });
 
   group('LoggingDb Paginated Search Tests', () {
-    test('watchSearchLogEntriesPaginated returns empty for empty query',
-        () async {
-      final stream = db.watchSearchLogEntriesPaginated('');
-      final result = await stream.first;
-      expect(result, isEmpty);
-    });
+    test(
+      'watchSearchLogEntriesPaginated returns empty for empty query',
+      () async {
+        final stream = db.watchSearchLogEntriesPaginated('');
+        final result = await stream.first;
+        expect(result, isEmpty);
+      },
+    );
 
-    test('watchSearchLogEntriesPaginated returns empty for whitespace query',
-        () async {
-      final stream = db.watchSearchLogEntriesPaginated('   ');
-      final result = await stream.first;
-      expect(result, isEmpty);
-    });
+    test(
+      'watchSearchLogEntriesPaginated returns empty for whitespace query',
+      () async {
+        final stream = db.watchSearchLogEntriesPaginated('   ');
+        final result = await stream.first;
+        expect(result, isEmpty);
+      },
+    );
 
     test('watchSearchLogEntriesPaginated respects limit parameter', () async {
       // Insert multiple test entries
       for (var i = 0; i < 10; i++) {
-        await db.log(LogEntry(
-          id: 'paginated_test_$i',
-          createdAt: DateTime.now().add(Duration(seconds: i)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Paginated test message $i',
-        ));
+        await db.log(
+          LogEntry(
+            id: 'paginated_test_$i',
+            createdAt: DateTime.now()
+                .add(Duration(seconds: i))
+                .toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Paginated test message $i',
+          ),
+        );
       }
 
       // Test with limit of 5
@@ -486,14 +517,18 @@ void main() {
     test('watchSearchLogEntriesPaginated respects offset parameter', () async {
       // Insert multiple test entries
       for (var i = 0; i < 10; i++) {
-        await db.log(LogEntry(
-          id: 'offset_test_$i',
-          createdAt: DateTime.now().add(Duration(seconds: i)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Offset test message $i',
-        ));
+        await db.log(
+          LogEntry(
+            id: 'offset_test_$i',
+            createdAt: DateTime.now()
+                .add(Duration(seconds: i))
+                .toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Offset test message $i',
+          ),
+        );
       }
 
       // Get first page
@@ -520,14 +555,16 @@ void main() {
 
     test('watchSearchLogEntriesPaginated handles default parameters', () async {
       // Insert test data
-      await db.log(LogEntry(
-        id: 'default_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'test',
-        type: 'log',
-        level: 'INFO',
-        message: 'Default test message',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'default_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'test',
+          type: 'log',
+          level: 'INFO',
+          message: 'Default test message',
+        ),
+      );
 
       // Test with default parameters (limit: 50, offset: 0)
       final stream = db.watchSearchLogEntriesPaginated('Default test');
@@ -537,14 +574,16 @@ void main() {
 
     test('watchSearchLogEntriesPaginated validates limit parameter', () async {
       // Insert test data
-      await db.log(LogEntry(
-        id: 'limit_validation_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'test',
-        type: 'log',
-        level: 'INFO',
-        message: 'Limit validation test message',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'limit_validation_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'test',
+          type: 'log',
+          level: 'INFO',
+          message: 'Limit validation test message',
+        ),
+      );
 
       // Test with invalid limit (should default to 50)
       final stream = db.watchSearchLogEntriesPaginated(
@@ -557,14 +596,16 @@ void main() {
 
     test('watchSearchLogEntriesPaginated validates offset parameter', () async {
       // Insert test data
-      await db.log(LogEntry(
-        id: 'offset_validation_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'test',
-        type: 'log',
-        level: 'INFO',
-        message: 'Offset validation test message',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'offset_validation_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'test',
+          type: 'log',
+          level: 'INFO',
+          message: 'Offset validation test message',
+        ),
+      );
 
       // Test with invalid offset (should default to 0)
       final stream = db.watchSearchLogEntriesPaginated(
@@ -575,101 +616,117 @@ void main() {
       expect(result, hasLength(1)); // Should still work with default offset
     });
 
-    test('watchSearchLogEntriesPaginated maintains order by created_at DESC',
-        () async {
-      final now = DateTime.now().toUtc();
-      final logEntries = [
-        LogEntry(
-          id: 'old_paginated',
-          createdAt: now.subtract(const Duration(hours: 2)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Old paginated result',
-        ),
-        LogEntry(
-          id: 'new_paginated',
-          createdAt: now.toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'New paginated result',
-        ),
-        LogEntry(
-          id: 'middle_paginated',
-          createdAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Middle paginated result',
-        ),
-      ];
+    test(
+      'watchSearchLogEntriesPaginated maintains order by created_at DESC',
+      () async {
+        final now = DateTime.now().toUtc();
+        final logEntries = [
+          LogEntry(
+            id: 'old_paginated',
+            createdAt: now.subtract(const Duration(hours: 2)).toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Old paginated result',
+          ),
+          LogEntry(
+            id: 'new_paginated',
+            createdAt: now.toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'New paginated result',
+          ),
+          LogEntry(
+            id: 'middle_paginated',
+            createdAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Middle paginated result',
+          ),
+        ];
 
-      for (final entry in logEntries) {
-        await db.log(entry);
-      }
+        for (final entry in logEntries) {
+          await db.log(entry);
+        }
 
-      // Test pagination maintains order
-      final stream = db.watchSearchLogEntriesPaginated(
-        'paginated result',
-        limit: 2,
-      );
-      final result = await stream.first;
+        // Test pagination maintains order
+        final stream = db.watchSearchLogEntriesPaginated(
+          'paginated result',
+          limit: 2,
+        );
+        final result = await stream.first;
 
-      expect(result, hasLength(2));
-      expect(result[0].id, equals('new_paginated')); // Most recent first
-      expect(result[1].id, equals('middle_paginated'));
-    });
+        expect(result, hasLength(2));
+        expect(result[0].id, equals('new_paginated')); // Most recent first
+        expect(result[1].id, equals('middle_paginated'));
+      },
+    );
 
-    test('getSearchLogEntriesCount returns correct count for empty query',
-        () async {
-      final count = await db.getSearchLogEntriesCount('');
-      expect(count, equals(0));
-    });
+    test(
+      'getSearchLogEntriesCount returns correct count for empty query',
+      () async {
+        final count = await db.getSearchLogEntriesCount('');
+        expect(count, equals(0));
+      },
+    );
 
-    test('getSearchLogEntriesCount returns correct count for whitespace query',
-        () async {
-      final count = await db.getSearchLogEntriesCount('   ');
-      expect(count, equals(0));
-    });
+    test(
+      'getSearchLogEntriesCount returns correct count for whitespace query',
+      () async {
+        final count = await db.getSearchLogEntriesCount('   ');
+        expect(count, equals(0));
+      },
+    );
 
-    test('getSearchLogEntriesCount returns correct count for matching query',
-        () async {
-      // Insert multiple test entries
-      for (var i = 0; i < 5; i++) {
-        await db.log(LogEntry(
-          id: 'count_test_$i',
-          createdAt: DateTime.now().add(Duration(seconds: i)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Count test message $i',
-        ));
-      }
+    test(
+      'getSearchLogEntriesCount returns correct count for matching query',
+      () async {
+        // Insert multiple test entries
+        for (var i = 0; i < 5; i++) {
+          await db.log(
+            LogEntry(
+              id: 'count_test_$i',
+              createdAt: DateTime.now()
+                  .add(Duration(seconds: i))
+                  .toIso8601String(),
+              domain: 'test',
+              type: 'log',
+              level: 'INFO',
+              message: 'Count test message $i',
+            ),
+          );
+        }
 
-      // Insert one non-matching entry
-      await db.log(LogEntry(
-        id: 'non_matching',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'other',
-        type: 'log',
-        level: 'INFO',
-        message: 'Non matching message',
-      ));
+        // Insert one non-matching entry
+        await db.log(
+          LogEntry(
+            id: 'non_matching',
+            createdAt: DateTime.now().toIso8601String(),
+            domain: 'other',
+            type: 'log',
+            level: 'INFO',
+            message: 'Non matching message',
+          ),
+        );
 
-      final count = await db.getSearchLogEntriesCount('Count test');
-      expect(count, equals(5));
-    });
+        final count = await db.getSearchLogEntriesCount('Count test');
+        expect(count, equals(5));
+      },
+    );
 
     test('getSearchLogEntriesCount is case insensitive', () async {
-      await db.log(LogEntry(
-        id: 'case_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'Test',
-        type: 'log',
-        level: 'INFO',
-        message: 'Case Test Message',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'case_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'Test',
+          type: 'log',
+          level: 'INFO',
+          message: 'Case Test Message',
+        ),
+      );
 
       final lowerCount = await db.getSearchLogEntriesCount('case test');
       final upperCount = await db.getSearchLogEntriesCount('CASE TEST');
@@ -681,15 +738,17 @@ void main() {
     });
 
     test('getSearchLogEntriesCount searches across all fields', () async {
-      await db.log(LogEntry(
-        id: 'field_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'authentication',
-        subDomain: 'login',
-        type: 'log',
-        level: 'INFO',
-        message: 'User authentication successful',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'field_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'authentication',
+          subDomain: 'login',
+          type: 'log',
+          level: 'INFO',
+          message: 'User authentication successful',
+        ),
+      );
 
       // Test searching in different fields
       final domainCount = await db.getSearchLogEntriesCount('authentication');
@@ -702,42 +761,48 @@ void main() {
     });
 
     test('getSearchLogEntriesCount handles partial matches', () async {
-      await db.log(LogEntry(
-        id: 'partial_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'application',
-        type: 'log',
-        level: 'INFO',
-        message: 'Processing user request',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'partial_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'application',
+          type: 'log',
+          level: 'INFO',
+          message: 'Processing user request',
+        ),
+      );
 
       final partialCount = await db.getSearchLogEntriesCount('app');
       expect(partialCount, equals(1));
     });
 
     test('getSearchLogEntriesCount returns zero for no matches', () async {
-      await db.log(LogEntry(
-        id: 'no_match_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'test',
-        type: 'log',
-        level: 'INFO',
-        message: 'This should not match',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'no_match_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'test',
+          type: 'log',
+          level: 'INFO',
+          message: 'This should not match',
+        ),
+      );
 
       final count = await db.getSearchLogEntriesCount('nonexistent');
       expect(count, equals(0));
     });
 
     test('getSearchLogEntriesCount handles special characters', () async {
-      await db.log(LogEntry(
-        id: 'special_test',
-        createdAt: DateTime.now().toIso8601String(),
-        domain: 'app',
-        type: 'log',
-        level: 'INFO',
-        message: 'Error: 100% completion with "quotes" and symbols!',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'special_test',
+          createdAt: DateTime.now().toIso8601String(),
+          domain: 'app',
+          type: 'log',
+          level: 'INFO',
+          message: 'Error: 100% completion with "quotes" and symbols!',
+        ),
+      );
 
       final specialCount = await db.getSearchLogEntriesCount('100%');
       expect(specialCount, equals(1));
@@ -746,14 +811,18 @@ void main() {
     test('pagination methods work together correctly', () async {
       // Insert 15 test entries
       for (var i = 0; i < 15; i++) {
-        await db.log(LogEntry(
-          id: 'integration_test_$i',
-          createdAt: DateTime.now().add(Duration(seconds: i)).toIso8601String(),
-          domain: 'test',
-          type: 'log',
-          level: 'INFO',
-          message: 'Integration test message $i',
-        ));
+        await db.log(
+          LogEntry(
+            id: 'integration_test_$i',
+            createdAt: DateTime.now()
+                .add(Duration(seconds: i))
+                .toIso8601String(),
+            domain: 'test',
+            type: 'log',
+            level: 'INFO',
+            message: 'Integration test message $i',
+          ),
+        );
       }
 
       // Get total count
@@ -804,26 +873,27 @@ void main() {
     });
 
     test(
-        'watchSearchLogEntriesPaginated returns empty when offset exceeds total',
-        () async {
-      await db.log(
-        _logEntry(
-          id: 'paginated-offset',
-          message: 'Offset test message',
-          createdAt: DateTime(2024, 2),
-        ),
-      );
+      'watchSearchLogEntriesPaginated returns empty when offset exceeds total',
+      () async {
+        await db.log(
+          _logEntry(
+            id: 'paginated-offset',
+            message: 'Offset test message',
+            createdAt: DateTime(2024, 2),
+          ),
+        );
 
-      final result = await db
-          .watchSearchLogEntriesPaginated(
-            'Offset test',
-            limit: 10,
-            offset: 100,
-          )
-          .first;
+        final result = await db
+            .watchSearchLogEntriesPaginated(
+              'Offset test',
+              limit: 10,
+              offset: 100,
+            )
+            .first;
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
   });
 
   group('LoggingDb Timestamp Normalization Tests', () {
@@ -893,23 +963,27 @@ void main() {
   group('LoggingDb Sorting Tests', () {
     test('sorting handles invalid timestamps gracefully', () async {
       // Insert entries with valid and invalid timestamps
-      await db.log(const LogEntry(
-        id: 'invalid1',
-        createdAt: 'invalid-timestamp',
-        domain: 'test',
-        type: 'log',
-        level: 'INFO',
-        message: 'sort test',
-      ));
+      await db.log(
+        const LogEntry(
+          id: 'invalid1',
+          createdAt: 'invalid-timestamp',
+          domain: 'test',
+          type: 'log',
+          level: 'INFO',
+          message: 'sort test',
+        ),
+      );
 
-      await db.log(LogEntry(
-        id: 'valid1',
-        createdAt: DateTime.utc(2024, 6, 15).toIso8601String(),
-        domain: 'test',
-        type: 'log',
-        level: 'INFO',
-        message: 'sort test',
-      ));
+      await db.log(
+        LogEntry(
+          id: 'valid1',
+          createdAt: DateTime.utc(2024, 6, 15).toIso8601String(),
+          domain: 'test',
+          type: 'log',
+          level: 'INFO',
+          message: 'sort test',
+        ),
+      );
 
       final stream = db.watchSearchLogEntries('sort test');
       final result = await stream.first;
@@ -951,26 +1025,28 @@ void main() {
       );
     });
 
-    test('DevLogger.warning format matches error handling in search methods',
-        () {
-      // Verify the exact message format used in logging_db.dart catch blocks
-      final testError = Exception('database connection failed');
+    test(
+      'DevLogger.warning format matches error handling in search methods',
+      () {
+        // Verify the exact message format used in logging_db.dart catch blocks
+        final testError = Exception('database connection failed');
 
-      DevLogger.warning(
-        name: 'LoggingDb',
-        message: 'Error in watchSearchLogEntriesPaginated: $testError',
-      );
+        DevLogger.warning(
+          name: 'LoggingDb',
+          message: 'Error in watchSearchLogEntriesPaginated: $testError',
+        );
 
-      expect(
-        DevLogger.capturedLogs.any(
-          (log) =>
-              log.contains('LoggingDb') &&
-              log.contains('watchSearchLogEntriesPaginated') &&
-              log.contains('database connection failed'),
-        ),
-        isTrue,
-      );
-    });
+        expect(
+          DevLogger.capturedLogs.any(
+            (log) =>
+                log.contains('LoggingDb') &&
+                log.contains('watchSearchLogEntriesPaginated') &&
+                log.contains('database connection failed'),
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('DevLogger.warning format matches error handling in count method', () {
       final testError = Exception('query failed');

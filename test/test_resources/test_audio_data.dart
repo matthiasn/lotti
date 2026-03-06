@@ -211,8 +211,10 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
   }
 
   /// Check if audio data should trigger chunking
-  static bool shouldChunk(String base64Data,
-      {double maxSizeMB = defaultMaxSizeMB}) {
+  static bool shouldChunk(
+    String base64Data, {
+    double maxSizeMB = defaultMaxSizeMB,
+  }) {
     return estimateFileSizeMB(base64Data) > maxSizeMB;
   }
 

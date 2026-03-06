@@ -12,20 +12,24 @@ part of 'checklist_repository.dart';
 @ProviderFor(checklistRepository)
 final checklistRepositoryProvider = ChecklistRepositoryProvider._();
 
-final class ChecklistRepositoryProvider extends $FunctionalProvider<
-    ChecklistRepository,
-    ChecklistRepository,
-    ChecklistRepository> with $Provider<ChecklistRepository> {
+final class ChecklistRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ChecklistRepository,
+          ChecklistRepository,
+          ChecklistRepository
+        >
+    with $Provider<ChecklistRepository> {
   ChecklistRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'checklistRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'checklistRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$checklistRepositoryHash();
@@ -33,8 +37,8 @@ final class ChecklistRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<ChecklistRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   ChecklistRepository create(Ref ref) {

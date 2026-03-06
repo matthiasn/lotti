@@ -11,24 +11,28 @@ void main() {
         <num>[],
       );
     });
-    test('Ranked values for empty list of measurements returns empty list.',
-        () {
-      expect(
-        rankedByPopularity(measurements: []),
-        <num>[],
-      );
-    });
-    test('Ranked values for empty list of measurements returns empty list.',
-        () {
-      final measurements = testMeasurements(
-        <num>[111, 500, 250, 500, 250, 500, 250, 500, 100, 100, 50],
-      );
+    test(
+      'Ranked values for empty list of measurements returns empty list.',
+      () {
+        expect(
+          rankedByPopularity(measurements: []),
+          <num>[],
+        );
+      },
+    );
+    test(
+      'Ranked values for empty list of measurements returns empty list.',
+      () {
+        final measurements = testMeasurements(
+          <num>[111, 500, 250, 500, 250, 500, 250, 500, 100, 100, 50],
+        );
 
-      expect(
-        rankedByPopularity(measurements: measurements),
-        <num>[500, 250, 100],
-      );
-    });
+        expect(
+          rankedByPopularity(measurements: measurements),
+          <num>[500, 250, 100],
+        );
+      },
+    );
   });
 }
 

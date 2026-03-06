@@ -125,16 +125,21 @@ void main() {
       );
       final updatedLink = testLink.copyWith(collapsed: true);
 
-      when(() => mockJournalDb.entryLinkById(updatedLink.id))
-          .thenAnswer((_) async => testLink);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(updatedLink.id),
+      ).thenAnswer((_) async => testLink);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(updatedLink);
 
@@ -155,8 +160,9 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockJournalDb.entryLinkById(testLink.id))
-          .thenAnswer((_) async => testLink);
+      when(
+        () => mockJournalDb.entryLinkById(testLink.id),
+      ).thenAnswer((_) async => testLink);
 
       final result = await repository.updateLink(testLink);
 
@@ -177,8 +183,9 @@ void main() {
       );
       final existing = testLink.copyWith(collapsed: false);
 
-      when(() => mockJournalDb.entryLinkById(testLink.id))
-          .thenAnswer((_) async => existing);
+      when(
+        () => mockJournalDb.entryLinkById(testLink.id),
+      ).thenAnswer((_) async => existing);
 
       final result = await repository.updateLink(testLink);
 
@@ -198,8 +205,9 @@ void main() {
       );
       final incomingLink = existingLink.copyWith(collapsed: false);
 
-      when(() => mockJournalDb.entryLinkById(incomingLink.id))
-          .thenAnswer((_) async => existingLink);
+      when(
+        () => mockJournalDb.entryLinkById(incomingLink.id),
+      ).thenAnswer((_) async => existingLink);
 
       final result = await repository.updateLink(incomingLink);
 
@@ -219,16 +227,21 @@ void main() {
       );
       final incomingLink = existingLink.copyWith(collapsed: false);
 
-      when(() => mockJournalDb.entryLinkById(incomingLink.id))
-          .thenAnswer((_) async => existingLink);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incomingLink.id),
+      ).thenAnswer((_) async => existingLink);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(incomingLink);
 
@@ -249,16 +262,21 @@ void main() {
       );
       final updatedLink = testLink.copyWith(collapsed: true);
 
-      when(() => mockJournalDb.entryLinkById(updatedLink.id))
-          .thenAnswer((_) async => testLink);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(updatedLink.id),
+      ).thenAnswer((_) async => testLink);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await repository.updateLink(updatedLink);
 
@@ -287,16 +305,21 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockJournalDb.entryLinkById(incoming.id))
-          .thenAnswer((_) async => existing);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incoming.id),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(incoming);
 
@@ -322,16 +345,21 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockJournalDb.entryLinkById(incoming.id))
-          .thenAnswer((_) async => existing);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incoming.id),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(incoming);
 
@@ -357,16 +385,21 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockJournalDb.entryLinkById(incoming.id))
-          .thenAnswer((_) async => existing);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incoming.id),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(incoming);
 
@@ -392,16 +425,21 @@ void main() {
         deletedAt: DateTime(2024),
       );
 
-      when(() => mockJournalDb.entryLinkById(incoming.id))
-          .thenAnswer((_) async => existing);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incoming.id),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(incoming);
 
@@ -421,24 +459,30 @@ void main() {
       // Change hidden while collapsed is true
       final incoming = existing.copyWith(hidden: true);
 
-      when(() => mockJournalDb.entryLinkById(incoming.id))
-          .thenAnswer((_) async => existing);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incoming.id),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await repository.updateLink(incoming);
 
       // Verify the sync message includes collapsed state
       final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny()))
-              .captured
-              .single as SyncEntryLink;
+          verify(
+                () => mockOutboxService.enqueueMessage(captureAny()),
+              ).captured.single
+              as SyncEntryLink;
       expect(captured.entryLink.collapsed, isTrue);
     });
 
@@ -461,16 +505,21 @@ void main() {
         hidden: true,
       );
 
-      when(() => mockJournalDb.entryLinkById(incoming.id))
-          .thenAnswer((_) async => existing);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(incoming.id),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(incoming);
 
@@ -489,8 +538,9 @@ void main() {
         collapsed: true,
       );
 
-      when(() => mockJournalDb.entryLinkById(link.id))
-          .thenAnswer((_) async => link);
+      when(
+        () => mockJournalDb.entryLinkById(link.id),
+      ).thenAnswer((_) async => link);
 
       final result = await repository.updateLink(link);
 
@@ -508,16 +558,21 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockJournalDb.entryLinkById(link.id))
-          .thenAnswer((_) async => null);
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'node1': 1}));
-      when(() => mockJournalDb.upsertEntryLink(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockUpdateNotifications.notify(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.entryLinkById(link.id),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockUpdateNotifications.notify(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final result = await repository.updateLink(link);
 

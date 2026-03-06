@@ -88,8 +88,9 @@ void main() {
     await setUpTestGetIt(
       additionalSetup: () {
         mockCacheService = MockEntitiesCacheService();
-        when(() => mockCacheService.sortedCategories)
-            .thenReturn([_testCategory1, _testCategory2]);
+        when(
+          () => mockCacheService.sortedCategories,
+        ).thenReturn([_testCategory1, _testCategory2]);
         getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
       },
     );
@@ -98,8 +99,9 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   group('EmbeddingBackfillModal', () {
-    testWidgets('shows confirmation page with message and category picker',
-        (tester) async {
+    testWidgets('shows confirmation page with message and category picker', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildTestWidget());
 
       await tester.tap(find.text('Open Modal'));
@@ -128,8 +130,9 @@ void main() {
       expect(find.text('Select All'), findsOneWidget);
     });
 
-    testWidgets('confirm button is disabled until a category is selected',
-        (tester) async {
+    testWidgets('confirm button is disabled until a category is selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildTestWidget());
 
       await tester.tap(find.text('Open Modal'));
@@ -191,8 +194,9 @@ void main() {
       expect(find.text('Select All'), findsOneWidget);
     });
 
-    testWidgets('shows progress view with in-progress state after confirming',
-        (tester) async {
+    testWidgets('shows progress view with in-progress state after confirming', (
+      tester,
+    ) async {
       const inProgressState = EmbeddingBackfillState(
         progress: 0.5,
         isRunning: true,
@@ -204,8 +208,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(
           overrides: [
-            embeddingBackfillControllerProvider
-                .overrideWith(() => _FakeBackfillController(inProgressState)),
+            embeddingBackfillControllerProvider.overrideWith(
+              () => _FakeBackfillController(inProgressState),
+            ),
           ],
         ),
       );
@@ -225,8 +230,9 @@ void main() {
       );
     });
 
-    testWidgets('shows error state with error icon and message',
-        (tester) async {
+    testWidgets('shows error state with error icon and message', (
+      tester,
+    ) async {
       const errorState = EmbeddingBackfillState(
         progress: 0.3,
         error: 'Embeddings are disabled',
@@ -238,8 +244,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(
           overrides: [
-            embeddingBackfillControllerProvider
-                .overrideWith(() => _FakeBackfillController(errorState)),
+            embeddingBackfillControllerProvider.overrideWith(
+              () => _FakeBackfillController(errorState),
+            ),
           ],
         ),
       );
@@ -256,8 +263,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
-    testWidgets('shows complete state with check icon and 100%',
-        (tester) async {
+    testWidgets('shows complete state with check icon and 100%', (
+      tester,
+    ) async {
       const completeState = EmbeddingBackfillState(
         progress: 1,
         processedCount: 10,
@@ -268,8 +276,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(
           overrides: [
-            embeddingBackfillControllerProvider
-                .overrideWith(() => _FakeBackfillController(completeState)),
+            embeddingBackfillControllerProvider.overrideWith(
+              () => _FakeBackfillController(completeState),
+            ),
           ],
         ),
       );
@@ -314,8 +323,9 @@ void main() {
       expect(find.text('0%'), findsOneWidget);
     });
 
-    testWidgets('cancel dismisses the modal without confirming',
-        (tester) async {
+    testWidgets('cancel dismisses the modal without confirming', (
+      tester,
+    ) async {
       _setTallSurface(tester);
       await tester.pumpWidget(_buildTestWidget());
 

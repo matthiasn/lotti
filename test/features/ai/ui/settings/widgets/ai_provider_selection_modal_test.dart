@@ -21,7 +21,9 @@ void main() {
 
       expect(find.text('Set Up AI Features'), findsOneWidget);
       expect(
-          find.text('Choose your AI provider to get started:'), findsOneWidget);
+        find.text('Choose your AI provider to get started:'),
+        findsOneWidget,
+      );
       expect(find.text('Google Gemini'), findsOneWidget);
       expect(find.text('OpenAI'), findsOneWidget);
       expect(find.text('Mistral AI'), findsOneWidget);
@@ -54,8 +56,9 @@ void main() {
       );
     });
 
-    testWidgets('Continue button is disabled when no provider selected',
-        (tester) async {
+    testWidgets('Continue button is disabled when no provider selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -74,8 +77,9 @@ void main() {
       expect(continueButton.onPressed, isNull);
     });
 
-    testWidgets('Continue button is enabled after selecting a provider',
-        (tester) async {
+    testWidgets('Continue button is enabled after selecting a provider', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -97,8 +101,9 @@ void main() {
       expect(continueButton.onPressed, isNotNull);
     });
 
-    testWidgets('calls onProviderSelected with gemini when Gemini selected',
-        (tester) async {
+    testWidgets('calls onProviderSelected with gemini when Gemini selected', (
+      tester,
+    ) async {
       InferenceProviderType? selectedType;
 
       await tester.pumpWidget(
@@ -132,8 +137,9 @@ void main() {
       expect(selectedType, equals(InferenceProviderType.gemini));
     });
 
-    testWidgets('calls onProviderSelected with openAi when OpenAI selected',
-        (tester) async {
+    testWidgets('calls onProviderSelected with openAi when OpenAI selected', (
+      tester,
+    ) async {
       InferenceProviderType? selectedType;
 
       await tester.pumpWidget(
@@ -167,8 +173,9 @@ void main() {
       expect(selectedType, equals(InferenceProviderType.openAi));
     });
 
-    testWidgets('calls onProviderSelected with mistral when Mistral selected',
-        (tester) async {
+    testWidgets('calls onProviderSelected with mistral when Mistral selected', (
+      tester,
+    ) async {
       InferenceProviderType? selectedType;
 
       await tester.pumpWidget(
@@ -231,8 +238,9 @@ void main() {
       expect(dismissed, isTrue);
     });
 
-    testWidgets('shows additional info about configuring providers',
-        (tester) async {
+    testWidgets('shows additional info about configuring providers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -246,7 +254,8 @@ void main() {
 
       expect(
         find.text(
-            'You can configure additional providers later in Settings > AI.'),
+          'You can configure additional providers later in Settings > AI.',
+        ),
         findsOneWidget,
       );
     });

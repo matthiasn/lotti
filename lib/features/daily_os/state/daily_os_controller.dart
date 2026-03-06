@@ -66,9 +66,9 @@ class DailyOsState {
 
   /// Total recorded time for the day.
   Duration get totalRecordedTime => budgetProgress.fold(
-        Duration.zero,
-        (total, p) => total + p.recordedDuration,
-      );
+    Duration.zero,
+    (total, p) => total + p.recordedDuration,
+  );
 
   /// Number of budgets that are over their limit.
   int get overBudgetCount => budgetProgress.where((p) => p.isOverBudget).length;

@@ -65,15 +65,16 @@ class _MockLoggingService extends Mock implements LoggingService {}
 
 class _StubAudioWaveformService extends AudioWaveformService {
   _StubAudioWaveformService()
-      : super(
-          extractor: ({
-            required audioFile,
-            required waveOutFile,
-            required zoom,
-          }) async {
-            throw UnimplementedError();
-          },
-        );
+    : super(
+        extractor:
+            ({
+              required audioFile,
+              required waveOutFile,
+              required zoom,
+            }) async {
+              throw UnimplementedError();
+            },
+      );
 
   AudioWaveformData? data;
 
@@ -178,8 +179,9 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('renders compact audio card with minimal controls',
-      (WidgetTester tester) async {
+  testWidgets('renders compact audio card with minimal controls', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -207,8 +209,9 @@ void main() {
     expect(container.margin, EdgeInsets.zero);
   });
 
-  testWidgets('shows play semantics when inactive',
-      (WidgetTester tester) async {
+  testWidgets('shows play semantics when inactive', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.stopped,
@@ -228,8 +231,9 @@ void main() {
     expect(find.bySemanticsLabel('Play audio'), findsOneWidget);
   });
 
-  testWidgets('layouts correctly below 320px width',
-      (WidgetTester tester) async {
+  testWidgets('layouts correctly below 320px width', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.paused,
@@ -252,11 +256,14 @@ void main() {
     expect(find.text('1.25x'), findsOneWidget);
     expect(find.byType(AudioProgressBar), findsOneWidget);
     expect(
-        tester.getSize(find.byType(AudioPlayerWidget)).height, lessThan(180));
+      tester.getSize(find.byType(AudioPlayerWidget)).height,
+      lessThan(180),
+    );
   });
 
-  testWidgets('tapping speed cycles playback rate',
-      (WidgetTester tester) async {
+  testWidgets('tapping speed cycles playback rate', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -277,8 +284,9 @@ void main() {
     expect(controller.lastSpeedSet, 1.25);
   });
 
-  testWidgets('renders waveform scrubber when waveform ready',
-      (WidgetTester tester) async {
+  testWidgets('renders waveform scrubber when waveform ready', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -303,8 +311,9 @@ void main() {
     expect(find.byType(AudioProgressBar), findsNothing);
   });
 
-  testWidgets('scrubbing progress calls seek with target duration',
-      (WidgetTester tester) async {
+  testWidgets('scrubbing progress calls seek with target duration', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     const total = Duration(minutes: 2);
     final state = buildState(
@@ -330,8 +339,9 @@ void main() {
     );
   });
 
-  testWidgets('tapping play arms the controller with the audio note',
-      (WidgetTester tester) async {
+  testWidgets('tapping play arms the controller with the audio note', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.stopped,
@@ -355,8 +365,9 @@ void main() {
     expect(controller.playWasCalled, isTrue);
   });
 
-  testWidgets('tapping pause button when playing calls pause',
-      (WidgetTester tester) async {
+  testWidgets('tapping pause button when playing calls pause', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -376,8 +387,9 @@ void main() {
     expect(controller.pauseWasCalled, isTrue);
   });
 
-  testWidgets('tapping play button when paused calls play',
-      (WidgetTester tester) async {
+  testWidgets('tapping play button when paused calls play', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.paused,
@@ -397,8 +409,9 @@ void main() {
     expect(controller.playWasCalled, isTrue);
   });
 
-  testWidgets('shows loading indicator when initializing',
-      (WidgetTester tester) async {
+  testWidgets('shows loading indicator when initializing', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.initializing,
@@ -415,8 +428,9 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('speed button is disabled when player is inactive',
-      (WidgetTester tester) async {
+  testWidgets('speed button is disabled when player is inactive', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.stopped,
@@ -458,8 +472,9 @@ void main() {
     expect(controller.lastSpeedSet, 1.25);
   });
 
-  testWidgets('speed cycles from 2x to 0.5x (wraps around)',
-      (WidgetTester tester) async {
+  testWidgets('speed cycles from 2x to 0.5x (wraps around)', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -479,8 +494,9 @@ void main() {
     expect(controller.lastSpeedSet, 0.5);
   });
 
-  testWidgets('displays all speed values correctly',
-      (WidgetTester tester) async {
+  testWidgets('displays all speed values correctly', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 
@@ -497,8 +513,9 @@ void main() {
 
       await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
-      final expectedLabel =
-          speed == speed.truncateToDouble() ? '${speed.toInt()}x' : '${speed}x';
+      final expectedLabel = speed == speed.truncateToDouble()
+          ? '${speed.toInt()}x'
+          : '${speed}x';
       expect(find.text(expectedLabel), findsOneWidget);
 
       // Clean up for next iteration
@@ -524,8 +541,9 @@ void main() {
     expect(find.byType(AudioProgressBar), findsOneWidget);
   });
 
-  testWidgets('uses state totalDuration when available',
-      (WidgetTester tester) async {
+  testWidgets('uses state totalDuration when available', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -543,8 +561,9 @@ void main() {
     expect(find.text('03:00'), findsOneWidget);
   });
 
-  testWidgets('progress ratio is clamped between 0 and 1',
-      (WidgetTester tester) async {
+  testWidgets('progress ratio is clamped between 0 and 1', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -563,8 +582,9 @@ void main() {
     expect(find.byType(AudioProgressBar), findsOneWidget);
   });
 
-  testWidgets('displays error color for non-1x speeds',
-      (WidgetTester tester) async {
+  testWidgets('displays error color for non-1x speeds', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.playing,
@@ -606,8 +626,9 @@ void main() {
     expect(progressBar.progress, const Duration(seconds: 30));
   });
 
-  testWidgets('progress and buffered are zero when inactive',
-      (WidgetTester tester) async {
+  testWidgets('progress and buffered are zero when inactive', (
+    WidgetTester tester,
+  ) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
       status: AudioPlayerStatus.stopped,

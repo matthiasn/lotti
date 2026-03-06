@@ -18,7 +18,7 @@ void showModelManagementModal({
   required List<String> currentSelectedIds,
   required String currentDefaultId,
   required void Function(List<String> newSelectedIds, String newDefaultId)
-      onSave,
+  onSave,
   AiConfigPrompt? promptConfig,
 }) {
   // Create a stateful wrapper to manage state outside of the modal widget
@@ -37,8 +37,10 @@ void showModelManagementModal({
             builder: (context, selectedIdsValue, _) {
               final count = selectedIdsValue.length;
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: SizedBox(
                   width: 32,
                   height: 24,
@@ -47,14 +49,14 @@ void showModelManagementModal({
                       duration: const Duration(milliseconds: 300),
                       transitionBuilder:
                           (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(
-                            scale: animation,
-                            child: child,
-                          ),
-                        );
-                      },
+                            return FadeTransition(
+                              opacity: animation,
+                              child: ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              ),
+                            );
+                          },
                       child: count > 0
                           ? Icon(
                               Icons.check_circle_rounded,
@@ -85,8 +87,9 @@ void showModelManagementModal({
                   letterSpacing: -0.5,
                   color: count > 0
                       ? modalContext.colorScheme.onSurface
-                      : modalContext.colorScheme.onSurface
-                          .withValues(alpha: 0.5),
+                      : modalContext.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                 ),
               );
             },
@@ -113,8 +116,9 @@ void showModelManagementModal({
           child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20)
-                    .copyWith(bottom: 100),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ).copyWith(bottom: 100),
                 child: _ModelManagementContent(
                   currentSelectedIds: currentSelectedIds,
                   currentDefaultId: currentDefaultId,
@@ -164,7 +168,8 @@ class _ModelManagementStickyActionBar extends ConsumerWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: LottiPrimaryButton(
-                  onPressed: (selectedIds.isNotEmpty &&
+                  onPressed:
+                      (selectedIds.isNotEmpty &&
                           defaultId.isNotEmpty &&
                           selectedIds.contains(defaultId))
                       ? () {
@@ -197,7 +202,7 @@ class _ModelManagementContent extends ConsumerStatefulWidget {
   final String currentDefaultId;
   final AiConfigPrompt? promptConfig;
   final void Function(Set<String> newSelectedIds, String newDefaultId)
-      onSelectionChanged;
+  onSelectionChanged;
 
   @override
   ConsumerState<_ModelManagementContent> createState() =>
@@ -238,13 +243,13 @@ class _ModelManagementContentState
         // Filter models based on prompt requirements if promptConfig is provided
         final modelConfigs = widget.promptConfig != null
             ? allModelConfigs
-                .where(
-                  (model) => isModelSuitableForPrompt(
-                    model: model,
-                    prompt: widget.promptConfig!,
-                  ),
-                )
-                .toList()
+                  .where(
+                    (model) => isModelSuitableForPrompt(
+                      model: model,
+                      prompt: widget.promptConfig!,
+                    ),
+                  )
+                  .toList()
             : allModelConfigs;
 
         if (modelConfigs.isEmpty) {
@@ -261,8 +266,9 @@ class _ModelManagementContentState
                   Icon(
                     Icons.psychology_outlined,
                     size: 64,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.6),
+                    color: context.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.6,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -284,12 +290,13 @@ class _ModelManagementContentState
         final displayedModels = _selectedProviderId == null
             ? modelConfigs
             : modelConfigs
-                .where((m) => m.inferenceProviderId == _selectedProviderId)
-                .toList();
+                  .where((m) => m.inferenceProviderId == _selectedProviderId)
+                  .toList();
 
         // Build the models list with fixed height container
         return SizedBox(
-          height: MediaQuery.of(context).size.height *
+          height:
+              MediaQuery.of(context).size.height *
               ProviderChipConstants.modalHeightFactor,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -317,14 +324,16 @@ class _ModelManagementContentState
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                           backgroundColor: context
-                              .colorScheme.surfaceContainerHigh
+                              .colorScheme
+                              .surfaceContainerHigh
                               .withValues(
-                            alpha: ProviderChipConstants.surfaceAlpha,
-                          ),
-                          selectedColor:
-                              context.colorScheme.primaryContainer.withValues(
-                            alpha: ProviderChipConstants.primaryContainerAlpha,
-                          ),
+                                alpha: ProviderChipConstants.surfaceAlpha,
+                              ),
+                          selectedColor: context.colorScheme.primaryContainer
+                              .withValues(
+                                alpha:
+                                    ProviderChipConstants.primaryContainerAlpha,
+                              ),
                           checkmarkColor:
                               context.colorScheme.onPrimaryContainer,
                           side: BorderSide(
@@ -333,10 +342,10 @@ class _ModelManagementContentState
                                     alpha: ProviderChipConstants.primaryAlpha,
                                   )
                                 : context.colorScheme.primaryContainer
-                                    .withValues(
-                                    alpha: ProviderChipConstants
-                                        .primaryContainerBorderAlpha,
-                                  ),
+                                      .withValues(
+                                        alpha: ProviderChipConstants
+                                            .primaryContainerBorderAlpha,
+                                      ),
                           ),
                           labelStyle: TextStyle(
                             fontSize: ProviderChipConstants.chipFontSize,
@@ -346,10 +355,10 @@ class _ModelManagementContentState
                             color: _selectedProviderId == null
                                 ? context.colorScheme.onPrimaryContainer
                                 : context.colorScheme.onSurfaceVariant
-                                    .withValues(
-                                    alpha: ProviderChipConstants
-                                        .onSurfaceVariantAlpha,
-                                  ),
+                                      .withValues(
+                                        alpha: ProviderChipConstants
+                                            .onSurfaceVariantAlpha,
+                                      ),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal:
@@ -561,10 +570,12 @@ class _ModelCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        context.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.7),
-                        context.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
+                        context.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.7,
+                        ),
+                        context.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.5,
+                        ),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -607,13 +618,16 @@ class _ModelCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
                                     context.colorScheme.primary,
-                                    context.colorScheme.primary
-                                        .withValues(alpha: 0.85),
+                                    context.colorScheme.primary.withValues(
+                                      alpha: 0.85,
+                                    ),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(10),
@@ -644,7 +658,8 @@ class _ModelCard extends StatelessWidget {
 
                       // Provider name with refined styling
                       _CompactProviderName(
-                          providerId: model.inferenceProviderId),
+                        providerId: model.inferenceProviderId,
+                      ),
 
                       // Description with better typography
                       if (model.description != null &&
@@ -679,15 +694,17 @@ class _ModelCard extends StatelessWidget {
                         gradient: LinearGradient(
                           colors: [
                             context.colorScheme.primaryContainer,
-                            context.colorScheme.primaryContainer
-                                .withValues(alpha: 0.7),
+                            context.colorScheme.primaryContainer.withValues(
+                              alpha: 0.7,
+                            ),
                           ],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: context.colorScheme.primary
-                                .withValues(alpha: 0.2),
+                            color: context.colorScheme.primary.withValues(
+                              alpha: 0.2,
+                            ),
                             blurRadius: 6,
                             offset: const Offset(0, 1),
                           ),
@@ -729,15 +746,17 @@ class _CompactProviderName extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: context.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
+            color: context.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.5,
+            ),
             borderRadius: BorderRadius.circular(5),
           ),
           child: Text(
             providerName,
             style: context.textTheme.bodySmall?.copyWith(
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+              color: context.colorScheme.onSurfaceVariant.withValues(
+                alpha: 0.9,
+              ),
               fontWeight: FontWeight.w500,
               fontSize: 10,
               letterSpacing: -0.1,
@@ -750,8 +769,9 @@ class _CompactProviderName extends ConsumerWidget {
       loading: () => Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.3),
+          color: context.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.3,
+          ),
           borderRadius: BorderRadius.circular(5),
         ),
         child: Text(

@@ -60,22 +60,23 @@ class TasksCountWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return FutureBuilder<int>(
       future: _db.getTasksCount(statuses: [status]),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<int> snapshot,
-      ) {
-        if (snapshot.data == null) {
-          return const SizedBox.shrink();
-        } else {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '${snapshot.data} $label',
-              style: searchLabelStyle(),
-            ),
-          );
-        }
-      },
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<int> snapshot,
+          ) {
+            if (snapshot.data == null) {
+              return const SizedBox.shrink();
+            } else {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  '${snapshot.data} $label',
+                  style: searchLabelStyle(),
+                ),
+              );
+            }
+          },
     );
   }
 }
@@ -87,16 +88,17 @@ class FlaggedCount extends StatelessWidget {
   Widget build(BuildContext context) {
     return FutureBuilder<int>(
       future: getIt<JournalDb>().getCountImportFlagEntries(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<int> snapshot,
-      ) {
-        final count = snapshot.data;
-        return Text(
-          'Flagged: $count',
-          style: searchLabelStyle(),
-        );
-      },
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<int> snapshot,
+          ) {
+            final count = snapshot.data;
+            return Text(
+              'Flagged: $count',
+              style: searchLabelStyle(),
+            );
+          },
     );
   }
 }

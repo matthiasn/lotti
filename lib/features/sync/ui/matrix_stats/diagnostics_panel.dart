@@ -40,8 +40,10 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                 );
               }
               final txt = snap.data ?? '';
-              final lines =
-                  txt.split('\n').where((l) => l.contains('=')).toList();
+              final lines = txt
+                  .split('\n')
+                  .where((l) => l.contains('='))
+                  .toList();
               final diag = <String, String>{};
               for (final l in lines) {
                 final i = l.indexOf('=');

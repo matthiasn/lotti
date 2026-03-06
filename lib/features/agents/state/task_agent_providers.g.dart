@@ -15,21 +15,25 @@ final taskAgentServiceProvider = TaskAgentServiceProvider._();
 
 /// The task-agent-specific service.
 
-final class TaskAgentServiceProvider extends $FunctionalProvider<
-    TaskAgentService,
-    TaskAgentService,
-    TaskAgentService> with $Provider<TaskAgentService> {
+final class TaskAgentServiceProvider
+    extends
+        $FunctionalProvider<
+          TaskAgentService,
+          TaskAgentService,
+          TaskAgentService
+        >
+    with $Provider<TaskAgentService> {
   /// The task-agent-specific service.
   TaskAgentServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'taskAgentServiceProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'taskAgentServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$taskAgentServiceHash();
@@ -70,10 +74,13 @@ final taskAgentProvider = TaskAgentFamily._();
 /// Watches the update stream so the UI rebuilds when an agent-task link
 /// arrives via sync (the notification includes the taskId).
 
-final class TaskAgentProvider extends $FunctionalProvider<
-        AsyncValue<AgentDomainEntity?>,
-        AgentDomainEntity?,
-        FutureOr<AgentDomainEntity?>>
+final class TaskAgentProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AgentDomainEntity?>,
+          AgentDomainEntity?,
+          FutureOr<AgentDomainEntity?>
+        >
     with
         $FutureModifier<AgentDomainEntity?>,
         $FutureProvider<AgentDomainEntity?> {
@@ -82,15 +89,16 @@ final class TaskAgentProvider extends $FunctionalProvider<
   /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
   /// Watches the update stream so the UI rebuilds when an agent-task link
   /// arrives via sync (the notification includes the taskId).
-  TaskAgentProvider._(
-      {required TaskAgentFamily super.from, required String super.argument})
-      : super(
-          retry: null,
-          name: r'taskAgentProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TaskAgentProvider._({
+    required TaskAgentFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'taskAgentProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$taskAgentHash();
@@ -105,8 +113,8 @@ final class TaskAgentProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<AgentDomainEntity?> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
@@ -139,13 +147,13 @@ String _$taskAgentHash() => r'0e76442709a1144929c74e043127398e0ad9e0ef';
 final class TaskAgentFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
   TaskAgentFamily._()
-      : super(
-          retry: null,
-          name: r'taskAgentProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'taskAgentProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Fetch the Task Agent for a given journal-domain [taskId].
   ///
@@ -155,8 +163,7 @@ final class TaskAgentFamily extends $Family
 
   TaskAgentProvider call(
     String taskId,
-  ) =>
-      TaskAgentProvider._(argument: taskId, from: this);
+  ) => TaskAgentProvider._(argument: taskId, from: this);
 
   @override
   String toString() => r'taskAgentProvider';

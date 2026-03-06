@@ -15,27 +15,32 @@ class TaskPriorityFilter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
     final selected = state.selectedPriorities;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        Text(context.messages.tasksPriorityFilterTitle,
-            style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          context.messages.tasksPriorityFilterTitle,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         const SizedBox(height: 5),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            ...priorities.map((code) => FilterChoiceChip(
-                  label: code,
-                  selectedColor: _colorForPriority(context, code),
-                  isSelected: selected.contains(code),
-                  onTap: () => controller.toggleSelectedPriority(code),
-                )),
+            ...priorities.map(
+              (code) => FilterChoiceChip(
+                label: code,
+                selectedColor: _colorForPriority(context, code),
+                isSelected: selected.contains(code),
+                onTap: () => controller.toggleSelectedPriority(code),
+              ),
+            ),
             FilterChoiceChip(
               label: context.messages.tasksPriorityFilterAll,
               selectedColor: Colors.grey,

@@ -61,15 +61,16 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _rotationAnimation = Tween<double>(
-      begin: 0,
-      end: 0.5,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _rotationAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 0.5,
+        ).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
     _expandAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -104,10 +105,12 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     // ## Prompt
     // <full prompt>
 
-    final summaryMatch =
-        GeneratedPromptCard.summarySectionRegex.firstMatch(response);
-    final promptMatch =
-        GeneratedPromptCard.promptSectionRegex.firstMatch(response);
+    final summaryMatch = GeneratedPromptCard.summarySectionRegex.firstMatch(
+      response,
+    );
+    final promptMatch = GeneratedPromptCard.promptSectionRegex.firstMatch(
+      response,
+    );
 
     // Fallback: if no Summary section found, use first line as summary.
     // If no Prompt section found, use entire response as the prompt.
@@ -251,7 +254,8 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                     child: Text(
                       _isImagePrompt
                           ? context
-                              .messages.imagePromptGenerationFullPromptLabel
+                                .messages
+                                .imagePromptGenerationFullPromptLabel
                           : context.messages.promptGenerationFullPromptLabel,
                       style: context.textTheme.labelMedium?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,

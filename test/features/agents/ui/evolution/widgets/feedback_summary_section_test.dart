@@ -18,8 +18,9 @@ void main() {
 
   group('FeedbackSummarySection', () {
     group('empty state', () {
-      testWidgets('shows no-feedback message when items list is empty',
-          (tester) async {
+      testWidgets('shows no-feedback message when items list is empty', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(items: []);
 
         await tester.pumpWidget(
@@ -34,8 +35,9 @@ void main() {
         );
       });
 
-      testWidgets('does not show tab bar when items list is empty',
-          (tester) async {
+      testWidgets('does not show tab bar when items list is empty', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(items: []);
 
         await tester.pumpWidget(
@@ -48,8 +50,9 @@ void main() {
     });
 
     group('sentiment tab view', () {
-      testWidgets('shows tab bar with all three sentiment tabs',
-          (tester) async {
+      testWidgets('shows tab bar with all three sentiment tabs', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -111,36 +114,38 @@ void main() {
       });
 
       testWidgets(
-          'renders FeedbackItemTile for items in the initially visible tab',
-          (tester) async {
-        final feedback = makeTestClassifiedFeedback(
-          items: [
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.negative,
-              source: 'observation',
-              detail: 'Item A detail',
-            ),
-            makeTestClassifiedFeedbackItem(
-              sentiment: FeedbackSentiment.negative,
-              category: FeedbackCategory.tooling,
-              detail: 'Item B detail',
-            ),
-          ],
-        );
+        'renders FeedbackItemTile for items in the initially visible tab',
+        (tester) async {
+          final feedback = makeTestClassifiedFeedback(
+            items: [
+              makeTestClassifiedFeedbackItem(
+                sentiment: FeedbackSentiment.negative,
+                source: 'observation',
+                detail: 'Item A detail',
+              ),
+              makeTestClassifiedFeedbackItem(
+                sentiment: FeedbackSentiment.negative,
+                category: FeedbackCategory.tooling,
+                detail: 'Item B detail',
+              ),
+            ],
+          );
 
-        await tester.pumpWidget(
-          buildSubject(FeedbackSummarySection(feedback: feedback)),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            buildSubject(FeedbackSummarySection(feedback: feedback)),
+          );
+          await tester.pumpAndSettle();
 
-        // Default tab is Negative (first tab) — both tiles should be visible
-        expect(find.byType(FeedbackItemTile), findsNWidgets(2));
-        expect(find.text('Item A detail'), findsWidgets);
-        expect(find.text('Item B detail'), findsWidgets);
-      });
+          // Default tab is Negative (first tab) — both tiles should be visible
+          expect(find.byType(FeedbackItemTile), findsNWidgets(2));
+          expect(find.text('Item A detail'), findsWidgets);
+          expect(find.text('Item B detail'), findsWidgets);
+        },
+      );
 
-      testWidgets('switching tabs shows items for the selected sentiment',
-          (tester) async {
+      testWidgets('switching tabs shows items for the selected sentiment', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -174,8 +179,9 @@ void main() {
         expect(find.text('Positive item'), findsWidgets);
       });
 
-      testWidgets('empty tab shows tab-specific empty-state message',
-          (tester) async {
+      testWidgets('empty tab shows tab-specific empty-state message', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -218,8 +224,9 @@ void main() {
         );
       });
 
-      testWidgets('tab content fills available space via Expanded',
-          (tester) async {
+      testWidgets('tab content fills available space via Expanded', (
+        tester,
+      ) async {
         final feedback = makeTestClassifiedFeedback(
           items: [
             makeTestClassifiedFeedbackItem(
@@ -237,8 +244,9 @@ void main() {
 
         // The item list is wrapped in an Expanded widget (not a
         // fixed-height SizedBox) so it fills the remaining space.
-        final expandedWidgets =
-            tester.widgetList<Expanded>(find.byType(Expanded));
+        final expandedWidgets = tester.widgetList<Expanded>(
+          find.byType(Expanded),
+        );
         expect(expandedWidgets, isNotEmpty);
       });
     });

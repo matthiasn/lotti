@@ -61,8 +61,9 @@ class LinkedFromSection extends ConsumerWidget {
             child: LinkedTaskCard(
               task: task,
               showUnlinkButton: manageMode,
-              onUnlink:
-                  manageMode ? () => _unlinkTask(context, ref, task.id) : null,
+              onUnlink: manageMode
+                  ? () => _unlinkTask(context, ref, task.id)
+                  : null,
             ),
           ),
         ),
@@ -77,7 +78,9 @@ class LinkedFromSection extends ConsumerWidget {
   ) async {
     final confirmed = await _showUnlinkConfirmation(context);
     if (confirmed && context.mounted) {
-      await ref.read(journalRepositoryProvider).removeLink(
+      await ref
+          .read(journalRepositoryProvider)
+          .removeLink(
             fromId: linkedTaskId,
             toId: taskId,
           );

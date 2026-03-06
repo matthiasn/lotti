@@ -34,7 +34,9 @@ class SyncMetricsSection extends StatelessWidget {
   }
 
   List<MapEntry<String, int>> _select(
-      Map<String, int> m, bool Function(String) pred) {
+    Map<String, int> m,
+    bool Function(String) pred,
+  ) {
     return m.entries.where((e) => pred(e.key)).toList()
       ..sort((a, b) => a.key.compareTo(b.key));
   }
@@ -74,30 +76,33 @@ class SyncMetricsSection extends StatelessWidget {
 
   Map<String, List<MapEntry<String, int>>> _grouped(Map<String, int> v2) {
     final throughput = _select(
-        v2,
-        (k) =>
-            k == 'processed' ||
-            k == 'flushes' ||
-            k == 'catchupBatches' ||
-            k == 'retriesScheduled' ||
-            k.startsWith('processed.'));
+      v2,
+      (k) =>
+          k == 'processed' ||
+          k == 'flushes' ||
+          k == 'catchupBatches' ||
+          k == 'retriesScheduled' ||
+          k.startsWith('processed.'),
+    );
     final reliability = _select(
-        v2,
-        (k) =>
-            k == 'failures' ||
-            k == 'skipped' ||
-            k == 'skippedByRetryLimit' ||
-            k == 'circuitOpens');
+      v2,
+      (k) =>
+          k == 'failures' ||
+          k == 'skipped' ||
+          k == 'skippedByRetryLimit' ||
+          k == 'circuitOpens',
+    );
     final db = _select(
-        v2,
-        (k) =>
-            k == 'dbApplied' ||
-            k == 'dbIgnoredByVectorClock' ||
-            k == 'conflictsCreated' ||
-            k == 'dbMissingBase' ||
-            k == 'dbEntryLinkNoop' ||
-            k == 'staleAttachmentPurges' ||
-            k.startsWith('droppedByType.'));
+      v2,
+      (k) =>
+          k == 'dbApplied' ||
+          k == 'dbIgnoredByVectorClock' ||
+          k == 'conflictsCreated' ||
+          k == 'dbMissingBase' ||
+          k == 'dbEntryLinkNoop' ||
+          k == 'staleAttachmentPurges' ||
+          k.startsWith('droppedByType.'),
+    );
     final signals = _select(
       v2,
       (k) =>
@@ -148,47 +153,53 @@ class SyncMetricsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         // Top KPIs with optional sparklines
-        Builder(builder: (context) {
-          const kpiKeys = ['processed', 'failures', 'retriesScheduled'];
-          final kpiEntries = metrics.entries
-              .where((e) => kpiKeys.contains(e.key))
-              .toList()
-            ..sort((a, b) =>
-                kpiKeys.indexOf(a.key).compareTo(kpiKeys.indexOf(b.key)));
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (kpiEntries.isNotEmpty) const Text('Top KPIs'),
-              if (kpiEntries.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 12),
-                  child: MetricsGrid(
-                    entries: kpiEntries,
-                    labelFor: _labelFor,
+        Builder(
+          builder: (context) {
+            const kpiKeys = ['processed', 'failures', 'retriesScheduled'];
+            final kpiEntries =
+                metrics.entries.where((e) => kpiKeys.contains(e.key)).toList()
+                  ..sort(
+                    (a, b) => kpiKeys
+                        .indexOf(a.key)
+                        .compareTo(kpiKeys.indexOf(b.key)),
+                  );
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (kpiEntries.isNotEmpty) const Text('Top KPIs'),
+                if (kpiEntries.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 12),
+                    child: MetricsGrid(
+                      entries: kpiEntries,
+                      labelFor: _labelFor,
+                    ),
                   ),
-                ),
-            ],
-          );
-        }),
+              ],
+            );
+          },
+        ),
         // Grouped sections
-        ..._grouped(metrics).entries.expand((section) => [
-              RepaintBoundary(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 8),
-                  child: Text(
-                    section.key,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
+        ..._grouped(metrics).entries.expand(
+          (section) => [
+            RepaintBoundary(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                child: Text(
+                  section.key,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              RepaintBoundary(
-                child: MetricsGrid(
-                  entries: section.value,
-                  labelFor: _labelFor,
-                ),
+            ),
+            RepaintBoundary(
+              child: MetricsGrid(
+                entries: section.value,
+                labelFor: _labelFor,
               ),
-              const SizedBox(height: 12),
-            ]),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
         DiagnosticsPanel(fetchDiagnostics: fetchDiagnostics),
       ],
     );

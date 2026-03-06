@@ -44,17 +44,21 @@ void main() {
       tagsStreamController = StreamController<List<TagEntity>>.broadcast();
       updateStreamController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockJournalDb.getHabitById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.getHabitById(any()),
+      ).thenAnswer((_) async => null);
       when(mockTagsService.watchTags).thenAnswer(
         (_) => tagsStreamController.stream,
       );
-      when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-          .thenAnswer((_) async => 1);
-      when(() => mockNotificationService.scheduleHabitNotification(any()))
-          .thenAnswer((_) async {});
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => updateStreamController.stream);
+      when(
+        () => mockPersistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockNotificationService.scheduleHabitNotification(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => updateStreamController.stream);
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -87,8 +91,9 @@ void main() {
     });
 
     test('loads existing habit from database', () async {
-      when(() => mockJournalDb.getHabitById(habitFlossing.id))
-          .thenAnswer((_) async => habitFlossing);
+      when(
+        () => mockJournalDb.getHabitById(habitFlossing.id),
+      ).thenAnswer((_) async => habitFlossing);
 
       final completer = Completer<void>();
 
@@ -117,7 +122,9 @@ void main() {
 
       expect(state.habitDefinition.name, equals(habitFlossing.name));
       expect(
-          state.habitDefinition.description, equals(habitFlossing.description));
+        state.habitDefinition.description,
+        equals(habitFlossing.description),
+      );
       expect(state.dirty, isFalse);
 
       subscription.close();
@@ -228,78 +235,89 @@ void main() {
       expect(state.dirty, isTrue);
     });
 
-    test('setAlertAtTime updates daily schedule alertAtTime and marks dirty',
-        () {
-      const testHabitId = 'test-habit-id';
-      final alertAtTime = DateTime(2025, 1, 1, 9, 30);
+    test(
+      'setAlertAtTime updates daily schedule alertAtTime and marks dirty',
+      () {
+        const testHabitId = 'test-habit-id';
+        final alertAtTime = DateTime(2025, 1, 1, 9, 30);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final controller = container.read(
-        habitSettingsControllerProvider(testHabitId).notifier,
-      );
+        final controller = container.read(
+          habitSettingsControllerProvider(testHabitId).notifier,
+        );
 
-      controller.setAlertAtTime(alertAtTime);
+        controller.setAlertAtTime(alertAtTime);
 
-      final state = container.read(
-        habitSettingsControllerProvider(testHabitId),
-      );
+        final state = container.read(
+          habitSettingsControllerProvider(testHabitId),
+        );
 
-      final schedule = state.habitDefinition.habitSchedule;
-      expect(schedule, isA<DailyHabitSchedule>());
-      expect((schedule as DailyHabitSchedule).alertAtTime, equals(alertAtTime));
-      expect(state.dirty, isTrue);
-    });
+        final schedule = state.habitDefinition.habitSchedule;
+        expect(schedule, isA<DailyHabitSchedule>());
+        expect(
+          (schedule as DailyHabitSchedule).alertAtTime,
+          equals(alertAtTime),
+        );
+        expect(state.dirty, isTrue);
+      },
+    );
 
-    test('clearAlertAtTime removes alertAtTime from schedule and marks dirty',
-        () {
-      const testHabitId = 'test-habit-id';
-      final alertAtTime = DateTime(2025, 1, 1, 9, 30);
+    test(
+      'clearAlertAtTime removes alertAtTime from schedule and marks dirty',
+      () {
+        const testHabitId = 'test-habit-id';
+        final alertAtTime = DateTime(2025, 1, 1, 9, 30);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final controller = container.read(
-        habitSettingsControllerProvider(testHabitId).notifier,
-      );
+        final controller = container.read(
+          habitSettingsControllerProvider(testHabitId).notifier,
+        );
 
-      // First set alert time
-      controller.setAlertAtTime(alertAtTime);
+        // First set alert time
+        controller.setAlertAtTime(alertAtTime);
 
-      // Then clear it
-      controller.clearAlertAtTime();
+        // Then clear it
+        controller.clearAlertAtTime();
 
-      final state = container.read(
-        habitSettingsControllerProvider(testHabitId),
-      );
+        final state = container.read(
+          habitSettingsControllerProvider(testHabitId),
+        );
 
-      final schedule = state.habitDefinition.habitSchedule;
-      expect(schedule, isA<DailyHabitSchedule>());
-      expect((schedule as DailyHabitSchedule).alertAtTime, isNull);
-      expect(state.dirty, isTrue);
-    });
+        final schedule = state.habitDefinition.habitSchedule;
+        expect(schedule, isA<DailyHabitSchedule>());
+        expect((schedule as DailyHabitSchedule).alertAtTime, isNull);
+        expect(state.dirty, isTrue);
+      },
+    );
 
-    test('delete calls upsertEntityDefinition with deletedAt timestamp',
-        () async {
-      const testHabitId = 'test-habit-id';
+    test(
+      'delete calls upsertEntityDefinition with deletedAt timestamp',
+      () async {
+        const testHabitId = 'test-habit-id';
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final controller = container.read(
-        habitSettingsControllerProvider(testHabitId).notifier,
-      );
+        final controller = container.read(
+          habitSettingsControllerProvider(testHabitId).notifier,
+        );
 
-      await controller.delete();
+        await controller.delete();
 
-      final captured = verify(
-              () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
-          .captured
-          .single as HabitDefinition;
+        final captured =
+            verify(
+                  () =>
+                      mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+                ).captured.single
+                as HabitDefinition;
 
-      expect(captured.deletedAt, isNotNull);
-    });
+        expect(captured.deletedAt, isNotNull);
+      },
+    );
 
     test('watches story tags and updates state', () async {
       const testHabitId = 'test-habit-id';
@@ -337,8 +355,9 @@ void main() {
     test('does not update from DB when form is dirty', () {
       fakeAsync((async) {
         // Initially return null, then return habit on refetch
-        when(() => mockJournalDb.getHabitById(habitFlossing.id))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.getHabitById(habitFlossing.id),
+        ).thenAnswer((_) async => null);
 
         final container = ProviderContainer();
         addTearDown(container.dispose);
@@ -358,8 +377,9 @@ void main() {
         controller.setDirty();
 
         // Update stub and trigger notification to simulate DB change
-        when(() => mockJournalDb.getHabitById(habitFlossing.id))
-            .thenAnswer((_) async => habitFlossing);
+        when(
+          () => mockJournalDb.getHabitById(habitFlossing.id),
+        ).thenAnswer((_) async => habitFlossing);
         updateStreamController.add({habitsNotification});
 
         // Give time for stream to process
@@ -384,8 +404,9 @@ void main() {
           defaultStoryId: testStoryTag1.id,
         );
 
-        when(() => mockJournalDb.getHabitById(habitWithDefaultStory.id))
-            .thenAnswer((_) async => habitWithDefaultStory);
+        when(
+          () => mockJournalDb.getHabitById(habitWithDefaultStory.id),
+        ).thenAnswer((_) async => habitWithDefaultStory);
 
         final container = ProviderContainer();
         addTearDown(container.dispose);
@@ -497,8 +518,9 @@ void main() {
           defaultStoryId: testStoryTag1.id,
         );
 
-        when(() => mockJournalDb.getHabitById(habitWithStory.id))
-            .thenAnswer((_) async => habitWithStory);
+        when(
+          () => mockJournalDb.getHabitById(habitWithStory.id),
+        ).thenAnswer((_) async => habitWithStory);
 
         final container = ProviderContainer();
         addTearDown(container.dispose);
@@ -528,8 +550,9 @@ void main() {
 
         // Now change stub to return habit without defaultStoryId and fire notification
         final habitWithoutStory = habitFlossing.copyWith(defaultStoryId: null);
-        when(() => mockJournalDb.getHabitById(habitWithStory.id))
-            .thenAnswer((_) async => habitWithoutStory);
+        when(
+          () => mockJournalDb.getHabitById(habitWithStory.id),
+        ).thenAnswer((_) async => habitWithoutStory);
         updateStreamController.add({habitsNotification});
 
         async.elapse(const Duration(milliseconds: 50));

@@ -48,8 +48,8 @@ void main() {
           ),
         ).thenAnswer((invocation) async {
           final onProgress =
-              invocation.namedArguments[const Symbol('onProgress')] as void
-                  Function(double)?;
+              invocation.namedArguments[const Symbol('onProgress')]
+                  as void Function(double)?;
           onProgress?.call(0.25);
           onProgress?.call(0.5);
           onProgress?.call(0.75);
@@ -119,8 +119,8 @@ void main() {
           ),
         ).thenAnswer((invocation) async {
           final onProgress =
-              invocation.namedArguments[const Symbol('onProgress')] as void
-                  Function(double)?;
+              invocation.namedArguments[const Symbol('onProgress')]
+                  as void Function(double)?;
           onProgress?.call(0.25);
           onProgress?.call(0.5);
           onProgress?.call(0.75);

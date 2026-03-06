@@ -61,7 +61,8 @@ class TaskFunctions {
                 'type': 'integer',
                 'minimum': 1,
                 'maximum': 1440,
-                'description': 'Time estimate in minutes (max 24 hours). '
+                'description':
+                    'Time estimate in minutes (max 24 hours). '
                     'Convert: 1 hour = 60, half day = 240, full day = 480. '
                     'Tasks over a day should be broken into subtasks.',
               },
@@ -75,7 +76,7 @@ class TaskFunctions {
                 'enum': ['high', 'medium', 'low'],
                 'description':
                     'Confidence level. Use "high" for explicit statements, '
-                        '"medium" for implied, "low" for uncertain.',
+                    '"medium" for implied, "low" for uncertain.',
               },
             },
             'required': ['minutes', 'reason', 'confidence'],
@@ -99,7 +100,7 @@ class TaskFunctions {
                 'format': 'date',
                 'description':
                     'Due date in ISO 8601 format (YYYY-MM-DD). Resolve relative '
-                        'dates to absolute dates based on current date.',
+                    'dates to absolute dates based on current date.',
               },
               'reason': {
                 'type': 'string',
@@ -111,7 +112,7 @@ class TaskFunctions {
                 'enum': ['high', 'medium', 'low'],
                 'description':
                     'Confidence level. Use "high" for explicit deadlines, '
-                        '"medium" for implied, "low" for uncertain.',
+                    '"medium" for implied, "low" for uncertain.',
               },
             },
             'required': ['dueDate', 'reason', 'confidence'],
@@ -135,8 +136,8 @@ class TaskFunctions {
                 'enum': ['P0', 'P1', 'P2', 'P3'],
                 'description':
                     'Priority level. P0=Urgent, P1=High, P2=Medium, P3=Low. '
-                        'Map spoken terms: "urgent/critical"→P0, "high/important"→P1, '
-                        '"medium/normal"→P2, "low/minor"→P3.',
+                    'Map spoken terms: "urgent/critical"→P0, "high/important"→P1, '
+                    '"medium/normal"→P2, "low/minor"→P3.',
               },
               'reason': {
                 'type': 'string',
@@ -148,7 +149,7 @@ class TaskFunctions {
                 'enum': ['high', 'medium', 'low'],
                 'description':
                     'Confidence level. Use "high" for explicit priority statements, '
-                        '"medium" for implied urgency, "low" for uncertain.',
+                    '"medium" for implied urgency, "low" for uncertain.',
               },
             },
             'required': ['priority'],

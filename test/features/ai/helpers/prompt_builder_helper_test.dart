@@ -36,10 +36,12 @@ void main() {
 
     // Stub labels repository to return empty lists by default
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(() => mockLabelsRepository.getLabelUsageCounts())
-        .thenAnswer((_) async => {});
-    when(() => mockLabelsRepository.buildLabelTuples(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockLabelsRepository.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockLabelsRepository.buildLabelTuples(any()),
+    ).thenAnswer((_) async => []);
 
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
@@ -70,10 +72,12 @@ void main() {
 
     // Re-stub after reset
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(() => mockLabelsRepository.getLabelUsageCounts())
-        .thenAnswer((_) async => {});
-    when(() => mockLabelsRepository.buildLabelTuples(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockLabelsRepository.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockLabelsRepository.buildLabelTuples(any()),
+    ).thenAnswer((_) async => []);
     when(
       () => mockAiInputRepository.buildTaskDetailsJson(
         id: any<String>(named: 'id'),
@@ -184,39 +188,44 @@ void main() {
         expect(systemMessage, equals('Custom system message'));
       });
 
-      test('should return base message when preconfigured prompt not found',
-          () {
-        // Arrange
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Test Prompt',
-          systemMessage: 'Custom system message',
-          userMessage: 'Custom user message',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-          trackPreconfigured: true,
-          preconfiguredPromptId: 'non_existent_id',
-        );
+      test(
+        'should return base message when preconfigured prompt not found',
+        () {
+          // Arrange
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Test Prompt',
+            systemMessage: 'Custom system message',
+            userMessage: 'Custom user message',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: DateTime.now(),
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.taskSummary,
+            trackPreconfigured: true,
+            preconfiguredPromptId: 'non_existent_id',
+          );
 
-        // Act
-        final systemMessage = promptBuilder.getEffectiveMessage(
-          promptConfig: promptConfig,
-          isSystemMessage: true,
-        );
+          // Act
+          final systemMessage = promptBuilder.getEffectiveMessage(
+            promptConfig: promptConfig,
+            isSystemMessage: true,
+          );
 
-        // Assert
-        expect(systemMessage, equals('Custom system message'));
-      });
+          // Assert
+          expect(systemMessage, equals('Custom system message'));
+        },
+      );
     });
 
     group('current entry injection', () {
       test('injects JSON when linkedEntityId provided', () async {
-        when(() => mockAiInputRepository.buildTaskDetailsJson(
-            id: any<String>(named: 'id'))).thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(
+            id: any<String>(named: 'id'),
+          ),
+        ).thenAnswer((_) async => null);
         final task = Task(
           data: TaskData(
             title: 'Task',
@@ -265,8 +274,9 @@ void main() {
           labelsRepository: MockLabelsRepository(),
         );
 
-        when(() => mockJournalRepository.getJournalEntityById('audio-1'))
-            .thenAnswer((_) async => audioEntry);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-1'),
+        ).thenAnswer((_) async => audioEntry);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -365,8 +375,9 @@ void main() {
           labelsRepository: MockLabelsRepository(),
         );
 
-        when(() => mockJournalRepository.getJournalEntityById('audio-2'))
-            .thenAnswer((_) async => audioEntry);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-2'),
+        ).thenAnswer((_) async => audioEntry);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -393,55 +404,57 @@ void main() {
         expect(decoded['text'], equals('latest transcript'));
       });
 
-      test('replaces placeholder with empty string when no entry available',
-          () async {
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: any<String>(named: 'id'),
-          ),
-        ).thenAnswer((_) async => null);
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'replaces placeholder with empty string when no entry available',
+        () async {
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(
+              id: any<String>(named: 'id'),
             ),
-            statusHistory: const [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'task-1',
+          ).thenAnswer((_) async => null);
+          final task = Task(
+            data: TaskData(
+              title: 'Task',
+              checklistIds: const [],
+              status: TaskStatus.open(
+                id: 'status',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            meta: Metadata(
+              id: 'task-1',
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Checklist',
+            systemMessage: 'System',
+            userMessage: 'Entry: {{current_entry}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
             createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.checklistUpdates,
+          );
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Entry: {{current_entry}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: task,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
-
-        expect(result, equals('Entry: '));
-      });
+          expect(result, equals('Entry: '));
+        },
+      );
     });
 
     group('deleted checklist items injection', () {
@@ -565,8 +578,9 @@ void main() {
         );
 
         expect(result, isNotNull);
-        final jsonString =
-            _extractFirstJsonArray(result!.split('Deleted:').last);
+        final jsonString = _extractFirstJsonArray(
+          result!.split('Deleted:').last,
+        );
         final decoded = jsonDecode(jsonString) as List<dynamic>;
         expect(decoded.length, equals(1));
         final first = decoded.first as Map<String, dynamic>;
@@ -585,113 +599,120 @@ void main() {
         );
       });
 
-      test('should replace {{task}} placeholder with task JSON for task entity',
-          () async {
-        // Arrange
-        const taskId = 'task-123';
-        final task = Task(
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status_id',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'should replace {{task}} placeholder with task JSON for task entity',
+        () async {
+          // Arrange
+          const taskId = 'task-123';
+          final task = Task(
+            data: TaskData(
+              title: 'Test Task',
+              status: TaskStatus.open(
+                id: 'status_id',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: taskId,
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          entryText: const EntryText(plainText: 'Test task'),
-        );
-
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'Process this task: {{task}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-        );
-
-        const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => mockTaskJson);
-
-        // Act
-        final prompt = await promptBuilder.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: task,
-        );
-
-        // Assert
-        expect(prompt, equals('Process this task: $mockTaskJson'));
-        verify(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .called(1);
-      });
-
-      test('should handle missing {{task}} placeholder with legacy format',
-          () async {
-        // Arrange
-        const taskId = 'task-123';
-        final task = Task(
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status_id',
+            meta: Metadata(
+              id: taskId,
               createdAt: DateTime.now(),
-              utcOffset: 0,
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
             ),
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: taskId,
+            entryText: const EntryText(plainText: 'Test task'),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Test Prompt',
+            systemMessage: 'System',
+            userMessage: 'Process this task: {{task}}',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          entryText: const EntryText(plainText: 'Test task'),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.taskSummary,
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'Summarize this task', // No {{task}} placeholder
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
-        );
+          const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer((_) async => mockTaskJson);
 
-        const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => mockTaskJson);
+          // Act
+          final prompt = await promptBuilder.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: task,
+          );
 
-        // Act
-        final prompt = await promptBuilder.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: task,
-        );
+          // Assert
+          expect(prompt, equals('Process this task: $mockTaskJson'));
+          verify(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).called(1);
+        },
+      );
 
-        // Assert
-        expect(prompt, equals('Summarize this task \n $mockTaskJson'));
-      });
+      test(
+        'should handle missing {{task}} placeholder with legacy format',
+        () async {
+          // Arrange
+          const taskId = 'task-123';
+          final task = Task(
+            data: TaskData(
+              title: 'Test Task',
+              status: TaskStatus.open(
+                id: 'status_id',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            meta: Metadata(
+              id: taskId,
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+            entryText: const EntryText(plainText: 'Test task'),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Test Prompt',
+            systemMessage: 'System',
+            userMessage: 'Summarize this task', // No {{task}} placeholder
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: DateTime.now(),
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.taskSummary,
+          );
+
+          const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer((_) async => mockTaskJson);
+
+          // Act
+          final prompt = await promptBuilder.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: task,
+          );
+
+          // Assert
+          expect(prompt, equals('Summarize this task \n $mockTaskJson'));
+        },
+      );
 
       test('should not append task data if not required', () async {
         // Arrange
@@ -784,8 +805,9 @@ void main() {
           aiResponseType: AiResponseType.taskSummary,
         );
 
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final prompt = await promptBuilder.buildPromptWithData(
@@ -797,65 +819,68 @@ void main() {
         expect(prompt, equals('Process this task: {{task}}'));
       });
 
-      test('should use tracked template message when tracking is enabled',
-          () async {
-        // Arrange
-        const taskId = 'task-123';
-        final testDate = DateTime(2025, 12, 20, 14, 30);
-        final task = Task(
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status_id',
-              createdAt: testDate,
-              utcOffset: 0,
+      test(
+        'should use tracked template message when tracking is enabled',
+        () async {
+          // Arrange
+          const taskId = 'task-123';
+          final testDate = DateTime(2025, 12, 20, 14, 30);
+          final task = Task(
+            data: TaskData(
+              title: 'Test Task',
+              status: TaskStatus.open(
+                id: 'status_id',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+              dateFrom: testDate,
+              dateTo: testDate,
             ),
-            statusHistory: [],
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          meta: Metadata(
-            id: taskId,
+            meta: Metadata(
+              id: taskId,
+              createdAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+              updatedAt: testDate,
+            ),
+            entryText: const EntryText(plainText: 'Test task'),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Test Prompt',
+            systemMessage: 'Custom system',
+            userMessage: 'Custom user message',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            updatedAt: testDate,
-          ),
-          entryText: const EntryText(plainText: 'Test task'),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.checklistUpdates,
+            trackPreconfigured: true,
+            preconfiguredPromptId: 'checklist_updates',
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Test Prompt',
-          systemMessage: 'Custom system',
-          userMessage: 'Custom user message',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: testDate,
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
-          trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
-        );
+          const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer((_) async => mockTaskJson);
 
-        const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => mockTaskJson);
+          // Act
+          final prompt = await promptBuilder.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: task,
+          );
 
-        // Act
-        final prompt = await promptBuilder.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: task,
-        );
-
-        // Assert - should use template message, not custom message
-        expect(prompt, isNotNull);
-        expect(prompt, contains(mockTaskJson));
-        expect(prompt, isNot(contains('{{task}}')));
-        // Verify it doesn't contain the custom message (template was used instead)
-        expect(prompt, isNot(contains('Custom user message')));
-      });
+          // Assert - should use template message, not custom message
+          expect(prompt, isNotNull);
+          expect(prompt, contains(mockTaskJson));
+          expect(prompt, isNot(contains('{{task}}')));
+          // Verify it doesn't contain the custom message (template was used instead)
+          expect(prompt, isNot(contains('Custom user message')));
+        },
+      );
 
       test('should handle error in buildLinkedTasksJson gracefully', () async {
         // Arrange
@@ -897,11 +922,13 @@ void main() {
         );
 
         const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => mockTaskJson);
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => mockTaskJson);
         // Make buildLinkedTasksJson throw an exception
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenThrow(Exception('Database error'));
 
         // Act
         final prompt = await promptBuilder.buildPromptWithData(
@@ -914,53 +941,55 @@ void main() {
         expect(prompt, contains(mockTaskJson));
       });
 
-      test('should handle non-task entities without task placeholder',
-          () async {
-        // Arrange
-        final image = JournalImage(
-          data: ImageData(
-            imageId: 'image-123',
-            imageFile: 'test.jpg',
-            imageDirectory: '/test',
-            capturedAt: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'image-123',
+      test(
+        'should handle non-task entities without task placeholder',
+        () async {
+          // Arrange
+          final image = JournalImage(
+            data: ImageData(
+              imageId: 'image-123',
+              imageFile: 'test.jpg',
+              imageDirectory: '/test',
+              capturedAt: DateTime.now(),
+            ),
+            meta: Metadata(
+              id: 'image-123',
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+            entryText: const EntryText(plainText: 'Test image'),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Test Prompt',
+            systemMessage: 'System',
+            userMessage: 'Analyze this image',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          entryText: const EntryText(plainText: 'Test image'),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'Analyze this image',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+          // Act
+          final prompt = await promptBuilder.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: image,
+          );
 
-        // Act
-        final prompt = await promptBuilder.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: image,
-        );
-
-        // Assert
-        expect(prompt, equals('Analyze this image'));
-        verifyNever(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: any<String>(named: 'id'),
-          ),
-        );
-      });
+          // Assert
+          expect(prompt, equals('Analyze this image'));
+          verifyNever(
+            () => mockAiInputRepository.buildTaskDetailsJson(
+              id: any<String>(named: 'id'),
+            ),
+          );
+        },
+      );
     });
 
     group('Edge cases', () {
@@ -1050,8 +1079,9 @@ void main() {
         );
 
         const mockTaskJson = '{"id": "task-123"}';
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => mockTaskJson);
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => mockTaskJson);
 
         // Act
         final prompt = await promptBuilder.buildPromptWithData(
@@ -1062,340 +1092,378 @@ void main() {
         // Assert - all placeholders should be replaced
         expect(prompt, equals('First: $mockTaskJson, Second: $mockTaskJson'));
         // Should only call once even with multiple placeholders
-        verify(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .called(1);
+        verify(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).called(1);
       });
     });
 
     group('Image/Audio with linked tasks', () {
-      test('should find linked task for image entity with {{task}} placeholder',
-          () async {
-        // Arrange
-        final image = JournalImage(
-          data: ImageData(
-            imageId: 'image-123',
-            imageFile: 'test.jpg',
-            imageDirectory: '/test',
-            capturedAt: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'image-123',
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          entryText: const EntryText(plainText: 'Test image'),
-        );
-
-        final linkedTask = Task(
-          data: TaskData(
-            title: 'Linked Task',
-            status: TaskStatus.open(
-              id: 'status_id',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'should find linked task for image entity with {{task}} placeholder',
+        () async {
+          // Arrange
+          final image = JournalImage(
+            data: ImageData(
+              imageId: 'image-123',
+              imageFile: 'test.jpg',
+              imageDirectory: '/test',
+              capturedAt: DateTime.now(),
             ),
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'task-456',
+            meta: Metadata(
+              id: 'image-123',
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+            entryText: const EntryText(plainText: 'Test image'),
+          );
+
+          final linkedTask = Task(
+            data: TaskData(
+              title: 'Linked Task',
+              status: TaskStatus.open(
+                id: 'status_id',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            meta: Metadata(
+              id: 'task-456',
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+            entryText: const EntryText(plainText: 'Test task'),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Test Prompt',
+            systemMessage: 'System',
+            userMessage: 'Analyze this image: {{task}}',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          entryText: const EntryText(plainText: 'Test task'),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'Analyze this image: {{task}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+          // Create a builder with journal repository
+          final mockJournalRepository = MockJournalRepository();
+          final builderWithJournal = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+          );
 
-        // Create a builder with journal repository
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
+          when(
+            () =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
+          ).thenAnswer((_) async => [linkedTask]);
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'),
+          ).thenAnswer(
+            (_) async => '{"id": "task-456", "title": "Linked Task"}',
+          );
 
-        when(() =>
-                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
-            .thenAnswer((_) async => [linkedTask]);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'))
-            .thenAnswer(
-                (_) async => '{"id": "task-456", "title": "Linked Task"}');
+          // Act
+          final prompt = await builderWithJournal.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: image,
+          );
 
-        // Act
-        final prompt = await builderWithJournal.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: image,
-        );
-
-        // Assert
-        expect(
+          // Assert
+          expect(
             prompt,
             equals(
-                'Analyze this image: {"id": "task-456", "title": "Linked Task"}'));
-        verify(() =>
-                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
-            .called(1);
-        verify(() => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'))
-            .called(1);
-      });
+              'Analyze this image: {"id": "task-456", "title": "Linked Task"}',
+            ),
+          );
+          verify(
+            () =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
+          ).called(1);
+          verify(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'),
+          ).called(1);
+        },
+      );
 
       test(
-          'should find linked task for image entity with {{linked_tasks}} placeholder',
-          () async {
-        // Arrange
-        final image = JournalImage(
-          data: ImageData(
-            imageId: 'image-linked-tasks',
-            imageFile: 'test.jpg',
-            imageDirectory: '/test',
-            capturedAt: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'image-linked-tasks',
-            createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-          entryText: const EntryText(plainText: 'Test image'),
-        );
-
-        final linkedTask = Task(
-          data: TaskData(
-            title: 'Linked Task',
-            checklistIds: const [],
-            status: TaskStatus.inProgress(
-              id: 'status-456',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
+        'should find linked task for image entity with {{linked_tasks}} placeholder',
+        () async {
+          // Arrange
+          final image = JournalImage(
+            data: ImageData(
+              imageId: 'image-linked-tasks',
+              imageFile: 'test.jpg',
+              imageDirectory: '/test',
+              capturedAt: DateTime(2025, 1, 1),
             ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'task-456',
+            meta: Metadata(
+              id: 'image-linked-tasks',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            entryText: const EntryText(plainText: 'Test image'),
+          );
+
+          final linkedTask = Task(
+            data: TaskData(
+              title: 'Linked Task',
+              checklistIds: const [],
+              status: TaskStatus.inProgress(
+                id: 'status-456',
+                createdAt: DateTime(2025, 1, 1),
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+            ),
+            meta: Metadata(
+              id: 'task-456',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Image Analysis with Context',
+            systemMessage: 'System',
+            userMessage: 'Analyze image with context: {{linked_tasks}}',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Image Analysis with Context',
-          systemMessage: 'System',
-          userMessage: 'Analyze image with context: {{linked_tasks}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+          // Create a builder with journal repository
+          final mockJournalRepository = MockJournalRepository();
+          final builderWithJournal = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+          );
 
-        // Create a builder with journal repository
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'image-linked-tasks',
+            ),
+          ).thenAnswer((_) async => [linkedTask]);
+          when(
+            () => mockAiInputRepository.buildLinkedTasksJson('task-456'),
+          ).thenAnswer(
+            (_) async =>
+                '{"linked_from": [{"id": "child-1"}], "linked_to": []}',
+          );
 
-        when(() => mockJournalRepository.getLinkedEntities(
-                linkedTo: 'image-linked-tasks'))
-            .thenAnswer((_) async => [linkedTask]);
-        when(() => mockAiInputRepository.buildLinkedTasksJson('task-456'))
-            .thenAnswer((_) async =>
-                '{"linked_from": [{"id": "child-1"}], "linked_to": []}');
+          // Act
+          final prompt = await builderWithJournal.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: image,
+          );
 
-        // Act
-        final prompt = await builderWithJournal.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: image,
-        );
-
-        // Assert - should contain the linked tasks with note added
-        expect(prompt, contains('linked_from'));
-        expect(prompt, contains('child-1'));
-        expect(prompt, contains('note'));
-        expect(prompt, contains('web search'));
-        verify(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'image-linked-tasks')).called(1);
-        verify(() => mockAiInputRepository.buildLinkedTasksJson('task-456'))
-            .called(1);
-      });
+          // Assert - should contain the linked tasks with note added
+          expect(prompt, contains('linked_from'));
+          expect(prompt, contains('child-1'));
+          expect(prompt, contains('note'));
+          expect(prompt, contains('web search'));
+          verify(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'image-linked-tasks',
+            ),
+          ).called(1);
+          verify(
+            () => mockAiInputRepository.buildLinkedTasksJson('task-456'),
+          ).called(1);
+        },
+      );
 
       test(
-          'should find linked task for audio entity with {{linked_tasks}} placeholder',
-          () async {
-        // Arrange
-        final audio = JournalAudio(
-          data: AudioData(
-            audioFile: 'audio.m4a',
-            audioDirectory: '/test',
-            duration: const Duration(minutes: 5),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'audio-linked-tasks',
-            createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-          entryText: const EntryText(plainText: 'Test audio'),
-        );
-
-        final linkedTask = Task(
-          data: TaskData(
-            title: 'Audio Task',
-            checklistIds: const [],
-            status: TaskStatus.done(
-              id: 'status-789',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
+        'should find linked task for audio entity with {{linked_tasks}} placeholder',
+        () async {
+          // Arrange
+          final audio = JournalAudio(
+            data: AudioData(
+              audioFile: 'audio.m4a',
+              audioDirectory: '/test',
+              duration: const Duration(minutes: 5),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
             ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'task-789',
+            meta: Metadata(
+              id: 'audio-linked-tasks',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            entryText: const EntryText(plainText: 'Test audio'),
+          );
+
+          final linkedTask = Task(
+            data: TaskData(
+              title: 'Audio Task',
+              checklistIds: const [],
+              status: TaskStatus.done(
+                id: 'status-789',
+                createdAt: DateTime(2025, 1, 1),
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+            ),
+            meta: Metadata(
+              id: 'task-789',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          );
+
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Audio Transcription with Context',
+            systemMessage: 'System',
+            userMessage: 'Transcribe audio with context: {{linked_tasks}}',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Audio Transcription with Context',
-          systemMessage: 'System',
-          userMessage: 'Transcribe audio with context: {{linked_tasks}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          // Create a builder with journal repository
+          final mockJournalRepository = MockJournalRepository();
+          final builderWithJournal = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+          );
 
-        // Create a builder with journal repository
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'audio-linked-tasks',
+            ),
+          ).thenAnswer((_) async => [linkedTask]);
+          when(
+            () => mockAiInputRepository.buildLinkedTasksJson('task-789'),
+          ).thenAnswer(
+            (_) async =>
+                '{"linked_from": [], "linked_to": [{"id": "parent-1"}]}',
+          );
 
-        when(() => mockJournalRepository.getLinkedEntities(
-                linkedTo: 'audio-linked-tasks'))
-            .thenAnswer((_) async => [linkedTask]);
-        when(() => mockAiInputRepository.buildLinkedTasksJson('task-789'))
-            .thenAnswer((_) async =>
-                '{"linked_from": [], "linked_to": [{"id": "parent-1"}]}');
+          // Act
+          final prompt = await builderWithJournal.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: audio,
+          );
 
-        // Act
-        final prompt = await builderWithJournal.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: audio,
-        );
+          // Assert - should contain the linked tasks with note added
+          expect(prompt, contains('linked_to'));
+          expect(prompt, contains('parent-1'));
+          expect(prompt, contains('note'));
+          expect(prompt, contains('web search'));
+          verify(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'audio-linked-tasks',
+            ),
+          ).called(1);
+          verify(
+            () => mockAiInputRepository.buildLinkedTasksJson('task-789'),
+          ).called(1);
+        },
+      );
 
-        // Assert - should contain the linked tasks with note added
-        expect(prompt, contains('linked_to'));
-        expect(prompt, contains('parent-1'));
-        expect(prompt, contains('note'));
-        expect(prompt, contains('web search'));
-        verify(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'audio-linked-tasks')).called(1);
-        verify(() => mockAiInputRepository.buildLinkedTasksJson('task-789'))
-            .called(1);
-      });
+      test(
+        'should return empty linked tasks when image has no linked task',
+        () async {
+          // Arrange
+          final image = JournalImage(
+            data: ImageData(
+              imageId: 'orphan-image',
+              imageFile: 'test.jpg',
+              imageDirectory: '/test',
+              capturedAt: DateTime(2025, 1, 1),
+            ),
+            meta: Metadata(
+              id: 'orphan-image',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          );
 
-      test('should return empty linked tasks when image has no linked task',
-          () async {
-        // Arrange
-        final image = JournalImage(
-          data: ImageData(
-            imageId: 'orphan-image',
-            imageFile: 'test.jpg',
-            imageDirectory: '/test',
-            capturedAt: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'orphan-image',
+          final promptConfig = AiConfigPrompt(
+            id: 'test-prompt',
+            name: 'Image Analysis',
+            systemMessage: 'System',
+            userMessage: 'Context: {{linked_tasks}}',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
+            useReasoning: false,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final promptConfig = AiConfigPrompt(
-          id: 'test-prompt',
-          name: 'Image Analysis',
-          systemMessage: 'System',
-          userMessage: 'Context: {{linked_tasks}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+          // Create a builder with journal repository
+          final mockJournalRepository = MockJournalRepository();
+          final builderWithJournal = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+          );
 
-        // Create a builder with journal repository
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
+          // No linked task found
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'orphan-image',
+            ),
+          ).thenAnswer((_) async => []);
 
-        // No linked task found
-        when(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'orphan-image')).thenAnswer((_) async => []);
+          // Act
+          final prompt = await builderWithJournal.buildPromptWithData(
+            promptConfig: promptConfig,
+            entity: image,
+          );
 
-        // Act
-        final prompt = await builderWithJournal.buildPromptWithData(
-          promptConfig: promptConfig,
-          entity: image,
-        );
-
-        // Assert - should return empty arrays (fallback)
-        expect(prompt, contains('"linked_from": []'));
-        expect(prompt, contains('"linked_to": []'));
-        // No note since there are no linked tasks
-        expect(prompt, isNot(contains('note')));
-        verify(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'orphan-image')).called(1);
-        verifyNever(() => mockAiInputRepository.buildLinkedTasksJson(any()));
-      });
+          // Assert - should return empty arrays (fallback)
+          expect(prompt, contains('"linked_from": []'));
+          expect(prompt, contains('"linked_to": []'));
+          // No note since there are no linked tasks
+          expect(prompt, isNot(contains('note')));
+          verify(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'orphan-image',
+            ),
+          ).called(1);
+          verifyNever(() => mockAiInputRepository.buildLinkedTasksJson(any()));
+        },
+      );
     });
 
     group('languageCode placeholder injection', () {
@@ -1492,9 +1560,9 @@ void main() {
           labelsRepository: MockLabelsRepository(),
         );
 
-        when(() =>
-                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
-            .thenAnswer((_) async => [linkedTask]);
+        when(
+          () => mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
+        ).thenAnswer((_) async => [linkedTask]);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1517,103 +1585,108 @@ void main() {
         expect(result, equals('fr\n\nAnalyze the image.'));
       });
 
-      test('replaces with empty string when no language code available',
-          () async {
-        final task = Task(
-          data: TaskData(
-            title: 'Task without language',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
+      test(
+        'replaces with empty string when no language code available',
+        () async {
+          final task = Task(
+            data: TaskData(
+              title: 'Task without language',
+              checklistIds: const [],
+              status: TaskStatus.open(
+                id: 'status',
+                createdAt: DateTime(2025, 1, 1),
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              // No languageCode set
             ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            // No languageCode set
-          ),
-          meta: Metadata(
-            id: 'task-1',
+            meta: Metadata(
+              id: 'task-1',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          );
+
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Image Analysis',
+            systemMessage: 'System',
+            userMessage: '{{languageCode}}\n\nAnalyze the image.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
+            useReasoning: false,
+            requiredInputData: const [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Image Analysis',
-          systemMessage: 'System',
-          userMessage: '{{languageCode}}\n\nAnalyze the image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: task,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
+          expect(result, equals('\n\nAnalyze the image.'));
+        },
+      );
 
-        expect(result, equals('\n\nAnalyze the image.'));
-      });
+      test(
+        'replaces with empty string for image without linked task',
+        () async {
+          final image = JournalImage(
+            data: ImageData(
+              imageId: 'image-123',
+              imageFile: 'test.jpg',
+              imageDirectory: '/test',
+              capturedAt: DateTime(2025, 1, 1),
+            ),
+            meta: Metadata(
+              id: 'image-123',
+              createdAt: DateTime(2025, 1, 1),
+              dateFrom: DateTime(2025, 1, 1),
+              dateTo: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          );
 
-      test('replaces with empty string for image without linked task',
-          () async {
-        final image = JournalImage(
-          data: ImageData(
-            imageId: 'image-123',
-            imageFile: 'test.jpg',
-            imageDirectory: '/test',
-            capturedAt: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'image-123',
+          final mockJournalRepository = MockJournalRepository();
+          final builderWithJournal = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+          );
+
+          // No linked task
+          when(
+            () =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
+          ).thenAnswer((_) async => []);
+
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Image Analysis',
+            systemMessage: 'System',
+            userMessage: '{{languageCode}}\n\nAnalyze the image.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
+            useReasoning: false,
+            requiredInputData: const [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
+          final result = await builderWithJournal.buildPromptWithData(
+            promptConfig: config,
+            entity: image,
+          );
 
-        // No linked task
-        when(() =>
-                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
-            .thenAnswer((_) async => []);
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Image Analysis',
-          systemMessage: 'System',
-          userMessage: '{{languageCode}}\n\nAnalyze the image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
-
-        final result = await builderWithJournal.buildPromptWithData(
-          promptConfig: config,
-          entity: image,
-        );
-
-        expect(result, equals('\n\nAnalyze the image.'));
-      });
+          expect(result, equals('\n\nAnalyze the image.'));
+        },
+      );
     });
 
     group('error handling for placeholder injection', () {
@@ -1643,9 +1716,9 @@ void main() {
         );
 
         // Simulate an error when finding linked task
-        when(() =>
-                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
+        ).thenThrow(Exception('Database error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1701,8 +1774,9 @@ void main() {
         );
 
         // Simulate an error when fetching the entry
-        when(() => mockJournalRepository.getJournalEntityById('entry-1'))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepository.getJournalEntityById('entry-1'),
+        ).thenThrow(Exception('Database error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1752,8 +1826,9 @@ void main() {
         );
 
         // Simulate error when building label tuples
-        when(() => mockLabelsRepository.buildLabelTuples(['label-1']))
-            .thenThrow(Exception('Label fetch error'));
+        when(
+          () => mockLabelsRepository.buildLabelTuples(['label-1']),
+        ).thenThrow(Exception('Label fetch error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1802,8 +1877,9 @@ void main() {
         );
 
         // Simulate error when building label tuples
-        when(() => mockLabelsRepository.buildLabelTuples(['label-1']))
-            .thenThrow(Exception('Label fetch error'));
+        when(
+          () => mockLabelsRepository.buildLabelTuples(['label-1']),
+        ).thenThrow(Exception('Label fetch error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1855,10 +1931,12 @@ void main() {
         );
 
         final mockChecklistRepo = MockChecklistRepository();
-        when(() => mockChecklistRepo.getChecklistItemsForTask(
-              task: task,
-              deletedOnly: true,
-            )).thenThrow(Exception('Checklist fetch error'));
+        when(
+          () => mockChecklistRepo.getChecklistItemsForTask(
+            task: task,
+            deletedOnly: true,
+          ),
+        ).thenThrow(Exception('Checklist fetch error'));
 
         final builderWithChecklist = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,

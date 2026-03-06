@@ -36,10 +36,10 @@ class SyncRoomManager {
     required SettingsDb settingsDb,
     required LoggingService loggingService,
     SyncRoomDiscoveryService? discoveryService,
-  })  : _gateway = gateway,
-        _settingsDb = settingsDb,
-        _loggingService = loggingService,
-        _discoveryService = discoveryService {
+  }) : _gateway = gateway,
+       _settingsDb = settingsDb,
+       _loggingService = loggingService,
+       _discoveryService = discoveryService {
     _inviteSubscription = _gateway.invites.listen(_handleInvite);
   }
 
@@ -276,8 +276,9 @@ class SyncRoomManager {
       }
 
       if (attempt < kSyncRoomLoadMaxAttempts - 1) {
-        final delay =
-            Duration(milliseconds: kSyncRoomLoadBaseDelayMs * (1 << attempt));
+        final delay = Duration(
+          milliseconds: kSyncRoomLoadBaseDelayMs * (1 << attempt),
+        );
         _loggingService.captureEvent(
           'Room $savedRoomId not yet available, retrying in '
           '${delay.inMilliseconds}ms (attempt ${attempt + 1}/'

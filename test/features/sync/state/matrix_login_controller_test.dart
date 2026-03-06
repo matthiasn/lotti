@@ -39,19 +39,20 @@ void main() {
     listener = StateListener<AsyncValue<LoginState?>>();
 
     // Create a ProviderContainer that overrides the loginStateStreamProvider
-    container = ProviderContainer(
-      overrides: [
-        matrixServiceProvider.overrideWithValue(mockMatrixService),
-        // Override the loginStateStream provider to use our test stream
-        loginStateStreamProvider.overrideWith(
-          (ref) => loginStateController.stream,
-        ),
-      ],
-    )..listen(
-        matrixLoginControllerProvider,
-        listener.call,
-        fireImmediately: true,
-      );
+    container =
+        ProviderContainer(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            // Override the loginStateStream provider to use our test stream
+            loginStateStreamProvider.overrideWith(
+              (ref) => loginStateController.stream,
+            ),
+          ],
+        )..listen(
+          matrixLoginControllerProvider,
+          listener.call,
+          fireImmediately: true,
+        );
   });
 
   tearDown(() {
@@ -66,8 +67,9 @@ void main() {
 
     test('login calls login on MatrixService', () async {
       // Setup mock behavior for login
-      when(() => mockMatrixService.login())
-          .thenAnswer((_) => Future.value(true));
+      when(
+        () => mockMatrixService.login(),
+      ).thenAnswer((_) => Future.value(true));
 
       // Call login
       await container.read(matrixLoginControllerProvider.notifier).login();
@@ -95,8 +97,9 @@ void main() {
       await Future.microtask(() {});
 
       // Wait for the state to update
-      final result1 =
-          await container.read(matrixLoginControllerProvider.future);
+      final result1 = await container.read(
+        matrixLoginControllerProvider.future,
+      );
       expect(result1, equals(LoginState.loggedOut));
 
       // Add the loggedIn state to the stream
@@ -106,8 +109,9 @@ void main() {
       await Future.microtask(() {});
 
       // Wait for the state to update
-      final result2 =
-          await container.read(matrixLoginControllerProvider.future);
+      final result2 = await container.read(
+        matrixLoginControllerProvider.future,
+      );
       expect(result2, equals(LoginState.loggedIn));
     });
   });

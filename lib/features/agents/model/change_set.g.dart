@@ -7,12 +7,13 @@ part of 'change_set.dart';
 // **************************************************************************
 
 _ChangeItem _$ChangeItemFromJson(Map<String, dynamic> json) => _ChangeItem(
-      toolName: json['toolName'] as String,
-      args: json['args'] as Map<String, dynamic>,
-      humanSummary: json['humanSummary'] as String,
-      status: $enumDecodeNullable(_$ChangeItemStatusEnumMap, json['status']) ??
-          ChangeItemStatus.pending,
-    );
+  toolName: json['toolName'] as String,
+  args: json['args'] as Map<String, dynamic>,
+  humanSummary: json['humanSummary'] as String,
+  status:
+      $enumDecodeNullable(_$ChangeItemStatusEnumMap, json['status']) ??
+      ChangeItemStatus.pending,
+);
 
 Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
     <String, dynamic>{

@@ -59,11 +59,13 @@ void main() {
   group('EvolutionChatState', () {
     group('build', () {
       test('starts session and returns data with opening message', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Welcome to the evolution session!');
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Welcome to the evolution session!');
 
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -73,17 +75,20 @@ void main() {
           ),
         );
 
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
 
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         final data = await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         expect(data.sessionId, 'session-1');
@@ -99,17 +104,20 @@ void main() {
       });
 
       test('returns error state when startSession returns null', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => null);
 
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(null);
 
         container = createContainer();
         final data = await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         expect(data.sessionId, isNull);
@@ -121,86 +129,102 @@ void main() {
         );
       });
 
-      test('abandons session when startSession returns null but session exists',
-          () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => null);
+      test(
+        'abandons session when startSession returns null but session exists',
+        () async {
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(),
+              modelId: 'model-1',
+            ),
+          );
 
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
 
-        container = createContainer();
-        final data = await withClock(
-          testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
-        );
+          container = createContainer();
+          final data = await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
 
-        expect(data.sessionId, isNull);
-        expect(data.messages.last, isA<EvolutionSystemMessage>());
-        expect(
-          (data.messages.last as EvolutionSystemMessage).text,
-          'session_error',
-        );
-        // Verify the session was abandoned so it doesn't block future starts.
-        verify(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .called(1);
-      });
+          expect(data.sessionId, isNull);
+          expect(data.messages.last, isA<EvolutionSystemMessage>());
+          expect(
+            (data.messages.last as EvolutionSystemMessage).text,
+            'session_error',
+          );
+          // Verify the session was abandoned so it doesn't block future starts.
+          verify(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).called(1);
+        },
+      );
 
-      test('does not add proposal message (proposals handled via GenUI)',
-          () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Here is my proposal.');
+      test(
+        'does not add proposal message (proposals handled via GenUI)',
+        () async {
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Here is my proposal.');
 
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(),
+              modelId: 'model-1',
+            ),
+          );
 
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
 
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
 
-        container = createContainer();
-        final data = await withClock(
-          testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
-        );
+          container = createContainer();
+          final data = await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
 
-        // Only system + assistant messages, no proposal message variant.
-        expect(data.messages.length, 2);
-        expect(data.messages[0], isA<EvolutionSystemMessage>());
-        expect(data.messages[1], isA<EvolutionAssistantMessage>());
-      });
+          // Only system + assistant messages, no proposal message variant.
+          expect(data.messages.length, 2);
+          expect(data.messages[0], isA<EvolutionSystemMessage>());
+          expect(data.messages[1], isA<EvolutionAssistantMessage>());
+        },
+      );
     });
 
     group('sendMessage', () {
       test('adds user message and assistant response', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
 
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -210,11 +234,13 @@ void main() {
           ),
         );
 
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
 
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         when(() => mockWorkflow.getSession(any())).thenReturn(null);
 
@@ -228,8 +254,9 @@ void main() {
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         await withClock(
@@ -239,8 +266,9 @@ void main() {
               .sendMessage('Improve error handling'),
         );
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
 
         // system + assistant (opening) + user + assistant (response)
         expect(data.messages.length, 4);
@@ -260,11 +288,13 @@ void main() {
 
     group('rejectProposal', () {
       test('adds rejection system message', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Here is a proposal.');
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Here is a proposal.');
 
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -274,20 +304,24 @@ void main() {
           ),
         );
 
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
 
-        when(() => mockWorkflow.rejectProposal(sessionId: 'session-1'))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.rejectProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
 
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         withClock(testClock, () {
@@ -296,12 +330,14 @@ void main() {
               .rejectProposal();
         });
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
 
         // Should have a rejection system message
-        final systemMessages =
-            data.messages.whereType<EvolutionSystemMessage>().toList();
+        final systemMessages = data.messages
+            .whereType<EvolutionSystemMessage>()
+            .toList();
         expect(
           systemMessages.any((m) => m.text == 'proposal_rejected'),
           isTrue,
@@ -325,10 +361,12 @@ void main() {
             },
           });
 
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Here are your metrics.');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Here are your metrics.');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -340,16 +378,19 @@ void main() {
             eventHandler: GenUiEventHandler(processor: processor)..listen(),
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         final data = await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         // system + assistant + surface
@@ -378,14 +419,18 @@ void main() {
           eventHandler: GenUiEventHandler(processor: processor)..listen(),
         );
 
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(session);
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(session);
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
         when(
           () => mockWorkflow.sendMessage(
             sessionId: 'session-1',
@@ -409,8 +454,9 @@ void main() {
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         await withClock(
@@ -420,8 +466,9 @@ void main() {
               .sendMessage('Show me metrics'),
         );
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
 
         // system + assistant(opening) + user + assistant(response) + surface
         expect(data.messages.length, 5);
@@ -434,194 +481,224 @@ void main() {
     });
 
     group('GenUI proposal actions', () {
-      test('proposal_rejected callback routes through rejectProposal',
-          () async {
-        final processor = A2uiMessageProcessor(
-          catalogs: [buildEvolutionCatalog()],
-        );
-        final bridge = GenUiBridge(processor: processor);
-        final eventHandler = GenUiEventHandler(processor: processor)..listen();
+      test(
+        'proposal_rejected callback routes through rejectProposal',
+        () async {
+          final processor = A2uiMessageProcessor(
+            catalogs: [buildEvolutionCatalog()],
+          );
+          final bridge = GenUiBridge(processor: processor);
+          final eventHandler = GenUiEventHandler(processor: processor)
+            ..listen();
 
-        const testProposal = PendingProposal(
-          generalDirective: 'new directives',
-          reportDirective: '',
-          rationale: 'better performance',
-        );
+          const testProposal = PendingProposal(
+            generalDirective: 'new directives',
+            reportDirective: '',
+            rationale: 'better performance',
+          );
 
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Here is my proposal.');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(genUiBridge: bridge),
-            modelId: 'model-1',
-            processor: processor,
-            genUiBridge: bridge,
-            eventHandler: eventHandler,
-          ),
-        );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(testProposal);
-        when(() => mockWorkflow.rejectProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Here is my proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(genUiBridge: bridge),
+              modelId: 'model-1',
+              processor: processor,
+              genUiBridge: bridge,
+              eventHandler: eventHandler,
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(testProposal);
+          when(
+            () => mockWorkflow.rejectProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
 
-        container = createContainer();
-        await withClock(
-          testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
-        );
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
 
-        eventHandler.onProposalAction?.call('surface-1', 'proposal_rejected');
+          eventHandler.onProposalAction?.call('surface-1', 'proposal_rejected');
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
-        expect(
-          data.messages
-              .whereType<EvolutionSystemMessage>()
-              .any((m) => m.text == 'proposal_rejected'),
-          isTrue,
-        );
-        verify(() => mockWorkflow.rejectProposal(sessionId: 'session-1'))
-            .called(1);
-      });
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+          expect(
+            data.messages.whereType<EvolutionSystemMessage>().any(
+              (m) => m.text == 'proposal_rejected',
+            ),
+            isTrue,
+          );
+          verify(
+            () => mockWorkflow.rejectProposal(sessionId: 'session-1'),
+          ).called(1);
+        },
+      );
 
-      test('proposal_approved callback routes through approveProposal',
-          () async {
-        final processor = A2uiMessageProcessor(
-          catalogs: [buildEvolutionCatalog()],
-        );
-        final bridge = GenUiBridge(processor: processor);
-        final eventHandler = GenUiEventHandler(processor: processor)..listen();
+      test(
+        'proposal_approved callback routes through approveProposal',
+        () async {
+          final processor = A2uiMessageProcessor(
+            catalogs: [buildEvolutionCatalog()],
+          );
+          final bridge = GenUiBridge(processor: processor);
+          final eventHandler = GenUiEventHandler(processor: processor)
+            ..listen();
 
-        const testProposal = PendingProposal(
-          generalDirective: 'new directives',
-          reportDirective: '',
-          rationale: 'better performance',
-        );
-        final approvedVersion = makeTestTemplateVersion(version: 2);
+          const testProposal = PendingProposal(
+            generalDirective: 'new directives',
+            reportDirective: '',
+            rationale: 'better performance',
+          );
+          final approvedVersion = makeTestTemplateVersion(version: 2);
 
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Here is my proposal.');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(genUiBridge: bridge),
-            modelId: 'model-1',
-            processor: processor,
-            genUiBridge: bridge,
-            eventHandler: eventHandler,
-          ),
-        );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(testProposal);
-        when(
-          () => mockWorkflow.approveProposal(
-            sessionId: 'session-1',
-          ),
-        ).thenAnswer((_) async => approvedVersion);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Here is my proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(genUiBridge: bridge),
+              modelId: 'model-1',
+              processor: processor,
+              genUiBridge: bridge,
+              eventHandler: eventHandler,
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(testProposal);
+          when(
+            () => mockWorkflow.approveProposal(
+              sessionId: 'session-1',
+            ),
+          ).thenAnswer((_) async => approvedVersion);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
 
-        container = createContainer();
-        await withClock(
-          testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
-        );
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
 
-        eventHandler.onProposalAction?.call('surface-1', 'proposal_approved');
-        await Future<void>.value();
+          eventHandler.onProposalAction?.call('surface-1', 'proposal_approved');
+          await Future<void>.value();
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
-        expect(
-          data.messages
-              .whereType<EvolutionSystemMessage>()
-              .any((m) => m.text == 'session_completed:2'),
-          isTrue,
-        );
-        verify(
-          () => mockWorkflow.approveProposal(
-            sessionId: 'session-1',
-          ),
-        ).called(1);
-      });
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+          expect(
+            data.messages.whereType<EvolutionSystemMessage>().any(
+              (m) => m.text == 'session_completed:2',
+            ),
+            isTrue,
+          );
+          verify(
+            () => mockWorkflow.approveProposal(
+              sessionId: 'session-1',
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('GenUI ratings actions', () {
-      test('ratings_submitted callback formats ratings and sends message',
-          () async {
-        final processor = A2uiMessageProcessor(
-          catalogs: [buildEvolutionCatalog()],
-        );
-        final bridge = GenUiBridge(processor: processor);
-        final eventHandler = GenUiEventHandler(processor: processor)..listen();
+      test(
+        'ratings_submitted callback formats ratings and sends message',
+        () async {
+          final processor = A2uiMessageProcessor(
+            catalogs: [buildEvolutionCatalog()],
+          );
+          final bridge = GenUiBridge(processor: processor);
+          final eventHandler = GenUiEventHandler(processor: processor)
+            ..listen();
 
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Let us rate categories.');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(genUiBridge: bridge),
-            modelId: 'model-1',
-            processor: processor,
-            genUiBridge: bridge,
-            eventHandler: eventHandler,
-          ),
-        );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
-        when(
-          () => mockWorkflow.sendMessage(
-            sessionId: 'session-1',
-            userMessage: 'My category ratings: accuracy: 4/5, tooling: 2/5',
-          ),
-        ).thenAnswer((_) async => 'Thanks, I will draft a proposal.');
-        when(() => mockWorkflow.getSession('session-1')).thenReturn(null);
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Let us rate categories.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(genUiBridge: bridge),
+              modelId: 'model-1',
+              processor: processor,
+              genUiBridge: bridge,
+              eventHandler: eventHandler,
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockWorkflow.sendMessage(
+              sessionId: 'session-1',
+              userMessage: 'My category ratings: accuracy: 4/5, tooling: 2/5',
+            ),
+          ).thenAnswer((_) async => 'Thanks, I will draft a proposal.');
+          when(() => mockWorkflow.getSession('session-1')).thenReturn(null);
 
-        container = createContainer();
-        await withClock(
-          testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
-        );
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
 
-        eventHandler.onRatingsSubmitted?.call('surface-1', {
-          'accuracy': 4,
-          'tooling': 2,
-        });
+          eventHandler.onRatingsSubmitted?.call('surface-1', {
+            'accuracy': 4,
+            'tooling': 2,
+          });
 
-        await Future<void>.value();
+          await Future<void>.value();
 
-        verify(
-          () => mockWorkflow.sendMessage(
-            sessionId: 'session-1',
-            userMessage: 'My category ratings: accuracy: 4/5, tooling: 2/5',
-          ),
-        ).called(1);
-      });
+          verify(
+            () => mockWorkflow.sendMessage(
+              sessionId: 'session-1',
+              userMessage: 'My category ratings: accuracy: 4/5, tooling: 2/5',
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('sendMessage - edge cases', () {
       test('does nothing when isWaiting is already true', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -630,23 +707,28 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         // Manually set waiting state.
-        final notifier = container
-            .read(evolutionChatStateProvider(kTestTemplateId).notifier);
-        final current =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final notifier = container.read(
+          evolutionChatStateProvider(kTestTemplateId).notifier,
+        );
+        final current = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
         notifier.state = AsyncData(current.copyWith(isWaiting: true));
 
         // sendMessage should be a no-op.
@@ -661,10 +743,12 @@ void main() {
       });
 
       test('handles null response from workflow', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -673,10 +757,12 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
         when(() => mockWorkflow.getSession(any())).thenReturn(null);
         when(
           () => mockWorkflow.sendMessage(
@@ -688,8 +774,9 @@ void main() {
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         await withClock(
@@ -699,8 +786,9 @@ void main() {
               .sendMessage('test'),
         );
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
 
         // system + assistant(opening) + user (no assistant response)
         expect(data.messages.length, 3);
@@ -709,10 +797,12 @@ void main() {
       });
 
       test('catches errors and clears waiting state', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -721,10 +811,12 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
         when(
           () => mockWorkflow.sendMessage(
             sessionId: 'session-1',
@@ -735,8 +827,9 @@ void main() {
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         await withClock(
@@ -746,18 +839,21 @@ void main() {
               .sendMessage('boom'),
         );
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
         expect(data.isWaiting, isFalse);
       });
     });
 
     group('approveProposal - edge cases', () {
       test('returns false when no pending proposal', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -766,16 +862,19 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         final result = await withClock(
@@ -789,10 +888,12 @@ void main() {
       });
 
       test('returns false when approveProposal returns null version', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Proposal.');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Proposal.');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -801,24 +902,28 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(
           const PendingProposal(
             generalDirective: 'new',
             reportDirective: '',
             rationale: 'better',
           ),
         );
-        when(() => mockWorkflow.approveProposal(sessionId: 'session-1'))
-            .thenAnswer((_) async => null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.approveProposal(sessionId: 'session-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         final result = await withClock(
@@ -829,16 +934,19 @@ void main() {
         );
 
         expect(result, isFalse);
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
         expect(data.isWaiting, isFalse);
       });
 
       test('catches errors and returns false', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Proposal.');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Proposal.');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -847,24 +955,28 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(
           const PendingProposal(
             generalDirective: 'new',
             reportDirective: '',
             rationale: 'better',
           ),
         );
-        when(() => mockWorkflow.approveProposal(sessionId: 'session-1'))
-            .thenThrow(Exception('approve failed'));
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.approveProposal(sessionId: 'session-1'),
+        ).thenThrow(Exception('approve failed'));
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         final result = await withClock(
@@ -875,22 +987,26 @@ void main() {
         );
 
         expect(result, isFalse);
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
         expect(data.isWaiting, isFalse);
       });
 
       test('returns false when sessionId is null', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => null);
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(null);
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         final result = await withClock(
@@ -906,10 +1022,12 @@ void main() {
 
     group('endSession', () {
       test('abandons session and adds system message', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => 'Hello!');
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => 'Hello!');
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(
           ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
@@ -918,16 +1036,19 @@ void main() {
             modelId: 'model-1',
           ),
         );
-        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(null);
-        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+        ).thenReturn(null);
+        when(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         await withClock(
@@ -937,33 +1058,38 @@ void main() {
               .endSession(),
         );
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
 
         expect(data.sessionId, isNull);
         expect(data.processor, isNull);
         expect(data.isWaiting, isFalse);
         expect(
-          data.messages
-              .whereType<EvolutionSystemMessage>()
-              .any((m) => m.text == 'session_abandoned'),
+          data.messages.whereType<EvolutionSystemMessage>().any(
+            (m) => m.text == 'session_abandoned',
+          ),
           isTrue,
         );
-        verify(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
-            .called(greaterThanOrEqualTo(1));
+        verify(
+          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+        ).called(greaterThanOrEqualTo(1));
       });
 
       test('does nothing when sessionId is null', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => null);
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(null);
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         await withClock(
@@ -974,8 +1100,9 @@ void main() {
         );
 
         // No additional messages beyond the error state messages.
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
         expect(
           data.messages
               .whereType<EvolutionSystemMessage>()
@@ -988,16 +1115,19 @@ void main() {
 
     group('rejectProposal - edge cases', () {
       test('does nothing when sessionId is null', () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => null);
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(null);
+        when(
+          () => mockWorkflow.startSession(templateId: kTestTemplateId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+        ).thenReturn(null);
 
         container = createContainer();
         await withClock(
           testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
+          () => container.read(
+            evolutionChatStateProvider(kTestTemplateId).future,
+          ),
         );
 
         withClock(testClock, () {
@@ -1006,8 +1136,9 @@ void main() {
               .rejectProposal();
         });
 
-        final data =
-            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        final data = container
+            .read(evolutionChatStateProvider(kTestTemplateId))
+            .value!;
         expect(
           data.messages
               .whereType<EvolutionSystemMessage>()
@@ -1019,24 +1150,29 @@ void main() {
     });
 
     group('build - version data', () {
-      test('sets currentDirectives to null when version is not found',
-          () async {
-        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
-            .thenAnswer((_) async => null);
-        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
-            .thenReturn(null);
+      test(
+        'sets currentDirectives to null when version is not found',
+        () async {
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(null);
 
-        container = createContainer(
-          versionOverride: (ref, id) async => null,
-        );
-        final data = await withClock(
-          testClock,
-          () => container
-              .read(evolutionChatStateProvider(kTestTemplateId).future),
-        );
+          container = createContainer(
+            versionOverride: (ref, id) async => null,
+          );
+          final data = await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
 
-        expect(data.currentDirectives, isNull);
-      });
+          expect(data.currentDirectives, isNull);
+        },
+      );
     });
   });
 

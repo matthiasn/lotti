@@ -25,8 +25,9 @@ class ToolCallAccumulator {
     // Special handling: if we receive multiple tool calls in one chunk all with
     // the same index, they might be complete tool calls rather than chunks
     if (delta.toolCalls!.length > 1 &&
-        delta.toolCalls!
-            .every((tc) => tc.index == 0 && tc.function?.arguments != null)) {
+        delta.toolCalls!.every(
+          (tc) => tc.index == 0 && tc.function?.arguments != null,
+        )) {
       developer.log(
         'Detected ${delta.toolCalls!.length} complete tool calls in single chunk',
         name: 'ToolCallAccumulator',
@@ -41,7 +42,8 @@ class ToolCallAccumulator {
 
   /// Add a complete tool call (not chunked).
   void _addCompleteToolCall(
-      ChatCompletionStreamMessageToolCallChunk toolCallChunk) {
+    ChatCompletionStreamMessageToolCallChunk toolCallChunk,
+  ) {
     final toolCallId = 'tool_${_counter++}';
     _toolCalls[toolCallId] = _AccumulatedToolCall(
       id: toolCallId,
@@ -59,7 +61,8 @@ class ToolCallAccumulator {
   /// Process a single tool call chunk, either starting a new tool call or
   /// continuing an existing one.
   void _processToolCallChunk(
-      ChatCompletionStreamMessageToolCallChunk toolCallChunk) {
+    ChatCompletionStreamMessageToolCallChunk toolCallChunk,
+  ) {
     developer.log(
       'Tool call chunk - id: ${toolCallChunk.id}, index: ${toolCallChunk.index}, '
       'type: ${toolCallChunk.type}, function: ${toolCallChunk.function?.name}, '
@@ -89,7 +92,9 @@ class ToolCallAccumulator {
 
   /// Start a new tool call entry.
   void _startNewToolCall(
-      String toolCallId, ChatCompletionStreamMessageToolCallChunk chunk) {
+    String toolCallId,
+    ChatCompletionStreamMessageToolCallChunk chunk,
+  ) {
     _toolCalls[toolCallId] = _AccumulatedToolCall(
       id: toolCallId,
       index: chunk.index ?? _toolCalls.length,
@@ -132,7 +137,9 @@ class ToolCallAccumulator {
 
   /// Append chunk data to an existing tool call.
   void _appendToToolCall(
-      String key, ChatCompletionStreamMessageToolCallChunk chunk) {
+    String key,
+    ChatCompletionStreamMessageToolCallChunk chunk,
+  ) {
     final existing = _toolCalls[key]!;
 
     if (chunk.function != null) {

@@ -76,8 +76,9 @@ void main() {
 
     // Setup mock player methods
     when(() => mockPlayer.dispose()).thenAnswer((_) async {});
-    when(() => mockPlayer.open(any(), play: any(named: 'play')))
-        .thenAnswer((_) async {});
+    when(
+      () => mockPlayer.open(any(), play: any(named: 'play')),
+    ).thenAnswer((_) async {});
     when(() => mockPlayer.play()).thenAnswer((_) async {});
     when(() => mockPlayer.pause()).thenAnswer((_) async {});
     when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
@@ -191,8 +192,9 @@ void main() {
       );
 
       final stateWithAudio = AudioPlayerState(audioNote: audioNote);
-      final updated =
-          stateWithAudio.copyWith(status: AudioPlayerStatus.playing);
+      final updated = stateWithAudio.copyWith(
+        status: AudioPlayerStatus.playing,
+      );
 
       expect(updated.audioNote, equals(audioNote));
       expect(updated.status, equals(AudioPlayerStatus.playing));
@@ -242,8 +244,9 @@ void main() {
     test('position stream clamps progress to totalDuration', () {
       fakeAsync((async) {
         // Initialize controller and set total duration
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
         controller.updateProgress(Duration.zero); // Trigger initial state
 
         // Emit very large position (should not clamp when totalDuration is zero)
@@ -369,8 +372,9 @@ void main() {
 
     test('sets pausedAt to current progress', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set progress first
         positionController.add(const Duration(seconds: 45));
@@ -424,8 +428,9 @@ void main() {
 
     test('preserves buffered when seeking backward', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set buffer ahead
         bufferController.add(const Duration(seconds: 120));
@@ -458,10 +463,14 @@ void main() {
         fireImmediately: true,
       );
 
-      await container.read(audioPlayerControllerProvider.notifier).seek(
+      await container
+          .read(audioPlayerControllerProvider.notifier)
+          .seek(
             const Duration(seconds: 45),
           );
-      await container.read(audioPlayerControllerProvider.notifier).seek(
+      await container
+          .read(audioPlayerControllerProvider.notifier)
+          .seek(
             const Duration(seconds: 45),
           );
 
@@ -564,8 +573,9 @@ void main() {
 
     test('paused -> playing -> paused maintains progress tracking', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Simulate playing and receiving position updates
         controller.play();
@@ -598,8 +608,9 @@ void main() {
   group('AudioPlayerController - Edge cases', () {
     test('handles zero durations', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         positionController.add(Duration.zero);
         bufferController.add(Duration.zero);
@@ -680,8 +691,9 @@ void main() {
 
     test('handleCompleted ignores when timer is already active', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set a longer delay so timer stays active
         controller.completionDelayForTest = const Duration(seconds: 10);
@@ -722,8 +734,9 @@ void main() {
 
     test('completion timer fires and updates progress to duration', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set a very short delay for testing
         controller.completionDelayForTest = const Duration(milliseconds: 10);
@@ -765,8 +778,9 @@ void main() {
 
     test('completion timer skips update when audio note has changed', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set a longer delay so we can change the audio note before timer fires
         controller.completionDelayForTest = const Duration(milliseconds: 50);
@@ -833,8 +847,9 @@ void main() {
   group('AudioPlayerController - Clamping with totalDuration', () {
     test('clamps progress when exceeding totalDuration', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set state with totalDuration using test helper
         controller.stateForTest = const AudioPlayerState(
@@ -854,8 +869,9 @@ void main() {
 
     test('clamps buffer when exceeding totalDuration', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set state with totalDuration using test helper
         controller.stateForTest = const AudioPlayerState(
@@ -875,8 +891,9 @@ void main() {
 
     test('does not clamp progress when within totalDuration', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set state with totalDuration using test helper
         controller.stateForTest = const AudioPlayerState(
@@ -896,8 +913,9 @@ void main() {
 
     test('does not clamp buffer when within totalDuration', () {
       fakeAsync((async) {
-        final controller =
-            container.read(audioPlayerControllerProvider.notifier);
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
 
         // Set state with totalDuration using test helper
         controller.stateForTest = const AudioPlayerState(
@@ -931,15 +949,19 @@ void main() {
 
       // Setup isolated mocks
       when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(() => localPlayerState.duration)
-          .thenReturn(const Duration(minutes: 5));
+      when(
+        () => localPlayerState.duration,
+      ).thenReturn(const Duration(minutes: 5));
       when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(() => localPlayerStream.position)
-          .thenAnswer((_) => localPositionController.stream);
-      when(() => localPlayerStream.buffer)
-          .thenAnswer((_) => localBufferController.stream);
-      when(() => localPlayerStream.completed)
-          .thenAnswer((_) => localCompletedController.stream);
+      when(
+        () => localPlayerStream.position,
+      ).thenAnswer((_) => localPositionController.stream);
+      when(
+        () => localPlayerStream.buffer,
+      ).thenAnswer((_) => localBufferController.stream);
+      when(
+        () => localPlayerStream.completed,
+      ).thenAnswer((_) => localCompletedController.stream);
       when(localPlayer.dispose).thenAnswer((_) async {});
       when(() => localPlayer.setRate(any())).thenAnswer((_) async {});
       when(localPlayer.play).thenThrow(Exception('Play failed'));
@@ -956,8 +978,9 @@ void main() {
         ],
       );
 
-      final controller =
-          localContainer.read(audioPlayerControllerProvider.notifier);
+      final controller = localContainer.read(
+        audioPlayerControllerProvider.notifier,
+      );
       await controller.play();
 
       verify(
@@ -1004,15 +1027,19 @@ void main() {
 
       // Setup isolated mocks
       when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(() => localPlayerState.duration)
-          .thenReturn(const Duration(minutes: 5));
+      when(
+        () => localPlayerState.duration,
+      ).thenReturn(const Duration(minutes: 5));
       when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(() => localPlayerStream.position)
-          .thenAnswer((_) => localPositionController.stream);
-      when(() => localPlayerStream.buffer)
-          .thenAnswer((_) => localBufferController.stream);
-      when(() => localPlayerStream.completed)
-          .thenAnswer((_) => localCompletedController.stream);
+      when(
+        () => localPlayerStream.position,
+      ).thenAnswer((_) => localPositionController.stream);
+      when(
+        () => localPlayerStream.buffer,
+      ).thenAnswer((_) => localBufferController.stream);
+      when(
+        () => localPlayerStream.completed,
+      ).thenAnswer((_) => localCompletedController.stream);
       when(localPlayer.dispose).thenAnswer((_) async {});
       when(localPlayer.pause).thenThrow(Exception('Pause failed'));
 
@@ -1028,8 +1055,9 @@ void main() {
         ],
       );
 
-      final controller =
-          localContainer.read(audioPlayerControllerProvider.notifier);
+      final controller = localContainer.read(
+        audioPlayerControllerProvider.notifier,
+      );
       await controller.pause();
 
       verify(
@@ -1059,15 +1087,19 @@ void main() {
 
       // Setup isolated mocks
       when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(() => localPlayerState.duration)
-          .thenReturn(const Duration(minutes: 5));
+      when(
+        () => localPlayerState.duration,
+      ).thenReturn(const Duration(minutes: 5));
       when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(() => localPlayerStream.position)
-          .thenAnswer((_) => localPositionController.stream);
-      when(() => localPlayerStream.buffer)
-          .thenAnswer((_) => localBufferController.stream);
-      when(() => localPlayerStream.completed)
-          .thenAnswer((_) => localCompletedController.stream);
+      when(
+        () => localPlayerStream.position,
+      ).thenAnswer((_) => localPositionController.stream);
+      when(
+        () => localPlayerStream.buffer,
+      ).thenAnswer((_) => localBufferController.stream);
+      when(
+        () => localPlayerStream.completed,
+      ).thenAnswer((_) => localCompletedController.stream);
       when(localPlayer.dispose).thenAnswer((_) async {});
       when(() => localPlayer.seek(any())).thenThrow(Exception('Seek failed'));
 
@@ -1083,8 +1115,9 @@ void main() {
         ],
       );
 
-      final controller =
-          localContainer.read(audioPlayerControllerProvider.notifier);
+      final controller = localContainer.read(
+        audioPlayerControllerProvider.notifier,
+      );
       await controller.seek(const Duration(seconds: 30));
 
       verify(
@@ -1114,18 +1147,23 @@ void main() {
 
       // Setup isolated mocks
       when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(() => localPlayerState.duration)
-          .thenReturn(const Duration(minutes: 5));
+      when(
+        () => localPlayerState.duration,
+      ).thenReturn(const Duration(minutes: 5));
       when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(() => localPlayerStream.position)
-          .thenAnswer((_) => localPositionController.stream);
-      when(() => localPlayerStream.buffer)
-          .thenAnswer((_) => localBufferController.stream);
-      when(() => localPlayerStream.completed)
-          .thenAnswer((_) => localCompletedController.stream);
+      when(
+        () => localPlayerStream.position,
+      ).thenAnswer((_) => localPositionController.stream);
+      when(
+        () => localPlayerStream.buffer,
+      ).thenAnswer((_) => localBufferController.stream);
+      when(
+        () => localPlayerStream.completed,
+      ).thenAnswer((_) => localCompletedController.stream);
       when(localPlayer.dispose).thenAnswer((_) async {});
-      when(() => localPlayer.setRate(any()))
-          .thenThrow(Exception('SetRate failed'));
+      when(
+        () => localPlayer.setRate(any()),
+      ).thenThrow(Exception('SetRate failed'));
 
       // Register local logging service
       if (getIt.isRegistered<LoggingService>()) {
@@ -1139,8 +1177,9 @@ void main() {
         ],
       );
 
-      final controller =
-          localContainer.read(audioPlayerControllerProvider.notifier);
+      final controller = localContainer.read(
+        audioPlayerControllerProvider.notifier,
+      );
       await controller.setSpeed(1.5);
 
       verify(
@@ -1170,18 +1209,23 @@ void main() {
 
       // Setup isolated mocks
       when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(() => localPlayerState.duration)
-          .thenReturn(const Duration(minutes: 5));
+      when(
+        () => localPlayerState.duration,
+      ).thenReturn(const Duration(minutes: 5));
       when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(() => localPlayerStream.position)
-          .thenAnswer((_) => localPositionController.stream);
-      when(() => localPlayerStream.buffer)
-          .thenAnswer((_) => localBufferController.stream);
-      when(() => localPlayerStream.completed)
-          .thenAnswer((_) => localCompletedController.stream);
+      when(
+        () => localPlayerStream.position,
+      ).thenAnswer((_) => localPositionController.stream);
+      when(
+        () => localPlayerStream.buffer,
+      ).thenAnswer((_) => localBufferController.stream);
+      when(
+        () => localPlayerStream.completed,
+      ).thenAnswer((_) => localCompletedController.stream);
       when(localPlayer.dispose).thenAnswer((_) async {});
-      when(() => localPlayer.open(any(), play: any(named: 'play')))
-          .thenThrow(Exception('Open failed'));
+      when(
+        () => localPlayer.open(any(), play: any(named: 'play')),
+      ).thenThrow(Exception('Open failed'));
 
       // Register local logging service
       if (getIt.isRegistered<LoggingService>()) {
@@ -1195,8 +1239,9 @@ void main() {
         ],
       );
 
-      final controller =
-          localContainer.read(audioPlayerControllerProvider.notifier);
+      final controller = localContainer.read(
+        audioPlayerControllerProvider.notifier,
+      );
 
       final audioNote = JournalAudio(
         meta: Metadata(

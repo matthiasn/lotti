@@ -4,8 +4,9 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import '../../../test_helper.dart';
 
 void main() {
-  testWidgets('TitleTextField calls onTapOutside when not dirty',
-      (tester) async {
+  testWidgets('TitleTextField calls onTapOutside when not dirty', (
+    tester,
+  ) async {
     var tappedOutside = false;
 
     await tester.pumpWidget(

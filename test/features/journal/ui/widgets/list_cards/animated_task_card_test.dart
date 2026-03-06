@@ -140,8 +140,9 @@ void main() {
   });
 
   group('AnimatedModernTaskCard', () {
-    testWidgets('renders task card with animation wrapper',
-        (WidgetTester tester) async {
+    testWidgets('renders task card with animation wrapper', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -179,8 +180,9 @@ void main() {
       expect(mockNavService.navigationHistory, ['/tasks/test-task-id']);
     });
 
-    testWidgets('applies correct animation parameters',
-        (WidgetTester tester) async {
+    testWidgets('applies correct animation parameters', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -200,8 +202,9 @@ void main() {
       expect(animatedItem.margin, EdgeInsets.zero);
     });
 
-    testWidgets('hover animation triggers on desktop',
-        (WidgetTester tester) async {
+    testWidgets('hover animation triggers on desktop', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -231,8 +234,9 @@ void main() {
       await gesture.removePointer();
     });
 
-    testWidgets('tap animation triggers correctly',
-        (WidgetTester tester) async {
+    testWidgets('tap animation triggers correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -259,8 +263,9 @@ void main() {
       expect(mockNavService.navigationHistory, ['/tasks/test-task-id']);
     });
 
-    testWidgets('renders task with different statuses',
-        (WidgetTester tester) async {
+    testWidgets('renders task with different statuses', (
+      WidgetTester tester,
+    ) async {
       // Test with in-progress status
       final inProgressTask = testTask.copyWith(
         data: testTask.data.copyWith(
@@ -308,8 +313,9 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
 
-    testWidgets('maintains correct layout structure',
-        (WidgetTester tester) async {
+    testWidgets('maintains correct layout structure', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -329,8 +335,9 @@ void main() {
       );
     });
 
-    testWidgets('card responds to rapid taps correctly',
-        (WidgetTester tester) async {
+    testWidgets('card responds to rapid taps correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -352,11 +359,13 @@ void main() {
       expect(mockNavService.navigationHistory.length, 3);
     });
 
-    testWidgets('handles long task titles gracefully',
-        (WidgetTester tester) async {
+    testWidgets('handles long task titles gracefully', (
+      WidgetTester tester,
+    ) async {
       final longTitleTask = testTask.copyWith(
         data: testTask.data.copyWith(
-          title: 'This is a very long task title that should be truncated '
+          title:
+              'This is a very long task title that should be truncated '
               'properly when displayed in the card to ensure good UI',
         ),
       );
@@ -408,8 +417,9 @@ void main() {
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
     });
 
-    testWidgets('passes showCreationDate to ModernTaskCard',
-        (WidgetTester tester) async {
+    testWidgets('passes showCreationDate to ModernTaskCard', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(
@@ -427,8 +437,9 @@ void main() {
       expect(modernTaskCard.showCreationDate, isTrue);
     });
 
-    testWidgets('showCreationDate defaults to false',
-        (WidgetTester tester) async {
+    testWidgets('showCreationDate defaults to false', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           child: AnimatedModernTaskCard(

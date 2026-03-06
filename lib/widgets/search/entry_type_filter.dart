@@ -17,20 +17,23 @@ class EntryTypeFilter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
-    final enableHabitsAsync =
-        ref.watch(configFlagProvider(enableHabitsPageFlag));
-    final enableDashboardsAsync =
-        ref.watch(configFlagProvider(enableDashboardsPageFlag));
+    final enableHabitsAsync = ref.watch(
+      configFlagProvider(enableHabitsPageFlag),
+    );
+    final enableDashboardsAsync = ref.watch(
+      configFlagProvider(enableDashboardsPageFlag),
+    );
 
     // Use unwrapPrevious to keep previous value during loading/error states
     // Default to false (hide features) on initial load with no previous value
     final enableEvents =
         enableEventsAsync.unwrapPrevious().whenData((value) => value).value ??
-            false;
+        false;
     final enableHabits =
         enableHabitsAsync.unwrapPrevious().whenData((value) => value).value ??
-            false;
-    final enableDashboards = enableDashboardsAsync
+        false;
+    final enableDashboards =
+        enableDashboardsAsync
             .unwrapPrevious()
             .whenData((value) => value)
             .value ??
@@ -66,8 +69,9 @@ class EntryTypeChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     final isSelected = state.selectedEntryTypes.contains(entryType);
 
@@ -103,8 +107,9 @@ class EntryTypeAllChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     final isSelected = setsEqual(
       state.selectedEntryTypes.toSet(),

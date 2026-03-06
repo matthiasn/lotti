@@ -23,10 +23,12 @@ class EvolutionChartsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timeSeriesAsync =
-        ref.watch(templateWakeRunTimeSeriesProvider(templateId));
-    final resolutionAsync =
-        ref.watch(templateTaskResolutionTimeSeriesProvider(templateId));
+    final timeSeriesAsync = ref.watch(
+      templateWakeRunTimeSeriesProvider(templateId),
+    );
+    final resolutionAsync = ref.watch(
+      templateTaskResolutionTimeSeriesProvider(templateId),
+    );
 
     return timeSeriesAsync.when(
       data: (timeSeries) => _buildCharts(

@@ -62,10 +62,10 @@ class _TestHelpers {
   /// Creates a set with duplicate elements for testing deduplication
   static Set<String> createDuplicateTestSet() {
     return <String>{}..addAll([
-        _TestConstants.testId1,
-        _TestConstants.testId1,
-        _TestConstants.testId2
-      ]);
+      _TestConstants.testId1,
+      _TestConstants.testId1,
+      _TestConstants.testId2,
+    ]);
   }
 }
 
@@ -95,18 +95,21 @@ void main() {
           final affectedIds = {
             _TestConstants.testId1,
             _TestConstants.testId2,
-            _TestConstants.testId3
+            _TestConstants.testId3,
           };
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify(affectedIds);
 
           // Regular timer is 100ms.
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(emittedIds.first, equals(affectedIds));
@@ -120,7 +123,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Send multiple notifications to test batching
           updateNotifications
@@ -129,16 +134,18 @@ void main() {
             ..notify({_TestConstants.testId3});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(
-              emittedIds.first,
-              equals({
-                _TestConstants.testId1,
-                _TestConstants.testId2,
-                _TestConstants.testId3
-              }));
+            emittedIds.first,
+            equals({
+              _TestConstants.testId1,
+              _TestConstants.testId2,
+              _TestConstants.testId3,
+            }),
+          );
 
           unawaited(subscription.cancel());
         });
@@ -149,17 +156,21 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify({_TestConstants.testId1});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           updateNotifications.notify({_TestConstants.testId2});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(2));
           expect(emittedIds[0], equals({_TestConstants.testId1}));
@@ -177,12 +188,15 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify(affectedIds, fromSync: true);
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.syncTimerDelay));
+            const Duration(milliseconds: _TestConstants.syncTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(emittedIds.first, equals(affectedIds));
@@ -196,18 +210,23 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Send regular and sync notifications to test separate batching
           updateNotifications
             ..notify({_TestConstants.testId1}) // Regular notification
-            ..notify({_TestConstants.syncId1},
-                fromSync: true); // Sync notification
+            ..notify({
+              _TestConstants.syncId1,
+            }, fromSync: true); // Sync notification
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.syncTimerDelay));
+            const Duration(milliseconds: _TestConstants.syncTimerDelay),
+          );
 
           expect(emittedIds.length, equals(2));
           expect(emittedIds[0], equals({_TestConstants.testId1}));
@@ -224,12 +243,15 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify({});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(0));
 
@@ -242,21 +264,22 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           final duplicateSet = _TestHelpers.createDuplicateTestSet();
           updateNotifications.notify(duplicateSet);
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(
-              emittedIds.first,
-              equals({
-                _TestConstants.testId1,
-                _TestConstants.testId2
-              })); // Duplicates removed
+            emittedIds.first,
+            equals({_TestConstants.testId1, _TestConstants.testId2}),
+          ); // Duplicates removed
 
           unawaited(subscription.cancel());
         });
@@ -264,18 +287,22 @@ void main() {
 
       test('should handle very large sets', () {
         fakeAsync((async) {
-          final largeSet =
-              _TestHelpers.createLargeTestSet(_TestConstants.largeSetSize);
+          final largeSet = _TestHelpers.createLargeTestSet(
+            _TestConstants.largeSetSize,
+          );
 
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify(largeSet);
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(emittedIds.first.length, equals(_TestConstants.largeSetSize));
@@ -289,13 +316,16 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Test with null-like empty set (already covered by empty set test)
           updateNotifications.notify(<String>{});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(0));
 
@@ -311,22 +341,33 @@ void main() {
           final emittedIds2 = <Set<String>>[];
 
           final subscription1 = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds1);
+            updateNotifications,
+            emittedIds1,
+          );
           final subscription2 = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds2);
+            updateNotifications,
+            emittedIds2,
+          );
 
-          updateNotifications
-              .notify({_TestConstants.testId1, _TestConstants.testId2});
+          updateNotifications.notify({
+            _TestConstants.testId1,
+            _TestConstants.testId2,
+          });
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds1.length, equals(1));
           expect(emittedIds2.length, equals(1));
-          expect(emittedIds1.first,
-              equals({_TestConstants.testId1, _TestConstants.testId2}));
-          expect(emittedIds2.first,
-              equals({_TestConstants.testId1, _TestConstants.testId2}));
+          expect(
+            emittedIds1.first,
+            equals({_TestConstants.testId1, _TestConstants.testId2}),
+          );
+          expect(
+            emittedIds2.first,
+            equals({_TestConstants.testId1, _TestConstants.testId2}),
+          );
 
           unawaited(subscription1.cancel());
           unawaited(subscription2.cancel());
@@ -338,7 +379,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Cancel subscription before notification
           unawaited(subscription.cancel());
@@ -346,7 +389,8 @@ void main() {
           updateNotifications.notify({_TestConstants.testId1});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           // Should not emit to cancelled subscription
           expect(emittedIds.length, equals(0));
@@ -360,17 +404,21 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify({_TestConstants.testId1});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           updateNotifications.notify({_TestConstants.testId2});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(2));
           expect(emittedIds[0], equals({_TestConstants.testId1}));
@@ -385,7 +433,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Send notifications rapidly
           for (var i = 0; i < _TestConstants.rapidNotificationCount; i++) {
@@ -393,11 +443,14 @@ void main() {
           }
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
-          expect(emittedIds.first.length,
-              equals(_TestConstants.rapidNotificationCount));
+          expect(
+            emittedIds.first.length,
+            equals(_TestConstants.rapidNotificationCount),
+          );
 
           unawaited(subscription.cancel());
         });
@@ -408,7 +461,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           updateNotifications.notify({_TestConstants.testId1});
 
@@ -416,8 +471,9 @@ void main() {
           unawaited(subscription.cancel());
 
           // Advance beyond the timer to ensure no late emissions
-          async.elapseAndFlush(const Duration(
-              milliseconds: _TestConstants.regularTimerDelay * 2));
+          async.elapseAndFlush(
+            const Duration(milliseconds: _TestConstants.regularTimerDelay * 2),
+          );
 
           // Should not emit to cancelled subscription
           expect(emittedIds.length, equals(0));
@@ -427,8 +483,10 @@ void main() {
 
     group('Constants', () {
       test('should have correct notification constants', () {
-        expect(habitCompletionNotification,
-            equals(_TestConstants.habitCompletionValue));
+        expect(
+          habitCompletionNotification,
+          equals(_TestConstants.habitCompletionValue),
+        );
         expect(textEntryNotification, equals(_TestConstants.textEntryValue));
         expect(taskNotification, equals(_TestConstants.taskValue));
         expect(surveyNotification, equals(_TestConstants.surveyValue));
@@ -446,35 +504,40 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Regular notifications - testing batching
           updateNotifications
             ..notify({_TestConstants.regularId1})
             ..notify({_TestConstants.regularId2})
-
             // Sync notifications - testing separate batching
             ..notify({_TestConstants.syncId1}, fromSync: true)
             ..notify({_TestConstants.syncId2}, fromSync: true)
-
             // More regular notifications - testing continued batching
             ..notify({_TestConstants.regularId3});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.syncTimerDelay));
+            const Duration(milliseconds: _TestConstants.syncTimerDelay),
+          );
 
           expect(emittedIds.length, equals(2));
           expect(
-              emittedIds[0],
-              equals({
-                _TestConstants.regularId1,
-                _TestConstants.regularId2,
-                _TestConstants.regularId3
-              }));
-          expect(emittedIds[1],
-              equals({_TestConstants.syncId1, _TestConstants.syncId2}));
+            emittedIds[0],
+            equals({
+              _TestConstants.regularId1,
+              _TestConstants.regularId2,
+              _TestConstants.regularId3,
+            }),
+          );
+          expect(
+            emittedIds[1],
+            equals({_TestConstants.syncId1, _TestConstants.syncId2}),
+          );
 
           unawaited(subscription.cancel());
         });
@@ -485,7 +548,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Pattern: regular -> sync -> regular -> sync
           updateNotifications
@@ -495,19 +560,24 @@ void main() {
             ..notify({_TestConstants.patternSyncId2}, fromSync: true);
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.syncTimerDelay));
+            const Duration(milliseconds: _TestConstants.syncTimerDelay),
+          );
 
           expect(emittedIds.length, equals(2));
-          expect(emittedIds[0],
-              equals({_TestConstants.patternId1, _TestConstants.patternId2}));
           expect(
-              emittedIds[1],
-              equals({
-                _TestConstants.patternSyncId1,
-                _TestConstants.patternSyncId2
-              }));
+            emittedIds[0],
+            equals({_TestConstants.patternId1, _TestConstants.patternId2}),
+          );
+          expect(
+            emittedIds[1],
+            equals({
+              _TestConstants.patternSyncId1,
+              _TestConstants.patternSyncId2,
+            }),
+          );
 
           unawaited(subscription.cancel());
         });
@@ -520,7 +590,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Simulate concurrent notifications
           updateNotifications
@@ -529,16 +601,18 @@ void main() {
             ..notify({_TestConstants.testId3});
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(
-              emittedIds.first,
-              equals({
-                _TestConstants.testId1,
-                _TestConstants.testId2,
-                _TestConstants.testId3
-              }));
+            emittedIds.first,
+            equals({
+              _TestConstants.testId1,
+              _TestConstants.testId2,
+              _TestConstants.testId3,
+            }),
+          );
 
           unawaited(subscription.cancel());
         });
@@ -549,7 +623,9 @@ void main() {
           final emittedIds = <Set<String>>[];
 
           final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+            updateNotifications,
+            emittedIds,
+          );
 
           // Create many notifications to test memory handling
           for (var i = 0; i < 100; i++) {
@@ -557,7 +633,8 @@ void main() {
           }
 
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           expect(emittedIds.length, equals(1));
           expect(emittedIds.first.length, equals(100));
@@ -583,7 +660,9 @@ void main() {
         final emittedIds = <Set<String>>[];
 
         final subscription = _TestHelpers.createTestSubscription(
-            updateNotifications, emittedIds);
+          updateNotifications,
+          emittedIds,
+        );
 
         // Dispose the notifications before entering fake time
         await updateNotifications.dispose();
@@ -594,7 +673,8 @@ void main() {
 
           // Advance time to simulate missed timer (should not emit)
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
 
           // Should not emit anything
           expect(emittedIds.length, equals(0));
@@ -608,7 +688,9 @@ void main() {
         final emittedIds = <Set<String>>[];
 
         final subscription = _TestHelpers.createTestSubscription(
-            updateNotifications, emittedIds);
+          updateNotifications,
+          emittedIds,
+        );
 
         // Dispose the notifications before entering fake time
         await updateNotifications.dispose();
@@ -619,7 +701,8 @@ void main() {
 
           // Advance time; no emissions should occur
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.syncTimerDelay));
+            const Duration(milliseconds: _TestConstants.syncTimerDelay),
+          );
 
           // Should not emit anything
           expect(emittedIds.length, equals(0));
@@ -641,9 +724,11 @@ void main() {
 
           // Advance time for both timers; nothing should throw
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.regularTimerDelay));
+            const Duration(milliseconds: _TestConstants.regularTimerDelay),
+          );
           async.elapseAndFlush(
-              const Duration(milliseconds: _TestConstants.syncTimerDelay));
+            const Duration(milliseconds: _TestConstants.syncTimerDelay),
+          );
         });
       });
     });

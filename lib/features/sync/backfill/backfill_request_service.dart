@@ -26,20 +26,18 @@ class BackfillRequestService {
     int? maxRequestCount,
     Duration? maxAge,
     int? maxPerHost,
-  })  : _sequenceLogService = sequenceLogService,
-        _syncDatabase = syncDatabase,
-        _outboxService = outboxService,
-        _vectorClockService = vectorClockService,
-        _loggingService = loggingService,
-        _requestInterval =
-            requestInterval ?? SyncTuning.backfillRequestInterval,
-        // Use processing batch size for per-cycle limits (smaller to avoid
-        // overwhelming the network). backfillBatchSize is for DB fetch limits.
-        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,
-        _maxRequestCount =
-            maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
-        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
-        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost;
+  }) : _sequenceLogService = sequenceLogService,
+       _syncDatabase = syncDatabase,
+       _outboxService = outboxService,
+       _vectorClockService = vectorClockService,
+       _loggingService = loggingService,
+       _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
+       // Use processing batch size for per-cycle limits (smaller to avoid
+       // overwhelming the network). backfillBatchSize is for DB fetch limits.
+       _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,
+       _maxRequestCount = maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
+       _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
+       _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost;
 
   final SyncSequenceLogService _sequenceLogService;
   final SyncDatabase _syncDatabase;
@@ -115,8 +113,10 @@ class BackfillRequestService {
         if (alreadyQueued.isNotEmpty) {
           requested = requested
               .where(
-                (m) => !alreadyQueued
-                    .contains((hostId: m.hostId, counter: m.counter)),
+                (m) => !alreadyQueued.contains((
+                  hostId: m.hostId,
+                  counter: m.counter,
+                )),
               )
               .toList();
         }
@@ -234,8 +234,10 @@ class BackfillRequestService {
         final beforeCount = missing.length;
         missing = missing
             .where(
-              (m) => !alreadyQueued
-                  .contains((hostId: m.hostId, counter: m.counter)),
+              (m) => !alreadyQueued.contains((
+                hostId: m.hostId,
+                counter: m.counter,
+              )),
             )
             .toList();
         final filtered = beforeCount - missing.length;

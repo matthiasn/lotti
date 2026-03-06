@@ -28,14 +28,18 @@ void main() {
 
       // Verify private switch
       expect(find.text('Private'), findsOneWidget);
-      expect(find.text('Hide this category when private mode is enabled'),
-          findsOneWidget);
+      expect(
+        find.text('Hide this category when private mode is enabled'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
 
       // Verify active switch
       expect(find.text('Active'), findsOneWidget);
-      expect(find.text("Inactive categories won't appear in selection lists"),
-          findsOneWidget);
+      expect(
+        find.text("Inactive categories won't appear in selection lists"),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
       // Verify favorite switch
@@ -72,8 +76,9 @@ void main() {
       expect(switchFields[2].value, isTrue); // Favorite
     });
 
-    testWidgets('calls onChanged with correct field when private toggled',
-        (tester) async {
+    testWidgets('calls onChanged with correct field when private toggled', (
+      tester,
+    ) async {
       const settings = CategorySwitchSettings(
         isPrivate: false,
         isActive: true,
@@ -103,8 +108,9 @@ void main() {
       expect(changedValue, isTrue);
     });
 
-    testWidgets('calls onChanged with correct field when active toggled',
-        (tester) async {
+    testWidgets('calls onChanged with correct field when active toggled', (
+      tester,
+    ) async {
       const settings = CategorySwitchSettings(
         isPrivate: false,
         isActive: true,
@@ -134,8 +140,9 @@ void main() {
       expect(changedValue, isFalse);
     });
 
-    testWidgets('calls onChanged with correct field when favorite toggled',
-        (tester) async {
+    testWidgets('calls onChanged with correct field when favorite toggled', (
+      tester,
+    ) async {
       const settings = CategorySwitchSettings(
         isPrivate: false,
         isActive: true,
@@ -194,8 +201,9 @@ void main() {
       expect(spacingSizedBoxes.length, 2);
     });
 
-    testWidgets('CategorySwitchSettings correctly stores values',
-        (tester) async {
+    testWidgets('CategorySwitchSettings correctly stores values', (
+      tester,
+    ) async {
       const settings = CategorySwitchSettings(
         isPrivate: true,
         isActive: false,

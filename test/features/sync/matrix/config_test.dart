@@ -55,8 +55,9 @@ void main() {
       user: '@user:example.org',
       password: 'pw',
     );
-    when(() => mockSecureStorage.read(key: matrixConfigKey))
-        .thenAnswer((_) async => jsonEncode(config));
+    when(
+      () => mockSecureStorage.read(key: matrixConfigKey),
+    ).thenAnswer((_) async => jsonEncode(config));
 
     final result = await loadMatrixConfig(
       session: sessionManager,
@@ -68,8 +69,9 @@ void main() {
   });
 
   test('loadMatrixConfig returns null when storage empty', () async {
-    when(() => mockSecureStorage.read(key: matrixConfigKey))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockSecureStorage.read(key: matrixConfigKey),
+    ).thenAnswer((_) async => null);
 
     final result = await loadMatrixConfig(
       session: sessionManager,
@@ -81,8 +83,9 @@ void main() {
   });
 
   test('loadMatrixConfig throws when storage contains invalid json', () async {
-    when(() => mockSecureStorage.read(key: matrixConfigKey))
-        .thenAnswer((_) async => '{invalid json');
+    when(
+      () => mockSecureStorage.read(key: matrixConfigKey),
+    ).thenAnswer((_) async => '{invalid json');
 
     expect(
       () => loadMatrixConfig(
@@ -99,10 +102,12 @@ void main() {
       user: '@user:example.org',
       password: 'pw',
     );
-    when(() => mockSecureStorage.write(
-          key: matrixConfigKey,
-          value: jsonEncode(config),
-        )).thenAnswer((_) async {});
+    when(
+      () => mockSecureStorage.write(
+        key: matrixConfigKey,
+        value: jsonEncode(config),
+      ),
+    ).thenAnswer((_) async {});
 
     await setMatrixConfig(
       config,
@@ -126,8 +131,9 @@ void main() {
       password: 'pw',
     );
     sessionManager.matrixConfig = config;
-    when(() => mockSecureStorage.delete(key: matrixConfigKey))
-        .thenAnswer((_) async {});
+    when(
+      () => mockSecureStorage.delete(key: matrixConfigKey),
+    ).thenAnswer((_) async {});
     when(() => mockGateway.logout()).thenAnswer((_) async {});
 
     await deleteMatrixConfig(

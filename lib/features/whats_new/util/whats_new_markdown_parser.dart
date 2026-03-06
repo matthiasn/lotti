@@ -28,12 +28,18 @@ class WhatsNewMarkdownParser {
     final headerMarkdown = parts.isNotEmpty ? parts.first.trim() : '';
 
     // Remaining parts are content sections
-    final sections =
-        parts.skip(1).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    final sections = parts
+        .skip(1)
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
 
     // Resolve relative image URLs in header and sections
-    final resolvedHeader =
-        _resolveImageUrls(headerMarkdown, baseUrl, release.folder);
+    final resolvedHeader = _resolveImageUrls(
+      headerMarkdown,
+      baseUrl,
+      release.folder,
+    );
     final resolvedSections = sections
         .map((section) => _resolveImageUrls(section, baseUrl, release.folder))
         .toList();
@@ -54,7 +60,10 @@ class WhatsNewMarkdownParser {
   /// Matches markdown image syntax `![alt](path)` where path does not start
   /// with `http` and replaces it with the full URL.
   static String _resolveImageUrls(
-      String markdown, String baseUrl, String folder) {
+    String markdown,
+    String baseUrl,
+    String folder,
+  ) {
     // Pattern: ![alt text](relative/path.png) where path doesn't start with http
     final imagePattern = RegExp(r'!\[([^\]]*)\]\((?!http)([^)]+)\)');
 
