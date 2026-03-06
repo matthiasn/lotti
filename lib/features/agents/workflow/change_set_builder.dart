@@ -13,6 +13,12 @@ import 'package:uuid/uuid.dart';
 typedef ChecklistItemStateResolver = Future<({String? title, bool? isChecked})?>
     Function(String itemId);
 
+/// Resolves the set of existing checklist item titles for the target task.
+///
+/// Returns normalized (lowercased, trimmed) titles so that title-based
+/// deduplication for `add_checklist_item` is case-insensitive.
+typedef ExistingChecklistTitlesResolver = Future<Set<String>> Function();
+
 /// Result of adding batch items to a [ChangeSetBuilder].
 class BatchAddResult {
   const BatchAddResult({
@@ -49,6 +55,7 @@ class ChangeSetBuilder {
     required this.threadId,
     required this.runKey,
     this.checklistItemStateResolver,
+    this.existingChecklistTitlesResolver,
     this.domainLogger,
   });
 
@@ -70,11 +77,20 @@ class ChangeSetBuilder {
   /// Also used to detect and suppress redundant updates.
   final ChecklistItemStateResolver? checklistItemStateResolver;
 
+  /// Optional resolver for existing checklist item titles. When provided,
+  /// `add_checklist_item` proposals are checked against existing titles
+  /// (case-insensitive) and suppressed if a match is found.
+  final ExistingChecklistTitlesResolver? existingChecklistTitlesResolver;
+
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
 
   final List<ChangeItem> _items = [];
   static const _uuid = Uuid();
+
+  /// Lazily-resolved existing checklist titles (normalized), cached across
+  /// a single batch to avoid repeated DB lookups.
+  Set<String>? _cachedExistingTitles;
 
   /// All items accumulated so far.
   List<ChangeItem> get items => List.unmodifiable(_items);
@@ -86,11 +102,31 @@ class ChangeSetBuilder {
   ///
   /// For batch tools listed in [AgentToolRegistry.explodedBatchTools], use
   /// [addBatchItem] instead — this method does NOT auto-explode.
-  void addItem({
+  ///
+  /// For `add_checklist_item`, checks against existing titles and returns
+  /// a redundancy detail if the title already exists. Returns `null` when
+  /// the item was added successfully.
+  Future<String?> addItem({
     required String toolName,
     required Map<String, dynamic> args,
     required String humanSummary,
-  }) {
+  }) async {
+    // Check for title-based redundancy on add_checklist_item.
+    if (toolName == TaskAgentToolNames.addChecklistItem) {
+      final existingTitles = await _resolveExistingTitles();
+      final detail = _checkAddRedundancy(toolName, args, existingTitles);
+      if (detail != null) return detail;
+
+      // Track the title so subsequent addItem calls see it.
+      final title = args['title'];
+      if (title is String) {
+        final normalized = title.trim().toLowerCase();
+        if (normalized.isNotEmpty) {
+          existingTitles.add(normalized);
+        }
+      }
+    }
+
     _items.add(
       ChangeItem(
         toolName: toolName,
@@ -98,6 +134,7 @@ class ChangeSetBuilder {
         humanSummary: humanSummary,
       ),
     );
+    return null;
   }
 
   /// Explode a batch tool call into individual [ChangeItem] entries.
@@ -118,7 +155,7 @@ class ChangeSetBuilder {
     final arrayKey = AgentToolRegistry.explodedBatchTools[toolName];
     if (arrayKey == null) {
       // Not a known batch tool — fall back to a single item.
-      addItem(
+      await addItem(
         toolName: toolName,
         args: args,
         humanSummary: '$summaryPrefix (batch)',
@@ -129,7 +166,7 @@ class ChangeSetBuilder {
     final array = args[arrayKey];
     if (array is! List || array.isEmpty) {
       // Empty or invalid array — add as a single item.
-      addItem(
+      await addItem(
         toolName: toolName,
         args: args,
         humanSummary: '$summaryPrefix (empty)',
@@ -141,12 +178,31 @@ class ChangeSetBuilder {
     // and 'update_checklist_items' with 'update_checklist_item'.
     final singularToolName = _singularize(toolName);
 
+    // Only resolve existing titles when this is an add-checklist batch.
+    final isAddBatch = singularToolName == TaskAgentToolNames.addChecklistItem;
+    final existingTitles = isAddBatch ? await _resolveExistingTitles() : null;
+
     var added = 0;
     var skipped = 0;
     var redundant = 0;
     final redundantDetails = <String>[];
     for (final element in array) {
       if (element is Map<String, dynamic>) {
+        // Check for redundant add_checklist_item proposals (title already
+        // exists on the task or was already proposed in this wake).
+        if (existingTitles != null) {
+          final addRedundancyDetail = _checkAddRedundancy(
+            singularToolName,
+            element,
+            existingTitles,
+          );
+          if (addRedundancyDetail != null) {
+            redundant++;
+            redundantDetails.add(addRedundancyDetail);
+            continue;
+          }
+        }
+
         // Resolve state once per item to avoid redundant DB lookups and
         // duplicate error logging.
         final itemId = element['id'];
@@ -178,6 +234,18 @@ class ChangeSetBuilder {
             humanSummary: summary,
           ),
         );
+
+        // Track the title in the existing set so that subsequent items in
+        // the same batch with the same title are caught as duplicates.
+        if (existingTitles != null) {
+          final title = element['title'];
+          if (title is String) {
+            final normalized = title.trim().toLowerCase();
+            if (normalized.isNotEmpty) {
+              existingTitles.add(normalized);
+            }
+          }
+        }
         added++;
       } else {
         skipped++;
@@ -199,6 +267,11 @@ class ChangeSetBuilder {
   /// deferred items are included in the dedup set so the agent cannot
   /// re-propose a mutation the user already rejected.
   ///
+  /// [rejectedFingerprints] contains fingerprints reconstructed from
+  /// persisted [ChangeDecisionEntity] records whose verdict was `rejected`.
+  /// These are merged into the dedup set so that items the user rejected
+  /// in a previous (now-resolved) change set are still blocked.
+  ///
   /// When existing pending change sets exist, all their items are
   /// consolidated into a single set together with the new items. Any
   /// surplus sets are marked as [ChangeSetStatus.resolved] so they no
@@ -208,6 +281,7 @@ class ChangeSetBuilder {
   Future<ChangeSetEntity?> build(
     AgentSyncService syncService, {
     List<ChangeSetEntity> existingPendingSets = const [],
+    Set<String> rejectedFingerprints = const {},
   }) async {
     if (!hasItems) return null;
 
@@ -222,7 +296,11 @@ class ChangeSetBuilder {
         )
         .toList();
 
-    final deduped = _deduplicateItems(_items, existingItems);
+    final deduped = _deduplicateItems(
+      _items,
+      existingItems,
+      rejectedFingerprints: rejectedFingerprints,
+    );
     if (deduped.isEmpty) return null;
 
     if (existingPendingSets.isNotEmpty) {
@@ -285,12 +363,19 @@ class ChangeSetBuilder {
 
   /// Returns items from [proposed] that do not already exist in [existing],
   /// comparing on `toolName` and `args` only (ignoring `humanSummary`).
+  ///
+  /// [rejectedFingerprints] are merged into the dedup set so that items
+  /// rejected in previously-resolved change sets are still blocked.
   static List<ChangeItem> _deduplicateItems(
     List<ChangeItem> proposed,
-    List<ChangeItem> existing,
-  ) {
-    if (existing.isEmpty) return proposed;
-    final existingHashes = existing.map(ChangeItem.fingerprint).toSet();
+    List<ChangeItem> existing, {
+    Set<String> rejectedFingerprints = const {},
+  }) {
+    if (existing.isEmpty && rejectedFingerprints.isEmpty) return proposed;
+    final existingHashes = {
+      ...existing.map(ChangeItem.fingerprint),
+      ...rejectedFingerprints,
+    };
     return proposed
         .where((item) => !existingHashes.contains(ChangeItem.fingerprint(item)))
         .toList();
@@ -376,6 +461,60 @@ class ChangeSetBuilder {
       );
       return null;
     }
+  }
+
+  /// Resolve existing checklist titles, initialising the cache on first call.
+  ///
+  /// The returned set is the canonical `_cachedExistingTitles` instance —
+  /// callers may mutate it (e.g. adding titles for same-wake dedup) and the
+  /// additions will be visible to subsequent calls without re-scanning.
+  Future<Set<String>> _resolveExistingTitles() async {
+    if (_cachedExistingTitles != null) return _cachedExistingTitles!;
+
+    final resolver = existingChecklistTitlesResolver;
+    if (resolver != null) {
+      try {
+        // Copy to a mutable set so callers can add in-wake titles.
+        _cachedExistingTitles = {...await resolver()};
+      } catch (e, s) {
+        domainLogger?.error(
+          LogDomains.agentWorkflow,
+          'failed to resolve existing checklist titles',
+          error: e,
+          stackTrace: s,
+        );
+        _cachedExistingTitles = {};
+      }
+    } else {
+      _cachedExistingTitles = {};
+    }
+
+    return _cachedExistingTitles!;
+  }
+
+  /// Check whether an `add_checklist_item` proposal is redundant because
+  /// an item with the same title (case-insensitive) already exists on the
+  /// task.
+  ///
+  /// Returns a human-readable detail string if redundant, or `null` if the
+  /// item should be kept.
+  static String? _checkAddRedundancy(
+    String singularToolName,
+    Map<String, dynamic> args,
+    Set<String> existingTitles,
+  ) {
+    if (singularToolName != TaskAgentToolNames.addChecklistItem) {
+      return null;
+    }
+
+    final title = args['title'];
+    if (title is! String) return null;
+    final normalized = title.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    if (existingTitles.contains(normalized)) {
+      return '"$title" already exists on the task';
+    }
+    return null;
   }
 
   /// Check whether an `update_checklist_item` proposal is redundant.

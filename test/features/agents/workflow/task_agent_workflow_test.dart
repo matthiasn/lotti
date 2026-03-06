@@ -2041,6 +2041,204 @@ void main() {
         });
       });
 
+      group('pending proposals', () {
+        ChangeSetEntity makeChangeSet({
+          required List<ChangeItem> items,
+        }) {
+          return AgentDomainEntity.changeSet(
+            id: 'cs-${items.hashCode}',
+            agentId: agentId,
+            taskId: taskId,
+            threadId: threadId,
+            runKey: runKey,
+            status: ChangeSetStatus.pending,
+            items: items,
+            createdAt: DateTime(2024, 6, 15),
+            vectorClock: null,
+          ) as ChangeSetEntity;
+        }
+
+        test('includes pending proposals when change sets exist', () async {
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeChangeSet(
+                  items: [
+                    const ChangeItem(
+                      toolName: 'set_task_title',
+                      args: <String, dynamic>{'title': 'New Title'},
+                      humanSummary: 'Rename task to "New Title"',
+                    ),
+                  ],
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            contains('## Pending Proposals Awaiting Review'),
+          );
+          expect(
+            message,
+            contains('`set_task_title`: Rename task to "New Title"'),
+          );
+        });
+
+        test('omits pending proposals when no change sets exist', () async {
+          // Default stub returns empty list.
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            isNot(contains('## Pending Proposals Awaiting Review')),
+          );
+        });
+
+        test('lists items from multiple change sets', () async {
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeChangeSet(
+                  items: [
+                    const ChangeItem(
+                      toolName: 'set_task_title',
+                      args: <String, dynamic>{'title': 'Title A'},
+                      humanSummary: 'Rename task to "Title A"',
+                    ),
+                  ],
+                ),
+                makeChangeSet(
+                  items: [
+                    const ChangeItem(
+                      toolName: 'add_checklist_item',
+                      args: <String, dynamic>{'text': 'Buy milk'},
+                      humanSummary: 'Add checklist item: "Buy milk"',
+                    ),
+                    const ChangeItem(
+                      toolName: 'add_checklist_item',
+                      args: <String, dynamic>{'text': 'Buy bread'},
+                      humanSummary: 'Add checklist item: "Buy bread"',
+                    ),
+                  ],
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            contains('`set_task_title`: Rename task to "Title A"'),
+          );
+          expect(
+            message,
+            contains('`add_checklist_item`: Add checklist item: "Buy milk"'),
+          );
+          expect(
+            message,
+            contains('`add_checklist_item`: Add checklist item: "Buy bread"'),
+          );
+        });
+
+        test('excludes already-resolved items from partially resolved sets',
+            () async {
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeChangeSet(
+                  items: [
+                    const ChangeItem(
+                      toolName: 'set_task_title',
+                      args: <String, dynamic>{'title': 'Already Done'},
+                      humanSummary: 'Rename task to "Already Done"',
+                      status: ChangeItemStatus.confirmed,
+                    ),
+                    const ChangeItem(
+                      toolName: 'add_checklist_item',
+                      args: <String, dynamic>{'text': 'Still waiting'},
+                      humanSummary: 'Add checklist item: "Still waiting"',
+                    ),
+                    const ChangeItem(
+                      toolName: 'update_task_estimate',
+                      args: <String, dynamic>{'estimate': '2h'},
+                      humanSummary: 'Set estimate to 2 hours',
+                      status: ChangeItemStatus.rejected,
+                    ),
+                  ],
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            contains('## Pending Proposals Awaiting Review'),
+          );
+          // Only the pending item should appear.
+          expect(
+            message,
+            contains('Add checklist item: "Still waiting"'),
+          );
+          // Confirmed and rejected items must be excluded.
+          expect(
+            message,
+            isNot(contains('Already Done')),
+            reason: 'confirmed items should be filtered out',
+          );
+          expect(
+            message,
+            isNot(contains('Set estimate to 2 hours')),
+            reason: 'rejected items should be filtered out',
+          );
+        });
+
+        test('omits section when all items in sets are resolved', () async {
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeChangeSet(
+                  items: [
+                    const ChangeItem(
+                      toolName: 'set_task_title',
+                      args: <String, dynamic>{'title': 'Done'},
+                      humanSummary: 'Rename task',
+                      status: ChangeItemStatus.confirmed,
+                    ),
+                  ],
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            isNot(contains('## Pending Proposals Awaiting Review')),
+            reason: 'section should be omitted when no pending items remain',
+          );
+        });
+      });
+
       test('caps observations to 20 most recent', () async {
         // Create 25 observations ordered newest-first (as the DB returns).
         final observations = List.generate(25, (i) {

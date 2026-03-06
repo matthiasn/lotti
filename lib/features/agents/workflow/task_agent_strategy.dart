@@ -455,12 +455,14 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (redundancyMsg != null) {
         response = redundancyMsg;
       } else {
-        csBuilder.addItem(
+        final addRedundancy = await csBuilder.addItem(
           toolName: toolName,
           args: args,
           humanSummary: _generateHumanSummary(toolName, args),
         );
-        response = 'Proposal queued for user review.';
+        response = addRedundancy != null
+            ? 'Skipped: $addRedundancy'
+            : 'Proposal queued for user review.';
       }
     }
 

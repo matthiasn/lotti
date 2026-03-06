@@ -35,8 +35,8 @@ void main() {
   });
 
   group('addItem', () {
-    test('adds a single item to the builder', () {
-      builder.addItem(
+    test('adds a single item to the builder', () async {
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 120},
         humanSummary: 'Set estimate to 2 hours',
@@ -50,18 +50,17 @@ void main() {
       expect(builder.items.first.status, ChangeItemStatus.pending);
     });
 
-    test('accumulates multiple items in order', () {
-      builder
-        ..addItem(
-          toolName: 'set_task_title',
-          args: {'title': 'Fix bug'},
-          humanSummary: 'Set title',
-        )
-        ..addItem(
-          toolName: 'update_task_estimate',
-          args: {'minutes': 60},
-          humanSummary: 'Set estimate',
-        );
+    test('accumulates multiple items in order', () async {
+      await builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Fix bug'},
+        humanSummary: 'Set title',
+      );
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 60},
+        humanSummary: 'Set estimate',
+      );
 
       expect(builder.items, hasLength(2));
       expect(builder.items[0].toolName, 'set_task_title');
@@ -343,8 +342,8 @@ void main() {
       expect(builder.hasItems, isFalse);
     });
 
-    test('returns true after adding an item', () {
-      builder.addItem(
+    test('returns true after adding an item', () async {
+      await builder.addItem(
         toolName: 'test',
         args: {},
         humanSummary: 'test',
@@ -361,7 +360,7 @@ void main() {
     });
 
     test('builds and persists change set entity', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 120},
         humanSummary: 'Set estimate to 2 hours',
@@ -406,17 +405,16 @@ void main() {
     });
 
     test('drops items that already exist in pending change sets', () async {
-      builder
-        ..addItem(
-          toolName: 'set_task_title',
-          args: {'title': 'Fix bug'},
-          humanSummary: 'Set title to "Fix bug"',
-        )
-        ..addItem(
-          toolName: 'update_task_estimate',
-          args: {'minutes': 120},
-          humanSummary: 'Set estimate to 2 hours',
-        );
+      await builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Fix bug'},
+        humanSummary: 'Set title to "Fix bug"',
+      );
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
 
       final existingSet = makeTestChangeSet(
         items: const [
@@ -442,7 +440,7 @@ void main() {
     });
 
     test('returns null when all items are duplicates', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'set_task_title',
         args: {'title': 'Fix bug'},
         humanSummary: 'Set title',
@@ -468,7 +466,7 @@ void main() {
     });
 
     test('keeps items when args differ from existing pending', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 120},
         humanSummary: 'Set estimate to 2 hours',
@@ -497,7 +495,7 @@ void main() {
     });
 
     test('dedupes with deep map equality in args', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'add_checklist_item',
         args: {
           'title': 'Design mockup',
@@ -528,7 +526,7 @@ void main() {
     });
 
     test('does not dedupe when existing sets list is empty', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'set_task_title',
         args: {'title': 'Fix bug'},
         humanSummary: 'Set title',
@@ -544,7 +542,7 @@ void main() {
     });
 
     test('merges new items into existing change set', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 90},
         humanSummary: 'Set estimate to 1.5 hours',
@@ -574,7 +572,7 @@ void main() {
     });
 
     test('preserves existing item statuses when merging', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 90},
         humanSummary: 'Set estimate',
@@ -612,7 +610,7 @@ void main() {
 
     test('blocks re-proposal of rejected items', () async {
       // The agent proposes the exact same mutation that was already rejected.
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_checklist_item',
         args: {'id': 'item-1', 'isChecked': true},
         humanSummary: 'Check off: "Buy milk"',
@@ -639,7 +637,7 @@ void main() {
     });
 
     test('blocks re-proposal of deferred items', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'set_task_status',
         args: {'status': 'IN_PROGRESS'},
         humanSummary: 'Set status',
@@ -667,7 +665,7 @@ void main() {
     test('allows proposal when same tool has different args than rejected',
         () async {
       // The agent proposes a different value than what was rejected.
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 60},
         humanSummary: 'Set estimate to 1 hour',
@@ -697,7 +695,7 @@ void main() {
       // Confirmed items have been applied — re-proposing is a no-op but
       // should not be blocked by dedup (the redundancy filter catches this
       // at the checklist-item level instead).
-      builder.addItem(
+      await builder.addItem(
         toolName: 'set_task_title',
         args: {'title': 'Fix bug'},
         humanSummary: 'Set title',
@@ -723,7 +721,7 @@ void main() {
     });
 
     test('creates new entity when no existing pending set', () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'set_task_title',
         args: {'title': 'New task'},
         humanSummary: 'Set title',
@@ -740,7 +738,7 @@ void main() {
 
     test('consolidates multiple existing sets into one and resolves surplus',
         () async {
-      builder.addItem(
+      await builder.addItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 45},
         humanSummary: 'Set estimate to 45 min',
@@ -1155,6 +1153,211 @@ void main() {
       expect(resolverBuilder.items, hasLength(1));
       expect(result.added, 1);
       expect(result.redundant, 0);
+    });
+  });
+
+  group('add_checklist_item title-based dedup', () {
+    test('suppresses add when title already exists (case-insensitive)',
+        () async {
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async =>
+            {'buy groceries', 'write tests'},
+      );
+
+      final result = await titledBuilder.addBatchItem(
+        toolName: 'add_multiple_checklist_items',
+        args: {
+          'items': [
+            {'title': 'Buy Groceries'}, // exists (case-insensitive)
+            {'title': 'Deploy app'}, // novel
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(titledBuilder.items, hasLength(1));
+      expect(titledBuilder.items.first.args['title'], 'Deploy app');
+      expect(result.added, 1);
+      expect(result.redundant, 1);
+      expect(
+        result.redundantDetails.first,
+        contains('"Buy Groceries" already exists on the task'),
+      );
+    });
+
+    test('allows add when title is novel', () async {
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async =>
+            {'buy groceries', 'write tests'},
+      );
+
+      final result = await titledBuilder.addBatchItem(
+        toolName: 'add_multiple_checklist_items',
+        args: {
+          'items': [
+            {'title': 'Deploy to production'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(titledBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('same-wake dedup: second add with same title in batch is suppressed',
+        () async {
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async => <String>{},
+      );
+
+      final result = await titledBuilder.addBatchItem(
+        toolName: 'add_multiple_checklist_items',
+        args: {
+          'items': [
+            {'title': 'Write tests'},
+            {'title': 'write tests'}, // same title, different case
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(titledBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 1);
+    });
+
+    test('addItem suppresses add_checklist_item when title exists', () async {
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async => {'buy milk'},
+      );
+
+      final redundancy = await titledBuilder.addItem(
+        toolName: 'add_checklist_item',
+        args: {'title': 'Buy Milk'},
+        humanSummary: 'Add: "Buy Milk"',
+      );
+
+      expect(redundancy, isNotNull);
+      expect(redundancy, contains('"Buy Milk" already exists'));
+      expect(titledBuilder.items, isEmpty);
+    });
+
+    test('addItem allows novel add_checklist_item', () async {
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async => {'buy milk'},
+      );
+
+      final redundancy = await titledBuilder.addItem(
+        toolName: 'add_checklist_item',
+        args: {'title': 'Write docs'},
+        humanSummary: 'Add: "Write docs"',
+      );
+
+      expect(redundancy, isNull);
+      expect(titledBuilder.items, hasLength(1));
+    });
+
+    test('gracefully handles resolver failure', () async {
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async =>
+            throw Exception('DB error'),
+      );
+
+      final result = await titledBuilder.addBatchItem(
+        toolName: 'add_multiple_checklist_items',
+        args: {
+          'items': [
+            {'title': 'New item'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      // Should keep the item (conservative fallback).
+      expect(titledBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+  });
+
+  group('rejected fingerprint dedup in build()', () {
+    test('blocks re-proposal matching a rejected fingerprint', () async {
+      await builder.addItem(
+        toolName: 'add_checklist_item',
+        args: {'title': 'Buy milk'},
+        humanSummary: 'Add: "Buy milk"',
+      );
+
+      // Reconstruct the fingerprint as the workflow would.
+      final rejectedFp = ChangeItem.fingerprint(
+        const ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'title': 'Buy milk'},
+          humanSummary: '',
+        ),
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        rejectedFingerprints: {rejectedFp},
+      );
+
+      expect(
+        result,
+        isNull,
+        reason: 'item matching a rejected fingerprint must be blocked',
+      );
+    });
+
+    test('allows item that does not match any rejected fingerprint', () async {
+      await builder.addItem(
+        toolName: 'add_checklist_item',
+        args: {'title': 'Buy milk'},
+        humanSummary: 'Add: "Buy milk"',
+      );
+
+      // Different args → different fingerprint.
+      final rejectedFp = ChangeItem.fingerprint(
+        const ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'title': 'Buy eggs'},
+          humanSummary: '',
+        ),
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        rejectedFingerprints: {rejectedFp},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.items, hasLength(1));
     });
   });
 }

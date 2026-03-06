@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -233,6 +234,13 @@ class TaskAgentWorkflow {
     final provider = resolvedProfile.thinkingProvider;
 
     // 5. Assemble conversation context.
+    // Fetch pending change sets early so they can be included in the prompt
+    // (to prevent duplicate proposals) and reused later for dedup filtering.
+    final pendingSets = await agentRepository.getPendingChangeSets(
+      agentId,
+      taskId: taskId,
+    );
+
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = await _buildUserMessage(
       agentId: agentId,
@@ -242,6 +250,7 @@ class TaskAgentWorkflow {
       linkedTasksJson: linkedTasksJson,
       triggerTokens: triggerTokens,
       taskId: taskId,
+      pendingChangeSets: pendingSets,
     );
 
     // 6. Create conversation and run with strategy.
@@ -314,6 +323,17 @@ class TaskAgentWorkflow {
             );
           }
           return null;
+        },
+        existingChecklistTitlesResolver: () async {
+          final entity = await journalDb.journalEntityById(taskId);
+          if (entity is! Task) return {};
+          final items = await checklistRepository.getChecklistItemsForTask(
+            task: entity,
+            deletedOnly: false,
+          );
+          return items
+              .map((item) => item.data.title.toLowerCase().trim())
+              .toSet();
         },
       );
 
@@ -397,14 +417,6 @@ class TaskAgentWorkflow {
       }
 
       final observations = strategy.extractObservations();
-
-      // Collect pending items from existing change sets to deduplicate
-      // against. Fetched outside the write transaction to avoid extending
-      // the SQLite write-lock duration unnecessarily.
-      final pendingSets = await agentRepository.getPendingChangeSets(
-        agentId,
-        taskId: taskId,
-      );
 
       // Collects report details inside the transaction for post-commit
       // embedding. Declared outside so it survives the transaction scope.
@@ -521,9 +533,26 @@ class TaskAgentWorkflow {
         // 10b. Persist deferred change set (if any items were accumulated).
         // Pass the full pending sets so the builder can merge into an
         // existing one rather than creating a duplicate entity.
+        //
+        // Reconstruct fingerprints from rejected decisions so that items
+        // the user previously rejected (in now-resolved change sets) are
+        // still blocked from re-proposal.
+        final recentDecisions = await agentRepository.getRecentDecisions(
+          agentId,
+          taskId: taskId,
+        );
+        final rejectedFingerprints = recentDecisions
+            .where((d) => d.verdict == ChangeDecisionVerdict.rejected)
+            .where((d) => d.args != null)
+            .map(
+              (d) => ChangeItem.fingerprintFromParts(d.toolName, d.args!),
+            )
+            .toSet();
+
         await changeSetBuilder.build(
           syncService,
           existingPendingSets: pendingSets,
+          rejectedFingerprints: rejectedFingerprints,
         );
 
         // 11. Persist state.
@@ -936,6 +965,7 @@ and never shown to the user. They persist as your memory across wakes.''';
     required String linkedTasksJson,
     required Set<String> triggerTokens,
     required String taskId,
+    List<ChangeSetEntity> pendingChangeSets = const [],
   }) async {
     final buffer = StringBuffer();
 
@@ -1056,6 +1086,10 @@ and never shown to the user. They persist as your memory across wakes.''';
       // Non-fatal: continue without decision history.
     }
 
+    if (pendingChangeSets.isNotEmpty) {
+      buffer.writeln(_formatPendingProposals(pendingChangeSets));
+    }
+
     if (triggerTokens.isNotEmpty) {
       buffer
         ..writeln('## Changed Since Last Wake')
@@ -1071,6 +1105,41 @@ and never shown to the user. They persist as your memory across wakes.''';
       'Add observations if warranted.',
     );
 
+    return buffer.toString();
+  }
+
+  /// Formats pending [ChangeSetEntity] items into a markdown section so the
+  /// agent knows which proposals are already queued and avoids re-proposing
+  /// them.
+  String _formatPendingProposals(List<ChangeSetEntity> pendingSets) {
+    // Only include items that are still awaiting user review. Partially
+    // resolved change sets may contain confirmed/rejected items alongside
+    // pending ones — listing those would mislead the model.
+    final pendingItems = [
+      for (final cs in pendingSets)
+        for (final item in cs.items)
+          if (item.status == ChangeItemStatus.pending) item,
+    ];
+
+    if (pendingItems.isEmpty) return '';
+
+    final buffer = StringBuffer()
+      ..writeln('## Pending Proposals Awaiting Review')
+      ..writeln()
+      ..writeln(
+        'Your previous wake cycles produced the change sets listed below. '
+        'Each item is a tool call you proposed that is now part of a pending '
+        'change set waiting for the user to confirm or reject. '
+        'Do not re-propose any of these items.',
+      )
+      ..writeln();
+
+    for (final item in pendingItems) {
+      final tool = item.toolName;
+      final summary = item.humanSummary.trim();
+      buffer.writeln('- `$tool`: $summary');
+    }
+    buffer.writeln();
     return buffer.toString();
   }
 

@@ -492,6 +492,7 @@ ChangeDecisionEntity makeTestChangeDecision({
   String? taskId,
   String? rejectionReason,
   String? humanSummary,
+  Map<String, dynamic>? args,
 }) {
   return AgentDomainEntity.changeDecision(
     id: id,
@@ -505,6 +506,7 @@ ChangeDecisionEntity makeTestChangeDecision({
     taskId: taskId,
     rejectionReason: rejectionReason,
     humanSummary: humanSummary,
+    args: args,
   ) as ChangeDecisionEntity;
 }
 

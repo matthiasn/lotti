@@ -519,6 +519,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String? taskId,
             String? rejectionReason,
             String? humanSummary,
+            Map<String, dynamic>? args,
             DateTime? deletedAt)?
         changeDecision,
     TResult Function(
@@ -708,6 +709,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.taskId,
             _that.rejectionReason,
             _that.humanSummary,
+            _that.args,
             _that.deletedAt);
       case WakeTokenUsageEntity() when wakeTokenUsage != null:
         return wakeTokenUsage(
@@ -911,6 +913,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String? taskId,
             String? rejectionReason,
             String? humanSummary,
+            Map<String, dynamic>? args,
             DateTime? deletedAt)
         changeDecision,
     required TResult Function(
@@ -1099,6 +1102,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.taskId,
             _that.rejectionReason,
             _that.humanSummary,
+            _that.args,
             _that.deletedAt);
       case WakeTokenUsageEntity():
         return wakeTokenUsage(
@@ -1295,6 +1299,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String? taskId,
             String? rejectionReason,
             String? humanSummary,
+            Map<String, dynamic>? args,
             DateTime? deletedAt)?
         changeDecision,
     TResult? Function(
@@ -1483,6 +1488,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.taskId,
             _that.rejectionReason,
             _that.humanSummary,
+            _that.args,
             _that.deletedAt);
       case WakeTokenUsageEntity() when wakeTokenUsage != null:
         return wakeTokenUsage(
@@ -3977,9 +3983,11 @@ class ChangeDecisionEntity implements AgentDomainEntity {
       this.taskId,
       this.rejectionReason,
       this.humanSummary,
+      final Map<String, dynamic>? args,
       this.deletedAt,
       final String? $type})
-      : $type = $type ?? 'changeDecision';
+      : _args = args,
+        $type = $type ?? 'changeDecision';
   factory ChangeDecisionEntity.fromJson(Map<String, dynamic> json) =>
       _$ChangeDecisionEntityFromJson(json);
 
@@ -4001,6 +4009,21 @@ class ChangeDecisionEntity implements AgentDomainEntity {
   /// milk"'). Stored at decision time so the agent can see *what* was
   /// confirmed or rejected, not just the tool name.
   final String? humanSummary;
+
+  /// The original tool-call arguments, stored so that rejection fingerprints
+  /// can be reconstructed even after the parent change set is resolved.
+  final Map<String, dynamic>? _args;
+
+  /// The original tool-call arguments, stored so that rejection fingerprints
+  /// can be reconstructed even after the parent change set is resolved.
+  Map<String, dynamic>? get args {
+    final value = _args;
+    if (value == null) return null;
+    if (_args is EqualUnmodifiableMapView) return _args;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
   @override
   final DateTime? deletedAt;
 
@@ -4046,6 +4069,7 @@ class ChangeDecisionEntity implements AgentDomainEntity {
                 other.rejectionReason == rejectionReason) &&
             (identical(other.humanSummary, humanSummary) ||
                 other.humanSummary == humanSummary) &&
+            const DeepCollectionEquality().equals(other._args, _args) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -4065,11 +4089,12 @@ class ChangeDecisionEntity implements AgentDomainEntity {
       taskId,
       rejectionReason,
       humanSummary,
+      const DeepCollectionEquality().hash(_args),
       deletedAt);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.changeDecision(id: $id, agentId: $agentId, changeSetId: $changeSetId, itemIndex: $itemIndex, toolName: $toolName, verdict: $verdict, createdAt: $createdAt, vectorClock: $vectorClock, taskId: $taskId, rejectionReason: $rejectionReason, humanSummary: $humanSummary, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.changeDecision(id: $id, agentId: $agentId, changeSetId: $changeSetId, itemIndex: $itemIndex, toolName: $toolName, verdict: $verdict, createdAt: $createdAt, vectorClock: $vectorClock, taskId: $taskId, rejectionReason: $rejectionReason, humanSummary: $humanSummary, args: $args, deletedAt: $deletedAt)';
   }
 }
 
@@ -4093,6 +4118,7 @@ abstract mixin class $ChangeDecisionEntityCopyWith<$Res>
       String? taskId,
       String? rejectionReason,
       String? humanSummary,
+      Map<String, dynamic>? args,
       DateTime? deletedAt});
 }
 
@@ -4120,6 +4146,7 @@ class _$ChangeDecisionEntityCopyWithImpl<$Res>
     Object? taskId = freezed,
     Object? rejectionReason = freezed,
     Object? humanSummary = freezed,
+    Object? args = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(ChangeDecisionEntity(
@@ -4167,6 +4194,10 @@ class _$ChangeDecisionEntityCopyWithImpl<$Res>
           ? _self.humanSummary
           : humanSummary // ignore: cast_nullable_to_non_nullable
               as String?,
+      args: freezed == args
+          ? _self._args
+          : args // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
