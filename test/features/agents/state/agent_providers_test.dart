@@ -216,18 +216,33 @@ void main() {
 
   group('agentDatabaseProvider', () {
     test('creates database and closes on dispose', () async {
+      final db = AgentDatabase(inMemoryDatabase: true, background: false);
+      getIt.registerSingleton<AgentDatabase>(db);
+      addTearDown(() async {
+        await db.close();
+        await getIt.reset();
+      });
+
       final container = ProviderContainer();
 
-      final db = container.read(agentDatabaseProvider);
-      expect(db, isA<AgentDatabase>());
+      final resolved = container.read(agentDatabaseProvider);
+      expect(resolved, isA<AgentDatabase>());
+      expect(resolved, same(db));
 
-      // Dispose should close the database without error.
+      // Dispose should not error.
       container.dispose();
     });
   });
 
   group('agentRepositoryProvider', () {
     test('creates repository wrapping the database', () async {
+      final db = AgentDatabase(inMemoryDatabase: true, background: false);
+      getIt.registerSingleton<AgentDatabase>(db);
+      addTearDown(() async {
+        await db.close();
+        await getIt.reset();
+      });
+
       final container = ProviderContainer();
       addTearDown(container.dispose);
 

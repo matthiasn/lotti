@@ -69,13 +69,13 @@ class SequenceLogPopulateProgress extends StatelessWidget {
                 Text(
                   switch (phase) {
                     SequenceLogPopulatePhase.populatingJournal =>
-                      'Processing journal entries...',
+                      context.messages.maintenancePopulatePhaseJournal,
                     SequenceLogPopulatePhase.populatingLinks =>
-                      'Processing entry links...',
+                      context.messages.maintenancePopulatePhaseLinks,
                     SequenceLogPopulatePhase.populatingAgentEntities =>
-                      'Processing agent entities...',
+                      context.messages.maintenancePopulatePhaseAgentEntities,
                     SequenceLogPopulatePhase.populatingAgentLinks =>
-                      'Processing agent links...',
+                      context.messages.maintenancePopulatePhaseAgentLinks,
                     _ => '',
                   },
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(

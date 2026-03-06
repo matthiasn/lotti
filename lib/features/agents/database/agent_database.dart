@@ -82,7 +82,7 @@ class AgentDatabase extends _$AgentDatabase {
     while (true) {
       final rows = await customSelect(
         'SELECT id, serialized FROM agent_entities '
-        'LIMIT ? OFFSET ?',
+        'ORDER BY id LIMIT ? OFFSET ?',
         variables: [Variable(batchSize), Variable(offset)],
       ).get();
 
@@ -110,7 +110,7 @@ class AgentDatabase extends _$AgentDatabase {
     while (true) {
       final rows = await customSelect(
         'SELECT id, serialized FROM agent_links '
-        'LIMIT ? OFFSET ?',
+        'ORDER BY id LIMIT ? OFFSET ?',
         variables: [Variable(batchSize), Variable(offset)],
       ).get();
 
@@ -129,34 +129,36 @@ class AgentDatabase extends _$AgentDatabase {
   }
 
   /// Count total agent entities for progress reporting.
-  Future<int> countAllAgentEntities() async {
-    final count = agentEntities.id.count();
-    final query = selectOnly(agentEntities)..addColumns([count]);
-    final result = await query.getSingle();
-    return result.read(count) ?? 0;
-  }
+  Future<int> countAllAgentEntities() => _countAll('agent_entities');
 
   /// Count total agent links for progress reporting.
-  Future<int> countAllAgentLinks() async {
-    final count = agentLinks.id.count();
-    final query = selectOnly(agentLinks)..addColumns([count]);
-    final result = await query.getSingle();
-    return result.read(count) ?? 0;
+  Future<int> countAllAgentLinks() => _countAll('agent_links');
+
+  Future<int> _countAll(String tableName) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS cnt FROM $tableName',
+    ).getSingle();
+    return result.read<int>('cnt');
   }
 
   /// Lightweight extraction of vector clock from serialized JSON.
   /// Agent entities and links store vectorClock at JSON root level.
+  /// Returns null for any malformed data rather than throwing.
   static Map<String, int>? _extractVectorClock(String serialized) {
     try {
-      final json = jsonDecode(serialized) as Map<String, dynamic>;
-      final vc = json['vectorClock'] as Map<String, dynamic>?;
-      if (vc == null) return null;
+      final decoded = jsonDecode(serialized);
+      if (decoded is! Map<String, dynamic>) return null;
 
-      for (final v in vc.values) {
-        if (v is! num) return null;
+      final vc = decoded['vectorClock'];
+      if (vc is! Map<String, dynamic>) return null;
+
+      final result = <String, int>{};
+      for (final entry in vc.entries) {
+        if (entry.value is! num) return null;
+        result[entry.key] = (entry.value as num).toInt();
       }
-      return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
-    } on FormatException catch (_) {
+      return result;
+    } on Object catch (_) {
       return null;
     }
   }

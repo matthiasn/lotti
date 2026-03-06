@@ -2995,6 +2995,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cela analysera toutes les entrées du journal et les ajoutera au journal de séquence de synchronisation. Cela permet les réponses de rattrapage pour les entrées créées avant l\'ajout de cette fonctionnalité.';
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Traitement des entités d\'agents...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Traitement des liens d\'agents...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Traitement des entrées du journal...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Traitement des liens d\'entrées...';
+
+  @override
   String get maintenancePurgeDeleted => 'Purger les éléments supprimés';
 
   @override
