@@ -2917,6 +2917,22 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Agenten-Entitäten werden verarbeitet...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Agenten-Verknüpfungen werden verarbeitet...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Journaleinträge werden verarbeitet...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Eintragsverknüpfungen werden verarbeitet...';
+
+  @override
   String get maintenancePopulateSequenceLog => 'Sync-Sequenzprotokoll befüllen';
 
   @override
@@ -2934,22 +2950,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'Dies scannt alle Journaleinträge und fügt sie dem Sync-Sequenzprotokoll hinzu. Dies ermöglicht Nachfüllantworten für Einträge, die vor dieser Funktion erstellt wurden.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Agenten-Entitäten werden verarbeitet...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks =>
-      'Agenten-Verknüpfungen werden verarbeitet...';
-
-  @override
-  String get maintenancePopulatePhaseJournal =>
-      'Journaleinträge werden verarbeitet...';
-
-  @override
-  String get maintenancePopulatePhaseLinks =>
-      'Eintragsverknüpfungen werden verarbeitet...';
 
   @override
   String get maintenancePurgeDeleted => 'Gelöschte Elemente löschen';

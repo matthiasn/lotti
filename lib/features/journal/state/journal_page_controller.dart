@@ -50,6 +50,9 @@ class JournalPageController extends _$JournalPageController {
   StreamSubscription<bool>? _privateFlagSub;
   StreamSubscription<Set<String>>? _updatesSub;
 
+  /// Debounce timer for vector search queries.
+  Timer? _vectorSearchDebounce;
+
   // Internal state (mutable for efficiency, exposed via immutable state)
   bool _isVisible = false;
   Set<String> _lastIds = {};
@@ -287,6 +290,7 @@ class JournalPageController extends _$JournalPageController {
   }
 
   void _dispose(PagingController<int, JournalEntity> controller) {
+    _vectorSearchDebounce?.cancel();
     _configFlagsSub?.cancel();
     _privateFlagSub?.cancel();
     _updatesSub?.cancel();
@@ -573,6 +577,19 @@ class JournalPageController extends _$JournalPageController {
 
   Future<void> setSearchString(String query) async {
     _query = query;
+    _vectorSearchDebounce?.cancel();
+
+    if (_enableVectorSearch &&
+        _searchMode == SearchMode.vector &&
+        query.isNotEmpty) {
+      _emitState();
+      _vectorSearchDebounce = Timer(
+        const Duration(milliseconds: 300),
+        refreshQuery,
+      );
+      return;
+    }
+
     await refreshQuery();
   }
 

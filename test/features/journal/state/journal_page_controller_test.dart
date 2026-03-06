@@ -2824,7 +2824,8 @@ void main() {
             ..setSearchMode(SearchMode.vector)
             ..setSearchString('semantic query');
 
-          async.elapse(const Duration(milliseconds: 200));
+          // 400ms > 300ms debounce to allow vector search to fire
+          async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
 
           final state = container.read(journalPageControllerProvider(true));
@@ -2856,7 +2857,8 @@ void main() {
             ..setSearchMode(SearchMode.vector)
             ..setSearchString('query without repo');
 
-          async.elapse(const Duration(milliseconds: 200));
+          // 400ms > 300ms debounce to allow vector search to fire
+          async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
 
           final state = container.read(journalPageControllerProvider(true));
@@ -2896,7 +2898,8 @@ void main() {
             ..setSearchMode(SearchMode.vector)
             ..setSearchString('failing query');
 
-          async.elapse(const Duration(milliseconds: 200));
+          // 400ms > 300ms debounce to allow vector search to fire
+          async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
 
           final state = container.read(journalPageControllerProvider(true));
@@ -2945,7 +2948,8 @@ void main() {
             ..setSearchMode(SearchMode.vector)
             ..setSearchString('category search');
 
-          async.elapse(const Duration(milliseconds: 200));
+          // 400ms > 300ms debounce to allow vector search to fire
+          async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
 
           // Verify searchRelatedTasks was called with the selected category.
@@ -3005,7 +3009,8 @@ void main() {
             ..setSearchMode(SearchMode.vector)
             ..setSearchString('semantic journal query');
 
-          async.elapse(const Duration(milliseconds: 200));
+          // 400ms > 300ms debounce to allow vector search to fire
+          async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
 
           final state = container.read(journalPageControllerProvider(false));
@@ -3027,6 +3032,68 @@ void main() {
               categoryIds: any(named: 'categoryIds'),
             ),
           );
+        });
+      });
+
+      test('vector search debounces setSearchString by 300ms', () {
+        fakeAsync((async) {
+          getIt.registerSingleton<VectorSearchRepository>(
+            mockVectorSearchRepo,
+          );
+
+          when(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VectorSearchResult(
+              entities: [],
+              elapsed: const Duration(milliseconds: 10),
+            ),
+          );
+
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller.setSearchMode(SearchMode.vector);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Type rapidly — each keystroke resets the debounce
+          controller.setSearchString('s');
+          async.elapse(const Duration(milliseconds: 100));
+          controller.setSearchString('se');
+          async.elapse(const Duration(milliseconds: 100));
+          controller.setSearchString('sea');
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Only 100ms since last keystroke — search should NOT have fired
+          verifyNever(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          );
+
+          // Elapse past the 300ms debounce window
+          async.elapse(const Duration(milliseconds: 250));
+          async.flushMicrotasks();
+
+          // Now the search should have fired with the final query
+          verify(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: 'sea',
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).called(greaterThan(0));
         });
       });
 

@@ -59,18 +59,18 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        const EmbeddingSearchResult(
-          entityId: '79ef5021-12df-4651-ac6e-c9a5b58a859c',
-          distance: 0.5,
-          entityType: kEntityTypeTask,
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            const EmbeddingSearchResult(
+              entityId: '79ef5021-12df-4651-ac6e-c9a5b58a859c',
+              distance: 0.5,
+              entityType: kEntityTypeTask,
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTask]);
@@ -92,18 +92,18 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        const EmbeddingSearchResult(
-          entityId: 'text-entry-1',
-          distance: 0.3,
-          entityType: 'TextEntry',
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            const EmbeddingSearchResult(
+              entityId: 'text-entry-1',
+              distance: 0.3,
+              entityType: 'TextEntry',
+            ),
+          ]);
 
       // The text entry links to a parent task via linked entries.
       final taskId = testTask.meta.id;
@@ -138,23 +138,23 @@ void main() {
 
       final taskId = testTask.meta.id;
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: taskId,
-          distance: 0.2,
-          entityType: kEntityTypeTask,
-        ),
-        const EmbeddingSearchResult(
-          entityId: 'chunk-2',
-          distance: 0.4,
-          entityType: 'TextEntry',
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            EmbeddingSearchResult(
+              entityId: taskId,
+              distance: 0.2,
+              entityType: kEntityTypeTask,
+            ),
+            const EmbeddingSearchResult(
+              entityId: 'chunk-2',
+              distance: 0.4,
+              entityType: 'TextEntry',
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTask]);
@@ -203,7 +203,7 @@ void main() {
 
       expect(result.entities, isEmpty);
       verifyNever(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -220,12 +220,12 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([]);
+      ).thenAnswer((_) async => []);
 
       final result = await sut.searchRelatedTasks(query: 'no matches');
 
@@ -241,18 +241,18 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        const EmbeddingSearchResult(
-          entityId: 'text-entry-1',
-          distance: 0.3,
-          entityType: 'TextEntry',
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            const EmbeddingSearchResult(
+              entityId: 'text-entry-1',
+              distance: 0.3,
+              entityType: 'TextEntry',
+            ),
+          ]);
 
       // The text entry links to another text entry, not a task.
       final textEntryId = testTextEntry.meta.id;
@@ -285,18 +285,18 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([]);
+      ).thenAnswer((_) async => []);
 
       await sut.searchRelatedTasks(query: 'test', k: 5);
 
       // k is inflated by 3× to account for multiple chunks per entity
       verify(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: 15,
           categoryIds: any(named: 'categoryIds'),
@@ -315,19 +315,19 @@ void main() {
 
       final taskId = testTask.meta.id;
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: 'report-1',
-          distance: 0.3,
-          entityType: kEntityTypeAgentReport,
-          taskId: taskId,
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            EmbeddingSearchResult(
+              entityId: 'report-1',
+              distance: 0.3,
+              entityType: kEntityTypeAgentReport,
+              taskId: taskId,
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTask]);
@@ -347,19 +347,19 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        const EmbeddingSearchResult(
-          entityId: 'report-1',
-          distance: 0.3,
-          entityType: kEntityTypeAgentReport,
-          // taskId defaults to '' (empty)
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            const EmbeddingSearchResult(
+              entityId: 'report-1',
+              distance: 0.3,
+              entityType: kEntityTypeAgentReport,
+              // taskId defaults to '' (empty)
+            ),
+          ]);
 
       final result = await sut.searchRelatedTasks(query: 'orphan report');
 
@@ -376,24 +376,24 @@ void main() {
 
       final taskId = testTask.meta.id;
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: taskId,
-          distance: 0.2,
-          entityType: kEntityTypeTask,
-        ),
-        EmbeddingSearchResult(
-          entityId: 'report-1',
-          distance: 0.4,
-          entityType: kEntityTypeAgentReport,
-          taskId: taskId,
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            EmbeddingSearchResult(
+              entityId: taskId,
+              distance: 0.2,
+              entityType: kEntityTypeTask,
+            ),
+            EmbeddingSearchResult(
+              entityId: 'report-1',
+              distance: 0.4,
+              entityType: kEntityTypeAgentReport,
+              taskId: taskId,
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTask]);
@@ -413,12 +413,12 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([]);
+      ).thenAnswer((_) async => []);
 
       await sut.searchRelatedTasks(
         query: 'filter test',
@@ -426,7 +426,7 @@ void main() {
       );
 
       verify(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: {'cat-1'},
@@ -445,18 +445,18 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: testTextEntry.meta.id,
-          distance: 0.3,
-          entityType: 'TextEntry',
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            EmbeddingSearchResult(
+              entityId: testTextEntry.meta.id,
+              distance: 0.3,
+              entityType: 'TextEntry',
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTextEntry]);
@@ -477,23 +477,23 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: testTextEntry.meta.id,
-          distance: 0.5,
-          entityType: 'TextEntry',
-        ),
-        EmbeddingSearchResult(
-          entityId: testTextEntry.meta.id,
-          distance: 0.2,
-          entityType: 'TextEntry',
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            EmbeddingSearchResult(
+              entityId: testTextEntry.meta.id,
+              distance: 0.5,
+              entityType: 'TextEntry',
+            ),
+            EmbeddingSearchResult(
+              entityId: testTextEntry.meta.id,
+              distance: 0.2,
+              entityType: 'TextEntry',
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTextEntry]);
@@ -540,23 +540,23 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: testTask.meta.id,
-          distance: 0.8,
-          entityType: kEntityTypeTask,
-        ),
-        EmbeddingSearchResult(
-          entityId: testTextEntry.meta.id,
-          distance: 0.2,
-          entityType: 'TextEntry',
-        ),
-      ]);
+      ).thenAnswer((_) async => [
+            EmbeddingSearchResult(
+              entityId: testTask.meta.id,
+              distance: 0.8,
+              entityType: kEntityTypeTask,
+            ),
+            EmbeddingSearchResult(
+              entityId: testTextEntry.meta.id,
+              distance: 0.2,
+              entityType: 'TextEntry',
+            ),
+          ]);
 
       when(() => mockJournalDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => [testTask, testTextEntry]);
@@ -578,12 +578,12 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenReturn([]);
+      ).thenAnswer((_) async => []);
 
       await sut.searchRelatedEntries(
         query: 'filter test',
@@ -591,7 +591,7 @@ void main() {
       );
 
       verify(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingsDb.searchAsync(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: {'cat-1', 'cat-2'},

@@ -2969,6 +2969,22 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Procesando entidades de agentes...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Procesando enlaces de agentes...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Procesando entradas del diario...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Procesando enlaces de entradas...';
+
+  @override
   String get maintenancePopulateSequenceLog =>
       'Llenar registro de secuencia de sincronización';
 
@@ -2987,22 +3003,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'Esto escaneará todas las entradas del diario y las añadirá al registro de secuencia de sincronización. Esto habilita las respuestas de relleno para entradas creadas antes de que se añadiera esta función.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Procesando entidades de agentes...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks =>
-      'Procesando enlaces de agentes...';
-
-  @override
-  String get maintenancePopulatePhaseJournal =>
-      'Procesando entradas del diario...';
-
-  @override
-  String get maintenancePopulatePhaseLinks =>
-      'Procesando enlaces de entradas...';
 
   @override
   String get maintenancePurgeDeleted => 'Purgar elementos eliminados';

@@ -2929,6 +2929,22 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Se procesează entitățile agenților...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Se procesează legăturile agenților...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Se procesează intrările din jurnal...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Se procesează legăturile intrărilor...';
+
+  @override
   String get maintenancePopulateSequenceLog =>
       'Completează jurnalul de secvență de sincronizare';
 
@@ -2947,22 +2963,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'Aceasta va scana toate intrările din jurnal și le va adăuga la jurnalul de secvență de sincronizare. Aceasta permite răspunsurile de completare pentru intrările create înainte de adăugarea acestei funcții.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Se procesează entitățile agenților...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks =>
-      'Se procesează legăturile agenților...';
-
-  @override
-  String get maintenancePopulatePhaseJournal =>
-      'Se procesează intrările din jurnal...';
-
-  @override
-  String get maintenancePopulatePhaseLinks =>
-      'Se procesează legăturile intrărilor...';
 
   @override
   String get maintenancePurgeDeleted => 'Eliminați elementele șterse';

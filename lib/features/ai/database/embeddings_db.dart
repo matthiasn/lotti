@@ -1,7 +1,9 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:sqlite3/sqlite3.dart';
+import 'package:sqlite_vec/sqlite_vec.dart';
 
 /// The fixed embedding dimension used by the vec0 virtual table.
 ///
@@ -86,7 +88,9 @@ class EmbeddingsDb {
     db
       ..execute('PRAGMA journal_mode = WAL;')
       ..execute('PRAGMA busy_timeout = 5000;')
-      ..execute('PRAGMA synchronous = NORMAL;');
+      ..execute('PRAGMA synchronous = NORMAL;')
+      ..execute('PRAGMA mmap_size = 268435456;')
+      ..execute('PRAGMA cache_size = -524288;');
 
     _createSchema();
   }
@@ -407,6 +411,97 @@ class EmbeddingsDb {
         subtype: row['subtype'] as String? ?? '',
       );
     }).toList();
+  }
+
+  /// Performs k-nearest-neighbor search on a background isolate.
+  ///
+  /// This avoids blocking the main UI thread, which is critical in
+  /// profile/release builds where sqlite-vec I/O can take several seconds.
+  ///
+  /// For in-memory databases (tests), falls back to synchronous [search]
+  /// because in-memory DBs cannot be shared across isolates.
+  Future<List<EmbeddingSearchResult>> searchAsync({
+    required Float32List queryVector,
+    int k = 10,
+    String? entityTypeFilter,
+    Set<String>? categoryIds,
+  }) async {
+    if (inMemory) {
+      return search(
+        queryVector: queryVector,
+        k: k,
+        entityTypeFilter: entityTypeFilter,
+        categoryIds: categoryIds,
+      );
+    }
+
+    final dbPath = path!;
+    // Copy the query vector bytes so they can be sent to the isolate.
+    final queryBytes = Uint8List.fromList(
+      queryVector.buffer.asUint8List(
+        queryVector.offsetInBytes,
+        queryVector.lengthInBytes,
+      ),
+    );
+    final categoryIdList = categoryIds?.toList();
+
+    return Isolate.run(() {
+      // Load sqlite-vec in the isolate's own sqlite3 instance.
+      sqlite3.ensureExtensionLoaded(
+        SqliteExtension.inLibrary(vec0, 'sqlite3_vec_init'),
+      );
+
+      final isolateDb = sqlite3.open(dbPath)
+        ..execute('PRAGMA mmap_size = 268435456;')
+        ..execute('PRAGMA cache_size = -524288;');
+
+      try {
+        final blob = queryBytes;
+
+        final typeClause =
+            entityTypeFilter != null ? 'AND m.entity_type = ?' : '';
+        final categoryClause = categoryIdList != null &&
+                categoryIdList.isNotEmpty
+            ? 'AND m.category_id IN (${List.filled(categoryIdList.length, '?').join(', ')})'
+            : '';
+        final params = [
+          blob,
+          k,
+          if (entityTypeFilter != null) entityTypeFilter,
+          if (categoryIdList != null && categoryIdList.isNotEmpty)
+            ...categoryIdList,
+        ];
+
+        final rows = isolateDb.select(
+          '''
+          SELECT v.embedding_id, v.distance,
+                 m.entity_id, m.chunk_index, m.entity_type, m.task_id, m.subtype
+          FROM vec_embeddings v
+          JOIN embedding_metadata m
+            ON m.embedding_id = v.embedding_id
+          WHERE v.embedding MATCH ?
+            AND k = ?
+            $typeClause
+            $categoryClause
+          ORDER BY v.distance
+          ''',
+          params,
+        );
+
+        return rows.map((row) {
+          return EmbeddingSearchResult(
+            entityId: row['entity_id'] as String,
+            distance: (row['distance'] as num).toDouble(),
+            entityType: row['entity_type'] as String,
+            chunkIndex: row['chunk_index'] as int? ?? 0,
+            taskId: row['task_id'] as String? ?? '',
+            subtype: row['subtype'] as String? ?? '',
+          );
+        }).toList();
+      } finally {
+        isolateDb.dispose();
+      }
+    });
   }
 
   /// Whether any embedding exists for [entityId] (any chunk).

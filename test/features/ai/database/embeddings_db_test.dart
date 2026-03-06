@@ -444,6 +444,99 @@ void main() {
     });
   });
 
+  group('searchAsync', () {
+    test('falls back to synchronous search for in-memory databases', () async {
+      db
+        ..upsertEmbedding(
+          entityId: 'close',
+          entityType: 'journal_entry',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
+          contentHash: 'hash-close',
+        )
+        ..upsertEmbedding(
+          entityId: 'far',
+          entityType: 'journal_entry',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 100),
+          contentHash: 'hash-far',
+        );
+
+      final query = _makeVector(kEmbeddingDimensions);
+      final results = await db.searchAsync(queryVector: query, k: 2);
+
+      expect(results, hasLength(2));
+      expect(results[0].entityId, 'close');
+      expect(results[1].entityId, 'far');
+      expect(results[0].distance, lessThan(results[1].distance));
+    });
+
+    test('returns empty list for in-memory DB with no embeddings', () async {
+      final results =
+          await db.searchAsync(queryVector: _makeVector(kEmbeddingDimensions));
+      expect(results, isEmpty);
+    });
+
+    test('respects entity type filter in fallback path', () async {
+      db
+        ..upsertEmbedding(
+          entityId: 'journal-1',
+          entityType: 'journal_entry',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
+          contentHash: 'hash-j1',
+        )
+        ..upsertEmbedding(
+          entityId: 'task-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
+          contentHash: 'hash-t1',
+        );
+
+      final results = await db.searchAsync(
+        queryVector: _makeVector(kEmbeddingDimensions),
+        entityTypeFilter: 'task',
+      );
+
+      expect(results, hasLength(1));
+      expect(results[0].entityId, 'task-1');
+    });
+
+    test('respects category filter in fallback path', () async {
+      db
+        ..upsertEmbedding(
+          entityId: 'cat-a',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
+          contentHash: 'hash-a',
+          categoryId: 'category-a',
+        )
+        ..upsertEmbedding(
+          entityId: 'cat-b',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: _makeVector(kEmbeddingDimensions, value: 2),
+          contentHash: 'hash-b',
+          categoryId: 'category-b',
+        );
+
+      final results = await db.searchAsync(
+        queryVector: _makeVector(kEmbeddingDimensions),
+        categoryIds: {'category-a'},
+      );
+
+      expect(results, hasLength(1));
+      expect(results[0].entityId, 'cat-a');
+    });
+
+    // Note: The isolate code path (file-based DB) cannot be tested here
+    // because `Isolate.run` uses `vec0` which looks for the framework
+    // bundle, not the test-linked sqlite-vec library. The isolate path
+    // is covered by manual profile/release testing.
+  });
+
   group('search with sequential vectors', () {
     test('correctly ranks vectors by similarity', () {
       final baseVector = _makeSequentialVector(kEmbeddingDimensions);

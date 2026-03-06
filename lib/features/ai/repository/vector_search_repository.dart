@@ -177,7 +177,7 @@ class VectorSearchRepository {
       return null;
     }
 
-    final rawResults = _embeddingsDb.search(
+    final rawResults = await _embeddingsDb.searchAsync(
       queryVector: queryVector,
       k: k * 3,
       categoryIds: categoryIds,
