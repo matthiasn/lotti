@@ -179,6 +179,13 @@ test('periodic timer fires 3 times', () {
 });
 ```
 
+## Native Desktop Libraries
+
+ObjectBox desktop tests must preload the native macOS framework binary before
+importing the ObjectBox-backed store. Use
+`test/features/ai/database/objectbox_test_loader.dart` instead of importing
+`objectbox_embedding_store.dart` directly in tests.
+
 ## Debugging Fake Time Tests
 
 ### Test Hangs

@@ -4,6 +4,15 @@ import 'dart:typed_data';
 /// The fixed embedding dimension used by the current embedding model.
 const kEmbeddingDimensions = 1024;
 
+/// Temporary backend toggle for the embedding store POC.
+///
+/// Override at compile time with:
+/// `--dart-define=USE_OBJECTBOX_EMBEDDINGS=false`
+const bool useObjectBoxEmbeddings = bool.fromEnvironment(
+  'USE_OBJECTBOX_EMBEDDINGS',
+  defaultValue: true,
+);
+
 /// Result of a vector similarity search.
 class EmbeddingSearchResult {
   const EmbeddingSearchResult({
