@@ -3179,6 +3179,56 @@ void main() {
     );
 
     test(
+      'clears cache after expiry and re-queries DB',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // First call — populates cache for bob
+        await service.recordReceivedEntry(
+          entryId: 'entry-1',
+          vectorClock: const VectorClock({
+            aliceHostId: 10,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+
+        // Force expire the cache
+        service.expireCacheForTesting();
+
+        // Second call — cache is expired, should re-query DB
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({
+            aliceHostId: 11,
+            bobHostId: 7,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's host last seen should be queried again after cache expiry
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+      },
+    );
+
+    test(
       'caches getLastCounterForHost and avoids redundant DB calls',
       () async {
         when(

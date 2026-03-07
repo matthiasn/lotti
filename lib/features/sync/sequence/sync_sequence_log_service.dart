@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
@@ -70,6 +71,14 @@ class SyncSequenceLogService {
     _lastCounterCache.remove(hostId);
     // Don't remove host activity — it's updated via updateHostActivity
     // which we track separately.
+  }
+
+  /// Force-expire the host activity cache. Used in tests to verify
+  /// that expired caches are cleared and DB is re-queried.
+  @visibleForTesting
+  void expireCacheForTesting() {
+    // Set expiry to the past so the next cache access triggers invalidation.
+    _cacheExpiry = DateTime.now().subtract(const Duration(seconds: 1));
   }
 
   /// Record an entry being sent by this device.

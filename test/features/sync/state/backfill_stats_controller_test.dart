@@ -352,6 +352,126 @@ void main() {
         verifyNever(() => mockBackfillService.processReRequest());
       });
     });
+
+    test('resetUnresolvable calls service and refreshes stats', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.resetUnresolvableEntries(),
+        ).thenAnswer((_) async => 42);
+
+        createAndLoad(async);
+        clearInteractions(mockSequenceService);
+
+        act(async, (c) => c.resetUnresolvable());
+
+        verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
+        verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isResetting, isFalse);
+        expect(state.lastResetCount, 42);
+      });
+    });
+
+    test('resetUnresolvable sets isResetting during operation', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(() => mockSequenceService.resetUnresolvableEntries()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+            return 10;
+          },
+        );
+
+        createAndLoad(async);
+
+        act(async, (c) => c.resetUnresolvable());
+
+        var state = container.read(backfillStatsControllerProvider);
+        expect(state.isResetting, isTrue);
+
+        async
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushMicrotasks();
+
+        state = container.read(backfillStatsControllerProvider);
+        expect(state.isResetting, isFalse);
+      });
+    });
+
+    test('resetUnresolvable handles errors', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.resetUnresolvableEntries(),
+        ).thenAnswer((_) async => throw Exception('Reset failed'));
+
+        createAndLoad(async);
+
+        act(async, (c) => c.resetUnresolvable());
+
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isResetting, isFalse);
+        expect(state.error, contains('Reset failed'));
+      });
+    });
+
+    test('resetUnresolvable does nothing if already resetting', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(() => mockSequenceService.resetUnresolvableEntries()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 5;
+          },
+        );
+
+        createAndLoad(async);
+
+        act(async, (c) => c.resetUnresolvable());
+        act(async, (c) => c.resetUnresolvable());
+
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
+      });
+    });
+
+    test('resetUnresolvable does nothing if already processing backfill', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 5;
+          },
+        );
+
+        createAndLoad(async);
+
+        act(async, (c) => c.triggerFullBackfill());
+        act(async, (c) => c.resetUnresolvable());
+
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        verifyNever(() => mockSequenceService.resetUnresolvableEntries());
+      });
+    });
   });
 
   group('BackfillStatsState', () {
@@ -434,6 +554,38 @@ void main() {
       final copied = state.copyWith(lastReRequestedCount: 42);
 
       expect(copied.lastReRequestedCount, 42);
+    });
+
+    test('copyWith preserves isResetting when not overridden', () {
+      const state = BackfillStatsState(isResetting: true);
+
+      final copied = state.copyWith();
+
+      expect(copied.isResetting, isTrue);
+    });
+
+    test('copyWith overrides isResetting', () {
+      const state = BackfillStatsState();
+
+      final copied = state.copyWith(isResetting: true);
+
+      expect(copied.isResetting, isTrue);
+    });
+
+    test('copyWith overrides lastResetCount', () {
+      const state = BackfillStatsState();
+
+      final copied = state.copyWith(lastResetCount: 99);
+
+      expect(copied.lastResetCount, 99);
+    });
+
+    test('copyWith clearLastReset removes lastResetCount', () {
+      const state = BackfillStatsState(lastResetCount: 10);
+
+      final copied = state.copyWith(clearLastReset: true);
+
+      expect(copied.lastResetCount, isNull);
     });
   });
 }
