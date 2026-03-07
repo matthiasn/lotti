@@ -59,7 +59,9 @@ class CardWrapperWidget extends ConsumerWidget {
                   Positioned(
                     top: 4,
                     right: 4,
-                    child: _DistanceBadge(distance: vectorDistance!),
+                    child: IgnorePointer(
+                      child: _DistanceBadge(distance: vectorDistance!),
+                    ),
                   ),
                 ],
               )
@@ -70,7 +72,8 @@ class CardWrapperWidget extends ConsumerWidget {
 }
 
 class _DistanceBadge extends StatelessWidget {
-  const _DistanceBadge({required this.distance});
+  const _DistanceBadge({required this.distance})
+      : super(key: const Key('distanceBadge'));
 
   final double distance;
 

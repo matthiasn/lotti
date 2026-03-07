@@ -327,9 +327,10 @@ graph TD
    - This runs on existing single-store architecture — zero risk
 
 2. **Add distance field to VectorSearchResult**
-   - Extend `VectorSearchResult` to carry `List<(JournalEntity, double distance)>` instead of
-     just `List<JournalEntity>`
-   - Display distance scores in the search results UI (debug overlay or dev mode only)
+   - Extend `VectorSearchResult` with a `Map<String, double> distances` field (entity ID → best
+     cosine distance) alongside the existing `List<JournalEntity> entities`
+   - Display distance scores as color-coded badges on search result cards (gated by a
+     "Show distances" toggle in the task filter modal, off by default)
 
 3. **Collect data from TestFlight**
    - Ship Phase 0 to TestFlight
@@ -720,11 +721,11 @@ static Future<void> migrateFromSingleStore({
 
 #### Startup Sequence (Critical Ordering)
 
-The following steps must execute in order at app startup. Step 3 **must** complete
-before step 5 — `replaceEntityEmbeddings()` depends on the in-memory indexes
-populated by `_rebuildIndexes()`.
+The following steps must execute in order at app startup. Step 2 **must** complete
+before step 4 — `replaceEntityEmbeddings()` depends on the in-memory indexes
+populated by `_rebuildIndexes()` during step 2.
 
-```
+```text
 Step 1: migrateFromSingleStore()
         ├─ Checks .migrated marker — no-op if already migrated
         ├─ Opens old single store, reads all entities

@@ -55,6 +55,10 @@ void main() {
     ).thenReturn(MockSelectable(<LinkedDbEntry>[]));
   });
 
+  tearDown(() {
+    DevLogger.suppressOutput = false;
+  });
+
   group('VectorSearchRepository', () {
     test('returns tasks directly when search results are tasks', () async {
       when(

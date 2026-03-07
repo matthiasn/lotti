@@ -363,10 +363,22 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // The distance badge shows the formatted distance
+      // Badge is present and shows the formatted distance
+      expect(find.byKey(const Key('distanceBadge')), findsOneWidget);
       expect(find.text('0.42'), findsOneWidget);
+      // Badge is wrapped in IgnorePointer so taps pass through to the card
+      final ignorePointers = tester
+          .widgetList<IgnorePointer>(
+            find.ancestor(
+              of: find.byKey(const Key('distanceBadge')),
+              matching: find.byType(IgnorePointer),
+            ),
+          )
+          .where((ip) => ip.ignoring)
+          .toList();
+      expect(ignorePointers, hasLength(1));
       // The card is still rendered
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
     });
@@ -379,13 +391,12 @@ void main() {
           child: CardWrapperWidget(item: testTask),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // No distance text should appear when vectorDistance is null
-      final wrapper = tester.widget<CardWrapperWidget>(
-        find.byType(CardWrapperWidget),
-      );
-      expect(wrapper.vectorDistance, isNull);
+      // Badge widget should not be in the tree
+      expect(find.byKey(const Key('distanceBadge')), findsNothing);
+      // Card still renders
+      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
     });
 
     testWidgets('distance badge uses green color for strong matches', (
@@ -399,12 +410,14 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
+      final badgeFinder = find.byKey(const Key('distanceBadge'));
+      expect(badgeFinder, findsOneWidget);
       expect(find.text('0.15'), findsOneWidget);
       final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('0.15'),
+        find.descendant(
+          of: badgeFinder,
           matching: find.byType(Container),
         ),
       );
