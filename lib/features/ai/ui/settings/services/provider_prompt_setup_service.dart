@@ -923,13 +923,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
         promptName: 'Audio Transcription (Task Context) Gemini Flash',
       ),
 
-      // Checklist Updates -> Pro (complex reasoning needed)
-      FtuePromptConfig(
-        template: checklistUpdatesPrompt,
-        modelVariant: 'pro',
-        promptName: 'Checklist Gemini Pro',
-      ),
-
       // Image Analysis -> Flash (fast processing)
       FtuePromptConfig(
         template: imageAnalysisPrompt,
@@ -1413,13 +1406,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
         promptName: 'Audio Transcription (Task Context) OpenAI',
       ),
 
-      // Checklist Updates -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: checklistUpdatesPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Checklist OpenAI GPT-5.2',
-      ),
-
       // Image Analysis -> Flash (fast processing)
       FtuePromptConfig(
         template: imageAnalysisPrompt,
@@ -1865,13 +1851,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
         template: audioTranscriptionWithTaskContextPrompt,
         modelVariant: 'audio',
         promptName: 'Audio Transcription (Task Context) Mistral Voxtral',
-      ),
-
-      // Checklist Updates -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: checklistUpdatesPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Checklist Mistral Magistral',
       ),
 
       // Image Analysis -> Flash (fast processing with vision)
@@ -2335,13 +2314,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
         template: audioTranscriptionWithTaskContextPrompt,
         modelVariant: 'audio',
         promptName: 'Audio Transcription (Task Context) Alibaba Qwen3 Omni',
-      ),
-
-      // Checklist Updates -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: checklistUpdatesPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Checklist Alibaba Qwen3 Max',
       ),
 
       // Image Analysis -> Vision (fast vision model)

@@ -1397,11 +1397,11 @@ void main() {
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(4));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsCreated, equals(7));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      verify(() => mockRepository.saveConfig(any())).called(12);
+      verify(() => mockRepository.saveConfig(any())).called(11);
     });
 
     testWidgets('should verify existing models and skip creation', (
@@ -1515,15 +1515,15 @@ void main() {
         final existingPrompts = <AiConfig>[
           AiConfig.prompt(
             id: 'existing-prompt-id',
-            name: 'Checklist OpenAI GPT-5.2',
+            name: 'Audio Transcription OpenAI',
             systemMessage: 'system',
             userMessage: 'user',
-            defaultModelId: 'existing-reasoning',
-            modelIds: ['existing-reasoning'],
+            defaultModelId: 'existing-audio',
+            modelIds: ['existing-audio'],
             createdAt: DateTime(2024, 3, 15),
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
-            preconfiguredPromptId: 'checklist_updates',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+            preconfiguredPromptId: 'audio_transcription',
             useReasoning: false,
           ),
         ];
@@ -1577,7 +1577,7 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.promptsSkipped, equals(1));
-        expect(result!.promptsCreated, equals(7));
+        expect(result!.promptsCreated, equals(6));
       },
     );
 
@@ -1891,12 +1891,12 @@ void main() {
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(3));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(7));
+      expect(result!.promptsCreated, equals(6));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      // 3 models + 7 prompts = 10 saves
-      verify(() => mockRepository.saveConfig(any())).called(10);
+      // 3 models + 6 prompts = 9 saves
+      verify(() => mockRepository.saveConfig(any())).called(9);
     });
 
     testWidgets('should verify existing models and skip creation', (
@@ -1999,15 +1999,15 @@ void main() {
         final existingPrompts = <AiConfig>[
           AiConfig.prompt(
             id: 'existing-prompt-id',
-            name: 'Checklist Mistral Magistral',
+            name: 'Audio Transcription Mistral',
             systemMessage: 'system',
             userMessage: 'user',
-            defaultModelId: 'existing-reasoning',
-            modelIds: ['existing-reasoning'],
+            defaultModelId: 'existing-audio',
+            modelIds: ['existing-audio'],
             createdAt: DateTime(2024, 3, 15),
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
-            preconfiguredPromptId: 'checklist_updates',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+            preconfiguredPromptId: 'audio_transcription',
             useReasoning: false,
           ),
         ];
@@ -2061,7 +2061,7 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.promptsSkipped, equals(1));
-        expect(result!.promptsCreated, equals(6));
+        expect(result!.promptsCreated, equals(5));
       },
     );
 
@@ -2716,12 +2716,12 @@ void main() {
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(5));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsCreated, equals(7));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      // 5 models + 8 prompts = 13 saves
-      verify(() => mockRepository.saveConfig(any())).called(13);
+      // 5 models + 7 prompts = 12 saves
+      verify(() => mockRepository.saveConfig(any())).called(12);
     });
 
     testWidgets('should verify existing models and skip creation', (
@@ -2846,15 +2846,15 @@ void main() {
         final existingPrompts = <AiConfig>[
           AiConfig.prompt(
             id: 'existing-prompt-id',
-            name: 'Checklist Alibaba Qwen3 Max',
+            name: 'Audio Transcription Alibaba',
             systemMessage: 'system',
             userMessage: 'user',
-            defaultModelId: 'existing-reasoning',
-            modelIds: ['existing-reasoning'],
+            defaultModelId: 'existing-audio',
+            modelIds: ['existing-audio'],
             createdAt: DateTime(2024, 3, 15),
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
-            preconfiguredPromptId: 'checklist_updates',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+            preconfiguredPromptId: 'audio_transcription',
             useReasoning: false,
           ),
         ];
@@ -2908,7 +2908,7 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.promptsSkipped, equals(1));
-        expect(result!.promptsCreated, equals(7));
+        expect(result!.promptsCreated, equals(6));
       },
     );
 
