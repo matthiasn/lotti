@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -67,12 +68,16 @@ void main() {
     );
   }
 
+  late MockDomainLogger mockDomainLogger;
+
   setUp(() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
+    mockDomainLogger = MockDomainLogger();
     handler = FollowUpTaskHandler(
       persistenceLogic: mockPersistenceLogic,
       journalDb: mockJournalDb,
+      domainLogger: mockDomainLogger,
     );
 
     // Stub the verify-lookup that follow_up_task_handler performs after
@@ -80,6 +85,24 @@ void main() {
     when(
       () => mockJournalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
+
+    // Stub DomainLogger methods so verification works.
+    when(
+      () => mockDomainLogger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => mockDomainLogger.error(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+        error: any(named: 'error'),
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
   });
 
   group('FollowUpTaskHandler', () {
@@ -559,6 +582,143 @@ void main() {
             result.output,
             isNot(contains('failed to link source task')),
           );
+        });
+      });
+    });
+
+    group('domain logging', () {
+      test('logs verify-lookup after task creation', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-log');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          await handler.handle(
+            sourceTaskId,
+            {'title': 'Logged Task'},
+          );
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Created task new-task-log')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs error when source link throws exception', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-err');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenThrow(Exception('DB error'));
+
+        await withClock(Clock.fixed(testDate), () async {
+          await handler.handle(
+            sourceTaskId,
+            {'title': 'Error Task'},
+          );
+
+          verify(
+            () => mockDomainLogger.error(
+              LogDomains.agentWorkflow,
+              any(
+                that: contains(
+                  'Failed to link source $sourceTaskId',
+                ),
+              ),
+              error: any(named: 'error'),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs error when audio link throws exception', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-audio-err');
+        var linkCallCount = 0;
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async {
+          linkCallCount++;
+          if (linkCallCount == 2) {
+            throw Exception('Audio link error');
+          }
+          return true;
+        });
+
+        await withClock(Clock.fixed(testDate), () async {
+          await handler.handle(
+            sourceTaskId,
+            {
+              'title': 'Audio Error Task',
+              'sourceAudioId': 'audio-err-001',
+            },
+          );
+
+          verify(
+            () => mockDomainLogger.error(
+              LogDomains.agentWorkflow,
+              any(that: contains('Failed to link audio')),
+              error: any(named: 'error'),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
         });
       });
     });

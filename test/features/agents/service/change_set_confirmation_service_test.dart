@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -18,6 +19,7 @@ void main() {
   late MockTaskToolDispatcher mockToolDispatcher;
   late MockAgentRepository mockRepository;
   late MockLabelsRepository mockLabelsRepository;
+  late MockDomainLogger mockDomainLogger;
   late ChangeSetConfirmationService service;
 
   final testClock = Clock.fixed(DateTime(2024, 6, 15, 12));
@@ -27,6 +29,7 @@ void main() {
     mockToolDispatcher = MockTaskToolDispatcher();
     mockRepository = MockAgentRepository();
     mockLabelsRepository = MockLabelsRepository();
+    mockDomainLogger = MockDomainLogger();
 
     when(() => mockSyncService.repository).thenReturn(mockRepository);
 
@@ -35,10 +38,29 @@ void main() {
     // when testing the re-read behavior.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
 
+    // Stub DomainLogger methods.
+    when(
+      () => mockDomainLogger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => mockDomainLogger.error(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+        error: any(named: 'error'),
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+
     service = ChangeSetConfirmationService(
       syncService: mockSyncService,
       toolDispatcher: mockToolDispatcher,
       labelsRepository: mockLabelsRepository,
+      domainLogger: mockDomainLogger,
     );
   });
 
@@ -1120,6 +1142,286 @@ void main() {
             expect(lastCS.items[0].status, ChangeItemStatus.rejected);
             expect(lastCS.items[1].status, ChangeItemStatus.pending);
             expect(lastCS.items[2].status, ChangeItemStatus.pending);
+          });
+        },
+      );
+    });
+
+    group('domain logging', () {
+      test('logs skip message for already-confirmed item', () async {
+        final changeSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 120},
+              humanSummary: 'Already done',
+              status: ChangeItemStatus.confirmed,
+            ),
+          ],
+        );
+
+        await withClock(testClock, () async {
+          await service.confirmItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Skipping item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs confirming message before dispatch', () async {
+        final changeSet = makeChangeSetWith();
+
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'Done',
+          ),
+        );
+
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          await service.confirmItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Confirming item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs error when tool dispatch fails', () async {
+        final changeSet = makeChangeSetWith();
+
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: false,
+            output: 'Task not found',
+            errorMessage: 'Task lookup failed',
+          ),
+        );
+
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          await service.confirmItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.error(
+              LogDomains.agentWorkflow,
+              any(that: contains('Tool dispatch failed for item 0')),
+              subDomain: any(named: 'subDomain'),
+              error: any(named: 'error'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs skip message for already-rejected item on reject', () async {
+        final changeSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 120},
+              humanSummary: 'Already rejected',
+              status: ChangeItemStatus.rejected,
+            ),
+          ],
+        );
+
+        await withClock(testClock, () async {
+          await service.rejectItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Skipping reject for item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs rejecting message', () async {
+        final changeSet = makeChangeSetWith();
+
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          await service.rejectItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Rejecting item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test(
+        'logs placeholder resolution on successful create_follow_up_task',
+        () async {
+          const placeholderId = 'placeholder-log-test';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Log Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created',
+              mutatedEntityId: 'actual-id-log',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.log(
+                LogDomains.agentWorkflow,
+                any(that: contains('Captured placeholder resolution')),
+                subDomain: any(named: 'subDomain'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'logs cascade-reject for sibling migration items',
+        () async {
+          const placeholderId = 'placeholder-cascade-log';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Cascade Log',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-cascade',
+                  'title': 'Migrate me',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate item',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => changeSet);
+
+          await withClock(testClock, () async {
+            await service.rejectItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.log(
+                LogDomains.agentWorkflow,
+                any(that: contains('Cascade-rejecting migration item')),
+                subDomain: any(named: 'subDomain'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'logs persisted resolved targetTaskId to siblings',
+        () async {
+          const placeholderId = 'placeholder-persist-log';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Persist Log',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-persist',
+                  'title': 'Persist item',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate item',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created',
+              mutatedEntityId: 'actual-persist-log-id',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.log(
+                LogDomains.agentWorkflow,
+                any(that: contains('Persisted resolved targetTaskId')),
+                subDomain: any(named: 'subDomain'),
+              ),
+            ).called(1);
           });
         },
       );
