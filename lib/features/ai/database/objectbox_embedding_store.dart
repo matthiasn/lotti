@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
@@ -149,7 +148,7 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
 
     final hasCategoryFilter = categoryIds != null && categoryIds.isNotEmpty;
     final hasFilter = entityTypeFilter != null || hasCategoryFilter;
-    final maxResultCount = hasFilter ? math.max(k, k * 3) : k;
+    final maxResultCount = hasFilter ? k * 3 : k;
 
     var condition = EmbeddingChunkEntity_.embedding.nearestNeighborsF32(
       queryVector,

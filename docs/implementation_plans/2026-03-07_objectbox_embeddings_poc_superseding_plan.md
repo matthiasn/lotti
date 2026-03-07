@@ -87,7 +87,7 @@ flowchart LR
 
 ```dart
 const useObjectBoxEmbeddings = bool.fromEnvironment(
-  'LOTTI_USE_OBJECTBOX_EMBEDDINGS',
+  'USE_OBJECTBOX_EMBEDDINGS',
   defaultValue: false,
 );
 ```
@@ -95,9 +95,9 @@ const useObjectBoxEmbeddings = bool.fromEnvironment(
 Recommended runtime commands:
 
 - SQLite baseline:
-  `fvm flutter run -d macos --dart-define=LOTTI_USE_OBJECTBOX_EMBEDDINGS=false`
+  `fvm flutter run -d macos --dart-define=USE_OBJECTBOX_EMBEDDINGS=false`
 - ObjectBox POC:
-  `fvm flutter run -d macos --dart-define=LOTTI_USE_OBJECTBOX_EMBEDDINGS=true`
+  `fvm flutter run -d macos --dart-define=USE_OBJECTBOX_EMBEDDINGS=true`
 
 ### Non-goals for the first POC
 
@@ -418,26 +418,26 @@ This matches the current sqlite-vec behavior and keeps the benchmark comparable.
 
 ### Phase 1: Introduce the abstraction
 
-### New files
+### Phase 1 — New files
 
 - `lib/features/ai/database/embedding_store.dart`
 - `lib/features/ai/database/sqlite_embedding_store.dart`
 
-### Changes
+### Phase 1 — Changes
 
 - Move `EmbeddingSearchResult` out of `EmbeddingsDb` ownership if needed so both implementations
   can use it cleanly.
 - Wrap current `EmbeddingsDb` behind `SqliteEmbeddingStore`.
 - Keep `EmbeddingsDb` implementation itself unchanged in this phase.
 
-### Outcome
+### Phase 1 — Outcome
 
 - Zero behavior change.
 - The SQLite path becomes the default implementation through the abstraction.
 
 ### Phase 2: Update consumers to use `EmbeddingStore`
 
-### Files to update
+### Phase 2 — Files to update
 
 - `lib/features/ai/service/embedding_processor.dart`
 - `lib/features/ai/service/embedding_service.dart`
@@ -448,26 +448,26 @@ This matches the current sqlite-vec behavior and keeps the benchmark comparable.
 - `lib/features/settings/ui/pages/advanced/maintenance_page.dart`
 - `lib/get_it.dart`
 
-### Required behavior changes
+### Phase 2 — Required behavior changes
 
 - Replace `EmbeddingsDb` constructor parameters and fields with `EmbeddingStore`.
 - Replace `deleteEntityEmbeddings + repeated upsertEmbedding` with one
   `replaceEntityEmbeddings(...)` call.
 - Replace all `getIt.isRegistered<EmbeddingsDb>()` checks with `EmbeddingStore`.
 
-### Test updates
+### Phase 2 — Test updates
 
 - Add `MockEmbeddingStore` to `test/mocks/mocks.dart`
 - Update tests that currently mock `EmbeddingsDb`
 
 ### Phase 3: Add ObjectBox implementation
 
-### New files
+### Phase 3 — New files
 
 - `lib/features/ai/database/objectbox_embedding_store.dart`
 - generated ObjectBox files
 
-### Changes
+### Phase 3 — Changes
 
 - Define `EmbeddingChunkEntity`.
 - Open an ObjectBox store in a sidecar directory such as:
@@ -709,6 +709,27 @@ flowchart LR
 6. Run targeted tests for the embedding/search surface.
 7. Benchmark macOS debug/profile/release builds.
 8. If ObjectBox wins clearly, proceed to production hardening.
+
+## Follow-up: Enable ObjectBox Tests on Linux CI
+
+The ObjectBox embedding store tests currently skip on Linux because the native
+`libobjectbox.so` is not installed on the CI runner. To enable them:
+
+1. Add a CI step before `flutter test` that installs the ObjectBox C library,
+   e.g. using the official install script:
+   ```bash
+   bash <(curl -s https://raw.githubusercontent.com/objectbox/objectbox-c/main/download.sh) 5.2.0
+   ```
+   or by downloading the release tarball directly:
+   ```bash
+   curl -sL https://github.com/objectbox/objectbox-c/releases/download/v5.2.0/objectbox-linux-x64.tar.gz | tar xz
+   sudo cp lib/libobjectbox.so /usr/lib/
+   sudo ldconfig
+   ```
+2. Once installed, the test loader (`test/features/ai/database/objectbox_test_loader.dart`)
+   will automatically detect the library at `/usr/lib/libobjectbox.so` or
+   `/usr/local/lib/libobjectbox.so` and the tests will run.
+3. Verify by running the full test suite on a Linux machine with the library installed.
 
 ## Exit Criteria
 

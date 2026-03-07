@@ -8,6 +8,13 @@ import 'package:path/path.dart' as p;
 import 'objectbox_test_loader.dart';
 
 void main() {
+  if (!isObjectBoxAvailable) {
+    test('ObjectBox not available on this platform', () {
+      // Skip: native library not found.
+    });
+    return;
+  }
+
   late Directory tempDir;
   late EmbeddingStore store;
 
