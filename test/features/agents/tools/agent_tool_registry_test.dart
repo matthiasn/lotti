@@ -338,6 +338,24 @@ void main() {
       });
     });
 
+    group('TaskAgentToolNames constants', () {
+      test('assignTaskLabel singular alias exists', () {
+        expect(
+          TaskAgentToolNames.assignTaskLabel,
+          equals('assign_task_label'),
+        );
+      });
+    });
+
+    group('explodedBatchTools', () {
+      test('includes assign_task_labels with labels key', () {
+        expect(
+          AgentToolRegistry.explodedBatchTools,
+          containsPair('assign_task_labels', 'labels'),
+        );
+      });
+    });
+
     group('set_task_language', () {
       late AgentToolDefinition tool;
 

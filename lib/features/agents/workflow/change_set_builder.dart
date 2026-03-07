@@ -19,6 +19,16 @@ typedef ChecklistItemStateResolver =
 /// deduplication for `add_checklist_item` is case-insensitive.
 typedef ExistingChecklistTitlesResolver = Future<Set<String>> Function();
 
+/// Resolves a human-readable label name from its ID.
+///
+/// Returns `null` if the label cannot be found.
+typedef LabelNameResolver = Future<String?> Function(String labelId);
+
+/// Resolves the set of label IDs already assigned to the target task.
+///
+/// Used to suppress redundant label assignment proposals.
+typedef ExistingLabelIdsResolver = Future<Set<String>> Function();
+
 /// Result of adding batch items to a [ChangeSetBuilder].
 class BatchAddResult {
   const BatchAddResult({
@@ -56,6 +66,8 @@ class ChangeSetBuilder {
     required this.runKey,
     this.checklistItemStateResolver,
     this.existingChecklistTitlesResolver,
+    this.labelNameResolver,
+    this.existingLabelIdsResolver,
     this.domainLogger,
   });
 
@@ -82,6 +94,15 @@ class ChangeSetBuilder {
   /// (case-insensitive) and suppressed if a match is found.
   final ExistingChecklistTitlesResolver? existingChecklistTitlesResolver;
 
+  /// Optional resolver for label names. When provided, human-readable
+  /// summaries for `assign_task_label` items include the label name.
+  final LabelNameResolver? labelNameResolver;
+
+  /// Optional resolver for label IDs already assigned to the task. When
+  /// provided, `assign_task_label` proposals for already-assigned labels
+  /// are suppressed.
+  final ExistingLabelIdsResolver? existingLabelIdsResolver;
+
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
 
@@ -91,6 +112,9 @@ class ChangeSetBuilder {
   /// Lazily-resolved existing checklist titles (normalized), cached across
   /// a single batch to avoid repeated DB lookups.
   Set<String>? _cachedExistingTitles;
+
+  /// Lazily-resolved existing label IDs, cached across a single batch.
+  Set<String>? _cachedExistingLabelIds;
 
   /// All items accumulated so far.
   List<ChangeItem> get items => List.unmodifiable(_items);
@@ -165,12 +189,8 @@ class ChangeSetBuilder {
 
     final array = args[arrayKey];
     if (array is! List || array.isEmpty) {
-      // Empty or invalid array — add as a single item.
-      await addItem(
-        toolName: toolName,
-        args: args,
-        humanSummary: '$summaryPrefix (empty)',
-      );
+      // Empty or invalid array — skip without queuing a placeholder.
+      // The caller (strategy) will format an appropriate LLM response.
       return const BatchAddResult(added: 0, skipped: 0);
     }
 
@@ -181,6 +201,12 @@ class ChangeSetBuilder {
     // Only resolve existing titles when this is an add-checklist batch.
     final isAddBatch = singularToolName == TaskAgentToolNames.addChecklistItem;
     final existingTitles = isAddBatch ? await _resolveExistingTitles() : null;
+
+    // Resolve existing label IDs when this is a label-assignment batch.
+    final isLabelBatch = singularToolName == TaskAgentToolNames.assignTaskLabel;
+    final existingLabelIds = isLabelBatch
+        ? await _resolveExistingLabelIds()
+        : null;
 
     var added = 0;
     var skipped = 0;
@@ -203,10 +229,23 @@ class ChangeSetBuilder {
           }
         }
 
+        // Check for redundant label assignments (already on the task).
+        if (existingLabelIds != null) {
+          final labelRedundancyDetail = await _checkLabelRedundancy(
+            element,
+            existingLabelIds,
+          );
+          if (labelRedundancyDetail != null) {
+            redundant++;
+            redundantDetails.add(labelRedundancyDetail);
+            continue;
+          }
+        }
+
         // Resolve state once per item to avoid redundant DB lookups and
         // duplicate error logging.
         final itemId = element['id'];
-        final resolvedState = itemId is String
+        final resolvedState = itemId is String && !isLabelBatch
             ? await _resolveState(itemId)
             : null;
 
@@ -222,12 +261,14 @@ class ChangeSetBuilder {
           continue;
         }
 
-        final summary = _generateItemSummary(
-          singularToolName,
-          element,
-          summaryPrefix,
-          resolvedState: resolvedState,
-        );
+        final summary = isLabelBatch
+            ? await _generateLabelSummary(element)
+            : _generateItemSummary(
+                singularToolName,
+                element,
+                summaryPrefix,
+                resolvedState: resolvedState,
+              );
         _items.add(
           ChangeItem(
             toolName: singularToolName,
@@ -245,6 +286,15 @@ class ChangeSetBuilder {
             if (normalized.isNotEmpty) {
               existingTitles.add(normalized);
             }
+          }
+        }
+
+        // Track the label ID so subsequent items in the same batch
+        // with the same ID are caught as duplicates.
+        if (existingLabelIds != null) {
+          final labelId = element['id'];
+          if (labelId is String) {
+            existingLabelIds.add(labelId);
           }
         }
         added++;
@@ -390,6 +440,7 @@ class ChangeSetBuilder {
       TaskAgentToolNames.addChecklistItem,
     TaskAgentToolNames.updateChecklistItems =>
       TaskAgentToolNames.updateChecklistItem,
+    TaskAgentToolNames.assignTaskLabels => TaskAgentToolNames.assignTaskLabel,
     _ => throw ArgumentError(
       'Unsupported batch tool for singularization: $toolName. '
       'Add an explicit mapping.',
@@ -579,6 +630,83 @@ class ChangeSetBuilder {
         ? 'checked'
         : 'unchecked';
     return '"$displayTitle" is already $checkedLabel';
+  }
+
+  /// Resolve existing label IDs, initialising the cache on first call.
+  Future<Set<String>> _resolveExistingLabelIds() async {
+    if (_cachedExistingLabelIds != null) return _cachedExistingLabelIds!;
+
+    final resolver = existingLabelIdsResolver;
+    if (resolver != null) {
+      try {
+        _cachedExistingLabelIds = {...await resolver()};
+      } catch (e, s) {
+        domainLogger?.error(
+          LogDomains.agentWorkflow,
+          'failed to resolve existing label IDs',
+          error: e,
+          stackTrace: s,
+        );
+        _cachedExistingLabelIds = {};
+      }
+    } else {
+      _cachedExistingLabelIds = {};
+    }
+
+    return _cachedExistingLabelIds!;
+  }
+
+  /// Check whether an `assign_task_label` proposal is redundant because
+  /// the label is already assigned to the task.
+  ///
+  /// Returns a human-readable detail string if redundant, or `null` if the
+  /// item should be kept.
+  Future<String?> _checkLabelRedundancy(
+    Map<String, dynamic> args,
+    Set<String> existingLabelIds,
+  ) async {
+    final labelId = args['id'];
+    if (labelId is! String) return null;
+    if (!existingLabelIds.contains(labelId)) return null;
+
+    final labelName = await _resolveLabelName(labelId);
+    final display = labelName ?? _truncateId(labelId);
+    return 'Label "$display" is already assigned';
+  }
+
+  /// Generate a human-readable summary for a single exploded label item.
+  Future<String> _generateLabelSummary(Map<String, dynamic> args) async {
+    final labelId = args['id'];
+    final confidence = args['confidence'];
+    final labelName = labelId is String
+        ? await _resolveLabelName(labelId)
+        : null;
+    final display =
+        labelName ?? (labelId is String ? _truncateId(labelId) : '?');
+    final confidenceSuffix =
+        confidence is String &&
+            const ['very_high', 'high', 'medium', 'low'].contains(confidence)
+        ? ' ($confidence)'
+        : '';
+    return 'Assign label: "$display"$confidenceSuffix';
+  }
+
+  /// Resolve a label's human-readable name via the injected resolver.
+  Future<String?> _resolveLabelName(String labelId) async {
+    final resolver = labelNameResolver;
+    if (resolver == null) return null;
+    try {
+      return await resolver(labelId);
+    } catch (e, s) {
+      domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'failed to resolve label name for '
+        '${DomainLogger.sanitizeId(labelId)}',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
+    }
   }
 
   /// Truncate a UUID to a short prefix for display as a fallback.

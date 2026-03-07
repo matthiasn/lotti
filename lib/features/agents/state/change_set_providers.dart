@@ -84,13 +84,15 @@ List<AgentDomainEntity> _deduplicateChangeSets(
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.
 @riverpod
 ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
+  final labelsRepository = ref.watch(labelsRepositoryProvider);
   return ChangeSetConfirmationService(
     syncService: ref.watch(agentSyncServiceProvider),
     toolDispatcher: TaskToolDispatcher(
       journalDb: ref.watch(journalDbProvider),
       journalRepository: ref.watch(journalRepositoryProvider),
       checklistRepository: ref.watch(checklistRepositoryProvider),
-      labelsRepository: ref.watch(labelsRepositoryProvider),
+      labelsRepository: labelsRepository,
     ),
+    labelsRepository: labelsRepository,
   );
 }

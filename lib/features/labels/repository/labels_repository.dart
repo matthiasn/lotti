@@ -193,6 +193,69 @@ class LabelsRepository {
     }
   }
 
+  /// Programmatically adds a label ID to the task's `aiSuppressedLabelIds`.
+  ///
+  /// Used when a user rejects an agent-proposed label so the agent learns
+  /// not to re-propose it. Does not modify the task's assigned labels.
+  ///
+  /// Returns `true` if the suppression was applied, `false` on failure.
+  Future<bool> suppressLabelOnTask({
+    required String taskId,
+    required String labelId,
+  }) async {
+    try {
+      final entity = await _journalDb.journalEntityById(taskId);
+      if (entity is! Task) return false;
+
+      final currentSuppressed =
+          entity.data.aiSuppressedLabelIds ?? const <String>{};
+      if (currentSuppressed.contains(labelId)) return true; // Already done.
+
+      final nextSuppressed = _mergeSuppressed(
+        current: currentSuppressed,
+        add: {labelId},
+      );
+      final updated = entity.copyWith(
+        data: entity.data.copyWith(
+          aiSuppressedLabelIds: nextSuppressed,
+        ),
+      );
+      final applied = await _persistenceLogic.updateDbEntity(updated);
+      if (applied ?? false) return true;
+
+      // Write conflict — re-read and retry with override, matching the
+      // mergeable-update pattern used by setLabels().
+      final latest = await _journalDb.journalEntityById(taskId);
+      if (latest is! Task) return false;
+
+      final latestSuppressed =
+          latest.data.aiSuppressedLabelIds ?? const <String>{};
+      if (latestSuppressed.contains(labelId)) return true;
+
+      final retried = latest.copyWith(
+        data: latest.data.copyWith(
+          aiSuppressedLabelIds: _mergeSuppressed(
+            current: latestSuppressed,
+            add: {labelId},
+          ),
+        ),
+      );
+      return await _persistenceLogic.updateDbEntity(
+            retried,
+            overrideComparison: true,
+          ) ??
+          false;
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'labels_repository',
+        subDomain: 'suppressLabelOnTask',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
   Future<bool?> addLabels({
     required String journalEntityId,
     required List<String> addedLabelIds,

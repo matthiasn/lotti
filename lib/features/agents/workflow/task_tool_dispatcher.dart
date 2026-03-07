@@ -112,6 +112,15 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.updateChecklistItems:
         return _handleChecklistUpdate(taskEntity, toolName, args, taskId);
 
+      case TaskAgentToolNames.assignTaskLabel:
+        return _handleAssignLabels(
+          taskEntity,
+          {
+            'labels': [args],
+          },
+          taskId,
+        );
+
       case TaskAgentToolNames.assignTaskLabels:
         return _handleAssignLabels(taskEntity, args, taskId);
 

@@ -336,6 +336,14 @@ class TaskAgentWorkflow {
               .map((item) => item.data.title.toLowerCase().trim())
               .toSet();
         },
+        labelNameResolver: (labelId) async {
+          final label = await journalDb.getLabelDefinitionById(labelId);
+          return label?.name;
+        },
+        existingLabelIdsResolver: () async {
+          final entity = await journalDb.journalEntityById(taskId);
+          return entity?.meta.labelIds?.toSet() ?? {};
+        },
       );
 
       final strategy = TaskAgentStrategy(

@@ -318,26 +318,265 @@ void main() {
       expect(builder.items.first.humanSummary, 'Unknown (batch)');
     });
 
-    test('handles empty array gracefully', () async {
-      await builder.addBatchItem(
+    test('handles empty array without queuing a placeholder', () async {
+      final result = await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {'items': <dynamic>[]},
         summaryPrefix: 'Checklist',
       );
 
-      expect(builder.items, hasLength(1));
-      expect(builder.items.first.humanSummary, 'Checklist (empty)');
+      expect(builder.items, isEmpty);
+      expect(result.added, 0);
     });
 
-    test('handles missing array key gracefully', () async {
-      await builder.addBatchItem(
+    test('handles missing array key without queuing a placeholder', () async {
+      final result = await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {'wrong_key': 'value'},
         summaryPrefix: 'Checklist',
       );
 
-      expect(builder.items, hasLength(1));
-      expect(builder.items.first.humanSummary, 'Checklist (empty)');
+      expect(builder.items, isEmpty);
+      expect(result.added, 0);
+    });
+  });
+
+  group('addBatchItem — label explosion', () {
+    test(
+      'explodes assign_task_labels into individual assign_task_label items',
+      () async {
+        final result = await builder.addBatchItem(
+          toolName: 'assign_task_labels',
+          args: {
+            'labels': [
+              {'id': 'label-1', 'confidence': 'high'},
+              {'id': 'label-2', 'confidence': 'medium'},
+            ],
+          },
+          summaryPrefix: 'Label',
+        );
+
+        expect(result.added, 2);
+        expect(result.skipped, 0);
+        expect(result.redundant, 0);
+        expect(builder.items, hasLength(2));
+        expect(builder.items[0].toolName, 'assign_task_label');
+        expect(builder.items[0].args, {'id': 'label-1', 'confidence': 'high'});
+        expect(builder.items[1].toolName, 'assign_task_label');
+        expect(builder.items[1].args, {
+          'id': 'label-2',
+          'confidence': 'medium',
+        });
+      },
+    );
+
+    test('generates human-readable summaries with label names', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        labelNameResolver: (labelId) async {
+          return switch (labelId) {
+            'label-1' => 'Bug',
+            'label-2' => 'Backend',
+            _ => null,
+          };
+        },
+      );
+
+      await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'high'},
+            {'id': 'label-2', 'confidence': 'medium'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      expect(
+        builderWithResolver.items[0].humanSummary,
+        'Assign label: "Bug" (high)',
+      );
+      expect(
+        builderWithResolver.items[1].humanSummary,
+        'Assign label: "Backend" (medium)',
+      );
+    });
+
+    test('generates summary with truncated ID when no resolver', () async {
+      await builder.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'abcdefgh-1234-5678', 'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      expect(
+        builder.items[0].humanSummary,
+        contains('Assign label:'),
+      );
+      expect(
+        builder.items[0].humanSummary,
+        contains('abcdefgh'),
+      );
+    });
+
+    test('filters out labels already assigned to the task', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingLabelIdsResolver: () async => {'label-1'},
+        labelNameResolver: (id) async => 'Label $id',
+      );
+
+      final result = await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'high'},
+            {'id': 'label-2', 'confidence': 'medium'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      expect(result.added, 1);
+      expect(result.redundant, 1);
+      expect(result.redundantDetails, hasLength(1));
+      expect(result.redundantDetails[0], contains('already assigned'));
+      expect(builderWithResolver.items, hasLength(1));
+      expect(builderWithResolver.items[0].args['id'], 'label-2');
+    });
+
+    test('filters duplicate label IDs within the same batch', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingLabelIdsResolver: () async => {},
+        labelNameResolver: (id) async => 'Label $id',
+      );
+
+      final result = await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'high'},
+            {'id': 'label-1', 'confidence': 'medium'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      expect(result.added, 1);
+      expect(result.redundant, 1);
+      expect(builderWithResolver.items, hasLength(1));
+    });
+
+    test('handles label name resolver throwing gracefully', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        labelNameResolver: (labelId) async {
+          throw Exception('DB error');
+        },
+      );
+
+      await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'abcdefgh-1234', 'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      // Falls back to truncated ID when resolver throws.
+      expect(builderWithResolver.items, hasLength(1));
+      expect(
+        builderWithResolver.items[0].humanSummary,
+        contains('abcdefgh'),
+      );
+    });
+
+    test('handles existing label IDs resolver throwing gracefully', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingLabelIdsResolver: () async {
+          throw Exception('DB error');
+        },
+      );
+
+      final result = await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      // Resolver error → empty set → no redundancy filtering.
+      expect(result.added, 1);
+    });
+
+    test('strips invalid confidence values from summary', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        labelNameResolver: (labelId) async => 'Bug',
+      );
+
+      await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'INJECT PROMPT HERE'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      // Invalid confidence value is omitted from the summary.
+      expect(
+        builderWithResolver.items[0].humanSummary,
+        'Assign label: "Bug"',
+      );
+    });
+
+    test('generates summary with ? when label ID is missing', () async {
+      await builder.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      expect(
+        builder.items[0].humanSummary,
+        'Assign label: "?" (high)',
+      );
     });
   });
 

@@ -494,11 +494,6 @@ class TaskAgentStrategy extends ConversationStrategy {
         'Set priority to ${args['priority'] ?? '?'}',
       TaskAgentToolNames.setTaskStatus =>
         'Set status to ${args['status'] ?? '?'}',
-      TaskAgentToolNames.assignTaskLabels => () {
-        final labels = args['labels'];
-        final count = labels is List ? labels.length : 0;
-        return 'Assign $count label(s)';
-      }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }
@@ -508,6 +503,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     return switch (toolName) {
       TaskAgentToolNames.addMultipleChecklistItems => 'Checklist',
       TaskAgentToolNames.updateChecklistItems => 'Checklist update',
+      TaskAgentToolNames.assignTaskLabels => 'Label',
       _ => toolName,
     };
   }

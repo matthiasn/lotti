@@ -210,12 +210,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final idParam = const fb.Int64Reader().vTableGet(
-          buffer,
-          rootOffset,
-          4,
-          0,
-        );
         final embeddingKeyParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 6, '');
@@ -256,8 +250,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
           26,
           Float32List(0),
         );
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
         final object = EmbeddingChunkEntity(
-          id: idParam,
           embeddingKey: embeddingKeyParam,
           entityId: entityIdParam,
           chunkIndex: chunkIndexParam,
@@ -269,6 +268,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           taskId: taskIdParam,
           subtype: subtypeParam,
           embedding: embeddingParam,
+          id: idParam,
         );
 
         return object;
