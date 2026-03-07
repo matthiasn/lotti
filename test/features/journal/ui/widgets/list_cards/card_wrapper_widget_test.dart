@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -349,6 +350,66 @@ void main() {
         find.byType(AnimatedModernTaskCard),
       );
       expect(animatedCard.showCreationDate, isFalse);
+    });
+
+    testWidgets('shows distance badge when vectorDistance is provided', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(
+            item: testTask,
+            vectorDistance: 0.42,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The distance badge shows the formatted distance
+      expect(find.text('0.42'), findsOneWidget);
+      // The card is still rendered
+      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
+    });
+
+    testWidgets('does not show distance badge when vectorDistance is null', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(item: testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No distance text should appear when vectorDistance is null
+      final wrapper = tester.widget<CardWrapperWidget>(
+        find.byType(CardWrapperWidget),
+      );
+      expect(wrapper.vectorDistance, isNull);
+    });
+
+    testWidgets('distance badge uses green color for strong matches', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(
+            item: testTask,
+            vectorDistance: 0.15,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('0.15'), findsOneWidget);
+      final container = tester.widget<Container>(
+        find.ancestor(
+          of: find.text('0.15'),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      expect(decoration.color, Colors.green);
     });
   });
 }

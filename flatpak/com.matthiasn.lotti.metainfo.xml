@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.909" date="2026-03-08">
+      <description>
+          <p>Vector search distance telemetry: search result cards now show a color-coded cosine distance badge during vector search mode, and distance distribution is logged for threshold calibration.</p>
+      </description>
+    </release>
     <release version="0.9.908" date="2026-03-07">
       <description>
           <p>Fixed sync backfill: agent entities and links are now included in sequence log population. Added self-request guard to prevent hot-loop. New "Reset Unresolvable" action recovers stuck entries. Host activity cache improves sync performance.</p>

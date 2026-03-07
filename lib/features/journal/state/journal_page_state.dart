@@ -60,6 +60,7 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(false) bool vectorSearchInFlight,
     Duration? vectorSearchElapsed,
     @Default(0) int vectorSearchResultCount,
+    @Default(<String, double>{}) Map<String, double> vectorSearchDistances,
   }) = _JournalPageState;
 }
 

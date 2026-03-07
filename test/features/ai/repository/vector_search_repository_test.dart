@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -27,6 +28,8 @@ void main() {
   });
 
   setUp(() {
+    DevLogger.suppressOutput = true;
+    DevLogger.clear();
     mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockJournalDb = MockJournalDb();
@@ -84,6 +87,10 @@ void main() {
       expect(result.entities, hasLength(1));
       expect(result.entities.first, isA<Task>());
       expect(result.elapsed, isNotNull);
+      expect(
+        result.distances,
+        {testTask.meta.id: 0.5},
+      );
     });
 
     test(
@@ -134,6 +141,8 @@ void main() {
 
         expect(result.entities, hasLength(1));
         expect(result.entities.first, isA<Task>());
+        // Non-task result resolved to parent task — distance not mapped
+        // because parent was resolved via link, not direct match.
       },
     );
 
@@ -356,6 +365,7 @@ void main() {
 
         expect(result.entities, hasLength(1));
         expect(result.entities.first, isA<Task>());
+        expect(result.distances, {taskId: 0.3});
       },
     );
 
@@ -426,6 +436,71 @@ void main() {
       expect(result.entities, hasLength(1));
     });
 
+    test('logs distance distribution after search', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+
+      when(
+        () => mockEmbeddingStore.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        const EmbeddingSearchResult(
+          entityId: 'e1',
+          distance: 0.2,
+          entityType: kEntityTypeTask,
+        ),
+        const EmbeddingSearchResult(
+          entityId: 'e2',
+          distance: 0.5,
+          entityType: kEntityTypeTask,
+        ),
+        const EmbeddingSearchResult(
+          entityId: 'e3',
+          distance: 0.8,
+          entityType: kEntityTypeTask,
+        ),
+      ]);
+
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => []);
+
+      DevLogger.clear();
+      await sut.searchRelatedTasks(query: 'log test');
+
+      expect(
+        DevLogger.capturedLogs,
+        contains(
+          allOf(
+            contains('Distance distribution'),
+            contains('count=3'),
+            contains('min=0.200'),
+            contains('max=0.800'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'returns empty distances when no Ollama provider configured',
+      () async {
+        when(
+          () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+        ).thenAnswer((_) async => null);
+
+        final result = await sut.searchRelatedTasks(query: 'query');
+
+        expect(result.distances, isEmpty);
+      },
+    );
+
     test('passes categoryIds through to embeddings DB search', () async {
       when(
         () => mockEmbeddingRepo.embed(
@@ -489,6 +564,7 @@ void main() {
       expect(result.entities, hasLength(1));
       expect(result.entities.first.meta.id, testTextEntry.meta.id);
       expect(result.elapsed, isNotNull);
+      expect(result.distances, {testTextEntry.meta.id: 0.3});
     });
 
     test('deduplicates by entity ID keeping lowest distance', () async {
@@ -593,6 +669,10 @@ void main() {
       // testTextEntry (distance 0.2) should come before testTask (distance 0.8)
       expect(result.entities[0].meta.id, testTextEntry.meta.id);
       expect(result.entities[1].meta.id, testTask.meta.id);
+      expect(result.distances, {
+        testTextEntry.meta.id: 0.2,
+        testTask.meta.id: 0.8,
+      });
     });
 
     test('passes categoryIds through to search', () async {

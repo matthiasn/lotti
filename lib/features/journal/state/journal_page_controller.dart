@@ -716,6 +716,7 @@ class JournalPageController extends _$JournalPageController {
         vectorSearchInFlight: false,
         vectorSearchElapsed: Duration.zero,
         vectorSearchResultCount: 0,
+        vectorSearchDistances: const {},
       );
       return [];
     }
@@ -724,6 +725,7 @@ class JournalPageController extends _$JournalPageController {
       vectorSearchInFlight: true,
       vectorSearchElapsed: Duration.zero,
       vectorSearchResultCount: 0,
+      vectorSearchDistances: const {},
     );
 
     try {
@@ -746,6 +748,7 @@ class JournalPageController extends _$JournalPageController {
         vectorSearchInFlight: false,
         vectorSearchElapsed: result.elapsed,
         vectorSearchResultCount: result.entities.length,
+        vectorSearchDistances: result.distances,
       );
 
       return result.entities;
@@ -758,6 +761,7 @@ class JournalPageController extends _$JournalPageController {
         vectorSearchInFlight: false,
         vectorSearchElapsed: Duration.zero,
         vectorSearchResultCount: 0,
+        vectorSearchDistances: const {},
       );
       return [];
     }

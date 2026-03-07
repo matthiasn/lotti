@@ -13,10 +13,15 @@ class VectorSearchResult {
   VectorSearchResult({
     required this.entities,
     required this.elapsed,
+    this.distances = const {},
   });
 
   final List<JournalEntity> entities;
   final Duration elapsed;
+
+  /// Entity ID → best (lowest) cosine distance from search.
+  /// Empty when not from vector search.
+  final Map<String, double> distances;
 }
 
 /// Orchestrates vector-based semantic search for tasks.
@@ -78,14 +83,50 @@ class VectorSearchRepository {
     final deduped = bestByEntity.values.toList()
       ..sort((a, b) => a.distance.compareTo(b.distance));
 
+    // Build distance map: dedup key → best distance.
+    // After task resolution, remap to resolved task ID.
+    final dedupDistances = <String, double>{
+      for (final entry in bestByEntity.entries) entry.key: entry.value.distance,
+    };
+
     // Resolve all deduplicated results, then trim to k — resolution can
     // collapse multiple entities to the same task, so trimming before
     // resolution would lose unique results.
     final resolvedTasks = await _resolveToTasks(deduped);
     final tasks = resolvedTasks.take(k).toList();
 
+    // Map distances to resolved task IDs.
+    final distances = <String, double>{};
+    for (final result in deduped) {
+      final key = result.entityType == kEntityTypeAgentReport
+          ? 'agent:${result.taskId}'
+          : result.entityId;
+      final distance = dedupDistances[key];
+      if (distance == null) continue;
+
+      // Determine which task ID this result resolved to.
+      String? resolvedId;
+      if (result.entityType == kEntityTypeTask) {
+        resolvedId = result.entityId;
+      } else if (result.entityType == kEntityTypeAgentReport) {
+        resolvedId = result.taskId;
+      }
+      if (resolvedId != null &&
+          resolvedId.isNotEmpty &&
+          tasks.any((t) => t.meta.id == resolvedId)) {
+        final existing = distances[resolvedId];
+        if (existing == null || distance < existing) {
+          distances[resolvedId] = distance;
+        }
+      }
+    }
+
     stopwatch.stop();
-    return VectorSearchResult(entities: tasks, elapsed: stopwatch.elapsed);
+    return VectorSearchResult(
+      entities: tasks,
+      elapsed: stopwatch.elapsed,
+      distances: distances,
+    );
   }
 
   /// Searches for journal entries semantically related to [query].
@@ -125,21 +166,27 @@ class VectorSearchRepository {
     final entityIds = deduped.map((r) => r.entityId).toSet();
     final entities = await _journalDb.getJournalEntitiesForIds(entityIds);
 
-    // Preserve distance ordering, trim to k.
+    // Preserve distance ordering, trim to k, and build distance map.
     final entityMap = <String, JournalEntity>{
       for (final e in entities) e.meta.id: e,
     };
     final ordered = <JournalEntity>[];
+    final distances = <String, double>{};
     for (final result in deduped) {
       final entity = entityMap[result.entityId];
       if (entity != null) {
         ordered.add(entity);
+        distances[entity.meta.id] = result.distance;
       }
       if (ordered.length >= k) break;
     }
 
     stopwatch.stop();
-    return VectorSearchResult(entities: ordered, elapsed: stopwatch.elapsed);
+    return VectorSearchResult(
+      entities: ordered,
+      elapsed: stopwatch.elapsed,
+      distances: distances,
+    );
   }
 
   /// Embeds [query] and searches the vector database, returning the raw
@@ -183,6 +230,21 @@ class VectorSearchRepository {
       k: k * 3,
       categoryIds: categoryIds,
     );
+
+    // Log distance distribution for threshold calibration.
+    if (rawResults.isNotEmpty) {
+      final distances = rawResults.map((r) => r.distance).toList()..sort();
+      final min = distances.first.toStringAsFixed(3);
+      final max = distances.last.toStringAsFixed(3);
+      final median = distances[distances.length ~/ 2].toStringAsFixed(3);
+      DevLogger.log(
+        name: 'VectorSearch',
+        message:
+            'Distance distribution: '
+            'count=${distances.length}, '
+            'min=$min, median=$median, max=$max',
+      );
+    }
 
     return (stopwatch, rawResults);
   }
