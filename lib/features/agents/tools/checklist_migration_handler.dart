@@ -118,14 +118,8 @@ class ChecklistMigrationHandler {
       targetChecklistId = targetChecklistIds.first;
     }
 
-    // Archive the item in the source (after target validation succeeded).
-    await _checklistRepository.updateChecklistItem(
-      checklistItemId: itemId,
-      data: itemEntity.data.copyWith(isArchived: true),
-      taskId: sourceTaskId,
-    );
-
-    // Copy the item to the target checklist.
+    // Copy the item to the target checklist BEFORE archiving the source,
+    // so that a failed copy never leaves the source archived with no target.
     final newItem = await _checklistRepository.addItemToChecklist(
       checklistId: targetChecklistId,
       title: itemEntity.data.title,
@@ -140,6 +134,13 @@ class ChecklistMigrationHandler {
         errorMessage: 'Item copy creation failed',
       );
     }
+
+    // Archive the item in the source (after copy succeeded).
+    await _checklistRepository.updateChecklistItem(
+      checklistItemId: itemId,
+      data: itemEntity.data.copyWith(isArchived: true),
+      taskId: sourceTaskId,
+    );
 
     return ToolExecutionResult(
       success: true,

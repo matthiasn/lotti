@@ -372,9 +372,18 @@ class ChangeSetBuilder {
       // Consolidate: pick the newest set as the survivor, collect all
       // items from every set, append the new deduplicated items, and
       // mark all other sets as resolved so the UI shows exactly one card.
-      final survivor = existingPendingSets.reduce(
+      final staleWinner = existingPendingSets.reduce(
         (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
       );
+
+      // Re-read the survivor from DB so we pick up any mid-wake
+      // confirmations (user tapping items while the agent is running).
+      final freshEntity = await syncService.repository.getEntity(
+        staleWinner.id,
+      );
+      final survivor = freshEntity is ChangeSetEntity
+          ? freshEntity
+          : staleWinner;
 
       // Gather items from non-survivor sets that aren't already in the
       // survivor or in the new deduped items.
@@ -382,11 +391,20 @@ class ChangeSetBuilder {
         ...survivor.items.map(ChangeItem.fingerprint),
         ...deduped.map(ChangeItem.fingerprint),
       };
-      final otherItems = existingPendingSets
-          .where((cs) => cs.id != survivor.id)
-          .expand((cs) => cs.items)
-          .where((i) => knownFingerprints.add(ChangeItem.fingerprint(i)))
-          .toList();
+
+      final otherItems = <ChangeItem>[];
+      for (final cs in existingPendingSets) {
+        if (cs.id != survivor.id) {
+          // Re-read each non-survivor to preserve mid-wake confirmations.
+          final freshCs = await syncService.repository.getEntity(cs.id);
+          final current = freshCs is ChangeSetEntity ? freshCs : cs;
+          for (final item in current.items) {
+            if (knownFingerprints.add(ChangeItem.fingerprint(item))) {
+              otherItems.add(item);
+            }
+          }
+        }
+      }
 
       final merged = survivor.copyWith(
         items: [...survivor.items, ...otherItems, ...deduped],
@@ -397,8 +415,12 @@ class ChangeSetBuilder {
       // pending queries and the UI.
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
+          // Re-read before marking resolved to avoid overwriting
+          // mid-wake status changes.
+          final freshCs = await syncService.repository.getEntity(cs.id);
+          final current = freshCs is ChangeSetEntity ? freshCs : cs;
           await syncService.upsertEntity(
-            cs.copyWith(
+            current.copyWith(
               status: ChangeSetStatus.resolved,
               resolvedAt: clock.now(),
             ),

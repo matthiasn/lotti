@@ -602,12 +602,20 @@ void main() {
       test(
         'confirmItem returns failure for unresolved migration placeholder',
         () async {
-          // Migration item without a preceding create_follow_up_task confirm.
-          // The placeholder is not in _resolvedIds, so confirmItem should
-          // return a clear error without dispatching.
+          // Migration item with a create_follow_up_task that hasn't been
+          // confirmed yet. The placeholder is in _resolvedIds = {}, so
+          // confirmItem should return a clear error without dispatching.
           const placeholderId = 'unresolved-placeholder';
           final changeSet = makeTestChangeSet(
             items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Pending Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create pending task',
+              ),
               ChangeItem(
                 toolName: 'migrate_checklist_item',
                 args: {
@@ -621,7 +629,8 @@ void main() {
           );
 
           await withClock(testClock, () async {
-            final result = await service.confirmItem(changeSet, 0);
+            // Confirm the migration item (index 1), not the create item.
+            final result = await service.confirmItem(changeSet, 1);
 
             expect(result.success, isFalse);
             expect(
@@ -721,6 +730,152 @@ void main() {
 
             final args = captured[0] as Map<String, dynamic>;
             expect(args['targetTaskId'], 'resolved-id-002');
+          });
+        },
+      );
+
+      test(
+        'persists resolved targetTaskId to sibling migration items',
+        () async {
+          const placeholderId = 'placeholder-persist';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Persist Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create persist task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-010',
+                  'title': 'Migrate me',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate "Migrate me"',
+              ),
+            ],
+          );
+
+          final upsertedEntities = <AgentDomainEntity>[];
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((invocation) async {
+            upsertedEntities.add(
+              invocation.positionalArguments[0] as AgentDomainEntity,
+            );
+          });
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created follow-up',
+              mutatedEntityId: 'actual-persist-id',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+          });
+
+          // Find the change set upsert that updated sibling args.
+          final persistedSets = upsertedEntities
+              .whereType<ChangeSetEntity>()
+              .toList();
+
+          // The last change set upsert should have the migration item's
+          // targetTaskId resolved.
+          final lastSet = persistedSets.last;
+          final migrationItem = lastSet.items.firstWhere(
+            (i) => i.toolName == 'migrate_checklist_item',
+          );
+          expect(
+            migrationItem.args['targetTaskId'],
+            'actual-persist-id',
+            reason:
+                'Sibling migration items should be updated with '
+                'the actual task ID',
+          );
+        },
+      );
+
+      test(
+        'new service instance confirms migration items with '
+        'already-resolved args',
+        () async {
+          // Simulate a service restart: migration items have already been
+          // updated with the real targetTaskId by _persistResolvedIdToSiblings.
+          const realTaskId = 'real-task-id-999';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Already Created',
+                  '_placeholderTaskId': 'old-placeholder',
+                },
+                humanSummary: 'Create task',
+                status: ChangeItemStatus.confirmed,
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-020',
+                  'title': 'Already resolved',
+                  'targetTaskId': realTaskId,
+                },
+                humanSummary: 'Migrate "Already resolved"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(
+              'migrate_checklist_item',
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Migrated',
+            ),
+          );
+
+          // Fresh service instance — _resolvedIds is empty.
+          final freshService = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            toolDispatcher: mockToolDispatcher,
+          );
+
+          await withClock(testClock, () async {
+            final result = await freshService.confirmItem(changeSet, 1);
+
+            expect(
+              result.success,
+              isTrue,
+              reason: 'Should dispatch with the already-resolved real ID',
+            );
+
+            final captured = verify(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                captureAny(),
+                any(),
+              ),
+            ).captured;
+
+            final args = captured[0] as Map<String, dynamic>;
+            expect(args['targetTaskId'], realTaskId);
           });
         },
       );

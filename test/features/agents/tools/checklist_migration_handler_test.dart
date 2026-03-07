@@ -548,14 +548,6 @@ void main() {
         );
 
         when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
           () => mockJournalDb.journalEntityById(targetTaskId),
         ).thenAnswer(
           (_) async => makeTask(
@@ -584,6 +576,15 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorMessage, 'Item copy creation failed');
+
+        // Source item should NOT be archived when copy creation fails.
+        verifyNever(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
       });
     });
   });

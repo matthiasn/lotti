@@ -84,7 +84,7 @@ class ChangeSetConfirmationService {
 
     // For migration items, resolve the placeholder targetTaskId before
     // dispatch.
-    final dispatchArgs = _resolveArgsIfNeeded(item);
+    final dispatchArgs = _resolveArgsIfNeeded(item, current);
     if (dispatchArgs == null) {
       // Resolution failed — target task not yet created.
       return const ToolExecutionResult(
@@ -143,8 +143,10 @@ class ChangeSetConfirmationService {
     }
 
     // 3. After successful create_follow_up_task, store the placeholder→actual
-    //    mapping for subsequent migration items.
+    //    mapping for subsequent migration items and persist the resolved ID
+    //    into sibling migration items so a service restart doesn't lose it.
     _captureResolvedId(item, result);
+    await _persistResolvedIdToSiblings(item, result, current);
 
     return result;
   }
@@ -249,7 +251,17 @@ class ChangeSetConfirmationService {
   ///
   /// Returns the (possibly modified) args map, or `null` if the placeholder
   /// cannot be resolved (target task not yet created).
-  Map<String, dynamic>? _resolveArgsIfNeeded(ChangeItem item) {
+  ///
+  /// Distinguishes three cases for targetTaskId:
+  /// 1. In-memory resolved → substitute with actual ID.
+  /// 2. Known placeholder (a matching create_follow_up_task exists in the
+  ///    change set) but not yet resolved → return `null` to block dispatch.
+  /// 3. Already a real ID (e.g. persisted by [_persistResolvedIdToSiblings]
+  ///    in a prior service instance) → return args as-is.
+  Map<String, dynamic>? _resolveArgsIfNeeded(
+    ChangeItem item,
+    ChangeSetEntity changeSet,
+  ) {
     if (item.toolName != TaskAgentToolNames.migrateChecklistItem) {
       return item.args;
     }
@@ -259,16 +271,67 @@ class ChangeSetConfirmationService {
       return item.args;
     }
 
-    // Look up the placeholder→actual mapping populated by a prior
-    // create_follow_up_task confirmation.
+    // Case 1: in-memory resolution from this service instance.
     final resolved = _resolvedIds[targetTaskId];
     if (resolved != null) {
       return {...item.args, 'targetTaskId': resolved};
     }
 
-    // The placeholder has not been resolved yet — the follow-up task must be
-    // confirmed before any of its migration items can be dispatched.
-    return null;
+    // Case 2: check if targetTaskId is a known placeholder in this change set.
+    final isPlaceholder = changeSet.items.any(
+      (i) =>
+          i.toolName == TaskAgentToolNames.createFollowUpTask &&
+          i.args['_placeholderTaskId'] == targetTaskId,
+    );
+    if (isPlaceholder) {
+      // Block: the follow-up task must be confirmed first.
+      return null;
+    }
+
+    // Case 3: targetTaskId is a real ID (already resolved by a prior
+    // service instance via _persistResolvedIdToSiblings).
+    return item.args;
+  }
+
+  /// After a successful `create_follow_up_task` dispatch, updates sibling
+  /// `migrate_checklist_item` items in the same change set so that their
+  /// `targetTaskId` args point to the actual task ID instead of the
+  /// placeholder. This persists the mapping into the DB so it survives
+  /// service disposal / app restart.
+  Future<void> _persistResolvedIdToSiblings(
+    ChangeItem item,
+    ToolExecutionResult result,
+    ChangeSetEntity changeSet,
+  ) async {
+    if (item.toolName != TaskAgentToolNames.createFollowUpTask) return;
+    if (!result.success) return;
+
+    final placeholderId = item.args['_placeholderTaskId'];
+    final actualId = result.mutatedEntityId;
+    if (placeholderId is! String || actualId == null || actualId.isEmpty) {
+      return;
+    }
+
+    // Re-read the change set to get the latest item statuses.
+    final fresh = await _freshChangeSet(changeSet);
+    var changed = false;
+    final updatedItems = fresh.items.map((i) {
+      if (i.toolName == TaskAgentToolNames.migrateChecklistItem &&
+          i.args['targetTaskId'] == placeholderId) {
+        changed = true;
+        return i.copyWith(args: {...i.args, 'targetTaskId': actualId});
+      }
+      return i;
+    }).toList();
+
+    if (changed) {
+      await _syncService.upsertEntity(fresh.copyWith(items: updatedItems));
+      developer.log(
+        'Persisted resolved targetTaskId ($actualId) to sibling '
+        'migration items in change set ${fresh.id}',
+        name: 'ChangeSetConfirmationService',
+      );
+    }
   }
 
   /// After a successful `create_follow_up_task` dispatch, captures the

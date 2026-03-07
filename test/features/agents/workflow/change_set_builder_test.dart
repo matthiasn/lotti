@@ -11,6 +11,7 @@ import '../test_utils.dart';
 void main() {
   late ChangeSetBuilder builder;
   late MockAgentSyncService mockSyncService;
+  late MockAgentRepository mockRepository;
 
   setUpAll(() {
     registerFallbackValue(
@@ -24,6 +25,7 @@ void main() {
 
   setUp(() {
     mockSyncService = MockAgentSyncService();
+    mockRepository = MockAgentRepository();
     builder = ChangeSetBuilder(
       agentId: 'agent-001',
       taskId: 'task-001',
@@ -32,6 +34,11 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => mockSyncService.repository).thenReturn(mockRepository);
+
+    // Default: getEntity returns null so build() falls back to the
+    // passed-in entity.
+    when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
   });
 
   group('addItem', () {
@@ -1055,6 +1062,73 @@ void main() {
         expect(resolved.id, 'cs-older');
         expect(resolved.status, ChangeSetStatus.resolved);
         expect(resolved.resolvedAt, isNotNull);
+      },
+    );
+
+    test(
+      'build uses fresh items from DB, not stale snapshot',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 90},
+          humanSummary: 'Set estimate to 90 min',
+        );
+
+        // The stale snapshot passed to build() has both items pending.
+        final staleSet = makeTestChangeSet(
+          id: 'cs-stale',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Old title'},
+              humanSummary: 'Set title',
+            ),
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'OPEN'},
+              humanSummary: 'Set status',
+            ),
+          ],
+        );
+
+        // Simulate a mid-wake confirmation: the DB has item 0 confirmed.
+        final freshSet = staleSet.copyWith(
+          items: [
+            staleSet.items[0].copyWith(status: ChangeItemStatus.confirmed),
+            staleSet.items[1],
+          ],
+          status: ChangeSetStatus.partiallyResolved,
+        );
+
+        when(
+          () => mockRepository.getEntity('cs-stale'),
+        ).thenAnswer((_) async => freshSet);
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [staleSet],
+        );
+
+        expect(result, isNotNull);
+
+        // The merged set should use the fresh items (with confirmed status)
+        // not the stale snapshot's items.
+        final confirmedItems = result!.items
+            .where((i) => i.status == ChangeItemStatus.confirmed)
+            .toList();
+        expect(
+          confirmedItems,
+          hasLength(1),
+          reason: 'Mid-wake confirmation should be preserved',
+        );
+        expect(confirmedItems.first.args, {'title': 'Old title'});
+
+        // The new item should still be appended.
+        expect(
+          result.items.last.toolName,
+          'update_task_estimate',
+        );
       },
     );
   });
