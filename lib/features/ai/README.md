@@ -22,9 +22,9 @@ The AI feature also owns the local embedding pipeline used for semantic search.
 
 - **`database/embedding_store.dart`** defines the backend-neutral `EmbeddingStore` contract used by services, repositories, and maintenance UI.
 - **`database/objectbox_embedding_entity.dart`** defines the ObjectBox chunk entity used for vector persistence and HNSW indexing.
-- **`database/objectbox_embedding_store.dart`** provides the ObjectBox-backed ANN search implementation.
+- **`database/objectbox_embedding_store.dart`** provides the sole supported ObjectBox-backed ANN search implementation.
 - Sandboxed macOS builds require the `SS586VG7L7.lottiobx` application-group entitlement and pass the matching `macosApplicationGroup` to ObjectBox at store open time.
-- Higher-level code depends on `EmbeddingStore`, not directly on ObjectBox internals, so backend changes stay localized to DI and store implementations.
+- Higher-level code depends on `EmbeddingStore`, not directly on ObjectBox internals, so storage-specific changes stay localized to DI and the store implementation.
 
 ## Architecture
 
