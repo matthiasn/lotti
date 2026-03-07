@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/database/embeddings_init.dart';
+import 'package:lotti/features/ai/database/objectbox_embedding_store_loader.dart';
 import 'package:lotti/features/ai/database/sqlite_embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -394,21 +395,35 @@ Future<void> registerSingletons() async {
   );
 
   // Embedding generation pipeline (Ollama-based, local).
-  // The entire pipeline depends on sqlite-vec which requires a native extension.
-  // If EmbeddingsDb fails to initialize (e.g. missing native lib on CI), the
-  // pipeline is non-essential and the app should still start.
+  // The SQLite backend depends on sqlite-vec which requires a native extension.
+  // If the selected backend fails to initialize, the pipeline is non-essential
+  // and the app should still start.
   // coverage:ignore-start
   try {
-    final embeddingsDb = initProductionEmbeddingsDb(
-      documentsPath: getIt<Directory>().path,
-    );
-    final embeddingStore = SqliteEmbeddingStore(embeddingsDb);
+    final EmbeddingStore embeddingStore;
+
+    if (useObjectBoxEmbeddings) {
+      embeddingStore = await openObjectBoxEmbeddingStore(
+        documentsPath: getIt<Directory>().path,
+      );
+      getIt.registerSingleton<EmbeddingStore>(
+        embeddingStore,
+        dispose: (store) => store.close(),
+      );
+    } else {
+      final sqliteEmbeddingsDb = initProductionEmbeddingsDb(
+        documentsPath: getIt<Directory>().path,
+      );
+      embeddingStore = SqliteEmbeddingStore(sqliteEmbeddingsDb);
+      getIt
+        ..registerSingleton<EmbeddingsDb>(
+          sqliteEmbeddingsDb,
+          dispose: (db) => db.close(),
+        )
+        ..registerSingleton<EmbeddingStore>(embeddingStore);
+    }
+
     getIt
-      ..registerSingleton<EmbeddingsDb>(
-        embeddingsDb,
-        dispose: (db) => db.close(),
-      )
-      ..registerSingleton<EmbeddingStore>(embeddingStore)
       ..registerSingleton<OllamaEmbeddingRepository>(
         OllamaEmbeddingRepository(),
         dispose: (repo) => repo.close(),
@@ -431,9 +446,18 @@ Future<void> registerSingletons() async {
           aiConfigRepository: getIt<AiConfigRepository>(),
         ),
       );
+
     getIt<EmbeddingService>().start();
     _safeLog('Embedding pipeline initialized successfully', isError: false);
-  } catch (e) {
+  } catch (e, stackTrace) {
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'AI',
+        subDomain: 'embedding_pipeline_init',
+        stackTrace: stackTrace,
+      );
+    }
     _safeLog(
       'Embedding pipeline unavailable: $e',
       isError: true,

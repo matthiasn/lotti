@@ -4,6 +4,9 @@ import 'dart:typed_data';
 /// The fixed embedding dimension used by the current embedding model.
 const kEmbeddingDimensions = 1024;
 
+/// Temporary backend toggle for the embedding store POC.
+const bool useObjectBoxEmbeddings = true;
+
 /// Result of a vector similarity search.
 class EmbeddingSearchResult {
   const EmbeddingSearchResult({

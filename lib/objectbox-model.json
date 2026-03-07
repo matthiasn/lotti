@@ -1,0 +1,101 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:7733010829479720585",
+      "lastPropertyId": "12:2431739967825078836",
+      "name": "EmbeddingChunkEntity",
+      "properties": [
+        {
+          "id": "1:4818100322456678366",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8456946487932002352",
+          "name": "embeddingKey",
+          "indexId": "1:1704346918069046739",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:1106036643557037878",
+          "name": "entityId",
+          "indexId": "2:8038513102044490574",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:5610878150348606962",
+          "name": "chunkIndex",
+          "type": 6
+        },
+        {
+          "id": "5:985403409809708063",
+          "name": "entityType",
+          "indexId": "3:5530180604776325062",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "6:5777238874657793844",
+          "name": "modelId",
+          "type": 9
+        },
+        {
+          "id": "7:8476056733222980998",
+          "name": "contentHash",
+          "type": 9
+        },
+        {
+          "id": "8:5623514757416898692",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "9:6298161146123181181",
+          "name": "categoryId",
+          "indexId": "4:1000760643470582643",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "10:6347455455008508013",
+          "name": "taskId",
+          "indexId": "5:1674130426089708390",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "11:6606648515587880865",
+          "name": "subtype",
+          "indexId": "6:8023161639191114807",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "12:2431739967825078836",
+          "name": "embedding",
+          "indexId": "7:4134738425623489094",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "1:7733010829479720585",
+  "lastIndexId": "7:4134738425623489094",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
