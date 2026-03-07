@@ -73,7 +73,7 @@ class CardWrapperWidget extends ConsumerWidget {
 
 class _DistanceBadge extends StatelessWidget {
   const _DistanceBadge({required this.distance})
-      : super(key: const Key('distanceBadge'));
+    : super(key: const Key('distanceBadge'));
 
   final double distance;
 
