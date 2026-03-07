@@ -644,6 +644,36 @@ flowchart LR
 This keeps the current P0 focused. If we change both storage and embedding model at the same time,
 we will not know which variable caused the result.
 
+## Performance Follow-up
+
+If the first ObjectBox POC still lands around 30-60 ms per search, treat the
+next optimization pass as a separate follow-up task instead of folding it into
+the initial backend swap.
+
+Scope that follow-up as:
+
+- measure `embed(query)`, ANN search, and result-resolution time separately,
+- remove the current double oversampling (`VectorSearchRepository` request-side
+  `k * 3` combined with additional ANN candidate expansion inside the store),
+- evaluate **application-level category sharding** for ObjectBox search,
+  meaning one ObjectBox store directory per category and querying only the
+  selected category shards,
+- keep this explicitly framed as an app architecture choice, not a built-in
+  ObjectBox sharding feature,
+- only pursue category sharding because official ObjectBox docs still position
+  true query prefilter integration as future work.
+
+```mermaid
+flowchart LR
+  A[Query text] --> B[Embed query vector]
+  B --> C{Optimization follow-up}
+  C --> D[Reduce ANN oversampling]
+  C --> E[Category shard routing]
+  D --> F[Selected ObjectBox shard search]
+  E --> F
+  F --> G[Merge + dedupe + resolve]
+```
+
 ## Concrete File Plan
 
 ### Create
