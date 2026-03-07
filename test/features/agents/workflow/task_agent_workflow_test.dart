@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -1551,7 +1552,9 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
             ),
           ).thenAnswer(
-            (_) async => Float32List.fromList(List<double>.filled(1024, 0.25)),
+            (_) async => Float32List.fromList(
+              List<double>.filled(kEmbeddingDimensions, 0.25),
+            ),
           );
           when(
             () => mockJournalDb.journalEntityById(taskId),
@@ -1598,7 +1601,7 @@ void main() {
                         function: ChatCompletionMessageFunctionCall(
                           name: 'update_report',
                           arguments:
-                              '{"markdown":"# Report\\nThis report has enough content to embed."}',
+                              r'{"markdown":"# Report\nThis report has enough content to embed."}',
                         ),
                       ),
                     ],

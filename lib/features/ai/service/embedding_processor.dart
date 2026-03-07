@@ -57,7 +57,7 @@ class EmbeddingProcessor {
 
     // Skip if content hash unchanged.
     final hash = EmbeddingContentExtractor.contentHash(text);
-    final existingHash = embeddingStore.getContentHash(entityId);
+    final existingHash = await embeddingStore.getContentHash(entityId);
     if (existingHash == hash) return false;
 
     final categoryId = entity.meta.categoryId ?? '';
@@ -136,7 +136,7 @@ class EmbeddingProcessor {
     if (text.length < kMinEmbeddingTextLength) return false;
 
     final hash = EmbeddingContentExtractor.contentHash(text);
-    final existingHash = embeddingStore.getContentHash(reportId);
+    final existingHash = await embeddingStore.getContentHash(reportId);
     if (existingHash == hash) return false;
 
     await _embedChunks(
@@ -182,7 +182,7 @@ class EmbeddingProcessor {
       );
     }
 
-    embeddingStore.replaceEntityEmbeddings(
+    await embeddingStore.replaceEntityEmbeddings(
       entityId: entityId,
       entityType: entityType,
       modelId: ollamaEmbedDefaultModel,

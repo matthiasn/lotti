@@ -178,7 +178,7 @@ class VectorSearchRepository {
       return null;
     }
 
-    final rawResults = _embeddingStore.search(
+    final rawResults = await _embeddingStore.search(
       queryVector: queryVector,
       k: k * 3,
       categoryIds: categoryIds,

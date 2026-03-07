@@ -39,20 +39,16 @@ class SqliteEmbeddingStore implements EmbeddingStore {
     String taskId = '',
     String subtype = '',
   }) {
-    _db.deleteEntityEmbeddings(entityId);
-    for (var i = 0; i < embeddings.length; i++) {
-      _db.upsertEmbedding(
-        entityId: entityId,
-        chunkIndex: i,
-        entityType: entityType,
-        modelId: modelId,
-        embedding: embeddings[i],
-        contentHash: contentHash,
-        categoryId: categoryId,
-        taskId: taskId,
-        subtype: subtype,
-      );
-    }
+    _db.replaceEntityEmbeddings(
+      entityId: entityId,
+      entityType: entityType,
+      modelId: modelId,
+      contentHash: contentHash,
+      embeddings: embeddings,
+      categoryId: categoryId,
+      taskId: taskId,
+      subtype: subtype,
+    );
   }
 
   @override

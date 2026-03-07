@@ -233,6 +233,99 @@ void main() {
     });
   });
 
+  group('replaceEntityEmbeddings', () {
+    test('replaces all chunks for an entity', () {
+      final oldVec = _makeVector(kEmbeddingDimensions, value: 1);
+      final newVec0 = _makeVector(kEmbeddingDimensions, value: 2);
+      final newVec1 = _makeVector(kEmbeddingDimensions, value: 3);
+
+      db
+        ..upsertEmbedding(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embedding: oldVec,
+          contentHash: 'hash-old',
+        )
+        ..replaceEntityEmbeddings(
+          entityId: 'entity-1',
+          entityType: 'task',
+          modelId: 'test-model',
+          embeddings: [newVec0, newVec1],
+          contentHash: 'hash-new',
+        );
+
+      expect(db.count, 2);
+      expect(db.getChunkCount('entity-1'), 2);
+      expect(db.getContentHash('entity-1'), 'hash-new');
+
+      final rows = db.db.select(
+        'SELECT chunk_index, content_hash FROM embedding_metadata '
+        'WHERE entity_id = ? ORDER BY chunk_index',
+        ['entity-1'],
+      );
+      expect(rows, hasLength(2));
+      expect(rows[0]['chunk_index'], 0);
+      expect(rows[1]['chunk_index'], 1);
+      expect(rows[0]['content_hash'], 'hash-new');
+      expect(rows[1]['content_hash'], 'hash-new');
+    });
+
+    test(
+      'rolls back to the original chunks when a replacement insert fails',
+      () {
+        final oldVec0 = _makeVector(kEmbeddingDimensions, value: 1);
+        final oldVec1 = _makeVector(kEmbeddingDimensions, value: 2);
+
+        db
+          ..upsertEmbedding(
+            entityId: 'entity-1',
+            entityType: 'task',
+            modelId: 'test-model',
+            embedding: oldVec0,
+            contentHash: 'hash-old',
+          )
+          ..upsertEmbedding(
+            entityId: 'entity-1',
+            chunkIndex: 1,
+            entityType: 'task',
+            modelId: 'test-model',
+            embedding: oldVec1,
+            contentHash: 'hash-old',
+          );
+
+        expect(
+          () => db.replaceEntityEmbeddings(
+            entityId: 'entity-1',
+            entityType: 'task',
+            modelId: 'test-model',
+            embeddings: [
+              _makeVector(kEmbeddingDimensions, value: 3),
+              _makeVector(512, value: 4),
+            ],
+            contentHash: 'hash-new',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        expect(db.count, 2);
+        expect(db.getChunkCount('entity-1'), 2);
+        expect(db.getContentHash('entity-1'), 'hash-old');
+
+        final rows = db.db.select(
+          'SELECT chunk_index, content_hash FROM embedding_metadata '
+          'WHERE entity_id = ? ORDER BY chunk_index',
+          ['entity-1'],
+        );
+        expect(rows, hasLength(2));
+        expect(rows[0]['chunk_index'], 0);
+        expect(rows[1]['chunk_index'], 1);
+        expect(rows[0]['content_hash'], 'hash-old');
+        expect(rows[1]['content_hash'], 'hash-old');
+      },
+    );
+  });
+
   group('hasEmbedding', () {
     test('returns false for non-existent entity', () {
       expect(db.hasEmbedding('nonexistent'), isFalse);

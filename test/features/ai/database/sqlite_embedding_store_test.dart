@@ -74,16 +74,14 @@ void main() {
     verifyNoMoreInteractions(mockEmbeddingsDb);
   });
 
-  test('replaceEntityEmbeddings rewrites all chunks through sqlite db', () {
-    when(() => mockEmbeddingsDb.deleteEntityEmbeddings(any())).thenReturn(null);
+  test('replaceEntityEmbeddings delegates atomic replacement to sqlite db', () {
     when(
-      () => mockEmbeddingsDb.upsertEmbedding(
+      () => mockEmbeddingsDb.replaceEntityEmbeddings(
         entityId: any(named: 'entityId'),
         entityType: any(named: 'entityType'),
         modelId: any(named: 'modelId'),
-        embedding: any(named: 'embedding'),
+        embeddings: any(named: 'embeddings'),
         contentHash: any(named: 'contentHash'),
-        chunkIndex: any(named: 'chunkIndex'),
         categoryId: any(named: 'categoryId'),
         taskId: any(named: 'taskId'),
         subtype: any(named: 'subtype'),
@@ -101,27 +99,16 @@ void main() {
       subtype: 'report',
     );
 
-    verify(() => mockEmbeddingsDb.deleteEntityEmbeddings('entity-1')).called(1);
     verify(
-      () => mockEmbeddingsDb.upsertEmbedding(
+      () => mockEmbeddingsDb.replaceEntityEmbeddings(
         entityId: 'entity-1',
         entityType: 'JournalText',
         modelId: 'mxbai-embed-large',
-        embedding: any(named: 'embedding'),
+        embeddings: any(
+          named: 'embeddings',
+          that: hasLength(2),
+        ),
         contentHash: 'hash-1',
-        categoryId: 'cat-1',
-        taskId: 'task-1',
-        subtype: 'report',
-      ),
-    ).called(1);
-    verify(
-      () => mockEmbeddingsDb.upsertEmbedding(
-        entityId: 'entity-1',
-        entityType: 'JournalText',
-        modelId: 'mxbai-embed-large',
-        embedding: any(named: 'embedding'),
-        contentHash: 'hash-1',
-        chunkIndex: 1,
         categoryId: 'cat-1',
         taskId: 'task-1',
         subtype: 'report',
@@ -130,8 +117,19 @@ void main() {
     verifyNoMoreInteractions(mockEmbeddingsDb);
   });
 
-  test('replaceEntityEmbeddings deletes existing chunks for empty input', () {
-    when(() => mockEmbeddingsDb.deleteEntityEmbeddings(any())).thenReturn(null);
+  test('replaceEntityEmbeddings delegates empty replacement to sqlite db', () {
+    when(
+      () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        entityId: any(named: 'entityId'),
+        entityType: any(named: 'entityType'),
+        modelId: any(named: 'modelId'),
+        embeddings: any(named: 'embeddings'),
+        contentHash: any(named: 'contentHash'),
+        categoryId: any(named: 'categoryId'),
+        taskId: any(named: 'taskId'),
+        subtype: any(named: 'subtype'),
+      ),
+    ).thenReturn(null);
 
     store.replaceEntityEmbeddings(
       entityId: 'entity-1',
@@ -141,20 +139,15 @@ void main() {
       embeddings: const [],
     );
 
-    verify(() => mockEmbeddingsDb.deleteEntityEmbeddings('entity-1')).called(1);
-    verifyNever(
-      () => mockEmbeddingsDb.upsertEmbedding(
-        entityId: any(named: 'entityId'),
-        entityType: any(named: 'entityType'),
-        modelId: any(named: 'modelId'),
-        embedding: any(named: 'embedding'),
-        contentHash: any(named: 'contentHash'),
-        chunkIndex: any(named: 'chunkIndex'),
-        categoryId: any(named: 'categoryId'),
-        taskId: any(named: 'taskId'),
-        subtype: any(named: 'subtype'),
+    verify(
+      () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        entityId: 'entity-1',
+        entityType: 'JournalText',
+        modelId: 'mxbai-embed-large',
+        embeddings: const [],
+        contentHash: 'hash-1',
       ),
-    );
+    ).called(1);
     verifyNoMoreInteractions(mockEmbeddingsDb);
   });
 

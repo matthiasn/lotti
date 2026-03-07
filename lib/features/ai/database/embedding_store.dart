@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 /// The fixed embedding dimension used by the current embedding model.
@@ -39,13 +40,13 @@ class EmbeddingSearchResult {
 
 /// Backend-neutral store for derived vector embeddings.
 abstract class EmbeddingStore {
-  String? getContentHash(String entityId);
+  FutureOr<String?> getContentHash(String entityId);
 
-  bool hasEmbedding(String entityId);
+  FutureOr<bool> hasEmbedding(String entityId);
 
-  int get count;
+  FutureOr<int> get count;
 
-  void replaceEntityEmbeddings({
+  FutureOr<void> replaceEntityEmbeddings({
     required String entityId,
     required String entityType,
     required String modelId,
@@ -56,16 +57,16 @@ abstract class EmbeddingStore {
     String subtype = '',
   });
 
-  void deleteEntityEmbeddings(String entityId);
+  FutureOr<void> deleteEntityEmbeddings(String entityId);
 
-  List<EmbeddingSearchResult> search({
+  FutureOr<List<EmbeddingSearchResult>> search({
     required Float32List queryVector,
     int k = 10,
     String? entityTypeFilter,
     Set<String>? categoryIds,
   });
 
-  void deleteAll();
+  FutureOr<void> deleteAll();
 
-  void close();
+  FutureOr<void> close();
 }
